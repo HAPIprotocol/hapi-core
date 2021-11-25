@@ -6,4 +6,6 @@ pub enum ErrorCode {
     UnexpectedAccount,
     #[msg("You are not authorized to perform this action.")]
     Unauthorized,
+    #[msg("Non-sequential case ID.")]
+    NonSequentialCaseId,
 }

@@ -2,12 +2,18 @@ import * as anchor from "@project-serum/anchor";
 import { Program, web3 } from "@project-serum/anchor";
 
 import { HapiCore } from "../target/types/hapi_core";
+import { silenceConsole } from "./util/console";
 
 export const ReporterType = {
   Inactive: { inactive: {} },
   Tracer: { tracer: {} },
   Full: { full: {} },
   Authority: { authority: {} },
+};
+
+export const CaseStatus = {
+  Closed: { closed: {} },
+  Open: { open: {} },
 };
 
 function bufferFromString(str: string, bufferSize?: number) {
@@ -99,7 +105,7 @@ describe("hapi-core", () => {
     );
 
     expect(communityAccount.authority).toEqual(authority.publicKey);
-    expect(communityAccount.caseCount.toNumber()).toEqual(0);
+    expect(communityAccount.cases.toNumber()).toEqual(0);
 
     const communityInfo = await provider.connection.getAccountInfoAndContext(
       community.publicKey
@@ -109,6 +115,8 @@ describe("hapi-core", () => {
   });
 
   it("Community shouldn't be initialized twice", async () => {
+    const silencer = silenceConsole();
+
     await expect(() =>
       program.rpc.initialize({
         accounts: {
@@ -119,6 +127,8 @@ describe("hapi-core", () => {
         signers: [community],
       })
     ).rejects.toThrowError(/failed to send transaction/);
+
+    silencer.close();
   });
 
   it.each(["ethereum", "solana", "near"])(
@@ -168,6 +178,8 @@ describe("hapi-core", () => {
         program.programId
       );
 
+      const silencer = silenceConsole();
+
       await expect(() =>
         program.rpc.createNetwork(name.toJSON().data, bump, {
           accounts: {
@@ -178,6 +190,8 @@ describe("hapi-core", () => {
           },
         })
       ).rejects.toThrowError(/failed to send transaction/);
+
+      silencer.close();
     }
   );
 
@@ -189,6 +203,8 @@ describe("hapi-core", () => {
       program.programId
     );
 
+    const silencer = silenceConsole();
+
     await expect(() =>
       program.rpc.createNetwork(name.toJSON().data, bump, {
         accounts: {
@@ -199,6 +215,8 @@ describe("hapi-core", () => {
         },
       })
     ).rejects.toThrowError(/Signature verification failed/);
+
+    silencer.close();
   });
 
   it.each(Object.keys(REPORTERS))("Reporter %s is created", async (key) => {
@@ -239,12 +257,188 @@ describe("hapi-core", () => {
     );
     expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
     expect(fetchedReporterAccount.bump).toEqual(bump);
-    expect(fetchedReporterAccount.reporterType).toEqual(ReporterType[reporter.type]);
+    expect(fetchedReporterAccount.reporterType).toEqual(
+      ReporterType[reporter.type]
+    );
 
-    const networkInfo = await provider.connection.getAccountInfoAndContext(
+    const reporterInfo = await provider.connection.getAccountInfoAndContext(
       reporterAccount
     );
-    expect(networkInfo.value.owner).toEqual(program.programId);
-    expect(networkInfo.value.data).toHaveLength(100);
+    expect(reporterInfo.value.owner).toEqual(program.programId);
+    expect(reporterInfo.value.data).toHaveLength(200);
+  });
+
+  it("Non-whitelisted actor should not be able to create cases", async () => {
+    const reporter = nobody;
+    const caseId = new anchor.BN(1);
+    const caseName = bufferFromString("Case 1", 32);
+
+    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("case"),
+        community.publicKey.toBytes(),
+        caseId.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+
+    // Direct attempt to report
+    {
+      const [reporterAccount] = await web3.PublicKey.findProgramAddress(
+        [
+          bufferFromString("reporter"),
+          community.publicKey.toBytes(),
+          reporter.publicKey.toBytes(),
+        ],
+        program.programId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [reporter],
+        })
+      ).rejects.toThrowError(
+        // This fails because reporterAccount should not exist or does not belong to the program
+        /The given account is not owned by the executing program/
+      );
+
+      silencer.close();
+    }
+
+    // Attempt to impersonate a reporter that has correct permissions
+    {
+      const [reporterAccount] = await web3.PublicKey.findProgramAddress(
+        [
+          bufferFromString("reporter"),
+          community.publicKey.toBytes(),
+          REPORTERS.alice.keypair.publicKey.toBytes(),
+        ],
+        program.programId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [reporter],
+        })
+      ).rejects.toThrowError(
+        // This should fail because sender pubkey does not match reporterAccount pubkey
+        /A raw constraint was violated/
+      );
+
+      silencer.close();
+    }
+  });
+
+  it("Reporter without permission should not be able to create cases", async () => {
+    const reporter = REPORTERS.carol.keypair;
+    const caseId = new anchor.BN(1);
+    const caseName = bufferFromString("Case 1", 32);
+
+    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("case"),
+        community.publicKey.toBytes(),
+        caseId.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+
+    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("reporter"),
+        community.publicKey.toBytes(),
+        reporter.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+
+    const silencer = silenceConsole();
+
+    await expect(() =>
+      program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+        accounts: {
+          reporter: reporterAccount,
+          sender: reporter.publicKey,
+          community: community.publicKey,
+          case: caseAccount,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [reporter],
+      })
+    ).rejects.toThrowError(/A raw constraint was violated/);
+
+    silencer.close();
+  });
+
+  it("Case 1 is created", async () => {
+    const reporter = REPORTERS.alice.keypair;
+    const caseId = new anchor.BN(1);
+    const caseName = bufferFromString("Case 1", 32);
+
+    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("case"),
+        community.publicKey.toBytes(),
+        caseId.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+
+    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("reporter"),
+        community.publicKey.toBytes(),
+        reporter.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+
+    const tx = await program.rpc.createCase(
+      caseId,
+      caseName.toJSON().data,
+      bump,
+      {
+        accounts: {
+          reporter: reporterAccount,
+          sender: reporter.publicKey,
+          community: community.publicKey,
+          case: caseAccount,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [reporter],
+      }
+    );
+
+    expect(tx).toBeTruthy();
+
+    const fetchedCaseAccount = await program.account.case.fetch(caseAccount);
+    expect(Buffer.from(fetchedCaseAccount.name)).toEqual(caseName);
+    expect(fetchedCaseAccount.bump).toEqual(bump);
+    expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+    expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
+    expect(fetchedCaseAccount.id.toNumber()).toEqual(caseId.toNumber());
+
+    const communityAccount = await program.account.community.fetch(
+      community.publicKey
+    );
+    expect(communityAccount.cases.toNumber()).toEqual(caseId.toNumber());
   });
 });

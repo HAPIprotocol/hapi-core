@@ -17,6 +17,6 @@
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
-    "testRegex": "/tests/.*\\.(ts|tsx|js)$"
+    "testRegex": "/tests/.*\\.spec\\.(ts|tsx|js)$"
   }
 }
