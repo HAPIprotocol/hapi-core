@@ -3,7 +3,8 @@ use anchor_lang::prelude::*;
 use crate::{
     id,
     state::{
-        case::Case,
+        address::{Address, Category},
+        case::{Case, CaseStatus},
         community::Community,
         network::Network,
         reporter::{Reporter, ReporterType},
@@ -108,4 +109,46 @@ pub struct CreateCase<'info> {
     pub case: Account<'info, Case>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(pubkey: Pubkey, category: Category, risk: u8, bump: u8)]
+pub struct CreateAddress<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community,
+        constraint = (reporter.reporter_type == ReporterType::Tracer || reporter.reporter_type == ReporterType::Full || reporter.reporter_type == ReporterType::Authority) && reporter.pubkey == sender.key()
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        has_one = community,
+        constraint = case.status == CaseStatus::Open
+    )]
+    pub case: Account<'info, Case>,
+
+    #[account(
+        init,
+        owner = id(),
+        payer = sender,
+        seeds = [b"address", network.key().as_ref(), pubkey.as_ref()],
+        bump = bump,
+        space = 148
+    )]
+    pub address: Account<'info, Address>,
+
+    pub system_program: Program<'info, System>
 }

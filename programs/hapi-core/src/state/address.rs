@@ -1,5 +1,18 @@
 use anchor_lang::prelude::*;
 
+#[account]
+pub struct Address {
+    pub community: Pubkey,
+    pub network: Pubkey,
+    pub address: Pubkey,
+    pub bump: u8,
+    pub case_id: u64,
+    pub reporter: Pubkey,
+    pub category: Category,
+    pub risk: u8,
+    pub confidence: u8,
+}
+
 #[derive(Clone, AnchorDeserialize, AnchorSerialize)]
 pub enum Category {
     // Tier 0

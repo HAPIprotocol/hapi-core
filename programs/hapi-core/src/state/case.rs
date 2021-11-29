@@ -10,7 +10,7 @@ pub struct Case {
     pub name: [u8; 32],
 }
 
-#[derive(Clone, AnchorDeserialize, AnchorSerialize)]
+#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum CaseStatus {
     Closed = 0,
     Open = 1,

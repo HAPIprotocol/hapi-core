@@ -16,6 +16,29 @@ export const CaseStatus = {
   Open: { open: {} },
 };
 
+export const Category = {
+  None: { none: {} },
+  WalletService: { walletService: {} },
+  MerchantService: { merchantService: {} },
+  MiningPool: { miningPool: {} },
+  LowRiskExchange: { lowRiskExchange: {} },
+  MediumRiskExchange: { mediumRiskExchange: {} },
+  DeFi: { deFi: {} },
+  OTCBroker: { oTCBroker: {} },
+  ATM: { aTM: {} },
+  Gambling: { gambling: {} },
+  IllicitOrganization: { illicitOrganization: {} },
+  Mixer: { mixer: {} },
+  DarknetService: { darknetService: {} },
+  Scam: { scam: {} },
+  Ransomware: { ransomware: {} },
+  Theft: { theft: {} },
+  Counterfeit: { counterfeit: {} },
+  TerroristFinancing: { terroristFinancing: {} },
+  Sanctions: { sanctions: {} },
+  ChildAbuse: { childAbuse: {} },
+};
+
 function bufferFromString(str: string, bufferSize?: number) {
   const utf = anchor.utils.bytes.utf8.encode(str);
 
@@ -440,5 +463,83 @@ describe("hapi-core", () => {
       community.publicKey
     );
     expect(communityAccount.cases.toNumber()).toEqual(caseId.toNumber());
+  });
+
+  it("Address created", async () => {
+    const reporter = REPORTERS.bob.keypair;
+    const pubkey = web3.PublicKey.decodeUnchecked(
+      Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
+      )
+    );
+
+    let networkName = bufferFromString("ethereum", 32);
+    const [networkAccount, networkBump] =
+      await web3.PublicKey.findProgramAddress(
+        [
+          bufferFromString("network"),
+          community.publicKey.toBytes(),
+          networkName,
+        ],
+        program.programId
+      );
+
+    const [addressAccount, bump] = await web3.PublicKey.findProgramAddress(
+      [bufferFromString("address"), networkAccount.toBytes(), pubkey.toBytes()],
+      program.programId
+    );
+
+    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("reporter"),
+        community.publicKey.toBytes(),
+        reporter.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+
+    const caseId = new anchor.BN(1);
+    const [caseAccount] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("case"),
+        community.publicKey.toBytes(),
+        caseId.toBuffer("le", 8),
+      ],
+      program.programId
+    );
+
+    const tx = await program.rpc.createAddress(pubkey, Category.None, 0, bump, {
+      accounts: {
+        sender: reporter.publicKey,
+        address: addressAccount,
+        community: community.publicKey,
+        network: networkAccount,
+        reporter: reporterAccount,
+        case: caseAccount,
+        systemProgram: web3.SystemProgram.programId,
+      },
+      signers: [reporter],
+    });
+    expect(tx).toBeTruthy();
+
+    const fetchedAddressAccount = await program.account.address.fetch(
+      addressAccount
+    );
+    expect(fetchedAddressAccount.bump).toEqual(bump);
+    expect(fetchedAddressAccount.caseId.toNumber()).toEqual(caseId.toNumber());
+    expect(fetchedAddressAccount.category).toEqual(Category.None);
+    expect(fetchedAddressAccount.confidence).toEqual(0);
+    expect(fetchedAddressAccount.risk).toEqual(0);
+    expect(fetchedAddressAccount.community).toEqual(community.publicKey);
+    expect(fetchedAddressAccount.address).toEqual(pubkey);
+    expect(fetchedAddressAccount.network).toEqual(networkAccount);
+    expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+
+    const addressInfo = await provider.connection.getAccountInfoAndContext(
+      addressAccount
+    );
+    expect(addressInfo.value.owner).toEqual(program.programId);
+    expect(addressInfo.value.data).toHaveLength(148);
   });
 });

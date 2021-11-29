@@ -8,11 +8,10 @@ mod state;
 
 use context::*;
 use error::ErrorCode;
-use state::{case::CaseStatus, reporter::ReporterType};
+use state::{address::Category, case::CaseStatus, reporter::ReporterType};
 
 #[program]
 pub mod hapi_core {
-
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> ProgramResult {
@@ -76,6 +75,29 @@ pub mod hapi_core {
         case.status = CaseStatus::Open;
         case.id = case_id;
         case.reporter = ctx.accounts.reporter.key();
+
+        Ok(())
+    }
+
+    pub fn create_address(
+        ctx: Context<CreateAddress>,
+        pubkey: Pubkey,
+        category: Category,
+        risk: u8,
+        bump: u8,
+    ) -> ProgramResult {
+        let address = &mut ctx.accounts.address;
+
+        address.network = ctx.accounts.network.key();
+        address.address = pubkey;
+        address.bump = bump;
+
+        address.community = ctx.accounts.community.key();
+        address.reporter = ctx.accounts.reporter.key();
+        address.case_id = ctx.accounts.case.id;
+        address.category = category;
+        address.risk = risk;
+        address.confidence = 0;
 
         Ok(())
     }
