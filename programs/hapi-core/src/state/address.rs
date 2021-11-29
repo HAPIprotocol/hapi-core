@@ -2,15 +2,32 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Address {
+    /// Community account, which this address belongs to
     pub community: Pubkey,
+
+    /// Network account, which this address belongs to
     pub network: Pubkey,
+
+    /// Actual address public key
     pub address: Pubkey,
+
+    /// Seed bump for PDA
     pub bump: u8,
+
+    /// ID of the associated case
     pub case_id: u64,
+
+    /// Reporter account public key
     pub reporter: Pubkey,
+
+    /// Category of illicit activity identified with this address
     pub category: Category,
+
+    /// Address risk score 0..10 (0 is safe, 10 is maximum risk)
     pub risk: u8,
-    pub confidence: u8,
+
+    /// Confirmation count for this address
+    pub confirmations: u8,
 }
 
 #[derive(Clone, AnchorDeserialize, AnchorSerialize)]
@@ -21,64 +38,64 @@ pub enum Category {
 
     // Tier 1 - Low risk
     /// Wallet service - custodial or mixed wallets
-    WalletService = 1,
+    WalletService,
 
     /// Merchant service
-    MerchantService = 2,
+    MerchantService,
 
     /// Mining pool
-    MiningPool = 4,
+    MiningPool,
 
     /// Exchange (Low Risk) - Exchange with high KYC standards
-    LowRiskExchange = 8,
+    LowRiskExchange,
 
     // Tier 2 - Medium risk
     /// Exchange (Medium Risk)
-    MediumRiskExchange = 16,
+    MediumRiskExchange,
 
     /// DeFi application
-    DeFi = 32,
+    DeFi,
 
     /// OTC Broker
-    OTCBroker = 64,
+    OTCBroker,
 
     /// Cryptocurrency ATM
-    ATM = 128,
+    ATM,
 
     /// Gambling
-    Gambling = 256,
+    Gambling,
 
     // Tier 3 - High risk
     /// Illicit organization
-    IllicitOrganization = 512,
+    IllicitOrganization,
 
     /// Mixer
-    Mixer = 1024,
+    Mixer,
 
     /// Darknet market or service
-    DarknetService = 2048,
+    DarknetService,
 
     /// Scam
-    Scam = 4096,
+    Scam,
 
     /// Ransomware
-    Ransomware = 8192,
+    Ransomware,
 
     /// Theft - stolen funds
-    Theft = 16384,
+    Theft,
 
     /// Counterfeit - fake assets
-    Counterfeit = 32768,
+    Counterfeit,
 
     // Tier 4 - Severe risk
     /// Terrorist financing
-    TerroristFinancing = 65536,
+    TerroristFinancing,
 
     /// Sanctions
-    Sanctions = 131072,
+    Sanctions,
 
     /// Child abuse and porn materials
-    ChildAbuse = 262144,
+    ChildAbuse,
 }
 
 impl Default for Category {

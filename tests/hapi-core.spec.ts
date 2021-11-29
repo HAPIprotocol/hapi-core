@@ -5,7 +5,7 @@ import { HapiCore } from "../target/types/hapi_core";
 import { silenceConsole } from "./util/console";
 
 export const ReporterType = {
-  Inactive: { inactive: {} },
+  Validator: { validator: {} },
   Tracer: { tracer: {} },
   Full: { full: {} },
   Authority: { authority: {} },
@@ -74,7 +74,7 @@ describe("hapi-core", () => {
     carol: {
       name: "carol",
       keypair: web3.Keypair.generate(),
-      type: "Inactive",
+      type: "Validator",
     },
   };
 
@@ -134,7 +134,7 @@ describe("hapi-core", () => {
       community.publicKey
     );
     expect(communityInfo.value.owner).toEqual(program.programId);
-    expect(communityInfo.value.data).toHaveLength(100);
+    expect(communityInfo.value.data).toHaveLength(200);
   });
 
   it("Community shouldn't be initialized twice", async () => {
@@ -187,7 +187,7 @@ describe("hapi-core", () => {
         network
       );
       expect(networkInfo.value.owner).toEqual(program.programId);
-      expect(networkInfo.value.data).toHaveLength(100);
+      expect(networkInfo.value.data).toHaveLength(200);
     }
   );
 
@@ -474,15 +474,14 @@ describe("hapi-core", () => {
       )
     );
 
-    const [networkAccount] =
-      await web3.PublicKey.findProgramAddress(
-        [
-          bufferFromString("network"),
-          community.publicKey.toBytes(),
-          bufferFromString("ethereum", 32),
-        ],
-        program.programId
-      );
+    const [networkAccount] = await web3.PublicKey.findProgramAddress(
+      [
+        bufferFromString("network"),
+        community.publicKey.toBytes(),
+        bufferFromString("ethereum", 32),
+      ],
+      program.programId
+    );
 
     const [addressAccount, bump] = await web3.PublicKey.findProgramAddress(
       [bufferFromString("address"), networkAccount.toBytes(), pubkey.toBytes()],
@@ -528,7 +527,7 @@ describe("hapi-core", () => {
     expect(fetchedAddressAccount.bump).toEqual(bump);
     expect(fetchedAddressAccount.caseId.toNumber()).toEqual(caseId.toNumber());
     expect(fetchedAddressAccount.category).toEqual(Category.None);
-    expect(fetchedAddressAccount.confidence).toEqual(0);
+    expect(fetchedAddressAccount.confirmations).toEqual(0);
     expect(fetchedAddressAccount.risk).toEqual(0);
     expect(fetchedAddressAccount.community).toEqual(community.publicKey);
     expect(fetchedAddressAccount.address).toEqual(pubkey);

@@ -8,7 +8,11 @@ mod state;
 
 use context::*;
 use error::ErrorCode;
-use state::{address::Category, case::CaseStatus, reporter::ReporterType};
+use state::{
+    address::Category,
+    case::CaseStatus,
+    reporter::{ReporterStatus, ReporterType},
+};
 
 #[program]
 pub mod hapi_core {
@@ -47,6 +51,7 @@ pub mod hapi_core {
 
         reporter.pubkey = *ctx.accounts.pubkey.key;
         reporter.reporter_type = reporter_type;
+        reporter.reporter_status = ReporterStatus::OnHold;
         reporter.name = name;
 
         Ok(())
@@ -97,7 +102,7 @@ pub mod hapi_core {
         address.case_id = ctx.accounts.case.id;
         address.category = category;
         address.risk = risk;
-        address.confidence = 0;
+        address.confirmations = 0;
 
         Ok(())
     }

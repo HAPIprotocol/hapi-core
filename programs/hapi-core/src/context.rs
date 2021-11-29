@@ -20,7 +20,7 @@ pub struct Initialize<'info> {
         init,
         payer = authority,
         owner = id(),
-        space = 100
+        space = 200
     )]
     pub community: Account<'info, Community>,
 
@@ -45,7 +45,7 @@ pub struct CreateNetwork<'info> {
         owner = id(),
         seeds = [b"network", community.key().as_ref(), &name],
         bump = bump,
-        space = 100
+        space = 200
     )]
     pub network: Account<'info, Network>,
 
