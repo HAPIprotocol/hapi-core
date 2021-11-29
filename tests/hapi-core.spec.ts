@@ -474,13 +474,12 @@ describe("hapi-core", () => {
       )
     );
 
-    let networkName = bufferFromString("ethereum", 32);
-    const [networkAccount, networkBump] =
+    const [networkAccount] =
       await web3.PublicKey.findProgramAddress(
         [
           bufferFromString("network"),
           community.publicKey.toBytes(),
-          networkName,
+          bufferFromString("ethereum", 32),
         ],
         program.programId
       );
