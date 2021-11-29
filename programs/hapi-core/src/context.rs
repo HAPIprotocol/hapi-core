@@ -150,5 +150,5 @@ pub struct CreateAddress<'info> {
     )]
     pub address: Account<'info, Address>,
 
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
