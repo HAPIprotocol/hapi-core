@@ -1,66 +1,19 @@
 import * as anchor from "@project-serum/anchor";
-import { Program, web3 } from "@project-serum/anchor";
+import { web3 } from "@project-serum/anchor";
 
-import { HapiCore } from "../target/types/hapi_core";
 import { silenceConsole } from "./util/console";
-
-export const ReporterType = {
-  Validator: { validator: {} },
-  Tracer: { tracer: {} },
-  Full: { full: {} },
-  Authority: { authority: {} },
-};
-
-export const CaseStatus = {
-  Closed: { closed: {} },
-  Open: { open: {} },
-};
-
-export const Category = {
-  None: { none: {} },
-  WalletService: { walletService: {} },
-  MerchantService: { merchantService: {} },
-  MiningPool: { miningPool: {} },
-  LowRiskExchange: { lowRiskExchange: {} },
-  MediumRiskExchange: { mediumRiskExchange: {} },
-  DeFi: { deFi: {} },
-  OTCBroker: { oTCBroker: {} },
-  ATM: { aTM: {} },
-  Gambling: { gambling: {} },
-  IllicitOrganization: { illicitOrganization: {} },
-  Mixer: { mixer: {} },
-  DarknetService: { darknetService: {} },
-  Scam: { scam: {} },
-  Ransomware: { ransomware: {} },
-  Theft: { theft: {} },
-  Counterfeit: { counterfeit: {} },
-  TerroristFinancing: { terroristFinancing: {} },
-  Sanctions: { sanctions: {} },
-  ChildAbuse: { childAbuse: {} },
-};
-
-function bufferFromString(str: string, bufferSize?: number) {
-  const utf = anchor.utils.bytes.utf8.encode(str);
-
-  if (!bufferSize || utf.byteLength === bufferSize) {
-    return Buffer.from(utf);
-  }
-
-  if (bufferSize && utf.byteLength > bufferSize) {
-    throw RangeError("Buffer size too small to fit the string");
-  }
-
-  return Buffer.concat(
-    [Buffer.from(utf), Buffer.alloc(bufferSize - utf.byteLength)],
-    bufferSize
-  );
-}
+import {
+  CaseStatus,
+  Category,
+  program,
+  ReporterType,
+  bufferFromString,
+} from "../lib";
 
 describe("hapi-core", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.HapiCore as Program<HapiCore>;
   const authority = provider.wallet;
 
   const nobody = web3.Keypair.generate();
@@ -159,13 +112,9 @@ describe("hapi-core", () => {
     async (rawName) => {
       let name = bufferFromString(rawName, 32);
 
-      const [network, bump] = await web3.PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode("network")),
-          community.publicKey.toBytes(),
-          name,
-        ],
-        program.programId
+      const [network, bump] = await program.findNetworkAddress(
+        community.publicKey,
+        rawName
       );
 
       const tx = await program.rpc.createNetwork(name.toJSON().data, bump, {
@@ -196,9 +145,9 @@ describe("hapi-core", () => {
     async (rawName) => {
       let name = bufferFromString(rawName, 32);
 
-      const [network, bump] = await web3.PublicKey.findProgramAddress(
-        [bufferFromString("network"), community.publicKey.toBytes(), name],
-        program.programId
+      const [network, bump] = await program.findNetworkAddress(
+        community.publicKey,
+        rawName
       );
 
       const silencer = silenceConsole();
@@ -221,9 +170,9 @@ describe("hapi-core", () => {
   it("Unauthorized users shouldn't be able to create a network in a community", async () => {
     let name = bufferFromString("bitcoin", 32);
 
-    const [network, bump] = await web3.PublicKey.findProgramAddress(
-      [bufferFromString("network"), community.publicKey.toBytes(), name],
-      program.programId
+    const [network, bump] = await program.findNetworkAddress(
+      community.publicKey,
+      "bitcoin"
     );
 
     const silencer = silenceConsole();
@@ -247,13 +196,9 @@ describe("hapi-core", () => {
 
     const name = bufferFromString(reporter.name, 32);
 
-    const [reporterAccount, bump] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("reporter"),
-        community.publicKey.toBytes(),
-        reporter.keypair.publicKey.toBytes(),
-      ],
-      program.programId
+    const [reporterAccount, bump] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.keypair.publicKey
     );
 
     const reporterType = ReporterType[reporter.type];
@@ -296,24 +241,16 @@ describe("hapi-core", () => {
     const caseId = new anchor.BN(1);
     const caseName = bufferFromString("Case 1", 32);
 
-    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("case"),
-        community.publicKey.toBytes(),
-        caseId.toBuffer("le", 8),
-      ],
-      program.programId
+    const [caseAccount, bump] = await program.findCaseAddress(
+      community.publicKey,
+      caseId
     );
 
     // Direct attempt to report
     {
-      const [reporterAccount] = await web3.PublicKey.findProgramAddress(
-        [
-          bufferFromString("reporter"),
-          community.publicKey.toBytes(),
-          reporter.publicKey.toBytes(),
-        ],
-        program.programId
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
       );
 
       const silencer = silenceConsole();
@@ -339,13 +276,9 @@ describe("hapi-core", () => {
 
     // Attempt to impersonate a reporter that has correct permissions
     {
-      const [reporterAccount] = await web3.PublicKey.findProgramAddress(
-        [
-          bufferFromString("reporter"),
-          community.publicKey.toBytes(),
-          REPORTERS.alice.keypair.publicKey.toBytes(),
-        ],
-        program.programId
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        REPORTERS.alice.keypair.publicKey
       );
 
       const silencer = silenceConsole();
@@ -375,22 +308,14 @@ describe("hapi-core", () => {
     const caseId = new anchor.BN(1);
     const caseName = bufferFromString("Case 1", 32);
 
-    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("case"),
-        community.publicKey.toBytes(),
-        caseId.toBuffer("le", 8),
-      ],
-      program.programId
+    const [caseAccount, bump] = await program.findCaseAddress(
+      community.publicKey,
+      caseId
     );
 
-    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("reporter"),
-        community.publicKey.toBytes(),
-        reporter.publicKey.toBytes(),
-      ],
-      program.programId
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.publicKey
     );
 
     const silencer = silenceConsole();
@@ -416,22 +341,14 @@ describe("hapi-core", () => {
     const caseId = new anchor.BN(1);
     const caseName = bufferFromString("Case 1", 32);
 
-    const [caseAccount, bump] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("case"),
-        community.publicKey.toBytes(),
-        caseId.toBuffer("le", 8),
-      ],
-      program.programId
+    const [caseAccount, bump] = await program.findCaseAddress(
+      community.publicKey,
+      caseId
     );
 
-    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("reporter"),
-        community.publicKey.toBytes(),
-        reporter.publicKey.toBytes(),
-      ],
-      program.programId
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.publicKey
     );
 
     const tx = await program.rpc.createCase(
@@ -474,37 +391,25 @@ describe("hapi-core", () => {
       )
     );
 
-    const [networkAccount] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("network"),
-        community.publicKey.toBytes(),
-        bufferFromString("ethereum", 32),
-      ],
-      program.programId
+    const [networkAccount] = await program.findNetworkAddress(
+      community.publicKey,
+      "ethereum"
     );
 
-    const [addressAccount, bump] = await web3.PublicKey.findProgramAddress(
-      [bufferFromString("address"), networkAccount.toBytes(), pubkey.toBytes()],
-      program.programId
+    const [addressAccount, bump] = await program.findAddressAddress(
+      networkAccount,
+      pubkey
     );
 
-    const [reporterAccount] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("reporter"),
-        community.publicKey.toBytes(),
-        reporter.publicKey.toBytes(),
-      ],
-      program.programId
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.publicKey
     );
 
     const caseId = new anchor.BN(1);
-    const [caseAccount] = await web3.PublicKey.findProgramAddress(
-      [
-        bufferFromString("case"),
-        community.publicKey.toBytes(),
-        caseId.toBuffer("le", 8),
-      ],
-      program.programId
+    const [caseAccount] = await program.findCaseAddress(
+      community.publicKey,
+      caseId
     );
 
     const tx = await program.rpc.createAddress(pubkey, Category.None, 0, bump, {
@@ -519,6 +424,7 @@ describe("hapi-core", () => {
       },
       signers: [reporter],
     });
+
     expect(tx).toBeTruthy();
 
     const fetchedAddressAccount = await program.account.address.fetch(
