@@ -10,10 +10,10 @@ pub struct Reporter {
     pub bump: u8,
 
     /// Reporter account status
-    pub reporter_status: ReporterStatus,
+    pub status: ReporterStatus,
 
     /// Reporter's type
-    pub reporter_type: ReporterType,
+    pub role: ReporterRole,
 
     /// Reporter's wallet account
     pub pubkey: Pubkey,
@@ -22,16 +22,16 @@ pub struct Reporter {
     pub name: [u8; 32],
 
     /// Reporter can unstake at this epoch (0 if unstaking hasn't been requested)
-    pub release_epoch: u32,
+    pub unlock_epoch: u64,
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterStatus {
     /// Reporter is not active and can't interact with the program
-    Inactive = 0,
+    Frozen = 0,
 
     /// Reporter is not active, but can activate after staking
-    OnHold = 1,
+    Inactive = 1,
 
     /// Reporter is active and can report
     Active = 2,
@@ -47,7 +47,7 @@ impl Default for ReporterStatus {
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
-pub enum ReporterType {
+pub enum ReporterRole {
     /// Validator - can validate addresses
     Validator = 0,
 
@@ -61,8 +61,8 @@ pub enum ReporterType {
     Authority = 3,
 }
 
-impl Default for ReporterType {
+impl Default for ReporterRole {
     fn default() -> Self {
-        ReporterType::Validator
+        ReporterRole::Validator
     }
 }

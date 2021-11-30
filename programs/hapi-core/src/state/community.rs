@@ -9,7 +9,10 @@ pub struct Community {
     pub cases: u64,
 
     /// Number of confirmations needed for address to be considered confirmed
-    pub confirmation_threshold: u8,
+    pub confirmation_threshold: u32,
+
+    /// Number of epochs reporter must wait to retrieve their stake
+    pub stake_unlock_epochs: u64,
 
     /// Program ID for tokens used for staking
     pub token_program_id: Pubkey,

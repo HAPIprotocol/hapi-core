@@ -6,8 +6,9 @@ import {
   CaseStatus,
   Category,
   program,
-  ReporterType,
+  ReporterRole,
   bufferFromString,
+  ReporterStatus,
 } from "../lib";
 
 function pubkeyFromHex(hex: string): web3.PublicKey {
@@ -24,7 +25,7 @@ describe("hapi-core", () => {
 
   const REPORTERS: Record<
     string,
-    { name: string; keypair: web3.Keypair; type: keyof typeof ReporterType }
+    { name: string; keypair: web3.Keypair; type: keyof typeof ReporterRole }
   > = {
     alice: { name: "alice", keypair: web3.Keypair.generate(), type: "Full" },
     bob: { name: "bob", keypair: web3.Keypair.generate(), type: "Tracer" },
@@ -155,7 +156,7 @@ describe("hapi-core", () => {
   it("Community is initialized", async () => {
     community = web3.Keypair.generate();
 
-    const tx = await program.rpc.initialize({
+    const tx = await program.rpc.initialize(new BN(4), 3, {
       accounts: {
         authority: authority.publicKey,
         community: community.publicKey,
@@ -177,14 +178,14 @@ describe("hapi-core", () => {
       community.publicKey
     );
     expect(communityInfo.value.owner).toEqual(program.programId);
-    expect(communityInfo.value.data).toHaveLength(200);
+    expect(communityInfo.value.data).toHaveLength(256);
   });
 
   it("Community shouldn't be initialized twice", async () => {
     const silencer = silenceConsole();
 
     await expect(() =>
-      program.rpc.initialize({
+      program.rpc.initialize(new BN(3), 3, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
@@ -294,10 +295,10 @@ describe("hapi-core", () => {
       reporter.keypair.publicKey
     );
 
-    const reporterType = ReporterType[reporter.type];
+    const reporterRole = ReporterRole[reporter.type];
 
     const tx = await program.rpc.createReporter(
-      reporterType,
+      reporterRole,
       name.toJSON().data,
       bump,
       {
@@ -318,9 +319,10 @@ describe("hapi-core", () => {
     );
     expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
     expect(fetchedReporterAccount.bump).toEqual(bump);
-    expect(fetchedReporterAccount.reporterType).toEqual(
-      ReporterType[reporter.type]
+    expect(fetchedReporterAccount.role).toEqual(
+      ReporterRole[reporter.type]
     );
+    expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
 
     const reporterInfo = await provider.connection.getAccountInfoAndContext(
       reporterAccount
@@ -329,7 +331,11 @@ describe("hapi-core", () => {
     expect(reporterInfo.value.data).toHaveLength(200);
   });
 
-  it("Non-whitelisted actor should not be able to create cases", async () => {
+  it.todo("Inactive reporter can't create addresses");
+
+  it.todo("Inactive reporter can't create assets");
+
+  it("Non-whitelisted actor can't create cases", async () => {
     const reporter = nobody;
     const caseId = new BN(1);
     const caseName = bufferFromString("Case 1", 32);
@@ -427,6 +433,34 @@ describe("hapi-core", () => {
     ).rejects.toThrowError(/A raw constraint was violated/);
 
     silencer.close();
+  });
+
+  it.each(Object.keys(REPORTERS))("Reporter %s is activated", async (key) => {
+    const reporter = REPORTERS[key];
+
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.keypair.publicKey
+    );
+
+    const tx = await program.rpc.activateReporter({
+      accounts: {
+        sender: reporter.keypair.publicKey,
+        community: community.publicKey,
+        reporter: reporterAccount,
+      },
+      signers: [reporter.keypair],
+    });
+
+    expect(tx).toBeTruthy();
+
+    const fetchedReporterAccount = await program.account.reporter.fetch(
+      reporterAccount
+    );
+    expect(fetchedReporterAccount.role).toEqual(
+      ReporterRole[reporter.type]
+    );
+    expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
   });
 
   it.each(Object.keys(CASES))(
@@ -550,6 +584,8 @@ describe("hapi-core", () => {
     }
   );
 
+  it.todo("Reporter can't create the same address twice");
+
   it.each(Object.keys(ASSETS))("Asset '%s' created", async (key) => {
     const asset = ASSETS[key];
 
@@ -617,4 +653,39 @@ describe("hapi-core", () => {
     expect(addressInfo.value.owner).toEqual(program.programId);
     expect(addressInfo.value.data).toHaveLength(180);
   });
+
+  it.todo("Reporter can't create the same asset twice");
+
+  it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {
+    const reporter = REPORTERS[key];
+
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.keypair.publicKey
+    );
+
+    const tx = await program.rpc.deactivateReporter({
+      accounts: {
+        sender: reporter.keypair.publicKey,
+        community: community.publicKey,
+        reporter: reporterAccount,
+      },
+      signers: [reporter.keypair],
+    });
+
+    expect(tx).toBeTruthy();
+
+    const fetchedReporterAccount = await program.account.reporter.fetch(
+      reporterAccount
+    );
+    expect(fetchedReporterAccount.role).toEqual(
+      ReporterRole[reporter.type]
+    );
+    expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Unstaking);
+    expect(fetchedReporterAccount.unlockEpoch.toNumber()).toBeGreaterThan(0);
+  });
+
+  it.todo("Deactivated reporter can't create new address");
+
+  it.todo("Reporter can't release their stake before unlock epoch");
 });

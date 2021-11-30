@@ -8,4 +8,6 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Non-sequential case ID.")]
     NonSequentialCaseId,
+    #[msg("Release epoch is in future")]
+    ReleaseEpochInFuture,
 }

@@ -3,16 +3,17 @@ use anchor_lang::prelude::*;
 use crate::{
     id,
     state::{
-        asset::Asset,
         address::{Address, Category},
+        asset::Asset,
         case::{Case, CaseStatus},
         community::Community,
         network::Network,
-        reporter::{Reporter, ReporterType},
+        reporter::{Reporter, ReporterStatus, ReporterRole},
     },
 };
 
 #[derive(Accounts)]
+#[instruction(stake_unlock_epochs: u32, confirmation_threshold: u32)]
 pub struct Initialize<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -21,7 +22,7 @@ pub struct Initialize<'info> {
         init,
         payer = authority,
         owner = id(),
-        space = 200
+        space = 256
     )]
     pub community: Account<'info, Community>,
 
@@ -54,7 +55,7 @@ pub struct CreateNetwork<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: [u8; 32], reporter_type: ReporterType, bump: u8)]
+#[instruction(name: [u8; 32], role: ReporterRole, bump: u8)]
 pub struct CreateReporter<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -95,7 +96,10 @@ pub struct CreateCase<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.reporter_type == ReporterType::Full || reporter.reporter_type == ReporterType::Authority) && reporter.pubkey == sender.key()
+        constraint = (reporter.role == ReporterRole::Full
+            || reporter.role == ReporterRole::Authority)
+            && reporter.pubkey == sender.key()
+            && reporter.status == ReporterStatus::Active
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -130,7 +134,11 @@ pub struct CreateAddress<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.reporter_type == ReporterType::Tracer || reporter.reporter_type == ReporterType::Full || reporter.reporter_type == ReporterType::Authority) && reporter.pubkey == sender.key()
+        constraint = (reporter.role == ReporterRole::Tracer
+            || reporter.role == ReporterRole::Full
+            || reporter.role == ReporterRole::Authority)
+            && reporter.pubkey == sender.key()
+            && reporter.status == ReporterStatus::Active
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -172,7 +180,11 @@ pub struct CreateAsset<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.reporter_type == ReporterType::Tracer || reporter.reporter_type == ReporterType::Full || reporter.reporter_type == ReporterType::Authority) && reporter.pubkey == sender.key()
+        constraint = (reporter.role == ReporterRole::Tracer
+            || reporter.role == ReporterRole::Full
+            || reporter.role == ReporterRole::Authority)
+            && reporter.pubkey == sender.key()
+            && reporter.status == ReporterStatus::Active
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -194,4 +206,58 @@ pub struct CreateAsset<'info> {
     pub asset: Account<'info, Asset>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ActivateReporter<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community,
+        constraint = reporter.status == ReporterStatus::Inactive
+            && reporter.pubkey == sender.key(),
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct DeactivateReporter<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community,
+        constraint = reporter.status == ReporterStatus::Active
+            && reporter.pubkey == sender.key(),
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct ReleaseReporter<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community,
+        constraint = reporter.status == ReporterStatus::Unstaking
+            && reporter.pubkey == sender.key(),
+    )]
+    pub reporter: Account<'info, Reporter>,
 }

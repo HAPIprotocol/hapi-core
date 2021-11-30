@@ -1,8 +1,15 @@
-export const ReporterType = {
+export const ReporterRole = {
   Validator: { validator: {} },
   Tracer: { tracer: {} },
   Full: { full: {} },
   Authority: { authority: {} },
+};
+
+export const ReporterStatus = {
+  Frozen: { frozen: {} },
+  Inactive: { inactive: {} },
+  Active: { active: {} },
+  Unstaking: { unstaking: {} },
 };
 
 export const CaseStatus = {

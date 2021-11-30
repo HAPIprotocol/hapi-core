@@ -11,18 +11,24 @@ use error::ErrorCode;
 use state::{
     address::Category,
     case::CaseStatus,
-    reporter::{ReporterStatus, ReporterType},
+    reporter::{ReporterStatus, ReporterRole},
 };
 
 #[program]
 pub mod hapi_core {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> ProgramResult {
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        stake_unlock_epochs: u64,
+        confirmation_threshold: u32,
+    ) -> ProgramResult {
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.authority.key;
         community.cases = 0;
+        community.stake_unlock_epochs = stake_unlock_epochs;
+        community.confirmation_threshold = confirmation_threshold;
 
         Ok(())
     }
@@ -40,18 +46,18 @@ pub mod hapi_core {
 
     pub fn create_reporter(
         ctx: Context<CreateReporter>,
-        reporter_type: ReporterType,
+        role: ReporterRole,
         name: [u8; 32],
         bump: u8,
     ) -> ProgramResult {
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.community = ctx.accounts.community.key();
+        reporter.pubkey = *ctx.accounts.pubkey.key;
         reporter.bump = bump;
 
-        reporter.pubkey = *ctx.accounts.pubkey.key;
-        reporter.reporter_type = reporter_type;
-        reporter.reporter_status = ReporterStatus::OnHold;
+        reporter.role = role;
+        reporter.status = ReporterStatus::Inactive;
         reporter.name = name;
 
         Ok(())
@@ -74,11 +80,11 @@ pub mod hapi_core {
         let case = &mut ctx.accounts.case;
 
         case.community = ctx.accounts.community.key();
+        case.id = case_id;
         case.bump = bump;
 
         case.name = name;
         case.status = CaseStatus::Open;
-        case.id = case_id;
         case.reporter = ctx.accounts.reporter.key();
 
         Ok(())
@@ -118,8 +124,8 @@ pub mod hapi_core {
         let asset = &mut ctx.accounts.asset;
 
         asset.network = ctx.accounts.network.key();
-        asset.asset_id = asset_id;
         asset.mint = mint;
+        asset.asset_id = asset_id;
         asset.bump = bump;
 
         asset.community = ctx.accounts.community.key();
@@ -131,4 +137,44 @@ pub mod hapi_core {
 
         Ok(())
     }
+
+    pub fn activate_reporter(ctx: Context<ActivateReporter>) -> ProgramResult {
+        let reporter = &mut ctx.accounts.reporter;
+
+        // TODO: transfer stake tokens from reporter token account to program token account
+
+        reporter.status = ReporterStatus::Active;
+
+        Ok(())
+    }
+
+    pub fn deactivate_reporter(ctx: Context<DeactivateReporter>) -> ProgramResult {
+        let community = &ctx.accounts.community;
+
+        let reporter = &mut ctx.accounts.reporter;
+
+        reporter.status = ReporterStatus::Unstaking;
+        reporter.unlock_epoch = Clock::get()?.epoch + community.stake_unlock_epochs;
+
+        Ok(())
+    }
+
+    pub fn release_reporter(ctx: Context<ReleaseReporter>) -> ProgramResult {
+        let reporter = &mut ctx.accounts.reporter;
+
+        if reporter.unlock_epoch < Clock::get()?.epoch {
+            return Err(ErrorCode::ReleaseEpochInFuture.into());
+        }
+
+        // TODO: transfer stake tokens from program token account to reporter token account
+
+        reporter.status = ReporterStatus::Inactive;
+        reporter.unlock_epoch = 0;
+
+        Ok(())
+    }
+
+    // pub fn confirm_address(ctx: Context<ConfirmAddress>) -> ProgramResult {
+    //     Ok(())
+    // }
 }
