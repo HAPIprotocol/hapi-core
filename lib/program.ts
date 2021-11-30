@@ -46,6 +46,17 @@ export async function findAddressAddress(
   );
 }
 
+export async function findAssetAddress(
+  network: web3.PublicKey,
+  mint: web3.PublicKey,
+  assetId: Buffer
+) {
+  return web3.PublicKey.findProgramAddress(
+    [bufferFromString("asset"), network.toBytes(), mint.toBuffer(), assetId],
+    HapiCore.programId
+  );
+}
+
 export const program = {
   ...HapiCore,
   programId: HapiCore.programId,
@@ -53,4 +64,5 @@ export const program = {
   findReporterAddress,
   findCaseAddress,
   findAddressAddress,
+  findAssetAddress,
 };

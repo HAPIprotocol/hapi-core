@@ -106,4 +106,29 @@ pub mod hapi_core {
 
         Ok(())
     }
+
+    pub fn create_asset(
+        ctx: Context<CreateAsset>,
+        mint: Pubkey,
+        asset_id: [u8; 32],
+        category: Category,
+        risk: u8,
+        bump: u8,
+    ) -> ProgramResult {
+        let asset = &mut ctx.accounts.asset;
+
+        asset.network = ctx.accounts.network.key();
+        asset.asset_id = asset_id;
+        asset.mint = mint;
+        asset.bump = bump;
+
+        asset.community = ctx.accounts.community.key();
+        asset.reporter = ctx.accounts.reporter.key();
+        asset.case_id = ctx.accounts.case.id;
+        asset.category = category;
+        asset.risk = risk;
+        asset.confirmations = 0;
+
+        Ok(())
+    }
 }
