@@ -979,4 +979,8 @@ describe("hapi-core", () => {
 
     silencer.close();
   });
+
+  it.todo("Reporter is frozen by authority");
+
+  it.todo("Reporter is unfrozen by authority");
 });

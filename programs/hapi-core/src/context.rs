@@ -261,3 +261,41 @@ pub struct ReleaseReporter<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 }
+
+#[derive(Accounts)]
+pub struct FreezeReporter<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct UnfreezeReporter<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
