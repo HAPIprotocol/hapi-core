@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "@project-serum/anchor": "^0.18.2"
+    "@project-serum/anchor": "^0.18.2",
+    "@solana/spl-token": "^0.1.8"
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",

@@ -14,11 +14,11 @@ pub struct Community {
     /// Number of epochs reporter must wait to retrieve their stake
     pub stake_unlock_epochs: u64,
 
-    /// Program ID for tokens used for staking
-    pub token_program_id: Pubkey,
-
     /// Stake token mint account
     pub stake_mint: Pubkey,
+
+    /// Stake holding token account
+    pub token_account: Pubkey,
 
     /// Amount of stake required from a reporter of validator type
     pub validator_stake: u64,

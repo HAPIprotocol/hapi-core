@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::{
     id,
@@ -13,7 +14,12 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(stake_unlock_epochs: u32, confirmation_threshold: u32)]
+#[instruction(stake_unlock_epochs: u64,
+    confirmation_threshold: u32,
+    validator_stake: u64,
+    tracer_stake: u64,
+    full_stake: u64,
+    authority_stake: u64)]
 pub struct Initialize<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -25,6 +31,15 @@ pub struct Initialize<'info> {
         space = 256
     )]
     pub community: Account<'info, Community>,
+
+    #[account()]
+    pub stake_mint: Account<'info, Mint>,
+
+    #[account(mut, constraint = token_account.mint == stake_mint.key())]
+    pub token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 
     pub system_program: Program<'info, System>,
 }
@@ -41,6 +56,8 @@ pub struct CreateNetwork<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    // #[account(mut)]
+    // pub token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = authority,
@@ -215,6 +232,18 @@ pub struct ActivateReporter<'info> {
 
     #[account(owner = id())]
     pub community: Account<'info, Community>,
+
+    #[account(constraint = community.stake_mint == stake_mint.key())]
+    pub stake_mint: Account<'info, Mint>,
+
+    #[account(mut, constraint = reporter_token_account.mint == stake_mint.key())]
+    pub reporter_token_account: Account<'info, TokenAccount>,
+
+    #[account(constraint = community_token_account.mint == stake_mint.key())]
+    pub community_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 
     #[account(
         mut,

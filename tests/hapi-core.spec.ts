@@ -1,6 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
+import { TestToken, Token, u64 } from "./util/token";
 import { silenceConsole } from "./util/console";
 import {
   CaseStatus,
@@ -127,6 +128,7 @@ describe("hapi-core", () => {
   };
 
   let community: web3.Keypair;
+  let stakeToken: TestToken;
 
   beforeAll(async () => {
     const tx = new web3.Transaction();
@@ -155,19 +157,46 @@ describe("hapi-core", () => {
     );
 
     await provider.send(tx);
+
+    stakeToken = new TestToken(provider);
+    await stakeToken.mint(new u64(1_000_000_000));
+
+    for (const reporter of Object.keys(REPORTERS)) {
+      const pubkey = REPORTERS[reporter].keypair.publicKey;
+
+      await stakeToken.transfer(null, pubkey, new u64(1_000_000));
+    }
   });
 
   it("Community is initialized", async () => {
     community = web3.Keypair.generate();
 
-    const tx = await program.rpc.initialize(new BN(4), 3, {
-      accounts: {
-        authority: authority.publicKey,
-        community: community.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-      },
-      signers: [community],
-    });
+    const validatorStake = new u64(1_000);
+    const tracerStake = new u64(2_000);
+    const fullStake = new u64(3_000);
+    const authorityStake = new u64(4_000);
+
+    const tokenAccount = await stakeToken.createAccount();
+
+    const tx = await program.rpc.initialize(
+      new u64(4),
+      3,
+      validatorStake,
+      tracerStake,
+      fullStake,
+      authorityStake,
+      {
+        accounts: {
+          authority: authority.publicKey,
+          community: community.publicKey,
+          stakeMint: stakeToken.mintAccount,
+          tokenAccount,
+          tokenProgram: stakeToken.programId,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [community],
+      }
+    );
 
     expect(tx).toBeTruthy();
 
@@ -188,15 +217,33 @@ describe("hapi-core", () => {
   it("Community shouldn't be initialized twice", async () => {
     const silencer = silenceConsole();
 
+    const validatorStake = new u64(1_000);
+    const tracerStake = new u64(2_000);
+    const fullStake = new u64(3_000);
+    const authorityStake = new u64(4_000);
+
+    const tokenAccount = await stakeToken.getTokenAccount(community.publicKey);
+
     await expect(() =>
-      program.rpc.initialize(new BN(3), 3, {
-        accounts: {
-          authority: authority.publicKey,
-          community: community.publicKey,
-          systemProgram: web3.SystemProgram.programId,
-        },
-        signers: [community],
-      })
+      program.rpc.initialize(
+        new u64(3),
+        3,
+        validatorStake,
+        tracerStake,
+        fullStake,
+        authorityStake,
+        {
+          accounts: {
+            authority: authority.publicKey,
+            community: community.publicKey,
+            stakeMint: stakeToken.mintAccount,
+            tokenAccount,
+            tokenProgram: stakeToken.programId,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [community],
+        }
+      )
     ).rejects.toThrowError(/failed to send transaction/);
 
     silencer.close();
@@ -381,7 +428,9 @@ describe("hapi-core", () => {
             signers: [reporter],
           }
         )
-      ).rejects.toThrowError(/167: The given account is not owned by the executing program/);
+      ).rejects.toThrowError(
+        /167: The given account is not owned by the executing program/
+      );
 
       silencer.close();
     }
@@ -437,7 +486,9 @@ describe("hapi-core", () => {
             signers: [reporter],
           }
         )
-      ).rejects.toThrowError(/167: The given account is not owned by the executing program/);
+      ).rejects.toThrowError(
+        /167: The given account is not owned by the executing program/
+      );
 
       silencer.close();
     }
@@ -551,11 +602,40 @@ describe("hapi-core", () => {
       reporter.keypair.publicKey
     );
 
+    const tokenAccount = await stakeToken.getTokenAccount(
+      reporter.keypair.publicKey
+    );
+
+    const aaccc = await provider.connection.getParsedTokenAccountsByOwner(
+      reporter.keypair.publicKey,
+      { mint: stakeToken.mintAccount }
+    );
+
+    const tokenAccInf = await stakeToken.token.getAccountInfo(tokenAccount);
+
+    console.log(
+      {
+        reporterPubkey: reporter.keypair.publicKey.toBase58(),
+        tokenAccount: tokenAccount.toBase58(),
+      },
+      tokenAccInf
+    );
+
+    console.log(JSON.stringify(aaccc, null, 2));
+
+    const communityInfo = await program.account.community.fetch(
+      community.publicKey
+    );
+
     const tx = await program.rpc.activateReporter({
       accounts: {
         sender: reporter.keypair.publicKey,
         community: community.publicKey,
         reporter: reporterAccount,
+        stakeMint: stakeToken.mintAccount,
+        reporterTokenAccount: tokenAccount,
+        communityTokenAccount: communityInfo.tokenAccount,
+        tokenProgram: stakeToken.programId,
       },
       signers: [reporter.keypair],
     });
@@ -567,6 +647,22 @@ describe("hapi-core", () => {
     );
     expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
     expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+
+    let stake: u64;
+    if (reporter.type === "Validator") {
+      stake = new u64(1_000);
+    } else if (reporter.type === "Tracer") {
+      stake = new u64(2_000);
+    } else if (reporter.type === "Full") {
+      stake = new u64(3_000);
+    } else if (reporter.type === "Authority") {
+      stake = new u64(4_000);
+    } else {
+      throw new Error("Invalid reporter type");
+    }
+
+    const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
+    expect(balance.add(stake).toString(10)).toEqual("1000000");
   });
 
   it.each(Object.keys(CASES))(

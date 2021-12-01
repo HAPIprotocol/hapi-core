@@ -11,9 +11,6 @@ pub struct Network {
     /// Network name (i.e. ethereum, solana, near)
     pub name: [u8; 32],
 
-    /// Program ID for tokens used for rewards
-    pub token_program_id: Pubkey,
-
     /// Reward token mint account
     pub reward_mint: Pubkey,
 

@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{self, SetAuthority, Transfer};
+use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -22,6 +24,10 @@ pub mod hapi_core {
         ctx: Context<Initialize>,
         stake_unlock_epochs: u64,
         confirmation_threshold: u32,
+        validator_stake: u64,
+        tracer_stake: u64,
+        full_stake: u64,
+        authority_stake: u64,
     ) -> ProgramResult {
         let community = &mut ctx.accounts.community;
 
@@ -29,6 +35,25 @@ pub mod hapi_core {
         community.cases = 0;
         community.stake_unlock_epochs = stake_unlock_epochs;
         community.confirmation_threshold = confirmation_threshold;
+        community.stake_mint = ctx.accounts.stake_mint.to_account_info().key();
+        community.token_account = ctx.accounts.token_account.key();
+        community.validator_stake = validator_stake;
+        community.tracer_stake = tracer_stake;
+        community.full_stake = full_stake;
+        community.authority_stake = authority_stake;
+
+        let cpi_context = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            SetAuthority {
+                account_or_mint: ctx.accounts.token_account.to_account_info(),
+                current_authority: ctx.accounts.authority.to_account_info(),
+            },
+        );
+        token::set_authority(
+            cpi_context,
+            AuthorityType::AccountOwner,
+            Some(community.key()),
+        )?;
 
         Ok(())
     }
@@ -139,9 +164,27 @@ pub mod hapi_core {
     }
 
     pub fn activate_reporter(ctx: Context<ActivateReporter>) -> ProgramResult {
+        let community = &ctx.accounts.community;
+
         let reporter = &mut ctx.accounts.reporter;
 
-        // TODO: transfer stake tokens from reporter token account to program token account
+        let stake = match reporter.role {
+            ReporterRole::Validator => community.validator_stake,
+            ReporterRole::Tracer => community.tracer_stake,
+            ReporterRole::Full => community.full_stake,
+            ReporterRole::Authority => community.authority_stake,
+        };
+
+        let cpi_context = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.reporter_token_account.to_account_info(),
+                to: ctx.accounts.community_token_account.to_account_info(),
+                authority: ctx.accounts.sender.to_account_info(),
+            },
+        );
+
+        token::transfer(cpi_context, stake)?;
 
         reporter.status = ReporterStatus::Active;
 
