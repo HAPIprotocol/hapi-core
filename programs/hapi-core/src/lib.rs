@@ -11,7 +11,7 @@ use error::ErrorCode;
 use state::{
     address::Category,
     case::CaseStatus,
-    reporter::{ReporterStatus, ReporterRole},
+    reporter::{ReporterRole, ReporterStatus},
 };
 
 #[program]

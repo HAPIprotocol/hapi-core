@@ -8,7 +8,7 @@ use crate::{
         case::{Case, CaseStatus},
         community::Community,
         network::Network,
-        reporter::{Reporter, ReporterStatus, ReporterRole},
+        reporter::{Reporter, ReporterRole, ReporterStatus},
     },
 };
 

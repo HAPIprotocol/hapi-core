@@ -105,7 +105,9 @@ describe("hapi-core", () => {
       assetId: Buffer;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
+      network: keyof typeof NETWORKS;
       caseId: BN;
+      risk: number;
     }
   > = {
     stolenNft: {
@@ -116,9 +118,11 @@ describe("hapi-core", () => {
         "0000000000000000000000000000000000000000000000000000000000000001",
         "hex"
       ),
+      network: "ethereum",
       caseId: new BN(2),
       category: "Theft",
       reporter: "bob",
+      risk: 4,
     },
   };
 
@@ -319,9 +323,7 @@ describe("hapi-core", () => {
     );
     expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
     expect(fetchedReporterAccount.bump).toEqual(bump);
-    expect(fetchedReporterAccount.role).toEqual(
-      ReporterRole[reporter.type]
-    );
+    expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
     expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
 
     const reporterInfo = await provider.connection.getAccountInfoAndContext(
@@ -331,9 +333,115 @@ describe("hapi-core", () => {
     expect(reporterInfo.value.data).toHaveLength(200);
   });
 
-  it.todo("Inactive reporter can't create addresses");
+  it.each(Object.keys(ADDRESSES))(
+    "Inactive reporter can't create address '%s'",
+    async (key: keyof typeof ADDRESSES) => {
+      const addr = ADDRESSES[key];
 
-  it.todo("Inactive reporter can't create assets");
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount, bump] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createAddress(
+          addr.pubkey,
+          Category[addr.category],
+          addr.risk,
+          bump,
+          {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter],
+          }
+        )
+      ).rejects.toThrowError(/167: The given account is not owned by the executing program/);
+
+      silencer.close();
+    }
+  );
+
+  it.each(Object.keys(ASSETS))(
+    "Inactive reporter can't create asseet '%s'",
+    async (key: keyof typeof ASSETS) => {
+      const asset = ASSETS[key];
+
+      const reporter = REPORTERS[asset.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount, bump] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createAsset(
+          asset.mint,
+          asset.assetId,
+          Category[asset.category],
+          asset.risk,
+          bump,
+          {
+            accounts: {
+              sender: reporter.publicKey,
+              asset: assetAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter],
+          }
+        )
+      ).rejects.toThrowError(/167: The given account is not owned by the executing program/);
+
+      silencer.close();
+    }
+  );
 
   it("Non-whitelisted actor can't create cases", async () => {
     const reporter = nobody;
@@ -457,9 +565,7 @@ describe("hapi-core", () => {
     const fetchedReporterAccount = await program.account.reporter.fetch(
       reporterAccount
     );
-    expect(fetchedReporterAccount.role).toEqual(
-      ReporterRole[reporter.type]
-    );
+    expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
     expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
   });
 
@@ -584,7 +690,59 @@ describe("hapi-core", () => {
     }
   );
 
-  it.todo("Reporter can't create the same address twice");
+  it.each(Object.keys(ADDRESSES))(
+    "Reporter can't create address '%s' twice",
+    async (key: keyof typeof ADDRESSES) => {
+      const addr = ADDRESSES[key];
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount, bump] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createAddress(
+          addr.pubkey,
+          Category[addr.category],
+          addr.risk,
+          bump,
+          {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter],
+          }
+        )
+      ).rejects.toThrowError(/custom program error: 0x0/);
+
+      silencer.close();
+    }
+  );
 
   it.each(Object.keys(ASSETS))("Asset '%s' created", async (key) => {
     const asset = ASSETS[key];
@@ -607,10 +765,9 @@ describe("hapi-core", () => {
       reporter.publicKey
     );
 
-    const caseId = new BN(1);
     const [caseAccount] = await program.findCaseAddress(
       community.publicKey,
-      caseId
+      asset.caseId
     );
 
     const tx = await program.rpc.createAsset(
@@ -637,7 +794,9 @@ describe("hapi-core", () => {
 
     const fetchedAssetAccount = await program.account.asset.fetch(assetAccount);
     expect(fetchedAssetAccount.bump).toEqual(bump);
-    expect(fetchedAssetAccount.caseId.toNumber()).toEqual(caseId.toNumber());
+    expect(fetchedAssetAccount.caseId.toNumber()).toEqual(
+      asset.caseId.toNumber()
+    );
     expect(fetchedAssetAccount.category).toEqual(Category.None);
     expect(fetchedAssetAccount.confirmations).toEqual(0);
     expect(fetchedAssetAccount.risk).toEqual(0);
@@ -654,7 +813,61 @@ describe("hapi-core", () => {
     expect(addressInfo.value.data).toHaveLength(180);
   });
 
-  it.todo("Reporter can't create the same asset twice");
+  it.each(Object.keys(ASSETS))(
+    "Reporter can't create asseet '%s' twice",
+    async (key: keyof typeof ASSETS) => {
+      const asset = ASSETS[key];
+
+      const reporter = REPORTERS[asset.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount, bump] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const silencer = silenceConsole();
+
+      await expect(() =>
+        program.rpc.createAsset(
+          asset.mint,
+          asset.assetId,
+          Category[asset.category],
+          asset.risk,
+          bump,
+          {
+            accounts: {
+              sender: reporter.publicKey,
+              asset: assetAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter],
+          }
+        )
+      ).rejects.toThrowError(/custom program error: 0x0/);
+
+      silencer.close();
+    }
+  );
 
   it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {
     const reporter = REPORTERS[key];
@@ -678,14 +891,92 @@ describe("hapi-core", () => {
     const fetchedReporterAccount = await program.account.reporter.fetch(
       reporterAccount
     );
-    expect(fetchedReporterAccount.role).toEqual(
-      ReporterRole[reporter.type]
-    );
+    expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
     expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Unstaking);
     expect(fetchedReporterAccount.unlockEpoch.toNumber()).toBeGreaterThan(0);
   });
 
-  it.todo("Deactivated reporter can't create new address");
+  it("Deactivated reporter can't create new address", async () => {
+    const addr = {
+      reporter: "alice",
+      network: "ethereum",
+      pubkey: pubkeyFromHex(
+        "94df427bfa5c06a211e7c7fd0606bea32926b72cc31edd92aacaf3f2c2272bfa"
+      ),
+      caseId: new BN(1),
+      category: "Theft",
+      risk: 4,
+    };
 
-  it.todo("Reporter can't release their stake before unlock epoch");
+    const reporter = REPORTERS[addr.reporter].keypair;
+
+    const [networkAccount] = await program.findNetworkAddress(
+      community.publicKey,
+      addr.network
+    );
+
+    const [addressAccount, bump] = await program.findAddressAddress(
+      networkAccount,
+      addr.pubkey
+    );
+
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.publicKey
+    );
+
+    const [caseAccount] = await program.findCaseAddress(
+      community.publicKey,
+      addr.caseId
+    );
+
+    const silencer = silenceConsole();
+
+    await expect(() =>
+      program.rpc.createAddress(
+        addr.pubkey,
+        Category[addr.category],
+        addr.risk,
+        bump,
+        {
+          accounts: {
+            sender: reporter.publicKey,
+            address: addressAccount,
+            community: community.publicKey,
+            network: networkAccount,
+            reporter: reporterAccount,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [reporter],
+        }
+      )
+    ).rejects.toThrowError(/143: A raw constraint was violated/);
+
+    silencer.close();
+  });
+
+  it("Reporter can't release their stake before unlock epoch", async () => {
+    const reporter = REPORTERS.alice;
+
+    const [reporterAccount] = await program.findReporterAddress(
+      community.publicKey,
+      reporter.keypair.publicKey
+    );
+
+    const silencer = silenceConsole();
+
+    await expect(() =>
+      program.rpc.deactivateReporter({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+        },
+        signers: [reporter.keypair],
+      })
+    ).rejects.toThrowError(/143: A raw constraint was violated/);
+
+    silencer.close();
+  });
 });
