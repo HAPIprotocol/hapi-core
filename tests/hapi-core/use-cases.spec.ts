@@ -1,8 +1,9 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, Token, u64 } from "./util/token";
-import { silenceConsole } from "./util/console";
+import { TestToken, u64 } from "../util/token";
+import { silenceConsole } from "../util/console";
+import { pubkeyFromHex } from "../util/crypto";
 import {
   CaseStatus,
   Category,
@@ -10,13 +11,9 @@ import {
   ReporterRole,
   bufferFromString,
   ReporterStatus,
-} from "../lib";
+} from "../../lib";
 
-function pubkeyFromHex(hex: string): web3.PublicKey {
-  return web3.PublicKey.decodeUnchecked(Buffer.from(hex, "hex"));
-}
-
-describe("hapi-core", () => {
+describe("HapiCore Use Cases", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
 
@@ -199,54 +196,6 @@ describe("hapi-core", () => {
     );
 
     expect(tx).toBeTruthy();
-
-    const communityAccount = await program.account.community.fetch(
-      community.publicKey
-    );
-
-    expect(communityAccount.authority).toEqual(authority.publicKey);
-    expect(communityAccount.cases.toNumber()).toEqual(0);
-
-    const communityInfo = await provider.connection.getAccountInfoAndContext(
-      community.publicKey
-    );
-    expect(communityInfo.value.owner).toEqual(program.programId);
-    expect(communityInfo.value.data).toHaveLength(256);
-  });
-
-  it("Community shouldn't be initialized twice", async () => {
-    const silencer = silenceConsole();
-
-    const validatorStake = new u64(1_000);
-    const tracerStake = new u64(2_000);
-    const fullStake = new u64(3_000);
-    const authorityStake = new u64(4_000);
-
-    const tokenAccount = await stakeToken.getTokenAccount(community.publicKey);
-
-    await expect(() =>
-      program.rpc.initialize(
-        new u64(3),
-        3,
-        validatorStake,
-        tracerStake,
-        fullStake,
-        authorityStake,
-        {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            stakeMint: stakeToken.mintAccount,
-            tokenAccount,
-            tokenProgram: stakeToken.programId,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [community],
-        }
-      )
-    ).rejects.toThrowError(/failed to send transaction/);
-
-    silencer.close();
   });
 
   it.each(Object.keys(NETWORKS))("Network '%s' is created", async (rawName) => {
@@ -592,7 +541,7 @@ describe("hapi-core", () => {
         signers: [reporter],
       })
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"301: Account is not authorized to perform this action."`
+      `"301: Account is not authorized to perform this action"`
     );
 
     silencer.close();

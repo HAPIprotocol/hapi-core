@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 
 #[error]
 pub enum ErrorCode {
-    #[msg("Unexpected account has been used.")]
+    #[msg("Unexpected account has been used")]
     UnexpectedAccount,
-    #[msg("Account is not authorized to perform this action.")]
+    #[msg("Account is not authorized to perform this action")]
     Unauthorized,
-    #[msg("Non-sequential case ID.")]
+    #[msg("Non-sequential case ID")]
     NonSequentialCaseId,
     #[msg("Release epoch is in future")]
     ReleaseEpochInFuture,
@@ -22,4 +22,8 @@ pub enum ErrorCode {
     CaseClosed,
     #[msg("Invalid reporter status")]
     InvalidReporterStatus,
+    #[msg("Authority mismatched")]
+    AuthorityMismatch,
+    #[msg("Community mismatched")]
+    CommunityMismatch,
 }

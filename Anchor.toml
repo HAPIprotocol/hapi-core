@@ -9,4 +9,4 @@ cluster = "localnet"
 wallet = "/home/dread/.config/solana/id.json"
 
 [scripts]
-test = "npx jest --verbose --detectOpenHandles"
+test = "npx jest --verbose"

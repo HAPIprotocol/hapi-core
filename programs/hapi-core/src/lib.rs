@@ -58,6 +58,35 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn update_community(
+        ctx: Context<UpdateCommunity>,
+        stake_unlock_epochs: u64,
+        confirmation_threshold: u32,
+        validator_stake: u64,
+        tracer_stake: u64,
+        full_stake: u64,
+        authority_stake: u64,
+    ) -> ProgramResult {
+        let community = &mut ctx.accounts.community;
+
+        community.stake_unlock_epochs = stake_unlock_epochs;
+        community.confirmation_threshold = confirmation_threshold;
+        community.validator_stake = validator_stake;
+        community.tracer_stake = tracer_stake;
+        community.full_stake = full_stake;
+        community.authority_stake = authority_stake;
+
+        Ok(())
+    }
+
+    pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> ProgramResult {
+        let community = &mut ctx.accounts.community;
+
+        community.authority = *ctx.accounts.new_authority.key;
+
+        Ok(())
+    }
+
     pub fn create_network(ctx: Context<CreateNetwork>, name: [u8; 32], bump: u8) -> ProgramResult {
         let network = &mut ctx.accounts.network;
 

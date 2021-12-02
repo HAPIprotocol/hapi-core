@@ -15,14 +15,15 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(stake_unlock_epochs: u64,
+#[instruction(
+    stake_unlock_epochs: u64,
     confirmation_threshold: u32,
     validator_stake: u64,
     tracer_stake: u64,
     full_stake: u64,
-    authority_stake: u64)]
+    authority_stake: u64,
+)]
 pub struct Initialize<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -33,7 +34,7 @@ pub struct Initialize<'info> {
     )]
     pub community: Account<'info, Community>,
 
-    #[account()]
+    #[account(owner = Token::id())]
     pub stake_mint: Account<'info, Mint>,
 
     #[account(
@@ -49,19 +50,53 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(
+    stake_unlock_epochs: u64,
+    confirmation_threshold: u32,
+    validator_stake: u64,
+    tracer_stake: u64,
+    full_stake: u64,
+    authority_stake: u64,
+)]
+pub struct UpdateCommunity<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+}
+
+#[derive(Accounts)]
+pub struct SetCommunityAuthority<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
+    )]
+    pub new_authority: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
 #[instruction(name: [u8; 32], bump: u8)]
 pub struct CreateNetwork<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
         owner = id(),
-        has_one = authority
+        has_one = authority @ ErrorCode::AuthorityMismatch,
     )]
     pub community: Account<'info, Community>,
 
-    // #[account(mut)]
-    // pub token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = authority,
@@ -78,12 +113,11 @@ pub struct CreateNetwork<'info> {
 #[derive(Accounts)]
 #[instruction(name: [u8; 32], role: ReporterRole, bump: u8)]
 pub struct CreateReporter<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
         owner = id(),
-        has_one = authority
+        has_one = authority @ ErrorCode::AuthorityMismatch,
     )]
     pub community: Account<'info, Community>,
 
@@ -116,7 +150,7 @@ pub struct CreateCase<'info> {
 
     #[account(
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Full || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
@@ -147,13 +181,13 @@ pub struct CreateAddress<'info> {
 
     #[account(
         owner = id(),
-        has_one = community
+        has_one = community @ ErrorCode::CommunityMismatch,
     )]
     pub network: Account<'info, Network>,
 
     #[account(
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Tracer
             || reporter.role == ReporterRole::Full
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
@@ -164,7 +198,7 @@ pub struct CreateAddress<'info> {
 
     #[account(
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
     )]
     pub case: Account<'info, Case>,
@@ -193,13 +227,13 @@ pub struct CreateAsset<'info> {
 
     #[account(
         owner = id(),
-        has_one = community
+        has_one = community @ ErrorCode::CommunityMismatch,
     )]
     pub network: Account<'info, Network>,
 
     #[account(
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Tracer
             || reporter.role == ReporterRole::Full
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
@@ -210,7 +244,7 @@ pub struct CreateAsset<'info> {
 
     #[account(
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
     )]
     pub case: Account<'info, Case>,
@@ -260,7 +294,7 @@ pub struct ActivateReporter<'info> {
     #[account(
         mut,
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InactiveReporter,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
@@ -278,7 +312,7 @@ pub struct DeactivateReporter<'info> {
     #[account(
         mut,
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
@@ -296,7 +330,7 @@ pub struct ReleaseReporter<'info> {
     #[account(
         mut,
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
@@ -305,38 +339,36 @@ pub struct ReleaseReporter<'info> {
 
 #[derive(Accounts)]
 pub struct FreezeReporter<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
         owner = id(),
-        has_one = authority
+        has_one = authority @ ErrorCode::AuthorityMismatch,
     )]
     pub community: Account<'info, Community>,
 
     #[account(
         mut,
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
     )]
     pub reporter: Account<'info, Reporter>,
 }
 
 #[derive(Accounts)]
 pub struct UnfreezeReporter<'info> {
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
         owner = id(),
-        has_one = authority
+        has_one = authority @ ErrorCode::AuthorityMismatch,
     )]
     pub community: Account<'info, Community>,
 
     #[account(
         mut,
         owner = id(),
-        has_one = community,
+        has_one = community @ ErrorCode::CommunityMismatch,
     )]
     pub reporter: Account<'info, Reporter>,
 }
