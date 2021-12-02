@@ -429,7 +429,7 @@ describe("hapi-core", () => {
           }
         )
       ).rejects.toThrowError(
-        /167: The given account is not owned by the executing program/
+        "167: The given account is not owned by the executing program"
       );
 
       silencer.close();
@@ -483,11 +483,12 @@ describe("hapi-core", () => {
               case: caseAccount,
               systemProgram: web3.SystemProgram.programId,
             },
+
             signers: [reporter],
           }
         )
-      ).rejects.toThrowError(
-        /167: The given account is not owned by the executing program/
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"167: The given account is not owned by the executing program"`
       );
 
       silencer.close();
@@ -522,11 +523,11 @@ describe("hapi-core", () => {
             case: caseAccount,
             systemProgram: web3.SystemProgram.programId,
           },
+
           signers: [reporter],
         })
-      ).rejects.toThrowError(
-        // This fails because reporterAccount should not exist or does not belong to the program
-        /The given account is not owned by the executing program/
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"167: The given account is not owned by the executing program"`
       );
 
       silencer.close();
@@ -550,11 +551,11 @@ describe("hapi-core", () => {
             case: caseAccount,
             systemProgram: web3.SystemProgram.programId,
           },
+
           signers: [reporter],
         })
-      ).rejects.toThrowError(
-        // This should fail because sender pubkey does not match reporterAccount pubkey
-        /A raw constraint was violated/
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"305: Invalid reporter account"`
       );
 
       silencer.close();
@@ -587,9 +588,12 @@ describe("hapi-core", () => {
           case: caseAccount,
           systemProgram: web3.SystemProgram.programId,
         },
+
         signers: [reporter],
       })
-    ).rejects.toThrowError(/A raw constraint was violated/);
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"301: Account is not authorized to perform this action."`
+    );
 
     silencer.close();
   });
@@ -605,23 +609,6 @@ describe("hapi-core", () => {
     const tokenAccount = await stakeToken.getTokenAccount(
       reporter.keypair.publicKey
     );
-
-    const aaccc = await provider.connection.getParsedTokenAccountsByOwner(
-      reporter.keypair.publicKey,
-      { mint: stakeToken.mintAccount }
-    );
-
-    const tokenAccInf = await stakeToken.token.getAccountInfo(tokenAccount);
-
-    console.log(
-      {
-        reporterPubkey: reporter.keypair.publicKey.toBase58(),
-        tokenAccount: tokenAccount.toBase58(),
-      },
-      tokenAccInf
-    );
-
-    console.log(JSON.stringify(aaccc, null, 2));
 
     const communityInfo = await program.account.community.fetch(
       community.publicKey
@@ -1044,10 +1031,13 @@ describe("hapi-core", () => {
             case: caseAccount,
             systemProgram: web3.SystemProgram.programId,
           },
+
           signers: [reporter],
         }
       )
-    ).rejects.toThrowError(/143: A raw constraint was violated/);
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"306: Reporter account is not active"`
+    );
 
     silencer.close();
   });
@@ -1069,9 +1059,12 @@ describe("hapi-core", () => {
           community: community.publicKey,
           reporter: reporterAccount,
         },
+
         signers: [reporter.keypair],
       })
-    ).rejects.toThrowError(/143: A raw constraint was violated/);
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"306: Reporter account is not active"`
+    );
 
     silencer.close();
   });

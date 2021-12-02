@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::{
+    error::ErrorCode,
     id,
     state::{
         address::{Address, Category},
@@ -35,7 +36,10 @@ pub struct Initialize<'info> {
     #[account()]
     pub stake_mint: Account<'info, Mint>,
 
-    #[account(mut, constraint = token_account.mint == stake_mint.key())]
+    #[account(
+        mut,
+        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken
+    )]
     pub token_account: Account<'info, TokenAccount>,
 
     #[account(address = Token::id())]
@@ -113,10 +117,9 @@ pub struct CreateCase<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.role == ReporterRole::Full
-            || reporter.role == ReporterRole::Authority)
-            && reporter.pubkey == sender.key()
-            && reporter.status == ReporterStatus::Active
+        constraint = reporter.role == ReporterRole::Full || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -151,18 +154,18 @@ pub struct CreateAddress<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.role == ReporterRole::Tracer
+        constraint = reporter.role == ReporterRole::Tracer
             || reporter.role == ReporterRole::Full
-            || reporter.role == ReporterRole::Authority)
-            && reporter.pubkey == sender.key()
-            && reporter.status == ReporterStatus::Active
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community,
-        constraint = case.status == CaseStatus::Open
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
     )]
     pub case: Account<'info, Case>,
 
@@ -197,18 +200,18 @@ pub struct CreateAsset<'info> {
     #[account(
         owner = id(),
         has_one = community,
-        constraint = (reporter.role == ReporterRole::Tracer
+        constraint = reporter.role == ReporterRole::Tracer
             || reporter.role == ReporterRole::Full
-            || reporter.role == ReporterRole::Authority)
-            && reporter.pubkey == sender.key()
-            && reporter.status == ReporterStatus::Active
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community,
-        constraint = case.status == CaseStatus::Open
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
     )]
     pub case: Account<'info, Case>,
 
@@ -233,13 +236,22 @@ pub struct ActivateReporter<'info> {
     #[account(owner = id())]
     pub community: Account<'info, Community>,
 
-    #[account(constraint = community.stake_mint == stake_mint.key())]
+    #[account(
+        constraint = community.stake_mint == stake_mint.key() @ ErrorCode::InvalidMint
+    )]
     pub stake_mint: Account<'info, Mint>,
 
-    #[account(mut, constraint = reporter_token_account.mint == stake_mint.key())]
+    #[account(
+        mut,
+        constraint = reporter_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
     pub reporter_token_account: Account<'info, TokenAccount>,
 
-    #[account(constraint = community_token_account.mint == stake_mint.key())]
+    #[account(
+        mut,
+        constraint = community_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+    )]
     pub community_token_account: Account<'info, TokenAccount>,
 
     #[account(address = Token::id())]
@@ -249,8 +261,8 @@ pub struct ActivateReporter<'info> {
         mut,
         owner = id(),
         has_one = community,
-        constraint = reporter.status == ReporterStatus::Inactive
-            && reporter.pubkey == sender.key(),
+        constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InactiveReporter,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -267,8 +279,8 @@ pub struct DeactivateReporter<'info> {
         mut,
         owner = id(),
         has_one = community,
-        constraint = reporter.status == ReporterStatus::Active
-            && reporter.pubkey == sender.key(),
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -285,8 +297,8 @@ pub struct ReleaseReporter<'info> {
         mut,
         owner = id(),
         has_one = community,
-        constraint = reporter.status == ReporterStatus::Unstaking
-            && reporter.pubkey == sender.key(),
+        constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }
