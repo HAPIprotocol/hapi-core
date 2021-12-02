@@ -2,9 +2,9 @@ import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
-import { silenceConsole } from "../util/console";
-import { program } from "../../lib";
+import { expectThrowError } from "../util/console";
 import { pubkeyFromHex } from "../util/crypto";
+import { program } from "../../lib";
 
 describe("HapiCore Community", () => {
   const provider = anchor.Provider.env();
@@ -40,25 +40,21 @@ describe("HapiCore Community", () => {
 
       const tokenAccount = web3.Keypair.generate().publicKey;
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.initialize(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            stakeMint: stakeToken.mintAccount,
-            tokenAccount,
-            tokenProgram: stakeToken.programId,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [community],
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.initialize(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              stakeMint: stakeToken.mintAccount,
+              tokenAccount,
+              tokenProgram: stakeToken.programId,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [community],
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("fail - invalid mint account", async () => {
@@ -75,25 +71,21 @@ describe("HapiCore Community", () => {
 
       const tokenAccount = await stakeToken.createAccount();
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.initialize(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            stakeMint: fakeMint,
-            tokenAccount,
-            tokenProgram: stakeToken.programId,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [community],
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.initialize(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              stakeMint: fakeMint,
+              tokenAccount,
+              tokenProgram: stakeToken.programId,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [community],
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("fail - invalid community", async () => {
@@ -108,23 +100,21 @@ describe("HapiCore Community", () => {
 
       const tokenAccount = await stakeToken.createAccount();
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.initialize(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: nobody.publicKey,
-            stakeMint: stakeToken.mintAccount,
-            tokenAccount,
-            tokenProgram: stakeToken.programId,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [],
-        })
-      ).rejects.toThrowError("Signature verification failed");
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.initialize(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: nobody.publicKey,
+              stakeMint: stakeToken.mintAccount,
+              tokenAccount,
+              tokenProgram: stakeToken.programId,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [],
+          }),
+        "Signature verification failed"
+      );
     });
 
     it("success", async () => {
@@ -179,23 +169,21 @@ describe("HapiCore Community", () => {
 
       const tokenAccount = await stakeToken.createAccount();
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.initialize(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            stakeMint: stakeToken.mintAccount,
-            tokenAccount,
-            tokenProgram: stakeToken.programId,
-            systemProgram: web3.SystemProgram.programId,
-          },
-          signers: [community],
-        })
-      ).rejects.toThrowError(/failed to send transaction/);
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.initialize(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              stakeMint: stakeToken.mintAccount,
+              tokenAccount,
+              tokenProgram: stakeToken.programId,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [community],
+          }),
+        /failed to send transaction/
+      );
     });
   });
 
@@ -218,20 +206,16 @@ describe("HapiCore Community", () => {
         "e1230a131f3747484f98d10b8d2a8759dcf597db3cf87c9b53e7862e756f0663"
       );
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.updateCommunity(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: someKey,
-          },
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.updateCommunity(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: someKey,
+            },
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("fail - community not initialized", async () => {
@@ -244,20 +228,16 @@ describe("HapiCore Community", () => {
         new u64(14_000),
       ];
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.updateCommunity(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-          },
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.updateCommunity(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+            },
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("success", async () => {
@@ -333,19 +313,17 @@ describe("HapiCore Community", () => {
         new u64(14_000),
       ];
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.updateCommunity(...args, {
-          accounts: {
-            authority: nobody.publicKey,
-            community: community.publicKey,
-          },
-          signers: [nobody],
-        })
-      ).rejects.toThrowError("310: Authority mismatched");
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.updateCommunity(...args, {
+            accounts: {
+              authority: nobody.publicKey,
+              community: community.publicKey,
+            },
+            signers: [nobody],
+          }),
+        "310: Authority mismatched"
+      );
     });
   });
 
@@ -359,39 +337,31 @@ describe("HapiCore Community", () => {
         "e1230a131f3747484f98d10b8d2a8759dcf597db3cf87c9b53e7862e756f0663"
       );
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.setCommunityAuthority({
-          accounts: {
-            authority: authority.publicKey,
-            newAuthority: nobody.publicKey,
-            community: someKey,
-          },
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.setCommunityAuthority({
+            accounts: {
+              authority: authority.publicKey,
+              newAuthority: nobody.publicKey,
+              community: someKey,
+            },
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("fail - community not initialized", async () => {
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.setCommunityAuthority({
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            newAuthority: nobody.publicKey,
-          },
-        })
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.setCommunityAuthority({
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              newAuthority: nobody.publicKey,
+            },
+          }),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     });
 
     it("success", async () => {
@@ -442,36 +412,32 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid authority", async () => {
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.setCommunityAuthority({
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            newAuthority: nobody.publicKey,
-          },
-        })
-      ).rejects.toThrowError("310: Authority mismatched");
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.setCommunityAuthority({
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              newAuthority: nobody.publicKey,
+            },
+          }),
+        "310: Authority mismatched"
+      );
     });
 
     it("fail - can't set the same authority", async () => {
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.setCommunityAuthority({
-          accounts: {
-            authority: nobody.publicKey,
-            community: community.publicKey,
-            newAuthority: nobody.publicKey,
-          },
-          signers: [nobody],
-        })
-      ).rejects.toThrowError("310: Authority mismatched");
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.setCommunityAuthority({
+            accounts: {
+              authority: nobody.publicKey,
+              community: community.publicKey,
+              newAuthority: nobody.publicKey,
+            },
+            signers: [nobody],
+          }),
+        "310: Authority mismatched"
+      );
     });
   });
 });

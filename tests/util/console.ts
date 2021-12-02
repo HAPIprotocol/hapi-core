@@ -9,3 +9,14 @@ export function silenceConsole() {
     },
   };
 }
+
+export async function expectThrowError(
+  fn: () => Promise<unknown>,
+  error?: string | jest.Constructable | RegExp | Error
+) {
+  const silencer = silenceConsole();
+
+  await expect(fn).rejects.toThrowError(error);
+
+  silencer.close();
+}

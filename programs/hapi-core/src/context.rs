@@ -87,7 +87,7 @@ pub struct SetCommunityAuthority<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: [u8; 32], bump: u8)]
+#[instruction(name: [u8; 32], tracer_reward: u64, confirmation_reward: u64, bump: u8)]
 pub struct CreateNetwork<'info> {
     pub authority: Signer<'info>,
 

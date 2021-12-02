@@ -87,13 +87,21 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn create_network(ctx: Context<CreateNetwork>, name: [u8; 32], bump: u8) -> ProgramResult {
+    pub fn create_network(
+        ctx: Context<CreateNetwork>,
+        name: [u8; 32],
+        tracer_reward: u64,
+        confirmation_reward: u64,
+        bump: u8,
+    ) -> ProgramResult {
         let network = &mut ctx.accounts.network;
 
         network.community = ctx.accounts.community.key();
         network.bump = bump;
 
         network.name = name;
+        network.tracer_reward = tracer_reward;
+        network.confirmation_reward = confirmation_reward;
 
         Ok(())
     }

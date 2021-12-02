@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
-import { silenceConsole } from "../util/console";
+import { expectThrowError } from "../util/console";
 import { pubkeyFromHex } from "../util/crypto";
 import {
   CaseStatus,
@@ -208,7 +208,9 @@ describe("HapiCore Use Cases", () => {
       network.name
     );
 
-    const tx = await program.rpc.createNetwork(name.toJSON().data, bump, {
+    const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+
+    const tx = await program.rpc.createNetwork(...args, {
       accounts: {
         authority: authority.publicKey,
         community: community.publicKey,
@@ -218,71 +220,6 @@ describe("HapiCore Use Cases", () => {
     });
 
     expect(tx).toBeTruthy();
-
-    const fetchedNetworkAccount = await program.account.network.fetch(
-      networkAccount
-    );
-    expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
-    expect(fetchedNetworkAccount.bump).toEqual(bump);
-
-    const networkInfo = await provider.connection.getAccountInfoAndContext(
-      networkAccount
-    );
-    expect(networkInfo.value.owner).toEqual(program.programId);
-    expect(networkInfo.value.data).toHaveLength(200);
-  });
-
-  it.each(Object.keys(NETWORKS))(
-    "Network '%s' shouldn't be initialized twice",
-    async (rawName) => {
-      const network = NETWORKS[rawName];
-
-      let name = bufferFromString(network.name, 32);
-
-      const [networkAccount, bump] = await program.findNetworkAddress(
-        community.publicKey,
-        network.name
-      );
-
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.createNetwork(name.toJSON().data, bump, {
-          accounts: {
-            authority: authority.publicKey,
-            community: community.publicKey,
-            network: networkAccount,
-            systemProgram: web3.SystemProgram.programId,
-          },
-        })
-      ).rejects.toThrowError(/failed to send transaction/);
-
-      silencer.close();
-    }
-  );
-
-  it("Unauthorized users shouldn't be able to create a network in a community", async () => {
-    let name = bufferFromString("bitcoin", 32);
-
-    const [network, bump] = await program.findNetworkAddress(
-      community.publicKey,
-      "bitcoin"
-    );
-
-    const silencer = silenceConsole();
-
-    await expect(() =>
-      program.rpc.createNetwork(name.toJSON().data, bump, {
-        accounts: {
-          authority: nobody.publicKey,
-          community: community.publicKey,
-          network,
-          systemProgram: web3.SystemProgram.programId,
-        },
-      })
-    ).rejects.toThrowError(/Signature verification failed/);
-
-    silencer.close();
   });
 
   it.each(Object.keys(REPORTERS))("Reporter %s is created", async (key) => {
@@ -356,32 +293,28 @@ describe("HapiCore Use Cases", () => {
         addr.caseId
       );
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.createAddress(
-          addr.pubkey,
-          Category[addr.category],
-          addr.risk,
-          bump,
-          {
-            accounts: {
-              sender: reporter.publicKey,
-              address: addressAccount,
-              community: community.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              systemProgram: web3.SystemProgram.programId,
-            },
-            signers: [reporter],
-          }
-        )
-      ).rejects.toThrowError(
+      await expectThrowError(
+        () =>
+          program.rpc.createAddress(
+            addr.pubkey,
+            Category[addr.category],
+            addr.risk,
+            bump,
+            {
+              accounts: {
+                sender: reporter.publicKey,
+                address: addressAccount,
+                community: community.publicKey,
+                network: networkAccount,
+                reporter: reporterAccount,
+                case: caseAccount,
+                systemProgram: web3.SystemProgram.programId,
+              },
+              signers: [reporter],
+            }
+          ),
         "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     }
   );
 
@@ -413,34 +346,30 @@ describe("HapiCore Use Cases", () => {
         asset.caseId
       );
 
-      const silencer = silenceConsole();
+      await expectThrowError(
+        () =>
+          program.rpc.createAsset(
+            asset.mint,
+            asset.assetId,
+            Category[asset.category],
+            asset.risk,
+            bump,
+            {
+              accounts: {
+                sender: reporter.publicKey,
+                asset: assetAccount,
+                community: community.publicKey,
+                network: networkAccount,
+                reporter: reporterAccount,
+                case: caseAccount,
+                systemProgram: web3.SystemProgram.programId,
+              },
 
-      await expect(() =>
-        program.rpc.createAsset(
-          asset.mint,
-          asset.assetId,
-          Category[asset.category],
-          asset.risk,
-          bump,
-          {
-            accounts: {
-              sender: reporter.publicKey,
-              asset: assetAccount,
-              community: community.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              systemProgram: web3.SystemProgram.programId,
-            },
-
-            signers: [reporter],
-          }
-        )
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"167: The given account is not owned by the executing program"`
+              signers: [reporter],
+            }
+          ),
+        "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     }
   );
 
@@ -461,25 +390,21 @@ describe("HapiCore Use Cases", () => {
         reporter.publicKey
       );
 
-      const silencer = silenceConsole();
+      await expectThrowError(
+        () =>
+          program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
 
-      await expect(() =>
-        program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
-          accounts: {
-            reporter: reporterAccount,
-            sender: reporter.publicKey,
-            community: community.publicKey,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          },
-
-          signers: [reporter],
-        })
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"167: The given account is not owned by the executing program"`
+            signers: [reporter],
+          }),
+        "167: The given account is not owned by the executing program"
       );
-
-      silencer.close();
     }
 
     // Attempt to impersonate a reporter that has correct permissions
@@ -489,25 +414,21 @@ describe("HapiCore Use Cases", () => {
         REPORTERS.alice.keypair.publicKey
       );
 
-      const silencer = silenceConsole();
+      await expectThrowError(
+        () =>
+          program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
 
-      await expect(() =>
-        program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
-          accounts: {
-            reporter: reporterAccount,
-            sender: reporter.publicKey,
-            community: community.publicKey,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          },
-
-          signers: [reporter],
-        })
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"305: Invalid reporter account"`
+            signers: [reporter],
+          }),
+        "305: Invalid reporter account"
       );
-
-      silencer.close();
     }
   });
 
@@ -526,25 +447,21 @@ describe("HapiCore Use Cases", () => {
       reporter.publicKey
     );
 
-    const silencer = silenceConsole();
+    await expectThrowError(
+      () =>
+        program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
 
-    await expect(() =>
-      program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
-        accounts: {
-          reporter: reporterAccount,
-          sender: reporter.publicKey,
-          community: community.publicKey,
-          case: caseAccount,
-          systemProgram: web3.SystemProgram.programId,
-        },
-
-        signers: [reporter],
-      })
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"301: Account is not authorized to perform this action"`
+          signers: [reporter],
+        }),
+      `301: Account is not authorized to perform this action`
     );
-
-    silencer.close();
   });
 
   it.each(Object.keys(REPORTERS))("Reporter %s is activated", async (key) => {
@@ -749,30 +666,28 @@ describe("HapiCore Use Cases", () => {
         addr.caseId
       );
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.createAddress(
-          addr.pubkey,
-          Category[addr.category],
-          addr.risk,
-          bump,
-          {
-            accounts: {
-              sender: reporter.publicKey,
-              address: addressAccount,
-              community: community.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              systemProgram: web3.SystemProgram.programId,
-            },
-            signers: [reporter],
-          }
-        )
-      ).rejects.toThrowError(/custom program error: 0x0/);
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.createAddress(
+            addr.pubkey,
+            Category[addr.category],
+            addr.risk,
+            bump,
+            {
+              accounts: {
+                sender: reporter.publicKey,
+                address: addressAccount,
+                community: community.publicKey,
+                network: networkAccount,
+                reporter: reporterAccount,
+                case: caseAccount,
+                systemProgram: web3.SystemProgram.programId,
+              },
+              signers: [reporter],
+            }
+          ),
+        /custom program error: 0x0/
+      );
     }
   );
 
@@ -873,31 +788,29 @@ describe("HapiCore Use Cases", () => {
         asset.caseId
       );
 
-      const silencer = silenceConsole();
-
-      await expect(() =>
-        program.rpc.createAsset(
-          asset.mint,
-          asset.assetId,
-          Category[asset.category],
-          asset.risk,
-          bump,
-          {
-            accounts: {
-              sender: reporter.publicKey,
-              asset: assetAccount,
-              community: community.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              systemProgram: web3.SystemProgram.programId,
-            },
-            signers: [reporter],
-          }
-        )
-      ).rejects.toThrowError(/custom program error: 0x0/);
-
-      silencer.close();
+      await expectThrowError(
+        () =>
+          program.rpc.createAsset(
+            asset.mint,
+            asset.assetId,
+            Category[asset.category],
+            asset.risk,
+            bump,
+            {
+              accounts: {
+                sender: reporter.publicKey,
+                asset: assetAccount,
+                community: community.publicKey,
+                network: networkAccount,
+                reporter: reporterAccount,
+                case: caseAccount,
+                systemProgram: web3.SystemProgram.programId,
+              },
+              signers: [reporter],
+            }
+          ),
+        /custom program error: 0x0/
+      );
     }
   );
 
@@ -962,33 +875,29 @@ describe("HapiCore Use Cases", () => {
       addr.caseId
     );
 
-    const silencer = silenceConsole();
+    await expectThrowError(
+      () =>
+        program.rpc.createAddress(
+          addr.pubkey,
+          Category[addr.category],
+          addr.risk,
+          bump,
+          {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
 
-    await expect(() =>
-      program.rpc.createAddress(
-        addr.pubkey,
-        Category[addr.category],
-        addr.risk,
-        bump,
-        {
-          accounts: {
-            sender: reporter.publicKey,
-            address: addressAccount,
-            community: community.publicKey,
-            network: networkAccount,
-            reporter: reporterAccount,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          },
-
-          signers: [reporter],
-        }
-      )
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"306: Reporter account is not active"`
+            signers: [reporter],
+          }
+        ),
+      `306: Reporter account is not active`
     );
-
-    silencer.close();
   });
 
   it("Reporter can't release their stake before unlock epoch", async () => {
@@ -999,23 +908,19 @@ describe("HapiCore Use Cases", () => {
       reporter.keypair.publicKey
     );
 
-    const silencer = silenceConsole();
+    await expectThrowError(
+      () =>
+        program.rpc.deactivateReporter({
+          accounts: {
+            sender: reporter.keypair.publicKey,
+            community: community.publicKey,
+            reporter: reporterAccount,
+          },
 
-    await expect(() =>
-      program.rpc.deactivateReporter({
-        accounts: {
-          sender: reporter.keypair.publicKey,
-          community: community.publicKey,
-          reporter: reporterAccount,
-        },
-
-        signers: [reporter.keypair],
-      })
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"306: Reporter account is not active"`
+          signers: [reporter.keypair],
+        }),
+      `306: Reporter account is not active`
     );
-
-    silencer.close();
   });
 
   it.todo("Reporter is frozen by authority");
