@@ -106,6 +106,19 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn update_network(
+        ctx: Context<UpdateNetwork>,
+        tracer_reward: u64,
+        confirmation_reward: u64,
+    ) -> ProgramResult {
+        let network = &mut ctx.accounts.network;
+
+        network.tracer_reward = tracer_reward;
+        network.confirmation_reward = confirmation_reward;
+
+        Ok(())
+    }
+
     pub fn create_reporter(
         ctx: Context<CreateReporter>,
         role: ReporterRole,

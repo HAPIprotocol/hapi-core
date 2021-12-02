@@ -143,7 +143,7 @@ describe("HapiCore Network", () => {
           program.rpc.createNetwork(...args, {
             accounts: {
               authority: nobody.publicKey,
-              community: community.publicKey,
+              community: otherCommunity.publicKey,
               network: networkAccount,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -161,7 +161,7 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+      const args = [name.toJSON().data, new u64(10_000), new u64(20_000), bump];
 
       const tx = await program.rpc.createNetwork(...args, {
         accounts: {
@@ -179,6 +179,10 @@ describe("HapiCore Network", () => {
       );
       expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
       expect(fetchedNetworkAccount.bump).toEqual(bump);
+      expect(fetchedNetworkAccount.tracerReward.toNumber()).toEqual(10_000);
+      expect(fetchedNetworkAccount.confirmationReward.toNumber()).toEqual(
+        20_000
+      );
 
       const networkInfo = await provider.connection.getAccountInfoAndContext(
         networkAccount
@@ -213,10 +217,73 @@ describe("HapiCore Network", () => {
   });
 
   describe("update_network", () => {
-    it.todo("fail - authority mismatch for community");
+    it("fail - authority mismatch for community", async () => {
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        "near"
+      );
 
-    it.todo("fail - network does not exist");
+      const args = [new u64(40_000), new u64(50_000)];
 
-    it.todo("success");
+      await expectThrowError(
+        () =>
+          program.rpc.updateNetwork(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: otherCommunity.publicKey,
+              network: networkAccount,
+            },
+          }),
+        "310: Authority mismatched"
+      );
+    });
+
+    it("fail - network does not exist", async () => {
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        "unknown"
+      );
+
+      const args = [new u64(40_000), new u64(50_000)];
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateNetwork(...args, {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+            },
+          }),
+        "167: The given account is not owned by the executing program"
+      );
+    });
+
+    it("success", async () => {
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        "near"
+      );
+
+      const args = [new u64(40_000), new u64(50_000)];
+
+      const tx = await program.rpc.updateNetwork(...args, {
+        accounts: {
+          authority: authority.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+        },
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedNetworkAccount = await program.account.network.fetch(
+        networkAccount
+      );
+      expect(fetchedNetworkAccount.tracerReward.toNumber()).toEqual(40_000);
+      expect(fetchedNetworkAccount.confirmationReward.toNumber()).toEqual(
+        50_000
+      );
+    });
   });
 });

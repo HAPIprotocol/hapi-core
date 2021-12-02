@@ -111,6 +111,24 @@ pub struct CreateNetwork<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(tracer_reward: u64, confirmation_reward: u64)]
+pub struct UpdateNetwork<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        has_one = community @ ErrorCode::CommunityMismatch,
+    )]
+    pub network: Account<'info, Network>,
+}
+
+#[derive(Accounts)]
 #[instruction(name: [u8; 32], role: ReporterRole, bump: u8)]
 pub struct CreateReporter<'info> {
     pub authority: Signer<'info>,
