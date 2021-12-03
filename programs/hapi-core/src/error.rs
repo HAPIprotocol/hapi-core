@@ -26,4 +26,6 @@ pub enum ErrorCode {
     AuthorityMismatch,
     #[msg("Community mismatched")]
     CommunityMismatch,
+    #[msg("This reporter is frozen")]
+    FrozenReporter,
 }

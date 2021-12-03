@@ -174,6 +174,42 @@ pub struct UpdateReporter<'info> {
 }
 
 #[derive(Accounts)]
+pub struct FreezeReporter<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct UnfreezeReporter<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
 #[instruction(case_id: u64, name: [u8; 32], bump: u8)]
 pub struct CreateCase<'info> {
     #[account(mut)]
@@ -191,6 +227,7 @@ pub struct CreateCase<'info> {
         constraint = reporter.role == ReporterRole::Full || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -229,7 +266,8 @@ pub struct CreateAddress<'info> {
             || reporter.role == ReporterRole::Full
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -276,6 +314,7 @@ pub struct CreateAsset<'info> {
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -334,6 +373,7 @@ pub struct ActivateReporter<'info> {
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -352,6 +392,7 @@ pub struct DeactivateReporter<'info> {
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -370,42 +411,7 @@ pub struct ReleaseReporter<'info> {
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
-    )]
-    pub reporter: Account<'info, Reporter>,
-}
-
-#[derive(Accounts)]
-pub struct FreezeReporter<'info> {
-    pub authority: Signer<'info>,
-
-    #[account(
-        owner = id(),
-        has_one = authority @ ErrorCode::AuthorityMismatch,
-    )]
-    pub community: Account<'info, Community>,
-
-    #[account(
-        mut,
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-    )]
-    pub reporter: Account<'info, Reporter>,
-}
-
-#[derive(Accounts)]
-pub struct UnfreezeReporter<'info> {
-    pub authority: Signer<'info>,
-
-    #[account(
-        owner = id(),
-        has_one = authority @ ErrorCode::AuthorityMismatch,
-    )]
-    pub community: Account<'info, Community>,
-
-    #[account(
-        mut,
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
     )]
     pub reporter: Account<'info, Reporter>,
 }

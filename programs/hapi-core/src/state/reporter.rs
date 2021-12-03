@@ -9,6 +9,9 @@ pub struct Reporter {
     /// Seed bump for PDA
     pub bump: u8,
 
+    /// If this is true, reporter can't interact with the contract
+    pub is_frozen: bool,
+
     /// Reporter account status
     pub status: ReporterStatus,
 
@@ -27,17 +30,14 @@ pub struct Reporter {
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterStatus {
-    /// Reporter is not active and can't interact with the program
-    Frozen = 0,
-
     /// Reporter is not active, but can activate after staking
-    Inactive = 1,
+    Inactive,
 
     /// Reporter is active and can report
-    Active = 2,
+    Active,
 
     /// Reporter has requested unstaking and can't report
-    Unstaking = 3,
+    Unstaking,
 }
 
 impl Default for ReporterStatus {

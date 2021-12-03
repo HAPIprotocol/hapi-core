@@ -1,5 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
+import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
@@ -31,7 +31,7 @@ describe("HapiCore Network", () => {
     carol: {
       name: "carol",
       keypair: web3.Keypair.generate(),
-      role: "Validator",
+      role: "Authority",
     },
   };
 
@@ -226,6 +226,50 @@ describe("HapiCore Network", () => {
       expect(reporterInfo.value.data).toHaveLength(200);
     });
 
+    it("success - carol", async () => {
+      const reporter = REPORTERS.carol;
+
+      const name = bufferFromString(reporter.name, 32);
+
+      const [reporterAccount, bump] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const reporterRole = ReporterRole[reporter.role];
+
+      const tx = await program.rpc.createReporter(
+        reporterRole,
+        name.toJSON().data,
+        bump,
+        {
+          accounts: {
+            authority: authority.publicKey,
+            community: community.publicKey,
+            reporter: reporterAccount,
+            pubkey: reporter.keypair.publicKey,
+            systemProgram: web3.SystemProgram.programId,
+          },
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+      expect(fetchedReporterAccount.bump).toEqual(bump);
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+
+      const reporterInfo = await provider.connection.getAccountInfoAndContext(
+        reporterAccount
+      );
+      expect(reporterInfo.value.owner).toEqual(program.programId);
+      expect(reporterInfo.value.data).toHaveLength(200);
+    });
+
     it("fail - reporter alice already exists", async () => {
       const reporter = REPORTERS.alice;
 
@@ -255,8 +299,12 @@ describe("HapiCore Network", () => {
   });
 
   describe("update_reporter", () => {
-    it("fail - reporter carol doesn't exist", async () => {
-      const reporter = REPORTERS.carol;
+    it("fail - reporter doesn't exist", async () => {
+      const reporter = {
+        name: "nobody",
+        keypair: nobody,
+        role: "Validator",
+      };
 
       const name = bufferFromString(reporter.name, 32);
 
@@ -389,13 +437,67 @@ describe("HapiCore Network", () => {
 
       let stake: u64;
       if (reporter.role === "Validator") {
-        stake = new u64(1_000);
+        stake = new u64(20_000_000);
       } else if (reporter.role === "Tracer") {
         stake = new u64(2_000);
       } else if (reporter.role === "Full") {
         stake = new u64(3_000);
       } else if (reporter.role === "Authority") {
-        stake = new u64(4_000);
+        stake = new u64(5_000);
+      } else {
+        throw new Error("Invalid reporter role");
+      }
+
+      const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
+      expect(balance.add(stake).toString(10)).toEqual("1000000");
+    });
+
+    it("success - carol", async () => {
+      const reporter = REPORTERS.carol;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const tx = await program.rpc.activateReporter({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+          stakeMint: stakeToken.mintAccount,
+          reporterTokenAccount: tokenAccount,
+          communityTokenAccount: communityInfo.tokenAccount,
+          tokenProgram: stakeToken.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+
+      let stake: u64;
+      if (reporter.role === "Validator") {
+        stake = new u64(20_000_000);
+      } else if (reporter.role === "Tracer") {
+        stake = new u64(2_000);
+      } else if (reporter.role === "Full") {
+        stake = new u64(3_000);
+      } else if (reporter.role === "Authority") {
+        stake = new u64(5_000);
       } else {
         throw new Error("Invalid reporter role");
       }
@@ -584,6 +686,104 @@ describe("HapiCore Network", () => {
           }),
         "309: Invalid reporter status"
       );
+    });
+  });
+
+  describe("freeze_reporter", () => {
+    it("success", async () => {
+      const reporter = REPORTERS.carol;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const tx = await program.rpc.freezeReporter({
+        accounts: {
+          authority: authority.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+        },
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+      expect(fetchedReporterAccount.isFrozen).toBe(true);
+
+      // Reporter shouldn't' be able to report when it's frozen
+      {
+        const caseId = new BN(1);
+        const caseName = bufferFromString("Case 1", 32);
+
+        const [caseAccount, bump] = await program.findCaseAddress(
+          community.publicKey,
+          caseId
+        );
+
+        await expectThrowError(
+          () =>
+            program.rpc.createCase(caseId, caseName.toJSON().data, bump, {
+              accounts: {
+                reporter: reporterAccount,
+                sender: reporter.keypair.publicKey,
+                community: community.publicKey,
+                case: caseAccount,
+                systemProgram: web3.SystemProgram.programId,
+              },
+
+              signers: [reporter.keypair],
+            }),
+          "312: This reporter is frozen"
+        );
+      }
+
+      {
+        await expectThrowError(
+          () =>
+            program.rpc.deactivateReporter({
+              accounts: {
+                sender: reporter.keypair.publicKey,
+                community: community.publicKey,
+                reporter: reporterAccount,
+              },
+              signers: [reporter.keypair],
+            }),
+          "312: This reporter is frozen"
+        );
+      }
+    });
+  });
+
+  describe("unfreeze_reporter", () => {
+    it("success", async () => {
+      const reporter = REPORTERS.carol;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const tx = await program.rpc.unfreezeReporter({
+        accounts: {
+          authority: authority.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+        },
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+      expect(fetchedReporterAccount.isFrozen).toBe(false);
     });
   });
 });

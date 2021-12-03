@@ -134,6 +134,7 @@ pub mod hapi_core {
         reporter.role = role;
         reporter.status = ReporterStatus::Inactive;
         reporter.name = name;
+        reporter.is_frozen = false;
 
         Ok(())
     }
@@ -283,7 +284,7 @@ pub mod hapi_core {
     pub fn freeze_reporter(ctx: Context<FreezeReporter>) -> ProgramResult {
         let reporter = &mut ctx.accounts.reporter;
 
-        reporter.status = ReporterStatus::Frozen;
+        reporter.is_frozen = true;
 
         Ok(())
     }
@@ -291,13 +292,7 @@ pub mod hapi_core {
     pub fn unfreeze_reporter(ctx: Context<UnfreezeReporter>) -> ProgramResult {
         let reporter = &mut ctx.accounts.reporter;
 
-        if reporter.unlock_epoch > 0 {
-            reporter.status = ReporterStatus::Unstaking;
-        } else {
-            reporter.status = ReporterStatus::Inactive;
-        }
-
-        // TODO: if the reporter has a valid stake, set the status to ReporterStatus::Active
+        reporter.is_frozen = false;
 
         Ok(())
     }
