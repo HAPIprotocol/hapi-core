@@ -20,8 +20,8 @@ use state::{
 pub mod hapi_core {
     use super::*;
 
-    pub fn initialize(
-        ctx: Context<Initialize>,
+    pub fn initialize_community(
+        ctx: Context<InitializeCommunity>,
         stake_unlock_epochs: u64,
         confirmation_threshold: u32,
         validator_stake: u64,

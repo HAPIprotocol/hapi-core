@@ -23,7 +23,7 @@ describe("HapiCore Community", () => {
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
   });
 
-  describe("initialize", () => {
+  describe("initializeCommunity", () => {
     beforeAll(async () => {
       community = web3.Keypair.generate();
     });
@@ -42,7 +42,7 @@ describe("HapiCore Community", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.initialize(...args, {
+          program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
@@ -73,7 +73,7 @@ describe("HapiCore Community", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.initialize(...args, {
+          program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
@@ -102,7 +102,7 @@ describe("HapiCore Community", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.initialize(...args, {
+          program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
               community: nobody.publicKey,
@@ -129,7 +129,7 @@ describe("HapiCore Community", () => {
 
       const tokenAccount = await stakeToken.createAccount();
 
-      const tx = await program.rpc.initialize(...args, {
+      const tx = await program.rpc.initializeCommunity(...args, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
@@ -171,7 +171,7 @@ describe("HapiCore Community", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.initialize(...args, {
+          program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
@@ -253,7 +253,7 @@ describe("HapiCore Community", () => {
           new u64(4_000),
         ];
 
-        const tx = await program.rpc.initialize(...args, {
+        const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
@@ -377,7 +377,7 @@ describe("HapiCore Community", () => {
           new u64(4_000),
         ];
 
-        const tx = await program.rpc.initialize(...args, {
+        const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,

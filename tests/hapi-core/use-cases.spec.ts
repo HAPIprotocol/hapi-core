@@ -175,7 +175,7 @@ describe("HapiCore Use Cases", () => {
 
     const tokenAccount = await stakeToken.createAccount();
 
-    const tx = await program.rpc.initialize(
+    const tx = await program.rpc.initializeCommunity(
       new u64(4),
       3,
       validatorStake,

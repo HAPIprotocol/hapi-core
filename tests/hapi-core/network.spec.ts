@@ -27,7 +27,7 @@ describe("HapiCore Network", () => {
 
     const tokenAccount = await stakeToken.createAccount();
 
-    await program.rpc.initialize(
+    await program.rpc.initializeCommunity(
       new u64(1),
       2,
       new u64(1_000),
@@ -79,7 +79,7 @@ describe("HapiCore Network", () => {
 
       const otherTokenAccount = await stakeToken.createAccount();
 
-      await program.rpc.initialize(
+      await program.rpc.initializeCommunity(
         new u64(1),
         2,
         new u64(1_000),

@@ -23,7 +23,7 @@ use crate::{
     full_stake: u64,
     authority_stake: u64,
 )]
-pub struct Initialize<'info> {
+pub struct InitializeCommunity<'info> {
     pub authority: Signer<'info>,
 
     #[account(
