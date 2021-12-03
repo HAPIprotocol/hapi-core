@@ -12,11 +12,14 @@ export function silenceConsole() {
 
 export async function expectThrowError(
   fn: () => Promise<unknown>,
-  error?: string | jest.Constructable | RegExp | Error
+  error?: string | jest.Constructable | RegExp | Error,
+  isSilent = true
 ) {
-  const silencer = silenceConsole();
+  let silencer = isSilent ? silenceConsole() : undefined;
 
   await expect(fn).rejects.toThrowError(error);
 
-  silencer.close();
+  if (silencer) {
+    silencer.close();
+  }
 }

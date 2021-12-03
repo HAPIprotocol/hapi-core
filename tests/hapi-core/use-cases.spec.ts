@@ -250,20 +250,6 @@ describe("HapiCore Use Cases", () => {
     );
 
     expect(tx).toBeTruthy();
-
-    const fetchedReporterAccount = await program.account.reporter.fetch(
-      reporterAccount
-    );
-    expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
-    expect(fetchedReporterAccount.bump).toEqual(bump);
-    expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
-    expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
-
-    const reporterInfo = await provider.connection.getAccountInfoAndContext(
-      reporterAccount
-    );
-    expect(reporterInfo.value.owner).toEqual(program.programId);
-    expect(reporterInfo.value.data).toHaveLength(200);
   });
 
   it.each(Object.keys(ADDRESSES))(
@@ -364,7 +350,6 @@ describe("HapiCore Use Cases", () => {
                 case: caseAccount,
                 systemProgram: web3.SystemProgram.programId,
               },
-
               signers: [reporter],
             }
           ),
@@ -896,7 +881,7 @@ describe("HapiCore Use Cases", () => {
             signers: [reporter],
           }
         ),
-      `306: Reporter account is not active`
+      "309: Invalid reporter status"
     );
   });
 
@@ -919,7 +904,7 @@ describe("HapiCore Use Cases", () => {
 
           signers: [reporter.keypair],
         }),
-      `306: Reporter account is not active`
+      "309: Invalid reporter status"
     );
   });
 

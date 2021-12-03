@@ -129,7 +129,7 @@ pub struct UpdateNetwork<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: [u8; 32], role: ReporterRole, bump: u8)]
+#[instruction(role: ReporterRole, name: [u8; 32], bump: u8)]
 pub struct CreateReporter<'info> {
     pub authority: Signer<'info>,
 
@@ -155,6 +155,25 @@ pub struct CreateReporter<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(role: ReporterRole, name: [u8; 32])]
+pub struct UpdateReporter<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
 #[instruction(case_id: u64, name: [u8; 32], bump: u8)]
 pub struct CreateCase<'info> {
     #[account(mut)]
@@ -171,7 +190,7 @@ pub struct CreateCase<'info> {
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Full || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -210,7 +229,7 @@ pub struct CreateAddress<'info> {
             || reporter.role == ReporterRole::Full
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -256,7 +275,7 @@ pub struct CreateAsset<'info> {
             || reporter.role == ReporterRole::Full
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -313,7 +332,7 @@ pub struct ActivateReporter<'info> {
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InactiveReporter,
+        constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -331,7 +350,7 @@ pub struct DeactivateReporter<'info> {
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InactiveReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
     )]
     pub reporter: Account<'info, Reporter>,

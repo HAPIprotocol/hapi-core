@@ -138,6 +138,19 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn update_reporter(
+        ctx: Context<UpdateReporter>,
+        role: ReporterRole,
+        name: [u8; 32],
+    ) -> ProgramResult {
+        let reporter = &mut ctx.accounts.reporter;
+
+        reporter.role = role;
+        reporter.name = name;
+
+        Ok(())
+    }
+
     pub fn create_case(
         ctx: Context<CreateCase>,
         case_id: u64,

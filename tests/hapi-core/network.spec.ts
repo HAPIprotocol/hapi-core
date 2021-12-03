@@ -149,7 +149,7 @@ describe("HapiCore Network", () => {
             },
             signers: [nobody],
           }),
-        /Cross-program invocation with unauthorized signer or writable account/
+        /(Cross-program invocation with unauthorized signer or writable account|Program failed to complete)/
       );
     });
 

@@ -23,7 +23,7 @@ describe("HapiCore Community", () => {
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
   });
 
-  describe("initializeCommunity", () => {
+  describe("initialize_community", () => {
     beforeAll(async () => {
       community = web3.Keypair.generate();
     });
