@@ -451,4 +451,218 @@ describe("HapiCore Case", () => {
       expect(true).toBeTruthy();
     });
   });
+
+  describe("update_case", () => {
+    it("success - 'safe'", async () => {
+      const cs = CASES.safe;
+
+      const reporter = REPORTERS[cs.reporter].keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount, bump] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      const tx = await program.rpc.updateCase(
+        newCaseName.toJSON().data,
+        CaseStatus.Closed,
+        {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+          },
+          signers: [reporter],
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedCaseAccount = await program.account.case.fetch(caseAccount);
+      expect(Buffer.from(fetchedCaseAccount.name)).toEqual(newCaseName);
+      expect(fetchedCaseAccount.bump).toEqual(bump);
+      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
+      expect(fetchedCaseAccount.id.toNumber()).toEqual(cs.caseId.toNumber());
+    });
+
+    it("success - 'safe' by authority", async () => {
+      const cs = CASES.safe;
+
+      const reporter = REPORTERS.carol.keypair;
+      const newCaseName = bufferFromString("super_new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount, bump] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      const tx = await program.rpc.updateCase(
+        newCaseName.toJSON().data,
+        CaseStatus.Open,
+        {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+          },
+          signers: [reporter],
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedCaseAccount = await program.account.case.fetch(caseAccount);
+      expect(Buffer.from(fetchedCaseAccount.name)).toEqual(newCaseName);
+      expect(fetchedCaseAccount.bump).toEqual(bump);
+      expect(fetchedCaseAccount.reporter).not.toEqual(reporterAccount);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
+      expect(fetchedCaseAccount.id.toNumber()).toEqual(cs.caseId.toNumber());
+    });
+
+    it("success - 'nftTracking'", async () => {
+      const cs = CASES.nftTracking;
+
+      const reporter = REPORTERS[cs.reporter].keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      const tx = await program.rpc.updateCase(
+        newCaseName.toJSON().data,
+        CaseStatus.Closed,
+        {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+          },
+          signers: [reporter],
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedCaseAccount = await program.account.case.fetch(caseAccount);
+      expect(Buffer.from(fetchedCaseAccount.name)).toEqual(newCaseName);
+      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
+      expect(fetchedCaseAccount.id.toNumber()).toEqual(cs.caseId.toNumber());
+    });
+
+    it("fail - full reporter can't update other reporter's case", async () => {
+      const cs = CASES.nftTracking;
+
+      const reporter = REPORTERS.alice.keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateCase(newCaseName.toJSON().data, CaseStatus.Closed, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+
+    it("fail - validator can't update a case", async () => {
+      const cs = CASES.nftTracking;
+
+      const reporter = REPORTERS.dave.keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateCase(newCaseName.toJSON().data, CaseStatus.Closed, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+
+    it("fail - tracer can't update a case", async () => {
+      const cs = CASES.nftTracking;
+
+      const reporter = REPORTERS.bob.keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateCase(newCaseName.toJSON().data, CaseStatus.Closed, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+  });
 });

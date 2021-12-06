@@ -179,6 +179,19 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn update_case(
+        ctx: Context<UpdateCase>,
+        name: [u8; 32],
+        status: CaseStatus,
+    ) -> ProgramResult {
+        let case = &mut ctx.accounts.case;
+
+        case.name = name;
+        case.status = status;
+
+        Ok(())
+    }
+
     pub fn create_address(
         ctx: Context<CreateAddress>,
         pubkey: Pubkey,

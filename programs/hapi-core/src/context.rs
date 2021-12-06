@@ -245,6 +245,38 @@ pub struct CreateCase<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(name: [u8; 32], status: CaseStatus)]
+pub struct UpdateCase<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(
+        mut,
+        owner = id()
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = (reporter.role == ReporterRole::Full
+            && case.reporter == reporter.key())
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        has_one = community,
+        owner = id(),
+    )]
+    pub case: Account<'info, Case>,
+}
+
+#[derive(Accounts)]
 #[instruction(pubkey: Pubkey, category: Category, risk: u8, bump: u8)]
 pub struct CreateAddress<'info> {
     #[account(mut)]
