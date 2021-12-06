@@ -269,7 +269,7 @@ pub mod hapi_core {
     pub fn release_reporter(ctx: Context<ReleaseReporter>) -> ProgramResult {
         let reporter = &mut ctx.accounts.reporter;
 
-        if reporter.unlock_epoch < Clock::get()?.epoch {
+        if reporter.unlock_epoch > Clock::get()?.epoch {
             return Err(ErrorCode::ReleaseEpochInFuture.into());
         }
 

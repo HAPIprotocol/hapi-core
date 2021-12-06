@@ -884,31 +884,4 @@ describe("HapiCore Use Cases", () => {
       "309: Invalid reporter status"
     );
   });
-
-  it("Reporter can't release their stake before unlock epoch", async () => {
-    const reporter = REPORTERS.alice;
-
-    const [reporterAccount] = await program.findReporterAddress(
-      community.publicKey,
-      reporter.keypair.publicKey
-    );
-
-    await expectThrowError(
-      () =>
-        program.rpc.deactivateReporter({
-          accounts: {
-            sender: reporter.keypair.publicKey,
-            community: community.publicKey,
-            reporter: reporterAccount,
-          },
-
-          signers: [reporter.keypair],
-        }),
-      "309: Invalid reporter status"
-    );
-  });
-
-  it.todo("Reporter is frozen by authority");
-
-  it.todo("Reporter is unfrozen by authority");
 });
