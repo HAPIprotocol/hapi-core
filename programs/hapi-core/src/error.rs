@@ -28,4 +28,6 @@ pub enum ErrorCode {
     CommunityMismatch,
     #[msg("This reporter is frozen")]
     FrozenReporter,
+    #[msg("Risk score must be in 0..10 range")]
+    RiskOutOfRange,
 }

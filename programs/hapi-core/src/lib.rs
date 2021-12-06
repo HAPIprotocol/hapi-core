@@ -199,6 +199,10 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
+        if risk > 10 {
+            return Err(ErrorCode::RiskOutOfRange.into());
+        }
+
         let address = &mut ctx.accounts.address;
 
         address.network = ctx.accounts.network.key();

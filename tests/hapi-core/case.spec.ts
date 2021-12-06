@@ -95,7 +95,7 @@ describe("HapiCore Case", () => {
       )
     );
 
-    wait.push(provider.send(tx, [], { commitment: "singleGossip" }));
+    wait.push(provider.send(tx));
 
     const communityTokenAccount = await stakeToken.createAccount();
 

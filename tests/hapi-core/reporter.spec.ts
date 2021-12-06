@@ -71,7 +71,7 @@ describe("HapiCore Reporter", () => {
       })
     );
 
-    wait.push(provider.send(tx, [], { commitment: "singleGossip" }));
+    wait.push(provider.send(tx));
 
     const tokenAccount = await stakeToken.createAccount();
     const otherTokenAccount = await stakeToken.createAccount();

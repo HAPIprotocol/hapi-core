@@ -305,7 +305,7 @@ describe("HapiCore Use Cases", () => {
   );
 
   it.each(Object.keys(ASSETS))(
-    "Inactive reporter can't create asseet '%s'",
+    "Inactive reporter can't create asset '%s'",
     async (key: keyof typeof ASSETS) => {
       const asset = ASSETS[key];
 
@@ -533,58 +533,6 @@ describe("HapiCore Use Cases", () => {
     }
   );
 
-  it.each(Object.keys(ADDRESSES))(
-    "Reporter can't create address '%s' twice",
-    async (key: keyof typeof ADDRESSES) => {
-      const addr = ADDRESSES[key];
-
-      const reporter = REPORTERS[addr.reporter].keypair;
-
-      const [networkAccount] = await program.findNetworkAddress(
-        community.publicKey,
-        addr.network
-      );
-
-      const [addressAccount, bump] = await program.findAddressAddress(
-        networkAccount,
-        addr.pubkey
-      );
-
-      const [reporterAccount] = await program.findReporterAddress(
-        community.publicKey,
-        reporter.publicKey
-      );
-
-      const [caseAccount] = await program.findCaseAddress(
-        community.publicKey,
-        addr.caseId
-      );
-
-      await expectThrowError(
-        () =>
-          program.rpc.createAddress(
-            addr.pubkey,
-            Category[addr.category],
-            addr.risk,
-            bump,
-            {
-              accounts: {
-                sender: reporter.publicKey,
-                address: addressAccount,
-                community: community.publicKey,
-                network: networkAccount,
-                reporter: reporterAccount,
-                case: caseAccount,
-                systemProgram: web3.SystemProgram.programId,
-              },
-              signers: [reporter],
-            }
-          ),
-        /custom program error: 0x0/
-      );
-    }
-  );
-
   it.each(Object.keys(ASSETS))("Asset '%s' created", async (key) => {
     const asset = ASSETS[key];
 
@@ -655,7 +603,7 @@ describe("HapiCore Use Cases", () => {
   });
 
   it.each(Object.keys(ASSETS))(
-    "Reporter can't create asseet '%s' twice",
+    "Reporter can't create asset '%s' twice",
     async (key: keyof typeof ASSETS) => {
       const asset = ASSETS[key];
 
