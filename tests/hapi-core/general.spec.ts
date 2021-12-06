@@ -304,60 +304,6 @@ describe("HapiCore Use Cases", () => {
     }
   );
 
-  it.each(Object.keys(ASSETS))(
-    "Inactive reporter can't create asset '%s'",
-    async (key: keyof typeof ASSETS) => {
-      const asset = ASSETS[key];
-
-      const reporter = REPORTERS[asset.reporter].keypair;
-
-      const [networkAccount] = await program.findNetworkAddress(
-        community.publicKey,
-        asset.network
-      );
-
-      const [assetAccount, bump] = await program.findAssetAddress(
-        networkAccount,
-        asset.mint,
-        asset.assetId
-      );
-
-      const [reporterAccount] = await program.findReporterAddress(
-        community.publicKey,
-        reporter.publicKey
-      );
-
-      const [caseAccount] = await program.findCaseAddress(
-        community.publicKey,
-        asset.caseId
-      );
-
-      await expectThrowError(
-        () =>
-          program.rpc.createAsset(
-            asset.mint,
-            asset.assetId,
-            Category[asset.category],
-            asset.risk,
-            bump,
-            {
-              accounts: {
-                sender: reporter.publicKey,
-                asset: assetAccount,
-                community: community.publicKey,
-                network: networkAccount,
-                reporter: reporterAccount,
-                case: caseAccount,
-                systemProgram: web3.SystemProgram.programId,
-              },
-              signers: [reporter],
-            }
-          ),
-        "167: The given account is not owned by the executing program"
-      );
-    }
-  );
-
   it.each(Object.keys(REPORTERS))("Reporter %s is activated", async (key) => {
     const reporter = REPORTERS[key];
 
@@ -601,60 +547,6 @@ describe("HapiCore Use Cases", () => {
     expect(addressInfo.value.owner).toEqual(program.programId);
     expect(addressInfo.value.data).toHaveLength(180);
   });
-
-  it.each(Object.keys(ASSETS))(
-    "Reporter can't create asset '%s' twice",
-    async (key: keyof typeof ASSETS) => {
-      const asset = ASSETS[key];
-
-      const reporter = REPORTERS[asset.reporter].keypair;
-
-      const [networkAccount] = await program.findNetworkAddress(
-        community.publicKey,
-        asset.network
-      );
-
-      const [assetAccount, bump] = await program.findAssetAddress(
-        networkAccount,
-        asset.mint,
-        asset.assetId
-      );
-
-      const [reporterAccount] = await program.findReporterAddress(
-        community.publicKey,
-        reporter.publicKey
-      );
-
-      const [caseAccount] = await program.findCaseAddress(
-        community.publicKey,
-        asset.caseId
-      );
-
-      await expectThrowError(
-        () =>
-          program.rpc.createAsset(
-            asset.mint,
-            asset.assetId,
-            Category[asset.category],
-            asset.risk,
-            bump,
-            {
-              accounts: {
-                sender: reporter.publicKey,
-                asset: assetAccount,
-                community: community.publicKey,
-                network: networkAccount,
-                reporter: reporterAccount,
-                case: caseAccount,
-                systemProgram: web3.SystemProgram.programId,
-              },
-              signers: [reporter],
-            }
-          ),
-        /custom program error: 0x0/
-      );
-    }
-  );
 
   it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {
     const reporter = REPORTERS[key];

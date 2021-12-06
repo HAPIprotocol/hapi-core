@@ -244,6 +244,10 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
+        if risk > 10 {
+            return Err(ErrorCode::RiskOutOfRange.into());
+        }
+
         let asset = &mut ctx.accounts.asset;
 
         asset.network = ctx.accounts.network.key();
@@ -257,6 +261,19 @@ pub mod hapi_core {
         asset.category = category;
         asset.risk = risk;
         asset.confirmations = 0;
+
+        Ok(())
+    }
+
+    pub fn update_asset(ctx: Context<UpdateAsset>, category: Category, risk: u8) -> ProgramResult {
+        if risk > 10 {
+            return Err(ErrorCode::RiskOutOfRange.into());
+        }
+
+        let asset = &mut ctx.accounts.asset;
+
+        asset.risk = risk;
+        asset.category = category;
 
         Ok(())
     }
