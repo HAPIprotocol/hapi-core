@@ -12,7 +12,7 @@ import {
 
 jest.setTimeout(10_000);
 
-describe("HapiCore Network", () => {
+describe("HapiCore Reporter", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
 
@@ -885,7 +885,7 @@ describe("HapiCore Network", () => {
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
       expect(fetchedReporterAccount.isFrozen).toBe(true);
 
-      // Reporter shouldn't' be able to report when it's frozen
+      // Reporter shouldn't be able to report when it's frozen
       {
         const caseId = new BN(1);
         const caseName = bufferFromString("Case 1", 32);
