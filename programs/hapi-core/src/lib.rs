@@ -219,6 +219,23 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn update_address(
+        ctx: Context<UpdateAddress>,
+        category: Category,
+        risk: u8,
+    ) -> ProgramResult {
+        if risk > 10 {
+            return Err(ErrorCode::RiskOutOfRange.into());
+        }
+
+        let address = &mut ctx.accounts.address;
+
+        address.risk = risk;
+        address.category = category;
+
+        Ok(())
+    }
+
     pub fn create_asset(
         ctx: Context<CreateAsset>,
         mint: Pubkey,

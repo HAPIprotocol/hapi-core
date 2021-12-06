@@ -324,6 +324,49 @@ pub struct CreateAddress<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(category: Category, risk: u8)]
+pub struct UpdateAddress<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Authority
+            || (reporter.role == ReporterRole::Full
+            && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
+    )]
+    pub case: Account<'info, Case>,
+
+    #[account(
+        mut,
+        owner = id(),
+        constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
+        has_one = network @ ErrorCode::NetworkMismatch,
+    )]
+    pub address: Account<'info, Address>,
+}
+
+#[derive(Accounts)]
 #[instruction(mint: Pubkey, asset_id: [u8; 32], category: Category, risk: u8, bump: u8)]
 pub struct CreateAsset<'info> {
     #[account(mut)]

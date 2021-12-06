@@ -30,4 +30,8 @@ pub enum ErrorCode {
     FrozenReporter,
     #[msg("Risk score must be in 0..10 range")]
     RiskOutOfRange,
+    #[msg("Network mismatched")]
+    NetworkMismatch,
+    #[msg("Case mismatched")]
+    CaseMismatch,
 }

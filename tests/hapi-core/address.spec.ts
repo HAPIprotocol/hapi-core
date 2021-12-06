@@ -614,4 +614,144 @@ describe("HapiCore Case", () => {
       );
     });
   });
+
+  describe("update_address", () => {
+    it("fail - validator can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAddress(Category[addr.category], addr.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+
+    it("fail - tracer can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.bob.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAddress(Category[addr.category], addr.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+
+    it("success", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.updateAddress(Category.Gambling, 8, {
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        addr.caseId.toNumber()
+      );
+      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
+      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedAddressAccount.risk).toEqual(8);
+      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
+      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+      expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+    });
+  });
 });
