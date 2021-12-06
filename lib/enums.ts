@@ -6,7 +6,6 @@ export const ReporterRole = {
 };
 
 export const ReporterStatus = {
-  Frozen: { frozen: {} },
   Inactive: { inactive: {} },
   Active: { active: {} },
   Unstaking: { unstaking: {} },

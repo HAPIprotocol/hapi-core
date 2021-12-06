@@ -665,7 +665,7 @@ describe("HapiCore Asset", () => {
         asset.caseId
       );
 
-      const tx = await program.rpc.updateAsset(Category.Gambling, 8, {
+      const tx = await program.rpc.updateAsset(Category.LowRiskExchange, 8, {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
@@ -685,7 +685,7 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.caseId.toNumber()).toEqual(
         asset.caseId.toNumber()
       );
-      expect(fetchedAssetAccount.category).toEqual(Category.Gambling);
+      expect(fetchedAssetAccount.category).toEqual(Category.LowRiskExchange);
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(8);
       expect(fetchedAssetAccount.community).toEqual(community.publicKey);
