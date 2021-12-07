@@ -761,4 +761,207 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
     });
   });
+
+  describe("confirm_address", () => {
+    it("fail - can't confirm an address reported by yourself", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.confirmAddress({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        "301: Account is not authorized to perform this action"
+      );
+    });
+
+    it("success - bob", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.bob.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.confirmAddress({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        addr.caseId.toNumber()
+      );
+      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
+      expect(fetchedAddressAccount.confirmations).toEqual(1);
+      expect(fetchedAddressAccount.risk).toEqual(8);
+      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
+      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+    });
+
+    it("success - dave", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.confirmAddress({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        addr.caseId.toNumber()
+      );
+      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
+      expect(fetchedAddressAccount.confirmations).toEqual(2);
+      expect(fetchedAddressAccount.risk).toEqual(8);
+      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
+      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+    });
+
+    it("success - carol", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.carol.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.confirmAddress({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        addr.caseId.toNumber()
+      );
+      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
+      expect(fetchedAddressAccount.confirmations).toEqual(3);
+      expect(fetchedAddressAccount.risk).toEqual(8);
+      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
+      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+    });
+  });
 });

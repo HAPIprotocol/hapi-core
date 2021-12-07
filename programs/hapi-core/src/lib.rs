@@ -234,6 +234,16 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn confirm_address(ctx: Context<ConfirmAddress>) -> ProgramResult {
+        msg!("Instruction: ConfirmAddress");
+
+        let address = &mut ctx.accounts.address;
+
+        address.confirmations += 1;
+
+        Ok(())
+    }
+
     pub fn update_address(
         ctx: Context<UpdateAddress>,
         category: Category,
@@ -401,8 +411,4 @@ pub mod hapi_core {
 
         Ok(())
     }
-
-    // pub fn confirm_address(ctx: Context<ConfirmAddress>) -> ProgramResult {
-    //     Ok(())
-    // }
 }
