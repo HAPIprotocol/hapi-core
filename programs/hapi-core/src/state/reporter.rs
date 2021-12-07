@@ -24,6 +24,9 @@ pub struct Reporter {
     /// Short reporter description
     pub name: [u8; 32],
 
+    /// Current deposited stake
+    pub stake: u64,
+
     /// Reporter can unstake at this epoch (0 if unstaking hasn't been requested)
     pub unlock_epoch: u64,
 }

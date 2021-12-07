@@ -22,6 +22,7 @@ use crate::{
     tracer_stake: u64,
     full_stake: u64,
     authority_stake: u64,
+    stash_bump: u8,
 )]
 pub struct InitializeCommunity<'info> {
     pub authority: Signer<'info>,
@@ -37,9 +38,13 @@ pub struct InitializeCommunity<'info> {
     #[account(owner = Token::id())]
     pub stake_mint: Account<'info, Mint>,
 
+    pub token_signer: AccountInfo<'info>,
+
     #[account(
         mut,
-        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken
+        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
     )]
     pub token_account: Account<'info, TokenAccount>,
 
@@ -124,6 +129,8 @@ pub struct UpdateNetwork<'info> {
     #[account(
         mut,
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
     )]
     pub network: Account<'info, Network>,
 }
@@ -169,6 +176,8 @@ pub struct UpdateReporter<'info> {
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -187,6 +196,8 @@ pub struct FreezeReporter<'info> {
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -205,6 +216,8 @@ pub struct UnfreezeReporter<'info> {
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -228,6 +241,8 @@ pub struct CreateCase<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -265,6 +280,8 @@ pub struct UpdateCase<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -272,6 +289,8 @@ pub struct UpdateCase<'info> {
         mut,
         has_one = community,
         owner = id(),
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
     )]
     pub case: Account<'info, Case>,
 }
@@ -288,6 +307,8 @@ pub struct CreateAddress<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
     )]
     pub network: Account<'info, Network>,
 
@@ -300,13 +321,17 @@ pub struct CreateAddress<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
     )]
     pub case: Account<'info, Case>,
 
@@ -335,6 +360,8 @@ pub struct UpdateAddress<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
     )]
     pub network: Account<'info, Network>,
 
@@ -347,13 +374,17 @@ pub struct UpdateAddress<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
     )]
     pub case: Account<'info, Case>,
 
@@ -362,6 +393,8 @@ pub struct UpdateAddress<'info> {
         owner = id(),
         constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
         has_one = network @ ErrorCode::NetworkMismatch,
+        seeds = [b"address".as_ref(), network.key().as_ref(), address.address.as_ref()],
+        bump = address.bump,
     )]
     pub address: Account<'info, Address>,
 }
@@ -378,6 +411,8 @@ pub struct CreateAsset<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
     )]
     pub network: Account<'info, Network>,
 
@@ -390,13 +425,17 @@ pub struct CreateAsset<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
     )]
     pub case: Account<'info, Case>,
 
@@ -425,6 +464,8 @@ pub struct UpdateAsset<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
     )]
     pub network: Account<'info, Network>,
 
@@ -437,13 +478,17 @@ pub struct UpdateAsset<'info> {
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
     )]
     pub case: Account<'info, Case>,
 
@@ -452,6 +497,8 @@ pub struct UpdateAsset<'info> {
         owner = id(),
         constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
         has_one = network @ ErrorCode::NetworkMismatch,
+        seeds = [b"asset".as_ref(), network.key().as_ref(), asset.mint.as_ref(), asset.asset_id.as_ref()],
+        bump = asset.bump,
     )]
     pub asset: Account<'info, Asset>,
 }
@@ -492,6 +539,8 @@ pub struct ActivateReporter<'info> {
         constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -511,6 +560,8 @@ pub struct DeactivateReporter<'info> {
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }
@@ -524,12 +575,42 @@ pub struct ReleaseReporter<'info> {
     pub community: Account<'info, Community>,
 
     #[account(
+        constraint = community.stake_mint == stake_mint.key() @ ErrorCode::InvalidMint
+    )]
+    pub stake_mint: Account<'info, Mint>,
+
+    #[account(
+        mut,
+        constraint = reporter_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        seeds = [b"community_stash".as_ref(), community.key().as_ref()],
+        bump = community.token_signer_bump,
+    )]
+    pub community_token_signer: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        constraint = community_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = community_token_account.owner == community_token_signer.key() @ ProgramError::IllegalOwner,
+    )]
+    pub community_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
+
+    #[account(
         mut,
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 }

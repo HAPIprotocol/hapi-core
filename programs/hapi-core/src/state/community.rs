@@ -17,6 +17,12 @@ pub struct Community {
     /// Stake token mint account
     pub stake_mint: Pubkey,
 
+    /// Token signer PDA
+    pub token_signer: Pubkey,
+
+    /// Seed bump for token signer PDA
+    pub token_signer_bump: u8,
+
     /// Stake holding token account
     pub token_account: Pubkey,
 

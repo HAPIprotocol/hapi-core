@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, SetAuthority, Transfer};
-use spl_token::instruction::AuthorityType;
+use anchor_spl::token::{self, Transfer};
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -9,7 +8,7 @@ mod error;
 mod state;
 
 use context::*;
-use error::ErrorCode;
+use error::{print_error, ErrorCode};
 use state::{
     address::Category,
     case::CaseStatus,
@@ -28,32 +27,29 @@ pub mod hapi_core {
         tracer_stake: u64,
         full_stake: u64,
         authority_stake: u64,
+        signer_bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: InitializeCommunity");
+
         let community = &mut ctx.accounts.community;
+
+        msg!(
+            "token account owner: {:?}",
+            ctx.accounts.token_account.owner
+        );
 
         community.authority = *ctx.accounts.authority.key;
         community.cases = 0;
         community.stake_unlock_epochs = stake_unlock_epochs;
         community.confirmation_threshold = confirmation_threshold;
         community.stake_mint = ctx.accounts.stake_mint.to_account_info().key();
+        community.token_signer = ctx.accounts.token_signer.key();
+        community.token_signer_bump = signer_bump;
         community.token_account = ctx.accounts.token_account.key();
         community.validator_stake = validator_stake;
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;
         community.authority_stake = authority_stake;
-
-        let cpi_context = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            SetAuthority {
-                account_or_mint: ctx.accounts.token_account.to_account_info(),
-                current_authority: ctx.accounts.authority.to_account_info(),
-            },
-        );
-        token::set_authority(
-            cpi_context,
-            AuthorityType::AccountOwner,
-            Some(community.key()),
-        )?;
 
         Ok(())
     }
@@ -67,6 +63,8 @@ pub mod hapi_core {
         full_stake: u64,
         authority_stake: u64,
     ) -> ProgramResult {
+        msg!("Instruction: UpdateCommunity");
+
         let community = &mut ctx.accounts.community;
 
         community.stake_unlock_epochs = stake_unlock_epochs;
@@ -80,6 +78,8 @@ pub mod hapi_core {
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> ProgramResult {
+        msg!("Instruction: SetCommunityAuthority");
+
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.new_authority.key;
@@ -94,6 +94,8 @@ pub mod hapi_core {
         confirmation_reward: u64,
         bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: CreateNetwork");
+
         let network = &mut ctx.accounts.network;
 
         network.community = ctx.accounts.community.key();
@@ -111,6 +113,8 @@ pub mod hapi_core {
         tracer_reward: u64,
         confirmation_reward: u64,
     ) -> ProgramResult {
+        msg!("Instruction: UpdateNetwork");
+
         let network = &mut ctx.accounts.network;
 
         network.tracer_reward = tracer_reward;
@@ -125,6 +129,8 @@ pub mod hapi_core {
         name: [u8; 32],
         bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: CreateReporter");
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.community = ctx.accounts.community.key();
@@ -135,6 +141,7 @@ pub mod hapi_core {
         reporter.status = ReporterStatus::Inactive;
         reporter.name = name;
         reporter.is_frozen = false;
+        reporter.stake = 0;
 
         Ok(())
     }
@@ -144,6 +151,8 @@ pub mod hapi_core {
         role: ReporterRole,
         name: [u8; 32],
     ) -> ProgramResult {
+        msg!("Instruction: UpdateReporter");
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.role = role;
@@ -158,10 +167,12 @@ pub mod hapi_core {
         name: [u8; 32],
         bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: CreateCase");
+
         let community = &mut ctx.accounts.community;
 
         if case_id != community.cases + 1 {
-            return Err(ErrorCode::NonSequentialCaseId.into());
+            return print_error(ErrorCode::NonSequentialCaseId);
         } else {
             community.cases = case_id;
         }
@@ -184,6 +195,8 @@ pub mod hapi_core {
         name: [u8; 32],
         status: CaseStatus,
     ) -> ProgramResult {
+        msg!("Instruction: UpdateCase");
+
         let case = &mut ctx.accounts.case;
 
         case.name = name;
@@ -199,8 +212,10 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: CreateAddress");
+
         if risk > 10 {
-            return Err(ErrorCode::RiskOutOfRange.into());
+            return print_error(ErrorCode::RiskOutOfRange);
         }
 
         let address = &mut ctx.accounts.address;
@@ -224,8 +239,10 @@ pub mod hapi_core {
         category: Category,
         risk: u8,
     ) -> ProgramResult {
+        msg!("Instruction: UpdateAddress");
+
         if risk > 10 {
-            return Err(ErrorCode::RiskOutOfRange.into());
+            return print_error(ErrorCode::RiskOutOfRange);
         }
 
         let address = &mut ctx.accounts.address;
@@ -244,8 +261,10 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
+        msg!("Instruction: CreateAsset");
+
         if risk > 10 {
-            return Err(ErrorCode::RiskOutOfRange.into());
+            return print_error(ErrorCode::RiskOutOfRange);
         }
 
         let asset = &mut ctx.accounts.asset;
@@ -266,8 +285,10 @@ pub mod hapi_core {
     }
 
     pub fn update_asset(ctx: Context<UpdateAsset>, category: Category, risk: u8) -> ProgramResult {
+        msg!("Instruction: UpdateAsset");
+
         if risk > 10 {
-            return Err(ErrorCode::RiskOutOfRange.into());
+            return print_error(ErrorCode::RiskOutOfRange);
         }
 
         let asset = &mut ctx.accounts.asset;
@@ -279,6 +300,8 @@ pub mod hapi_core {
     }
 
     pub fn activate_reporter(ctx: Context<ActivateReporter>) -> ProgramResult {
+        msg!("Instruction: ActivateReporter");
+
         let community = &ctx.accounts.community;
 
         let reporter = &mut ctx.accounts.reporter;
@@ -302,11 +325,14 @@ pub mod hapi_core {
         token::transfer(cpi_context, stake)?;
 
         reporter.status = ReporterStatus::Active;
+        reporter.stake = stake;
 
         Ok(())
     }
 
     pub fn deactivate_reporter(ctx: Context<DeactivateReporter>) -> ProgramResult {
+        msg!("Instruction: DeactivateReporter");
+
         let community = &ctx.accounts.community;
 
         let reporter = &mut ctx.accounts.reporter;
@@ -318,21 +344,47 @@ pub mod hapi_core {
     }
 
     pub fn release_reporter(ctx: Context<ReleaseReporter>) -> ProgramResult {
+        msg!("Instruction: ReleaseReporter");
+
         let reporter = &mut ctx.accounts.reporter;
 
         if reporter.unlock_epoch > Clock::get()?.epoch {
-            return Err(ErrorCode::ReleaseEpochInFuture.into());
+            return print_error(ErrorCode::ReleaseEpochInFuture);
         }
 
-        // TODO: transfer stake tokens from program token account to reporter token account
+        let community = ctx.accounts.community.clone();
+
+        let token_signer = ctx.accounts.community_token_signer.clone();
+
+        let seeds = &[
+            b"community_stash".as_ref(),
+            community.to_account_info().key.as_ref(),
+            &[community.token_signer_bump],
+        ];
+        let signer = &[&seeds[..]];
+
+        let cpi_context = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.community_token_account.to_account_info(),
+                to: ctx.accounts.reporter_token_account.to_account_info(),
+                authority: token_signer.to_account_info(),
+            },
+            signer,
+        );
+
+        token::transfer(cpi_context, reporter.stake)?;
 
         reporter.status = ReporterStatus::Inactive;
         reporter.unlock_epoch = 0;
+        reporter.stake = 0;
 
         Ok(())
     }
 
     pub fn freeze_reporter(ctx: Context<FreezeReporter>) -> ProgramResult {
+        msg!("Instruction: FreezeReporter");
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.is_frozen = true;
@@ -341,6 +393,8 @@ pub mod hapi_core {
     }
 
     pub fn unfreeze_reporter(ctx: Context<UnfreezeReporter>) -> ProgramResult {
+        msg!("Instruction: UnfreezeReporter");
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.is_frozen = false;

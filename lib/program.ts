@@ -5,6 +5,15 @@ import { bufferFromString } from "./buffer";
 
 const HapiCore = workspace.HapiCore as Program<HapiCore>;
 
+export async function findCommunityTokenSignerAddress(
+  community: web3.PublicKey
+) {
+  return web3.PublicKey.findProgramAddress(
+    [bufferFromString("community_stash"), community.toBytes()],
+    HapiCore.programId
+  );
+}
+
 export async function findNetworkAddress(
   community: web3.PublicKey,
   name: string
@@ -65,4 +74,5 @@ export const program = {
   findCaseAddress,
   findAddressAddress,
   findAssetAddress,
+  findCommunityTokenSignerAddress,
 };

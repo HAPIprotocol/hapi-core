@@ -146,8 +146,6 @@ describe("HapiCore Asset", () => {
 
     wait.push(provider.send(tx));
 
-    const communityTokenAccount = await stakeToken.createAccount();
-
     for (const reporter of Object.keys(REPORTERS)) {
       wait.push(
         stakeToken.transfer(
@@ -158,6 +156,13 @@ describe("HapiCore Asset", () => {
       );
     }
 
+    const [tokenSignerAccount, tokenSignerBump] =
+      await program.findCommunityTokenSignerAddress(community.publicKey);
+
+    const communityTokenAccount = await stakeToken.createAccount(
+      tokenSignerAccount
+    );
+
     wait.push(
       program.rpc.initializeCommunity(
         new u64(10),
@@ -166,12 +171,14 @@ describe("HapiCore Asset", () => {
         new u64(2_000),
         new u64(3_000),
         new u64(4_000),
+        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
+            tokenSigner: tokenSignerAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },

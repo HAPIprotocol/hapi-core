@@ -5,6 +5,8 @@ import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import { bufferFromString, program } from "../../lib";
 
+jest.setTimeout(10_000);
+
 describe("HapiCore Network", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
@@ -25,7 +27,10 @@ describe("HapiCore Network", () => {
     await stakeToken.mint(new u64(1_000_000_000));
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
 
-    const tokenAccount = await stakeToken.createAccount();
+    const [tokenSignerAccount, tokenSignerBump] =
+      await program.findCommunityTokenSignerAddress(community.publicKey);
+
+    const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     await program.rpc.initializeCommunity(
       new u64(1),
@@ -34,12 +39,14 @@ describe("HapiCore Network", () => {
       new u64(2_000),
       new u64(3_000),
       new u64(4_000),
+      tokenSignerBump,
       {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount: tokenAccount,
+          tokenSigner: tokenSignerAccount,
           tokenProgram: stakeToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -77,7 +84,12 @@ describe("HapiCore Network", () => {
     it("fail - authority mismatch for community", async () => {
       let name = bufferFromString("near", 32);
 
-      const otherTokenAccount = await stakeToken.createAccount();
+      const [tokenSignerAccount, tokenSignerBump] =
+        await program.findCommunityTokenSignerAddress(otherCommunity.publicKey);
+
+      const otherTokenAccount = await stakeToken.createAccount(
+        tokenSignerAccount
+      );
 
       await program.rpc.initializeCommunity(
         new u64(1),
@@ -86,12 +98,14 @@ describe("HapiCore Network", () => {
         new u64(2_000),
         new u64(3_000),
         new u64(4_000),
+        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
+            tokenSigner: tokenSignerAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },

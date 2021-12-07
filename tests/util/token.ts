@@ -1,8 +1,9 @@
 import { Provider, web3 } from "@project-serum/anchor";
 import { NodeWallet } from "@project-serum/anchor/dist/cjs/provider";
 import { Token, TOKEN_PROGRAM_ID, u64, AuthorityType } from "@solana/spl-token";
-
 export { Token, u64 } from "@solana/spl-token";
+
+import { program } from "../../lib";
 
 export class TestToken {
   public token: Token;
@@ -54,6 +55,7 @@ export class TestToken {
     }
 
     const account = await this.token.createAccount(this.payer.publicKey);
+
     await this.token.setAuthority(
       account,
       owner,

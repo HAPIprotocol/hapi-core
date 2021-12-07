@@ -35,3 +35,8 @@ pub enum ErrorCode {
     #[msg("Case mismatched")]
     CaseMismatch,
 }
+
+pub fn print_error(error: ErrorCode) -> ProgramResult {
+    msg!("Error: {}", error);
+    Err(error.into())
+}

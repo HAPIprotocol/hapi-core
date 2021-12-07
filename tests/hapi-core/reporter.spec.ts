@@ -73,9 +73,6 @@ describe("HapiCore Reporter", () => {
 
     wait.push(provider.send(tx));
 
-    const tokenAccount = await stakeToken.createAccount();
-    const otherTokenAccount = await stakeToken.createAccount();
-
     for (const reporter of Object.keys(REPORTERS)) {
       wait.push(
         stakeToken.transfer(
@@ -86,6 +83,20 @@ describe("HapiCore Reporter", () => {
       );
     }
 
+    const [tokenSignerAccount, tokenSignerBump] =
+      await program.findCommunityTokenSignerAddress(community.publicKey);
+
+    const communityTokenAccount = await stakeToken.createAccount(
+      tokenSignerAccount
+    );
+
+    const [otherTokenSignerAccount, otherStashBump] =
+      await program.findCommunityTokenSignerAddress(otherCommunity.publicKey);
+
+    const otherTokenAccount = await stakeToken.createAccount(
+      otherTokenSignerAccount
+    );
+
     wait.push(
       program.rpc.initializeCommunity(
         new u64(0), // unlocks in current epoch
@@ -94,12 +105,14 @@ describe("HapiCore Reporter", () => {
         new u64(2_000),
         new u64(3_000),
         new u64(5_000),
+        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
-            tokenAccount: tokenAccount,
+            tokenSigner: tokenSignerAccount,
+            tokenAccount: communityTokenAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -113,11 +126,13 @@ describe("HapiCore Reporter", () => {
         new u64(2_000),
         new u64(3_000),
         new u64(4_000),
+        otherStashBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
+            tokenSigner: otherTokenSignerAccount,
             tokenAccount: otherTokenAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
@@ -773,6 +788,14 @@ describe("HapiCore Reporter", () => {
         reporter.keypair.publicKey
       );
 
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.releaseReporter({
@@ -780,6 +803,11 @@ describe("HapiCore Reporter", () => {
               sender: reporter.keypair.publicKey,
               community: community.publicKey,
               reporter: reporterAccount,
+              stakeMint: stakeToken.mintAccount,
+              reporterTokenAccount: tokenAccount,
+              communityTokenSigner: communityInfo.tokenSigner,
+              communityTokenAccount: communityInfo.tokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
           }),
@@ -795,6 +823,14 @@ describe("HapiCore Reporter", () => {
         reporter.keypair.publicKey
       );
 
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        otherCommunity.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.releaseReporter({
@@ -802,6 +838,11 @@ describe("HapiCore Reporter", () => {
               sender: reporter.keypair.publicKey,
               community: otherCommunity.publicKey,
               reporter: reporterAccount,
+              stakeMint: stakeToken.mintAccount,
+              reporterTokenAccount: tokenAccount,
+              communityTokenSigner: communityInfo.tokenSigner,
+              communityTokenAccount: communityInfo.tokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
           }),
@@ -817,11 +858,40 @@ describe("HapiCore Reporter", () => {
         reporter.keypair.publicKey
       );
 
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(tokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const communityBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(
+            communityInfo.tokenAccount
+          )
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.releaseReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
           community: community.publicKey,
           reporter: reporterAccount,
+          stakeMint: stakeToken.mintAccount,
+          reporterTokenAccount: tokenAccount,
+          communityTokenSigner: communityInfo.tokenSigner,
+          communityTokenAccount: communityInfo.tokenAccount,
+          tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
       });
@@ -834,6 +904,32 @@ describe("HapiCore Reporter", () => {
       expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
       expect(fetchedReporterAccount.unlockEpoch.toNumber()).toEqual(0);
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(tokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const communityBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(
+            communityInfo.tokenAccount
+          )
+        ).value.amount,
+        10
+      );
+
+      // Expect bob to get his 2_000 stake back
+      expect(
+        reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
+      ).toEqual(2_000);
+
+      // Expect community to return 2_000 of stake back to bob
+      expect(
+        communityBalanceBefore.sub(communityBalanceAfter).toNumber()
+      ).toEqual(2_000);
     });
 
     it("fail - bob is inactive", async () => {

@@ -13,7 +13,9 @@ import {
   ReporterStatus,
 } from "../../lib";
 
-describe("HapiCore Use Cases", () => {
+jest.setTimeout(10_000);
+
+describe("HapiCore General", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
 
@@ -173,7 +175,10 @@ describe("HapiCore Use Cases", () => {
     const fullStake = new u64(3_000);
     const authorityStake = new u64(4_000);
 
-    const tokenAccount = await stakeToken.createAccount();
+    const [tokenSignerAccount, tokenSignerBump] =
+      await program.findCommunityTokenSignerAddress(community.publicKey);
+
+    const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     const tx = await program.rpc.initializeCommunity(
       new u64(4),
@@ -182,12 +187,14 @@ describe("HapiCore Use Cases", () => {
       tracerStake,
       fullStake,
       authorityStake,
+      tokenSignerBump,
       {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
+          tokenSigner: tokenSignerAccount,
           tokenProgram: stakeToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
