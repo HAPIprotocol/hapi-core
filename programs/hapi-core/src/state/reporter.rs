@@ -31,6 +31,25 @@ pub struct Reporter {
     pub unlock_epoch: u64,
 }
 
+#[account]
+#[derive(Default)]
+pub struct ReporterReward {
+    /// Reporter account to keep reward counter for
+    pub reporter: Pubkey,
+
+    /// Network that has the reward associated with
+    pub network: Pubkey,
+
+    /// Seed bump for PDA
+    pub bump: u8,
+
+    /// Number of unclaimed address report rewards
+    pub address_counter: u64,
+
+    /// Number of unclaimed confirmation rewards
+    pub confirmation_counter: u64,
+}
+
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterStatus {
     /// Reporter is not active, but can activate after staking

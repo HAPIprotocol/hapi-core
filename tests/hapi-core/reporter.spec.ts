@@ -22,7 +22,10 @@ describe("HapiCore Reporter", () => {
 
   const community = web3.Keypair.generate();
   const otherCommunity = web3.Keypair.generate();
+
   let stakeToken: TestToken;
+  let rewardToken: TestToken;
+
   let currentEpoch: number;
 
   const REPORTERS: Record<
@@ -38,6 +41,10 @@ describe("HapiCore Reporter", () => {
     },
   };
 
+  const NETWORKS: Record<string, { name: string }> = {
+    ethereum: { name: "ethereum" },
+  };
+
   beforeAll(async () => {
     const wait: Promise<unknown>[] = [];
 
@@ -47,6 +54,9 @@ describe("HapiCore Reporter", () => {
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
     wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
+
+    rewardToken = new TestToken(provider);
+    wait.push(rewardToken.mint(new u64(0)));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -139,6 +149,41 @@ describe("HapiCore Reporter", () => {
         }
       )
     );
+
+    await Promise.all(wait);
+
+    for (const key of Object.keys(NETWORKS)) {
+      const network = NETWORKS[key];
+
+      const [networkAccount, bump] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      wait.push(
+        program.rpc.createNetwork(
+          bufferFromString(network.name, 32).toJSON().data,
+          new u64(10_000),
+          new u64(20_000),
+          bump,
+          rewardSignerBump,
+          {
+            accounts: {
+              authority: authority.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
+              systemProgram: web3.SystemProgram.programId,
+            },
+          }
+        )
+      );
+    }
 
     await Promise.all(wait);
   });
@@ -438,6 +483,59 @@ describe("HapiCore Reporter", () => {
       expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
       expect(fetchedReporterAccount.role).toEqual(ReporterRole.Validator);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+    });
+  });
+
+  describe("initialize_reporter_reward", () => {
+    it("success", async () => {
+      const reporter = REPORTERS.bob;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [reporterRewardAccount, bump] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          reporterAccount
+        );
+
+      const tx = await program.rpc.initializeReporterReward(bump, {
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAccount = await program.account.reporterReward.fetch(
+        reporterRewardAccount
+      );
+      expect(fetchedAccount.bump).toEqual(bump);
+      expect(fetchedAccount.network).toEqual(networkAccount);
+      expect(fetchedAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+
+      const accountInfo = await provider.connection.getAccountInfoAndContext(
+        reporterRewardAccount
+      );
+      expect(accountInfo.value.owner).toEqual(program.programId);
+      expect(accountInfo.value.data).toHaveLength(89);
     });
   });
 

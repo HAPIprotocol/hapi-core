@@ -10,14 +10,14 @@ use crate::{
         case::{Case, CaseStatus},
         community::Community,
         network::Network,
-        reporter::{Reporter, ReporterRole, ReporterStatus},
+        reporter::{Reporter, ReporterReward, ReporterRole, ReporterStatus},
     },
 };
 
 #[derive(Accounts)]
 #[instruction(
     stake_unlock_epochs: u64,
-    confirmation_threshold: u32,
+    confirmation_threshold: u8,
     validator_stake: u64,
     tracer_stake: u64,
     full_stake: u64,
@@ -54,7 +54,7 @@ pub struct InitializeCommunity<'info> {
 #[derive(Accounts)]
 #[instruction(
     stake_unlock_epochs: u64,
-    confirmation_threshold: u32,
+    confirmation_threshold: u8,
     validator_stake: u64,
     tracer_stake: u64,
     full_stake: u64,
@@ -162,6 +162,46 @@ pub struct CreateReporter<'info> {
     pub reporter: Account<'info, Reporter>,
 
     pub pubkey: AccountInfo<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(bump: u8)]
+pub struct InitializeReporterReward<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        init,
+        payer = sender,
+        owner = id(),
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump = bump,
+        space = 89,
+    )]
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     pub system_program: Program<'info, System>,
 }
@@ -330,6 +370,16 @@ pub struct CreateAddress<'info> {
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+
+    // #[account(
+    //     mut,
+    //     owner = id(),
+    //     has_one = reporter,
+    //     has_one = network,
+    //     seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.pubkey.as_ref()],
+    //     bump = reporter_reward.bump,
+    // )]
+    // pub reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         owner = id(),

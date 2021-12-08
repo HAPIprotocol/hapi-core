@@ -22,7 +22,7 @@ pub mod hapi_core {
     pub fn initialize_community(
         ctx: Context<InitializeCommunity>,
         stake_unlock_epochs: u64,
-        confirmation_threshold: u32,
+        confirmation_threshold: u8,
         validator_stake: u64,
         tracer_stake: u64,
         full_stake: u64,
@@ -52,7 +52,7 @@ pub mod hapi_core {
     pub fn update_community(
         ctx: Context<UpdateCommunity>,
         stake_unlock_epochs: u64,
-        confirmation_threshold: u32,
+        confirmation_threshold: u8,
         validator_stake: u64,
         tracer_stake: u64,
         full_stake: u64,
@@ -240,6 +240,14 @@ pub mod hapi_core {
 
         address.confirmations += 1;
 
+        let community = &ctx.accounts.community;
+
+        if address.confirmations == community.confirmation_threshold {
+            // TODO: reward original reporter
+        }
+
+        // TODO: reward confirming reporter
+
         Ok(())
     }
 
@@ -304,6 +312,21 @@ pub mod hapi_core {
 
         asset.risk = risk;
         asset.category = category;
+
+        Ok(())
+    }
+
+    pub fn initialize_reporter_reward(
+        ctx: Context<InitializeReporterReward>,
+        bump: u8,
+    ) -> ProgramResult {
+        msg!("Instruction: InitializeReporterReward");
+
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
+
+        reporter_reward.network = ctx.accounts.network.key();
+        reporter_reward.reporter = ctx.accounts.reporter.key();
+        reporter_reward.bump = bump;
 
         Ok(())
     }
