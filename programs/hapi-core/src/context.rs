@@ -48,9 +48,6 @@ pub struct InitializeCommunity<'info> {
     )]
     pub token_account: Account<'info, TokenAccount>,
 
-    #[account(address = Token::id())]
-    pub token_program: Program<'info, Token>,
-
     pub system_program: Program<'info, System>,
 }
 

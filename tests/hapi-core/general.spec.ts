@@ -199,7 +199,6 @@ describe("HapiCore General", () => {
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
           tokenSigner: tokenSignerAccount,
-          tokenProgram: stakeToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],

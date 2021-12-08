@@ -121,7 +121,6 @@ describe("HapiCore Case", () => {
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
             tokenSigner: tokenSignerAccount,
-            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
