@@ -28,6 +28,13 @@ export async function findNetworkAddress(
   );
 }
 
+export async function findNetworkRewardSignerAddress(network: web3.PublicKey) {
+  return web3.PublicKey.findProgramAddress(
+    [bufferFromString("network_reward"), network.toBytes()],
+    HapiCore.programId
+  );
+}
+
 export async function findReporterAddress(
   community: web3.PublicKey,
   pubkey: web3.PublicKey
@@ -70,6 +77,7 @@ export const program = {
   ...HapiCore,
   programId: HapiCore.programId,
   findNetworkAddress,
+  findNetworkRewardSignerAddress,
   findReporterAddress,
   findCaseAddress,
   findAddressAddress,

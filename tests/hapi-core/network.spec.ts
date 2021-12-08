@@ -18,6 +18,7 @@ describe("HapiCore Network", () => {
   let community: web3.Keypair;
   let otherCommunity: web3.Keypair;
   let stakeToken: TestToken;
+  let rewardToken: TestToken;
 
   beforeAll(async () => {
     community = web3.Keypair.generate();
@@ -26,6 +27,9 @@ describe("HapiCore Network", () => {
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
+
+    rewardToken = new TestToken(provider);
+    await rewardToken.mint(new u64(0));
 
     const [tokenSignerAccount, tokenSignerBump] =
       await program.findCommunityTokenSignerAddress(community.publicKey);
@@ -59,12 +63,21 @@ describe("HapiCore Network", () => {
     it("fail - invalid authority", async () => {
       let name = bufferFromString("near", 32);
 
-      const [networkAccount, bump] = await program.findNetworkAddress(
+      const [networkAccount, networkBump] = await program.findNetworkAddress(
         community.publicKey,
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const args = [
+        name.toJSON().data,
+        new u64(10_000),
+        new u64(10_000),
+        networkBump,
+        rewardSignerBump,
+      ];
 
       await expectThrowError(
         () =>
@@ -73,6 +86,9 @@ describe("HapiCore Network", () => {
               authority: nobody.publicKey,
               community: community.publicKey,
               network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [nobody],
@@ -126,7 +142,16 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const args = [
+        name.toJSON().data,
+        new u64(10_000),
+        new u64(10_000),
+        bump,
+        rewardSignerBump,
+      ];
 
       await expectThrowError(
         () =>
@@ -135,6 +160,9 @@ describe("HapiCore Network", () => {
               authority: authority.publicKey,
               community: otherCommunity.publicKey,
               network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
           }),
@@ -150,7 +178,16 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const args = [
+        name.toJSON().data,
+        new u64(10_000),
+        new u64(10_000),
+        bump,
+        rewardSignerBump,
+      ];
 
       await expectThrowError(
         () =>
@@ -159,6 +196,9 @@ describe("HapiCore Network", () => {
               authority: nobody.publicKey,
               community: otherCommunity.publicKey,
               network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [nobody],
@@ -175,13 +215,25 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(20_000), bump];
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const args = [
+        name.toJSON().data,
+        new u64(10_000),
+        new u64(20_000),
+        bump,
+        rewardSignerBump,
+      ];
 
       const tx = await program.rpc.createNetwork(...args, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           network: networkAccount,
+          rewardMint: rewardToken.mintAccount,
+          rewardSigner: rewardSignerAccount,
+          tokenProgram: rewardToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
       });
@@ -197,6 +249,9 @@ describe("HapiCore Network", () => {
       expect(fetchedNetworkAccount.confirmationReward.toNumber()).toEqual(
         20_000
       );
+      expect(fetchedNetworkAccount.rewardSignerBump).toEqual(rewardSignerBump);
+      expect(fetchedNetworkAccount.rewardMint).toEqual(rewardToken.mintAccount);
+      expect(fetchedNetworkAccount.rewardSigner).toEqual(rewardSignerAccount);
 
       const networkInfo = await provider.connection.getAccountInfoAndContext(
         networkAccount
@@ -213,7 +268,16 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(community.publicKey);
+
+      const args = [
+        name.toJSON().data,
+        new u64(10_000),
+        new u64(10_000),
+        bump,
+        rewardSignerBump,
+      ];
 
       await expectThrowError(
         () =>
@@ -222,6 +286,9 @@ describe("HapiCore Network", () => {
               authority: authority.publicKey,
               community: community.publicKey,
               network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
           }),

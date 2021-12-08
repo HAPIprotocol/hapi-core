@@ -33,11 +33,6 @@ pub mod hapi_core {
 
         let community = &mut ctx.accounts.community;
 
-        msg!(
-            "token account owner: {:?}",
-            ctx.accounts.token_account.owner
-        );
-
         community.authority = *ctx.accounts.authority.key;
         community.cases = 0;
         community.stake_unlock_epochs = stake_unlock_epochs;
@@ -92,16 +87,20 @@ pub mod hapi_core {
         name: [u8; 32],
         tracer_reward: u64,
         confirmation_reward: u64,
-        bump: u8,
+        network_bump: u8,
+        reward_signer_bump: u8,
     ) -> ProgramResult {
         msg!("Instruction: CreateNetwork");
 
         let network = &mut ctx.accounts.network;
 
         network.community = ctx.accounts.community.key();
-        network.bump = bump;
+        network.bump = network_bump;
 
         network.name = name;
+        network.reward_mint = ctx.accounts.reward_mint.key();
+        network.reward_signer = ctx.accounts.reward_signer.key();
+        network.reward_signer_bump = reward_signer_bump;
         network.tracer_reward = tracer_reward;
         network.confirmation_reward = confirmation_reward;
 

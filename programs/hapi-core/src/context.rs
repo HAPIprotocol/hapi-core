@@ -102,6 +102,11 @@ pub struct CreateNetwork<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    #[account(owner = Token::id())]
+    pub reward_mint: Account<'info, Mint>,
+
+    pub reward_signer: AccountInfo<'info>,
+
     #[account(
         init,
         payer = authority,
@@ -111,6 +116,9 @@ pub struct CreateNetwork<'info> {
         space = 200
     )]
     pub network: Account<'info, Network>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 
     pub system_program: Program<'info, System>,
 }

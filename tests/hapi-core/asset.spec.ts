@@ -24,6 +24,7 @@ describe("HapiCore Asset", () => {
   const community = web3.Keypair.generate();
 
   let stakeToken: TestToken;
+  let rewardToken: TestToken;
 
   const REPORTERS: Record<
     string,
@@ -129,6 +130,9 @@ describe("HapiCore Asset", () => {
     await stakeToken.mint(new u64(1_000_000_000));
     wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
 
+    rewardToken = new TestToken(provider);
+    wait.push(rewardToken.mint(new u64(0)));
+
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
         fromPubkey: authority.publicKey,
@@ -223,17 +227,24 @@ describe("HapiCore Asset", () => {
         network.name
       );
 
+      const [rewardSignerAccount, rewardSignerBump] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
           new u64(10_000),
           new u64(20_000),
           bump,
+          rewardSignerBump,
           {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
               network: networkAccount,
+              rewardMint: rewardToken.mintAccount,
+              rewardSigner: rewardSignerAccount,
+              tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
           }

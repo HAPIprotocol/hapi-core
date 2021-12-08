@@ -44,29 +44,20 @@ describe("HapiCore Case", () => {
     },
   };
 
-  const NETWORKS: Record<string, { name: string }> = {
-    ethereum: { name: "ethereum" },
-    solana: { name: "solana" },
-    near: { name: "near" },
-  };
-
   const CASES: Record<
     string,
     {
-      network: keyof typeof NETWORKS;
       caseId: BN;
       name: string;
       reporter: keyof typeof REPORTERS;
     }
   > = {
     safe: {
-      network: "ethereum",
       caseId: new BN(1),
       name: "safe network addresses",
       reporter: "alice",
     },
     nftTracking: {
-      network: "ethereum",
       caseId: new BN(2),
       name: "suspicious nft txes",
       reporter: "carol",
@@ -110,7 +101,9 @@ describe("HapiCore Case", () => {
     const [tokenSignerAccount, tokenSignerBump] =
       await program.findCommunityTokenSignerAddress(community.publicKey);
 
-    const communityTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const communityTokenAccount = await stakeToken.createAccount(
+      tokenSignerAccount
+    );
 
     wait.push(
       program.rpc.initializeCommunity(
@@ -157,32 +150,6 @@ describe("HapiCore Case", () => {
               community: community.publicKey,
               reporter: reporterAccount,
               pubkey: reporter.keypair.publicKey,
-              systemProgram: web3.SystemProgram.programId,
-            },
-          }
-        )
-      );
-    }
-
-    for (const key of Object.keys(NETWORKS)) {
-      const network = NETWORKS[key];
-
-      const [networkAccount, bump] = await program.findNetworkAddress(
-        community.publicKey,
-        network.name
-      );
-
-      wait.push(
-        program.rpc.createNetwork(
-          bufferFromString(network.name, 32).toJSON().data,
-          new u64(10_000),
-          new u64(20_000),
-          bump,
-          {
-            accounts: {
-              authority: authority.publicKey,
-              community: community.publicKey,
-              network: networkAccount,
               systemProgram: web3.SystemProgram.programId,
             },
           }

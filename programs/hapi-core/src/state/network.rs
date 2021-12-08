@@ -14,6 +14,12 @@ pub struct Network {
     /// Reward token mint account
     pub reward_mint: Pubkey,
 
+    /// Reward signer PDA
+    pub reward_signer: Pubkey,
+
+    /// Seed bump for reward signer PDA
+    pub reward_signer_bump: u8,
+
     /// Reward amount for tracers that report to this network
     pub tracer_reward: u64,
 

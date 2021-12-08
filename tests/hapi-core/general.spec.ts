@@ -128,6 +128,7 @@ describe("HapiCore General", () => {
 
   let community: web3.Keypair;
   let stakeToken: TestToken;
+  let rewardToken: TestToken;
 
   beforeAll(async () => {
     const tx = new web3.Transaction();
@@ -159,6 +160,9 @@ describe("HapiCore General", () => {
 
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
+
+    rewardToken = new TestToken(provider);
+    await rewardToken.mint(new u64(0));
 
     for (const reporter of Object.keys(REPORTERS)) {
       const pubkey = REPORTERS[reporter].keypair.publicKey;
@@ -215,13 +219,25 @@ describe("HapiCore General", () => {
       network.name
     );
 
-    const args = [name.toJSON().data, new u64(10_000), new u64(10_000), bump];
+    const [rewardSignerAccount, rewardSignerBump] =
+      await program.findNetworkRewardSignerAddress(networkAccount);
+
+    const args = [
+      name.toJSON().data,
+      new u64(10_000),
+      new u64(10_000),
+      bump,
+      rewardSignerBump,
+    ];
 
     const tx = await program.rpc.createNetwork(...args, {
       accounts: {
         authority: authority.publicKey,
         community: community.publicKey,
         network: networkAccount,
+        rewardMint: rewardToken.mintAccount,
+        rewardSigner: rewardSignerAccount,
+        tokenProgram: rewardToken.programId,
         systemProgram: web3.SystemProgram.programId,
       },
     });
