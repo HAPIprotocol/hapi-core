@@ -243,10 +243,14 @@ pub mod hapi_core {
         let community = &ctx.accounts.community;
 
         if address.confirmations == community.confirmation_threshold {
-            // TODO: reward original reporter
+            let address_reporter_reward = &mut ctx.accounts.address_reporter_reward;
+
+            address_reporter_reward.address_counter += 1;
         }
 
-        // TODO: reward confirming reporter
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
+
+        reporter_reward.confirmation_counter += 1;
 
         Ok(())
     }

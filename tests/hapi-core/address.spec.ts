@@ -138,13 +138,13 @@ describe("HapiCore Address", () => {
       web3.SystemProgram.transfer({
         fromPubkey: authority.publicKey,
         toPubkey: nobody.publicKey,
-        lamports: 10_000_000,
+        lamports: 1_000_000_000,
       }),
       ...Object.keys(REPORTERS).map((key) =>
         web3.SystemProgram.transfer({
           fromPubkey: authority.publicKey,
           toPubkey: REPORTERS[key].keypair.publicKey,
-          lamports: 10_000_000,
+          lamports: 1_000_000_000,
         })
       )
     );
@@ -773,6 +773,42 @@ describe("HapiCore Address", () => {
   });
 
   describe("confirm_address", () => {
+    beforeAll(async () => {
+      for (const reporterKey of Object.keys(REPORTERS)) {
+        const reporter = REPORTERS[reporterKey];
+
+        const [reporterAccount] = await program.findReporterAddress(
+          community.publicKey,
+          reporter.keypair.publicKey
+        );
+
+        for (const networkKey of Object.keys(NETWORKS)) {
+          const [networkAccount] = await program.findNetworkAddress(
+            community.publicKey,
+            NETWORKS[networkKey].name
+          );
+
+          const [reporterRewardAccount, bump] =
+            await program.findReporterRewardAddress(
+              networkAccount,
+              reporterAccount
+            );
+
+          await program.rpc.initializeReporterReward(bump, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              reporterReward: reporterRewardAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter.keypair],
+          });
+        }
+      }
+    });
+
     it("fail - can't confirm an address reported by yourself", async () => {
       const addr = ADDRESSES.blackhole1;
 
@@ -793,6 +829,19 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
       const [caseAccount] = await program.findCaseAddress(
         community.publicKey,
         addr.caseId
@@ -807,6 +856,8 @@ describe("HapiCore Address", () => {
               community: community.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              reporterReward: reporterRewardAccount,
+              addressReporterReward: addressReporterRewardAccount,
               case: caseAccount,
             },
             signers: [reporter],
@@ -835,6 +886,19 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
       const [caseAccount] = await program.findCaseAddress(
         community.publicKey,
         addr.caseId
@@ -847,6 +911,8 @@ describe("HapiCore Address", () => {
           community: community.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          addressReporterReward: addressReporterRewardAccount,
           case: caseAccount,
         },
         signers: [reporter],
@@ -854,18 +920,36 @@ describe("HapiCore Address", () => {
 
       expect(tx).toBeTruthy();
 
-      const fetchedAddressAccount = await program.account.address.fetch(
-        addressAccount
-      );
-      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
-        addr.caseId.toNumber()
-      );
-      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
-      expect(fetchedAddressAccount.confirmations).toEqual(1);
-      expect(fetchedAddressAccount.risk).toEqual(8);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+      {
+        const fetchedAccount = await program.account.address.fetch(
+          addressAccount
+        );
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          addr.caseId.toNumber()
+        );
+        expect(fetchedAccount.category).toEqual(Category.Gambling);
+        expect(fetchedAccount.confirmations).toEqual(1);
+        expect(fetchedAccount.risk).toEqual(8);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          addressReporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+      }
     });
 
     it("success - dave", async () => {
@@ -888,6 +972,19 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
       const [caseAccount] = await program.findCaseAddress(
         community.publicKey,
         addr.caseId
@@ -900,6 +997,8 @@ describe("HapiCore Address", () => {
           community: community.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          addressReporterReward: addressReporterRewardAccount,
           case: caseAccount,
         },
         signers: [reporter],
@@ -907,18 +1006,36 @@ describe("HapiCore Address", () => {
 
       expect(tx).toBeTruthy();
 
-      const fetchedAddressAccount = await program.account.address.fetch(
-        addressAccount
-      );
-      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
-        addr.caseId.toNumber()
-      );
-      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
-      expect(fetchedAddressAccount.confirmations).toEqual(2);
-      expect(fetchedAddressAccount.risk).toEqual(8);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+      {
+        const fetchedAccount = await program.account.address.fetch(
+          addressAccount
+        );
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          addr.caseId.toNumber()
+        );
+        expect(fetchedAccount.category).toEqual(Category.Gambling);
+        expect(fetchedAccount.confirmations).toEqual(2);
+        expect(fetchedAccount.risk).toEqual(8);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          addressReporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(1);
+      }
     });
 
     it("success - carol", async () => {
@@ -941,6 +1058,19 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
       const [caseAccount] = await program.findCaseAddress(
         community.publicKey,
         addr.caseId
@@ -953,6 +1083,8 @@ describe("HapiCore Address", () => {
           community: community.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          addressReporterReward: addressReporterRewardAccount,
           case: caseAccount,
         },
         signers: [reporter],
@@ -960,18 +1092,36 @@ describe("HapiCore Address", () => {
 
       expect(tx).toBeTruthy();
 
-      const fetchedAddressAccount = await program.account.address.fetch(
-        addressAccount
-      );
-      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
-        addr.caseId.toNumber()
-      );
-      expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
-      expect(fetchedAddressAccount.confirmations).toEqual(3);
-      expect(fetchedAddressAccount.risk).toEqual(8);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
+      {
+        const fetchedAccount = await program.account.address.fetch(
+          addressAccount
+        );
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          addr.caseId.toNumber()
+        );
+        expect(fetchedAccount.category).toEqual(Category.Gambling);
+        expect(fetchedAccount.confirmations).toEqual(3);
+        expect(fetchedAccount.risk).toEqual(8);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          addressReporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressCounter.toNumber()).toBe(1);
+      }
     });
   });
 });

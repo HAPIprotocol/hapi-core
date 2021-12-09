@@ -371,16 +371,6 @@ pub struct CreateAddress<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
-    // #[account(
-    //     mut,
-    //     owner = id(),
-    //     has_one = reporter,
-    //     has_one = network,
-    //     seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.pubkey.as_ref()],
-    //     bump = reporter_reward.bump,
-    // )]
-    // pub reporter_reward: Account<'info, ReporterReward>,
-
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
@@ -480,6 +470,26 @@ pub struct ConfirmAddress<'info> {
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = reporter,
+        has_one = network,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump = reporter_reward.bump,
+    )]
+    pub reporter_reward: Account<'info, ReporterReward>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = network,
+        constraint = address_reporter_reward.reporter == address.reporter @ ErrorCode::InvalidReporter,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), address.reporter.as_ref()],
+        bump = address_reporter_reward.bump,
+    )]
+    pub address_reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         owner = id(),
