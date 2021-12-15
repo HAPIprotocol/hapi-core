@@ -4,6 +4,7 @@ import { web3 } from "@project-serum/anchor";
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import { bufferFromString, program } from "../../lib";
+import { AnchorError, anchorError, programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -164,7 +165,7 @@ describe("HapiCore Network", () => {
               systemProgram: web3.SystemProgram.programId,
             },
           }),
-        "310: Authority mismatched"
+        programError("AuthorityMismatch")
       );
     });
 
@@ -201,7 +202,7 @@ describe("HapiCore Network", () => {
             },
             signers: [nobody],
           }),
-        /(Cross-program invocation with unauthorized signer or writable account|Program failed to complete)/
+        /(custom program error: 0xbc4|Cross-program invocation with unauthorized signer or writable account|Program failed to complete)/
       );
     });
 
@@ -313,7 +314,7 @@ describe("HapiCore Network", () => {
               network: networkAccount,
             },
           }),
-        "310: Authority mismatched"
+        programError("AuthorityMismatch")
       );
     });
 
@@ -334,7 +335,7 @@ describe("HapiCore Network", () => {
               network: networkAccount,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        anchorError(AnchorError.AccountNotInitialized)
       );
     });
 

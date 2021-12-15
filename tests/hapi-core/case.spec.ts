@@ -4,6 +4,7 @@ import { web3, BN } from "@project-serum/anchor";
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import { bufferFromString, CaseStatus, program, ReporterRole } from "../../lib";
+import { AnchorError, anchorError, programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -221,7 +222,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter.keypair],
           }),
-        "167: The given account is not owned by the executing program"
+        anchorError(AnchorError.AccountNotInitialized)
       );
     });
 
@@ -254,7 +255,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter.keypair],
           }),
-        "305: Invalid reporter account"
+        programError("InvalidReporter")
       );
     });
 
@@ -287,7 +288,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter.keypair],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -320,7 +321,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter.keypair],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -570,7 +571,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -601,7 +602,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -632,7 +633,7 @@ describe("HapiCore Case", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
   });

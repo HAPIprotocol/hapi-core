@@ -34,6 +34,8 @@ pub enum ErrorCode {
     NetworkMismatch,
     #[msg("Case mismatched")]
     CaseMismatch,
+    #[msg("There is no reward to claim")]
+    NoReward,
 }
 
 pub fn print_error(error: ErrorCode) -> ProgramResult {

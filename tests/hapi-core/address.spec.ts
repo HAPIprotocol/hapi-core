@@ -11,6 +11,7 @@ import {
   ReporterRole,
 } from "../../lib";
 import { pubkeyFromHex } from "../util/crypto";
+import { programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -24,7 +25,6 @@ describe("HapiCore Address", () => {
   const community = web3.Keypair.generate();
 
   let stakeToken: TestToken;
-  let rewardToken: TestToken;
 
   const REPORTERS: Record<
     string,
@@ -52,10 +52,10 @@ describe("HapiCore Address", () => {
     },
   };
 
-  const NETWORKS: Record<string, { name: string }> = {
-    ethereum: { name: "ethereum" },
-    solana: { name: "solana" },
-    near: { name: "near" },
+  const NETWORKS: Record<string, { name: string; rewardToken: TestToken }> = {
+    ethereum: { name: "ethereum", rewardToken: new TestToken(provider) },
+    solana: { name: "solana", rewardToken: new TestToken(provider) },
+    near: { name: "near", rewardToken: new TestToken(provider) },
   };
 
   const CASES: Record<
@@ -130,9 +130,6 @@ describe("HapiCore Address", () => {
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
     wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
-
-    rewardToken = new TestToken(provider);
-    wait.push(rewardToken.mint(new u64(0)));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -222,6 +219,8 @@ describe("HapiCore Address", () => {
     for (const key of Object.keys(NETWORKS)) {
       const network = NETWORKS[key];
 
+      await network.rewardToken.mint();
+
       const [networkAccount, bump] = await program.findNetworkAddress(
         community.publicKey,
         network.name
@@ -242,9 +241,9 @@ describe("HapiCore Address", () => {
               authority: authority.publicKey,
               community: community.publicKey,
               network: networkAccount,
-              rewardMint: rewardToken.mintAccount,
+              rewardMint: network.rewardToken.mintAccount,
               rewardSigner: rewardSignerAccount,
-              tokenProgram: rewardToken.programId,
+              tokenProgram: network.rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
           }
@@ -389,7 +388,7 @@ describe("HapiCore Address", () => {
               signers: [reporter],
             }
           ),
-        "313: Risk score must be in 0..10 range"
+        programError("RiskOutOfRange")
       );
     });
 
@@ -438,7 +437,7 @@ describe("HapiCore Address", () => {
               signers: [reporter],
             }
           ),
-        "308: Case closed"
+        programError("CaseClosed")
       );
     });
 
@@ -671,7 +670,7 @@ describe("HapiCore Address", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -713,7 +712,7 @@ describe("HapiCore Address", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 
@@ -862,7 +861,7 @@ describe("HapiCore Address", () => {
             },
             signers: [reporter],
           }),
-        "301: Account is not authorized to perform this action"
+        programError("Unauthorized")
       );
     });
 

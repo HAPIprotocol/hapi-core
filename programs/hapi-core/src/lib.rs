@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Transfer};
+use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
+use spl_token::instruction::AuthorityType;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -91,6 +92,19 @@ pub mod hapi_core {
         reward_signer_bump: u8,
     ) -> ProgramResult {
         msg!("Instruction: CreateNetwork");
+
+        // Pass authority to network signer PDA
+        token::set_authority(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                SetAuthority {
+                    current_authority: ctx.accounts.authority.to_account_info(),
+                    account_or_mint: ctx.accounts.reward_mint.to_account_info(),
+                },
+            ),
+            AuthorityType::MintTokens,
+            Some(ctx.accounts.reward_signer.key()),
+        )?;
 
         let network = &mut ctx.accounts.network;
 
@@ -349,16 +363,17 @@ pub mod hapi_core {
             ReporterRole::Authority => community.authority_stake,
         };
 
-        let cpi_context = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.reporter_token_account.to_account_info(),
-                to: ctx.accounts.community_token_account.to_account_info(),
-                authority: ctx.accounts.sender.to_account_info(),
-            },
-        );
-
-        token::transfer(cpi_context, stake)?;
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.reporter_token_account.to_account_info(),
+                    to: ctx.accounts.community_token_account.to_account_info(),
+                    authority: ctx.accounts.sender.to_account_info(),
+                },
+            ),
+            stake,
+        )?;
 
         reporter.status = ReporterStatus::Active;
         reporter.stake = stake;
@@ -414,6 +429,50 @@ pub mod hapi_core {
         reporter.status = ReporterStatus::Inactive;
         reporter.unlock_epoch = 0;
         reporter.stake = 0;
+
+        Ok(())
+    }
+
+    pub fn claim_reporter_reward(ctx: Context<ClaimReporterReward>) -> ProgramResult {
+        msg!("Instruction: ClaimReporterReward");
+
+        let network = &ctx.accounts.network;
+
+        let reporter = &ctx.accounts.reporter;
+
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
+
+        let reward = reporter_reward.confirmation_counter * network.confirmation_reward
+            + reporter_reward.address_counter * network.tracer_reward;
+
+        if reward == 0 {
+            return print_error(ErrorCode::NoReward);
+        }
+
+        reporter_reward.confirmation_counter = 0;
+        reporter_reward.address_counter = 0;
+
+        let reward_signer = ctx.accounts.reward_signer.clone();
+
+        let seeds = &[
+            b"network_reward",
+            network.to_account_info().key.as_ref(),
+            &[network.reward_signer_bump],
+        ];
+
+        let signer = &[&seeds[..]];
+
+        let cpi_context = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo {
+                mint: ctx.accounts.reward_mint.to_account_info(),
+                to: ctx.accounts.reporter_token_account.to_account_info(),
+                authority: reward_signer.to_account_info(),
+            },
+            signer,
+        );
+
+        token::mint_to(cpi_context, reporter.stake)?;
 
         Ok(())
     }

@@ -2,13 +2,16 @@ import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
-import { expectThrowError } from "../util/console";
+import { dumpAccounts, expectThrowError } from "../util/console";
 import {
   bufferFromString,
+  Category,
   program,
   ReporterRole,
   ReporterStatus,
 } from "../../lib";
+import { pubkeyFromHex } from "../util/crypto";
+import { errorRegexp, programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -39,10 +42,51 @@ describe("HapiCore Reporter", () => {
       keypair: web3.Keypair.generate(),
       role: "Authority",
     },
+    dave: { name: "dave", keypair: web3.Keypair.generate(), role: "Tracer" },
   };
 
   const NETWORKS: Record<string, { name: string }> = {
     ethereum: { name: "ethereum" },
+  };
+
+  const CASES: Record<
+    string,
+    {
+      network: keyof typeof NETWORKS;
+      caseId: BN;
+      name: string;
+      reporter: keyof typeof REPORTERS;
+    }
+  > = {
+    safe: {
+      network: "ethereum",
+      caseId: new BN(1),
+      name: "safe network addresses",
+      reporter: "carol",
+    },
+  };
+
+  const ADDRESSES: Record<
+    string,
+    {
+      pubkey: web3.PublicKey;
+      network: keyof typeof NETWORKS;
+      category: keyof typeof Category;
+      reporter: keyof typeof REPORTERS;
+      caseId: BN;
+      risk: number;
+    }
+  > = {
+    blackhole1: {
+      pubkey: pubkeyFromHex(
+        "0000000000000000000000000000000000000000000000000000000000000001"
+      ),
+      network: "ethereum",
+      category: "None",
+      reporter: "alice",
+      caseId: new BN(1),
+      risk: 0,
+    },
   };
 
   beforeAll(async () => {
@@ -56,7 +100,7 @@ describe("HapiCore Reporter", () => {
     wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
 
     rewardToken = new TestToken(provider);
-    wait.push(rewardToken.mint(new u64(0)));
+    await rewardToken.mint(new u64(0));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -78,6 +122,11 @@ describe("HapiCore Reporter", () => {
         fromPubkey: authority.publicKey,
         toPubkey: REPORTERS.carol.keypair.publicKey,
         lamports: 10_000_000,
+      }),
+      web3.SystemProgram.transfer({
+        fromPubkey: authority.publicKey,
+        toPubkey: REPORTERS.dave.keypair.publicKey,
+        lamports: 10_000_000,
       })
     );
 
@@ -90,6 +139,10 @@ describe("HapiCore Reporter", () => {
           REPORTERS[reporter].keypair.publicKey,
           new u64(1_000_000)
         )
+      );
+
+      wait.push(
+        rewardToken.getTokenAccount(REPORTERS[reporter].keypair.publicKey)
       );
     }
 
@@ -110,7 +163,7 @@ describe("HapiCore Reporter", () => {
     wait.push(
       program.rpc.initializeCommunity(
         new u64(0), // unlocks in current epoch
-        2,
+        1,
         new u64(20_000_000),
         new u64(2_000),
         new u64(3_000),
@@ -393,6 +446,50 @@ describe("HapiCore Reporter", () => {
       expect(reporterInfo.value.data).toHaveLength(200);
     });
 
+    it("success - dave", async () => {
+      const reporter = REPORTERS.dave;
+
+      const name = bufferFromString(reporter.name, 32);
+
+      const [reporterAccount, bump] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const reporterRole = ReporterRole[reporter.role];
+
+      const tx = await program.rpc.createReporter(
+        reporterRole,
+        name.toJSON().data,
+        bump,
+        {
+          accounts: {
+            authority: authority.publicKey,
+            community: community.publicKey,
+            reporter: reporterAccount,
+            pubkey: reporter.keypair.publicKey,
+            systemProgram: web3.SystemProgram.programId,
+          },
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+      expect(fetchedReporterAccount.bump).toEqual(bump);
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+
+      const reporterInfo = await provider.connection.getAccountInfoAndContext(
+        reporterAccount
+      );
+      expect(reporterInfo.value.owner).toEqual(program.programId);
+      expect(reporterInfo.value.data).toHaveLength(200);
+    });
+
     it("fail - reporter alice already exists", async () => {
       const reporter = REPORTERS.alice;
 
@@ -447,7 +544,7 @@ describe("HapiCore Reporter", () => {
               reporter: reporterAccount,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        /custom program error: 0xbc4/
       );
     });
 
@@ -487,8 +584,110 @@ describe("HapiCore Reporter", () => {
   });
 
   describe("initialize_reporter_reward", () => {
-    it("success", async () => {
+    it("success - alice", async () => {
+      const reporter = REPORTERS.alice;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [reporterRewardAccount, bump] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          reporterAccount
+        );
+
+      const tx = await program.rpc.initializeReporterReward(bump, {
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAccount = await program.account.reporterReward.fetch(
+        reporterRewardAccount
+      );
+      expect(fetchedAccount.bump).toEqual(bump);
+      expect(fetchedAccount.network).toEqual(networkAccount);
+      expect(fetchedAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+
+      const accountInfo = await provider.connection.getAccountInfoAndContext(
+        reporterRewardAccount
+      );
+      expect(accountInfo.value.owner).toEqual(program.programId);
+      expect(accountInfo.value.data).toHaveLength(89);
+    });
+
+    it("success - bob", async () => {
       const reporter = REPORTERS.bob;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [reporterRewardAccount, bump] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          reporterAccount
+        );
+
+      const tx = await program.rpc.initializeReporterReward(bump, {
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAccount = await program.account.reporterReward.fetch(
+        reporterRewardAccount
+      );
+      expect(fetchedAccount.bump).toEqual(bump);
+      expect(fetchedAccount.network).toEqual(networkAccount);
+      expect(fetchedAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+
+      const accountInfo = await provider.connection.getAccountInfoAndContext(
+        reporterRewardAccount
+      );
+      expect(accountInfo.value.owner).toEqual(program.programId);
+      expect(accountInfo.value.data).toHaveLength(89);
+    });
+
+    it("success - dave", async () => {
+      const reporter = REPORTERS.dave;
 
       const [reporterAccount] = await program.findReporterAddress(
         community.publicKey,
@@ -736,6 +935,60 @@ describe("HapiCore Reporter", () => {
       expect(balance.add(stake).toString(10)).toEqual("1000000");
     });
 
+    it("success - dave", async () => {
+      const reporter = REPORTERS.dave;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const tx = await program.rpc.activateReporter({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+          stakeMint: stakeToken.mintAccount,
+          reporterTokenAccount: tokenAccount,
+          communityTokenAccount: communityInfo.tokenAccount,
+          tokenProgram: stakeToken.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+
+      let stake: u64;
+      if (reporter.role === "Validator") {
+        stake = new u64(20_000_000);
+      } else if (reporter.role === "Tracer") {
+        stake = new u64(2_000);
+      } else if (reporter.role === "Full") {
+        stake = new u64(3_000);
+      } else if (reporter.role === "Authority") {
+        stake = new u64(5_000);
+      } else {
+        throw new Error("Invalid reporter role");
+      }
+
+      const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
+      expect(balance.add(stake).toString(10)).toEqual("1000000");
+    });
+
     it("fail - bob is already activated", async () => {
       const reporter = REPORTERS.bob;
 
@@ -766,8 +1019,203 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "309: Invalid reporter status"
+        programError("InvalidReporterStatus")
       );
+    });
+  });
+
+  describe("claim_reporter_reward", () => {
+    it("create cases", async () => {
+      for (const key of Object.keys(CASES)) {
+        const cs = CASES[key];
+
+        const reporter = REPORTERS[cs.reporter].keypair;
+        const caseName = bufferFromString(cs.name, 32);
+
+        const [caseAccount, bump] = await program.findCaseAddress(
+          community.publicKey,
+          cs.caseId
+        );
+
+        const [reporterAccount] = await program.findReporterAddress(
+          community.publicKey,
+          reporter.publicKey
+        );
+
+        await program.rpc.createCase(cs.caseId, caseName.toJSON().data, bump, {
+          accounts: {
+            reporter: reporterAccount,
+            sender: reporter.publicKey,
+            community: community.publicKey,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [reporter],
+        });
+      }
+    });
+
+    it("create address", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.bob;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount, bump] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      await program.rpc.createAddress(
+        addr.pubkey,
+        Category[addr.category],
+        addr.risk,
+        bump,
+        {
+          accounts: {
+            sender: reporter.keypair.publicKey,
+            address: addressAccount,
+            community: community.publicKey,
+            network: networkAccount,
+            reporter: reporterAccount,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          },
+          signers: [reporter.keypair],
+        }
+      );
+    });
+
+    it("confirm address", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.confirmAddress({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          addressReporterReward: addressReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+    });
+
+    it("success", async () => {
+      const reporter = REPORTERS.bob;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const reporterTokenAccount = await rewardToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const [rewardSignerAccount] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const tx = await program.rpc.claimReporterReward({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          reporterTokenAccount,
+          rewardMint: rewardToken.mintAccount,
+          rewardSigner: rewardSignerAccount,
+          tokenProgram: rewardToken.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      expect(
+        reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
+      ).toEqual(2_000);
     });
   });
 
@@ -790,7 +1238,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "309: Invalid reporter status"
+        programError("InvalidReporterStatus")
       );
     });
 
@@ -870,7 +1318,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "309: Invalid reporter status"
+        programError("InvalidReporterStatus")
       );
     });
   });
@@ -907,7 +1355,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "309: Invalid reporter status"
+        programError("InvalidReporterStatus")
       );
     });
 
@@ -942,7 +1390,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "303: Release epoch is in future"
+        programError("ReleaseEpochInFuture")
       );
     });
 
@@ -1046,7 +1494,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [reporter.keypair],
           }),
-        "309: Invalid reporter status"
+        programError("InvalidReporterStatus")
       );
     });
   });
@@ -1100,7 +1548,7 @@ describe("HapiCore Reporter", () => {
 
               signers: [reporter.keypair],
             }),
-          "312: This reporter is frozen"
+          errorRegexp(0)
         );
       }
 
@@ -1115,7 +1563,7 @@ describe("HapiCore Reporter", () => {
               },
               signers: [reporter.keypair],
             }),
-          "312: This reporter is frozen"
+          programError("FrozenReporter")
         );
       }
     });

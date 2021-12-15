@@ -5,6 +5,7 @@ import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import { pubkeyFromHex } from "../util/crypto";
 import { program } from "../../lib";
+import { AnchorError, anchorError, programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -59,7 +60,7 @@ describe("HapiCore Community", () => {
             },
             signers: [community],
           }),
-        "167: The given account is not owned by the executing program"
+        /custom program error: 0xbc4/
       );
     });
 
@@ -94,7 +95,7 @@ describe("HapiCore Community", () => {
             },
             signers: [community],
           }),
-        "167: The given account is not owned by the executing program"
+        /custom program error: 0xbc4/
       );
     });
 
@@ -240,7 +241,7 @@ describe("HapiCore Community", () => {
               community: someKey,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        /custom program error: 0xbc4/
       );
     });
 
@@ -262,7 +263,7 @@ describe("HapiCore Community", () => {
               community: community.publicKey,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        /custom program error: 0xbc4/
       );
     });
 
@@ -352,7 +353,7 @@ describe("HapiCore Community", () => {
             },
             signers: [nobody],
           }),
-        "310: Authority mismatched"
+        programError("AuthorityMismatch")
       );
     });
   });
@@ -376,7 +377,7 @@ describe("HapiCore Community", () => {
               community: someKey,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        anchorError(AnchorError.AccountNotInitialized)
       );
     });
 
@@ -390,7 +391,7 @@ describe("HapiCore Community", () => {
               newAuthority: nobody.publicKey,
             },
           }),
-        "167: The given account is not owned by the executing program"
+        anchorError(AnchorError.AccountNotInitialized)
       );
     });
 
@@ -455,7 +456,7 @@ describe("HapiCore Community", () => {
               newAuthority: nobody.publicKey,
             },
           }),
-        "310: Authority mismatched"
+        programError("AuthorityMismatch")
       );
     });
 
@@ -470,7 +471,7 @@ describe("HapiCore Community", () => {
             },
             signers: [nobody],
           }),
-        "310: Authority mismatched"
+        programError("AuthorityMismatch")
       );
     });
   });

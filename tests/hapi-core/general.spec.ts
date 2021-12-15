@@ -12,6 +12,7 @@ import {
   bufferFromString,
   ReporterStatus,
 } from "../../lib";
+import { AnchorError, anchorError, programError } from "../util/error";
 
 jest.setTimeout(10_000);
 
@@ -36,10 +37,10 @@ describe("HapiCore General", () => {
     },
   };
 
-  const NETWORKS: Record<string, { name: string }> = {
-    ethereum: { name: "ethereum" },
-    solana: { name: "solana" },
-    near: { name: "near" },
+  const NETWORKS: Record<string, { name: string; rewardToken: TestToken }> = {
+    ethereum: { name: "ethereum", rewardToken: new TestToken(provider) },
+    solana: { name: "solana", rewardToken: new TestToken(provider) },
+    near: { name: "near", rewardToken: new TestToken(provider) },
   };
 
   const CASES: Record<
@@ -128,7 +129,6 @@ describe("HapiCore General", () => {
 
   let community: web3.Keypair;
   let stakeToken: TestToken;
-  let rewardToken: TestToken;
 
   beforeAll(async () => {
     const tx = new web3.Transaction();
@@ -160,9 +160,6 @@ describe("HapiCore General", () => {
 
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
-
-    rewardToken = new TestToken(provider);
-    await rewardToken.mint(new u64(0));
 
     for (const reporter of Object.keys(REPORTERS)) {
       const pubkey = REPORTERS[reporter].keypair.publicKey;
@@ -211,6 +208,8 @@ describe("HapiCore General", () => {
   it.each(Object.keys(NETWORKS))("Network '%s' is created", async (rawName) => {
     const network = NETWORKS[rawName];
 
+    await network.rewardToken.mint();
+
     const name = bufferFromString(network.name, 32);
 
     const [networkAccount, bump] = await program.findNetworkAddress(
@@ -234,9 +233,9 @@ describe("HapiCore General", () => {
         authority: authority.publicKey,
         community: community.publicKey,
         network: networkAccount,
-        rewardMint: rewardToken.mintAccount,
+        rewardMint: network.rewardToken.mintAccount,
         rewardSigner: rewardSignerAccount,
-        tokenProgram: rewardToken.programId,
+        tokenProgram: network.rewardToken.programId,
         systemProgram: web3.SystemProgram.programId,
       },
     });
@@ -321,7 +320,7 @@ describe("HapiCore General", () => {
               signers: [reporter],
             }
           ),
-        "167: The given account is not owned by the executing program"
+        anchorError(AnchorError.AccountNotInitialized)
       );
     }
   );
@@ -652,7 +651,7 @@ describe("HapiCore General", () => {
             signers: [reporter],
           }
         ),
-      "309: Invalid reporter status"
+      programError("InvalidReporterStatus")
     );
   });
 });

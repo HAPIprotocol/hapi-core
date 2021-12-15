@@ -23,7 +23,7 @@ export class TestToken {
     return (this.provider.wallet as NodeWallet).payer;
   }
 
-  async mint(amount: u64): Promise<void> {
+  async mint(amount?: u64): Promise<void> {
     const mint = await Token.createMint(
       this.provider.connection,
       this.payer,
@@ -37,12 +37,14 @@ export class TestToken {
       this.payer.publicKey
     );
 
-    await mint.mintTo(
-      fromTokenAccount.address,
-      this.payer.publicKey,
-      [],
-      amount
-    );
+    if (amount !== undefined) {
+      await mint.mintTo(
+        fromTokenAccount.address,
+        this.payer.publicKey,
+        [],
+        amount
+      );
+    }
 
     this.token = mint;
   }

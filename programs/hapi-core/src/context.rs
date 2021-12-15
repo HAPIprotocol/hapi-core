@@ -28,6 +28,13 @@ pub struct InitializeCommunity<'info> {
     pub authority: Signer<'info>,
 
     #[account(
+        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub token_account: Account<'info, TokenAccount>,
+
+    #[account(
         init,
         payer = authority,
         owner = id(),
@@ -40,13 +47,6 @@ pub struct InitializeCommunity<'info> {
 
     pub token_signer: AccountInfo<'info>,
 
-    #[account(
-        mut,
-        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
-        owner = Token::id(),
-    )]
-    pub token_account: Account<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
 }
@@ -89,7 +89,7 @@ pub struct SetCommunityAuthority<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: [u8; 32], tracer_reward: u64, confirmation_reward: u64, bump: u8)]
+#[instruction(name: [u8; 32], tracer_reward: u64, confirmation_reward: u64, network_bump: u8, reward_signer_bump: u8)]
 pub struct CreateNetwork<'info> {
     pub authority: Signer<'info>,
 
@@ -99,9 +99,16 @@ pub struct CreateNetwork<'info> {
     )]
     pub community: Account<'info, Community>,
 
-    #[account(owner = Token::id())]
+    #[account(
+        mut,
+        owner = Token::id(),
+    )]
     pub reward_mint: Account<'info, Mint>,
 
+    #[account(
+        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
+        bump = reward_signer_bump,
+    )]
     pub reward_signer: AccountInfo<'info>,
 
     #[account(
@@ -109,7 +116,7 @@ pub struct CreateNetwork<'info> {
         payer = authority,
         owner = id(),
         seeds = [b"network".as_ref(), community.key().as_ref(), &name],
-        bump = bump,
+        bump = network_bump,
         space = 200
     )]
     pub network: Account<'info, Network>,
@@ -726,4 +733,60 @@ pub struct ReleaseReporter<'info> {
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimReporterReward<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = reporter,
+        has_one = network,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump = reporter_reward.bump,
+    )]
+    pub reporter_reward: Account<'info, ReporterReward>,
+
+    #[account(
+        mut,
+        constraint = reporter_token_account.mint == reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_token_account: Account<'info, TokenAccount>,
+
+    #[account(owner = Token::id())]
+    pub reward_mint: Account<'info, Mint>,
+
+    #[account(
+        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
+        bump = network.reward_signer_bump,
+    )]
+    pub reward_signer: AccountInfo<'info>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 }
