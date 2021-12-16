@@ -30,8 +30,6 @@ pub mod hapi_core {
         authority_stake: u64,
         signer_bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: InitializeCommunity");
-
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.authority.key;
@@ -59,8 +57,6 @@ pub mod hapi_core {
         full_stake: u64,
         authority_stake: u64,
     ) -> ProgramResult {
-        msg!("Instruction: UpdateCommunity");
-
         let community = &mut ctx.accounts.community;
 
         community.stake_unlock_epochs = stake_unlock_epochs;
@@ -74,8 +70,6 @@ pub mod hapi_core {
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> ProgramResult {
-        msg!("Instruction: SetCommunityAuthority");
-
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.new_authority.key;
@@ -91,8 +85,6 @@ pub mod hapi_core {
         network_bump: u8,
         reward_signer_bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: CreateNetwork");
-
         // Pass authority to network signer PDA
         token::set_authority(
             CpiContext::new(
@@ -126,8 +118,6 @@ pub mod hapi_core {
         tracer_reward: u64,
         confirmation_reward: u64,
     ) -> ProgramResult {
-        msg!("Instruction: UpdateNetwork");
-
         let network = &mut ctx.accounts.network;
 
         network.tracer_reward = tracer_reward;
@@ -142,8 +132,6 @@ pub mod hapi_core {
         name: [u8; 32],
         bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: CreateReporter");
-
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.community = ctx.accounts.community.key();
@@ -164,8 +152,6 @@ pub mod hapi_core {
         role: ReporterRole,
         name: [u8; 32],
     ) -> ProgramResult {
-        msg!("Instruction: UpdateReporter");
-
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.role = role;
@@ -180,8 +166,6 @@ pub mod hapi_core {
         name: [u8; 32],
         bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: CreateCase");
-
         let community = &mut ctx.accounts.community;
 
         if case_id != community.cases + 1 {
@@ -208,8 +192,6 @@ pub mod hapi_core {
         name: [u8; 32],
         status: CaseStatus,
     ) -> ProgramResult {
-        msg!("Instruction: UpdateCase");
-
         let case = &mut ctx.accounts.case;
 
         case.name = name;
@@ -225,8 +207,6 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: CreateAddress");
-
         if risk > 10 {
             return print_error(ErrorCode::RiskOutOfRange);
         }
@@ -248,8 +228,6 @@ pub mod hapi_core {
     }
 
     pub fn confirm_address(ctx: Context<ConfirmAddress>) -> ProgramResult {
-        msg!("Instruction: ConfirmAddress");
-
         let address = &mut ctx.accounts.address;
 
         address.confirmations += 1;
@@ -274,8 +252,6 @@ pub mod hapi_core {
         category: Category,
         risk: u8,
     ) -> ProgramResult {
-        msg!("Instruction: UpdateAddress");
-
         if risk > 10 {
             return print_error(ErrorCode::RiskOutOfRange);
         }
@@ -296,8 +272,6 @@ pub mod hapi_core {
         risk: u8,
         bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: CreateAsset");
-
         if risk > 10 {
             return print_error(ErrorCode::RiskOutOfRange);
         }
@@ -320,8 +294,6 @@ pub mod hapi_core {
     }
 
     pub fn update_asset(ctx: Context<UpdateAsset>, category: Category, risk: u8) -> ProgramResult {
-        msg!("Instruction: UpdateAsset");
-
         if risk > 10 {
             return print_error(ErrorCode::RiskOutOfRange);
         }
@@ -338,8 +310,6 @@ pub mod hapi_core {
         ctx: Context<InitializeReporterReward>,
         bump: u8,
     ) -> ProgramResult {
-        msg!("Instruction: InitializeReporterReward");
-
         let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         reporter_reward.network = ctx.accounts.network.key();
@@ -350,8 +320,6 @@ pub mod hapi_core {
     }
 
     pub fn activate_reporter(ctx: Context<ActivateReporter>) -> ProgramResult {
-        msg!("Instruction: ActivateReporter");
-
         let community = &ctx.accounts.community;
 
         let reporter = &mut ctx.accounts.reporter;
@@ -382,8 +350,6 @@ pub mod hapi_core {
     }
 
     pub fn deactivate_reporter(ctx: Context<DeactivateReporter>) -> ProgramResult {
-        msg!("Instruction: DeactivateReporter");
-
         let community = &ctx.accounts.community;
 
         let reporter = &mut ctx.accounts.reporter;
@@ -395,8 +361,6 @@ pub mod hapi_core {
     }
 
     pub fn release_reporter(ctx: Context<ReleaseReporter>) -> ProgramResult {
-        msg!("Instruction: ReleaseReporter");
-
         let reporter = &mut ctx.accounts.reporter;
 
         if reporter.unlock_epoch > Clock::get()?.epoch {
@@ -470,8 +434,6 @@ pub mod hapi_core {
     }
 
     pub fn freeze_reporter(ctx: Context<FreezeReporter>) -> ProgramResult {
-        msg!("Instruction: FreezeReporter");
-
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.is_frozen = true;
@@ -480,8 +442,6 @@ pub mod hapi_core {
     }
 
     pub fn unfreeze_reporter(ctx: Context<UnfreezeReporter>) -> ProgramResult {
-        msg!("Instruction: UnfreezeReporter");
-
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.is_frozen = false;
