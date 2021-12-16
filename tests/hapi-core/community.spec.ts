@@ -7,8 +7,6 @@ import { pubkeyFromHex } from "../util/crypto";
 import { program } from "../../lib";
 import { AnchorError, anchorError, programError } from "../util/error";
 
-jest.setTimeout(10_000);
-
 describe("HapiCore Community", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);

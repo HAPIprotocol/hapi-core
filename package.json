@@ -18,6 +18,7 @@
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
-    "testRegex": "/tests/.*\\.spec\\.(ts|tsx|js)$"
+    "testRegex": "/tests/.*\\.spec\\.(ts|tsx|js)$",
+    "testTimeout": 30000
   }
 }

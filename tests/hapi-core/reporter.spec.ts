@@ -13,8 +13,6 @@ import {
 import { pubkeyFromHex } from "../util/crypto";
 import { errorRegexp, programError } from "../util/error";
 
-jest.setTimeout(10_000);
-
 describe("HapiCore Reporter", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
@@ -1100,7 +1098,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("confirm address", async () => {
+    it("confirm address by dave", async () => {
       const addr = ADDRESSES.blackhole1;
 
       const reporter = REPORTERS.dave.keypair;
@@ -1155,7 +1153,7 @@ describe("HapiCore Reporter", () => {
       expect(tx).toBeTruthy();
     });
 
-    it("success", async () => {
+    it("success - bob's claim", async () => {
       const reporter = REPORTERS.bob;
 
       const [reporterAccount] = await program.findReporterAddress(
@@ -1215,7 +1213,96 @@ describe("HapiCore Reporter", () => {
 
       expect(
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
-      ).toEqual(2_000);
+      ).toEqual(20_000);
+
+      const supply = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+      expect(supply.value.amount).toEqual("20000");
+      
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+      }
+    });
+
+    it("success - dave's claim", async () => {
+      const reporter = REPORTERS.dave;
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const reporterTokenAccount = await rewardToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const [rewardSignerAccount] =
+        await program.findNetworkRewardSignerAddress(networkAccount);
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const tx = await program.rpc.claimReporterReward({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          reporterTokenAccount,
+          rewardMint: rewardToken.mintAccount,
+          rewardSigner: rewardSignerAccount,
+          tokenProgram: rewardToken.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      expect(
+        reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
+      ).toEqual(10_000);
+
+      const supply = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+      expect(supply.value.amount).toEqual("30000");
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+      }
     });
   });
 

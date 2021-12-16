@@ -47,7 +47,6 @@ pub struct InitializeCommunity<'info> {
 
     pub token_signer: AccountInfo<'info>,
 
-
     pub system_program: Program<'info, System>,
 }
 
@@ -778,7 +777,10 @@ pub struct ClaimReporterReward<'info> {
     )]
     pub reporter_token_account: Account<'info, TokenAccount>,
 
-    #[account(owner = Token::id())]
+    #[account(
+        mut,
+        owner = Token::id())
+    ]
     pub reward_mint: Account<'info, Mint>,
 
     #[account(

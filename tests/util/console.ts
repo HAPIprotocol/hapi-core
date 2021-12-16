@@ -44,11 +44,20 @@ export function listenSolanaLogs(connection: web3.Connection) {
   };
 }
 
-export async function dumpAccounts<T>(connection: web3.Connection, accounts: T): Promise<T> {
+export async function dumpAccounts<T>(
+  connection: web3.Connection,
+  accounts: T
+): Promise<T> {
+  const lines = [];
   for (const key of Object.keys(accounts)) {
     const account = accounts[key] as web3.PublicKey;
     const info = await connection.getAccountInfoAndContext(account);
-    console.log(key, account.toBase58(), info.value?.owner?.toBase58());
+    lines.push(
+      [key, account.toBase58(), info.value?.owner?.toBase58() || "[none]"].join(
+        " "
+      )
+    );
   }
+  console.log(lines.join("\n"));
   return accounts;
 }

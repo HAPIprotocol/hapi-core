@@ -6,8 +6,6 @@ import { expectThrowError } from "../util/console";
 import { bufferFromString, CaseStatus, program, ReporterRole } from "../../lib";
 import { AnchorError, anchorError, programError } from "../util/error";
 
-jest.setTimeout(10_000);
-
 describe("HapiCore Case", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);

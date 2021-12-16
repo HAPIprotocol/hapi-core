@@ -6,8 +6,6 @@ import { expectThrowError } from "../util/console";
 import { bufferFromString, program } from "../../lib";
 import { AnchorError, anchorError, programError } from "../util/error";
 
-jest.setTimeout(10_000);
-
 describe("HapiCore Network", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);

@@ -13,8 +13,6 @@ import {
 import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
 
-jest.setTimeout(10_000);
-
 describe("HapiCore Address", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);

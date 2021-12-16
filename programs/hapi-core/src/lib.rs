@@ -434,16 +434,12 @@ pub mod hapi_core {
     }
 
     pub fn claim_reporter_reward(ctx: Context<ClaimReporterReward>) -> ProgramResult {
-        msg!("Instruction: ClaimReporterReward");
-
         let network = &ctx.accounts.network;
-
-        let reporter = &ctx.accounts.reporter;
 
         let reporter_reward = &mut ctx.accounts.reporter_reward;
 
-        let reward = reporter_reward.confirmation_counter * network.confirmation_reward
-            + reporter_reward.address_counter * network.tracer_reward;
+        let reward = reporter_reward.confirmation_counter * network.tracer_reward
+            + reporter_reward.address_counter * network.confirmation_reward;
 
         if reward == 0 {
             return print_error(ErrorCode::NoReward);
@@ -452,7 +448,7 @@ pub mod hapi_core {
         reporter_reward.confirmation_counter = 0;
         reporter_reward.address_counter = 0;
 
-        let reward_signer = ctx.accounts.reward_signer.clone();
+        let reward_signer = &ctx.accounts.reward_signer;
 
         let seeds = &[
             b"network_reward",
@@ -460,19 +456,15 @@ pub mod hapi_core {
             &[network.reward_signer_bump],
         ];
 
-        let signer = &[&seeds[..]];
-
-        let cpi_context = CpiContext::new_with_signer(
+        token::mint_to(CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             MintTo {
                 mint: ctx.accounts.reward_mint.to_account_info(),
                 to: ctx.accounts.reporter_token_account.to_account_info(),
                 authority: reward_signer.to_account_info(),
             },
-            signer,
-        );
-
-        token::mint_to(cpi_context, reporter.stake)?;
+            &[&seeds[..]],
+        ), reward)?;
 
         Ok(())
     }
