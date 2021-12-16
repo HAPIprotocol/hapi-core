@@ -43,8 +43,25 @@ describe("HapiCore Reporter", () => {
     dave: { name: "dave", keypair: web3.Keypair.generate(), role: "Tracer" },
   };
 
-  const NETWORKS: Record<string, { name: string }> = {
-    ethereum: { name: "ethereum" },
+  const NETWORKS: Record<
+    string,
+    {
+      name: string;
+      rewardToken: TestToken;
+      addressTracerReward: u64;
+      addressConfirmationReward: u64;
+      assetTracerReward: u64;
+      assetConfirmationReward: u64;
+    }
+  > = {
+    ethereum: {
+      name: "ethereum",
+      rewardToken: new TestToken(provider),
+      addressTracerReward: new u64(1_000),
+      addressConfirmationReward: new u64(2_000),
+      assetTracerReward: new u64(3_000),
+      assetConfirmationReward: new u64(4_000),
+    },
   };
 
   const CASES: Record<
@@ -217,8 +234,10 @@ describe("HapiCore Reporter", () => {
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
-          new u64(10_000),
-          new u64(20_000),
+          network.addressTracerReward,
+          network.addressConfirmationReward,
+          network.assetTracerReward,
+          network.assetConfirmationReward,
           bump,
           rewardSignerBump,
           {
@@ -623,14 +642,14 @@ describe("HapiCore Reporter", () => {
       expect(fetchedAccount.bump).toEqual(bump);
       expect(fetchedAccount.network).toEqual(networkAccount);
       expect(fetchedAccount.reporter).toEqual(reporterAccount);
-      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
-      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
 
       const accountInfo = await provider.connection.getAccountInfoAndContext(
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(89);
+      expect(accountInfo.value.data).toHaveLength(105);
     });
 
     it("success - bob", async () => {
@@ -674,14 +693,14 @@ describe("HapiCore Reporter", () => {
       expect(fetchedAccount.bump).toEqual(bump);
       expect(fetchedAccount.network).toEqual(networkAccount);
       expect(fetchedAccount.reporter).toEqual(reporterAccount);
-      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
-      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
 
       const accountInfo = await provider.connection.getAccountInfoAndContext(
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(89);
+      expect(accountInfo.value.data).toHaveLength(105);
     });
 
     it("success - dave", async () => {
@@ -725,14 +744,14 @@ describe("HapiCore Reporter", () => {
       expect(fetchedAccount.bump).toEqual(bump);
       expect(fetchedAccount.network).toEqual(networkAccount);
       expect(fetchedAccount.reporter).toEqual(reporterAccount);
-      expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
-      expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+      expect(fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
 
       const accountInfo = await provider.connection.getAccountInfoAndContext(
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(89);
+      expect(accountInfo.value.data).toHaveLength(105);
     });
   });
 
@@ -1023,7 +1042,7 @@ describe("HapiCore Reporter", () => {
   });
 
   describe("claim_reporter_reward", () => {
-    it("create cases", async () => {
+    it("setup - create cases", async () => {
       for (const key of Object.keys(CASES)) {
         const cs = CASES[key];
 
@@ -1053,7 +1072,7 @@ describe("HapiCore Reporter", () => {
       }
     });
 
-    it("create address", async () => {
+    it("setup - create address", async () => {
       const addr = ADDRESSES.blackhole1;
 
       const reporter = REPORTERS.bob;
@@ -1098,7 +1117,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("confirm address by dave", async () => {
+    it("setup - confirm address by dave", async () => {
       const addr = ADDRESSES.blackhole1;
 
       const reporter = REPORTERS.dave.keypair;
@@ -1213,19 +1232,21 @@ describe("HapiCore Reporter", () => {
 
       expect(
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
-      ).toEqual(20_000);
+      ).toEqual(network.addressTracerReward.toNumber());
 
       const supply = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual("20000");
-      
+      expect(supply.value.amount).toEqual(
+        network.addressTracerReward.toString()
+      );
+
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
-        expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
       }
     });
 
@@ -1289,19 +1310,23 @@ describe("HapiCore Reporter", () => {
 
       expect(
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
-      ).toEqual(10_000);
+      ).toEqual(network.addressConfirmationReward.toNumber());
 
       const supply = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual("30000");
+      expect(supply.value.amount).toEqual(
+        network.addressTracerReward
+          .add(network.addressConfirmationReward)
+          .toString()
+      );
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toEqual(0);
-        expect(fetchedAccount.addressCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
       }
     });
   });

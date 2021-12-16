@@ -19,6 +19,11 @@ describe("HapiCore Network", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
+  const addressTracerReward = new u64(1_000);
+  const addressConfirmationReward = new u64(2_000);
+  const assetTracerReward = new u64(3_000);
+  const assetConfirmationReward = new u64(4_000);
+
   beforeAll(async () => {
     community = web3.Keypair.generate();
     otherCommunity = web3.Keypair.generate();
@@ -38,10 +43,10 @@ describe("HapiCore Network", () => {
     await program.rpc.initializeCommunity(
       new u64(1),
       2,
-      new u64(1_000),
-      new u64(2_000),
-      new u64(3_000),
-      new u64(4_000),
+      addressTracerReward,
+      addressConfirmationReward,
+      assetTracerReward,
+      assetConfirmationReward,
       tokenSignerBump,
       {
         accounts: {
@@ -71,8 +76,10 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        new u64(10_000),
-        new u64(10_000),
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
         networkBump,
         rewardSignerBump,
       ];
@@ -144,8 +151,10 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        new u64(10_000),
-        new u64(10_000),
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
         bump,
         rewardSignerBump,
       ];
@@ -180,8 +189,10 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        new u64(10_000),
-        new u64(10_000),
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
         bump,
         rewardSignerBump,
       ];
@@ -217,8 +228,10 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        new u64(10_000),
-        new u64(20_000),
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
         bump,
         rewardSignerBump,
       ];
@@ -242,9 +255,17 @@ describe("HapiCore Network", () => {
       );
       expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
       expect(fetchedNetworkAccount.bump).toEqual(bump);
-      expect(fetchedNetworkAccount.tracerReward.toNumber()).toEqual(10_000);
-      expect(fetchedNetworkAccount.confirmationReward.toNumber()).toEqual(
-        20_000
+      expect(fetchedNetworkAccount.addressTracerReward.toNumber()).toEqual(
+        addressTracerReward.toNumber()
+      );
+      expect(
+        fetchedNetworkAccount.addressConfirmationReward.toNumber()
+      ).toEqual(addressConfirmationReward.toNumber());
+      expect(fetchedNetworkAccount.assetTracerReward.toNumber()).toEqual(
+        assetTracerReward.toNumber()
+      );
+      expect(fetchedNetworkAccount.assetConfirmationReward.toNumber()).toEqual(
+        assetConfirmationReward.toNumber()
       );
       expect(fetchedNetworkAccount.rewardSignerBump).toEqual(rewardSignerBump);
       expect(fetchedNetworkAccount.rewardMint).toEqual(rewardToken.mintAccount);
@@ -270,8 +291,10 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        new u64(10_000),
-        new u64(10_000),
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
         bump,
         rewardSignerBump,
       ];
@@ -301,7 +324,12 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [new u64(40_000), new u64(50_000)];
+      const args = [
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
+      ];
 
       await expectThrowError(
         () =>
@@ -322,7 +350,12 @@ describe("HapiCore Network", () => {
         "unknown"
       );
 
-      const args = [new u64(40_000), new u64(50_000)];
+      const args = [
+        addressTracerReward,
+        addressConfirmationReward,
+        assetTracerReward,
+        assetConfirmationReward,
+      ];
 
       await expectThrowError(
         () =>
@@ -343,7 +376,12 @@ describe("HapiCore Network", () => {
         "near"
       );
 
-      const args = [new u64(40_000), new u64(50_000)];
+      const args = [
+        addressTracerReward.addn(1),
+        addressConfirmationReward.addn(1),
+        assetTracerReward.addn(1),
+        assetConfirmationReward.addn(1),
+      ];
 
       const tx = await program.rpc.updateNetwork(...args, {
         accounts: {
@@ -358,9 +396,17 @@ describe("HapiCore Network", () => {
       const fetchedNetworkAccount = await program.account.network.fetch(
         networkAccount
       );
-      expect(fetchedNetworkAccount.tracerReward.toNumber()).toEqual(40_000);
-      expect(fetchedNetworkAccount.confirmationReward.toNumber()).toEqual(
-        50_000
+      expect(fetchedNetworkAccount.addressTracerReward.toNumber()).toEqual(
+        addressTracerReward.addn(1).toNumber()
+      );
+      expect(
+        fetchedNetworkAccount.addressConfirmationReward.toNumber()
+      ).toEqual(addressConfirmationReward.addn(1).toNumber());
+      expect(fetchedNetworkAccount.assetTracerReward.toNumber()).toEqual(
+        assetTracerReward.addn(1).toNumber()
+      );
+      expect(fetchedNetworkAccount.assetConfirmationReward.toNumber()).toEqual(
+        assetConfirmationReward.addn(1).toNumber()
       );
     });
   });

@@ -80,8 +80,10 @@ pub mod hapi_core {
     pub fn create_network(
         ctx: Context<CreateNetwork>,
         name: [u8; 32],
-        tracer_reward: u64,
-        confirmation_reward: u64,
+        address_tracer_reward: u64,
+        address_confirmation_reward: u64,
+        asset_tracer_reward: u64,
+        asset_confirmation_reward: u64,
         network_bump: u8,
         reward_signer_bump: u8,
     ) -> ProgramResult {
@@ -107,21 +109,27 @@ pub mod hapi_core {
         network.reward_mint = ctx.accounts.reward_mint.key();
         network.reward_signer = ctx.accounts.reward_signer.key();
         network.reward_signer_bump = reward_signer_bump;
-        network.tracer_reward = tracer_reward;
-        network.confirmation_reward = confirmation_reward;
+        network.address_tracer_reward = address_tracer_reward;
+        network.address_confirmation_reward = address_confirmation_reward;
+        network.asset_tracer_reward = asset_tracer_reward;
+        network.asset_confirmation_reward = asset_confirmation_reward;
 
         Ok(())
     }
 
     pub fn update_network(
         ctx: Context<UpdateNetwork>,
-        tracer_reward: u64,
-        confirmation_reward: u64,
+        address_tracer_reward: u64,
+        address_confirmation_reward: u64,
+        asset_tracer_reward: u64,
+        asset_confirmation_reward: u64,
     ) -> ProgramResult {
         let network = &mut ctx.accounts.network;
 
-        network.tracer_reward = tracer_reward;
-        network.confirmation_reward = confirmation_reward;
+        network.address_tracer_reward = address_tracer_reward;
+        network.address_confirmation_reward = address_confirmation_reward;
+        network.asset_tracer_reward = asset_tracer_reward;
+        network.asset_confirmation_reward = asset_confirmation_reward;
 
         Ok(())
     }
@@ -235,14 +243,14 @@ pub mod hapi_core {
         let community = &ctx.accounts.community;
 
         if address.confirmations == community.confirmation_threshold {
-            let address_reporter_reward = &mut ctx.accounts.address_reporter_reward;
+            let address_reporter_reward = &mut ctx.accounts.address_reporter_reward.load_mut()?;
 
-            address_reporter_reward.address_counter += 1;
+            address_reporter_reward.address_tracer_counter += 1;
         }
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward;
+        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
 
-        reporter_reward.confirmation_counter += 1;
+        reporter_reward.address_confirmation_counter += 1;
 
         Ok(())
     }
@@ -293,6 +301,26 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn confirm_asset(ctx: Context<ConfirmAsset>) -> ProgramResult {
+        let asset = &mut ctx.accounts.asset;
+
+        asset.confirmations += 1;
+
+        let community = &ctx.accounts.community;
+
+        if asset.confirmations == community.confirmation_threshold {
+            let asset_reporter_reward = &mut ctx.accounts.asset_reporter_reward.load_mut()?;
+
+            asset_reporter_reward.asset_tracer_counter += 1;
+        }
+
+        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
+
+        reporter_reward.asset_confirmation_counter += 1;
+
+        Ok(())
+    }
+
     pub fn update_asset(ctx: Context<UpdateAsset>, category: Category, risk: u8) -> ProgramResult {
         if risk > 10 {
             return print_error(ErrorCode::RiskOutOfRange);
@@ -310,7 +338,7 @@ pub mod hapi_core {
         ctx: Context<InitializeReporterReward>,
         bump: u8,
     ) -> ProgramResult {
-        let reporter_reward = &mut ctx.accounts.reporter_reward;
+        let reporter_reward = &mut ctx.accounts.reporter_reward.load_init()?;
 
         reporter_reward.network = ctx.accounts.network.key();
         reporter_reward.reporter = ctx.accounts.reporter.key();
@@ -400,17 +428,18 @@ pub mod hapi_core {
     pub fn claim_reporter_reward(ctx: Context<ClaimReporterReward>) -> ProgramResult {
         let network = &ctx.accounts.network;
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward;
+        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
 
-        let reward = reporter_reward.confirmation_counter * network.tracer_reward
-            + reporter_reward.address_counter * network.confirmation_reward;
+        let reward = reporter_reward.address_confirmation_counter
+            * network.address_confirmation_reward
+            + reporter_reward.address_tracer_counter * network.address_tracer_reward;
 
         if reward == 0 {
             return print_error(ErrorCode::NoReward);
         }
 
-        reporter_reward.confirmation_counter = 0;
-        reporter_reward.address_counter = 0;
+        reporter_reward.address_confirmation_counter = 0;
+        reporter_reward.address_tracer_counter = 0;
 
         let reward_signer = &ctx.accounts.reward_signer;
 
@@ -420,15 +449,18 @@ pub mod hapi_core {
             &[network.reward_signer_bump],
         ];
 
-        token::mint_to(CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            MintTo {
-                mint: ctx.accounts.reward_mint.to_account_info(),
-                to: ctx.accounts.reporter_token_account.to_account_info(),
-                authority: reward_signer.to_account_info(),
-            },
-            &[&seeds[..]],
-        ), reward)?;
+        token::mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.reward_mint.to_account_info(),
+                    to: ctx.accounts.reporter_token_account.to_account_info(),
+                    authority: reward_signer.to_account_info(),
+                },
+                &[&seeds[..]],
+            ),
+            reward,
+        )?;
 
         Ok(())
     }

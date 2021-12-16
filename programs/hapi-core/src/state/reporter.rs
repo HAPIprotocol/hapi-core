@@ -31,7 +31,7 @@ pub struct Reporter {
     pub unlock_epoch: u64,
 }
 
-#[account]
+#[account(zero_copy)]
 #[derive(Default)]
 pub struct ReporterReward {
     /// Reporter account to keep reward counter for
@@ -44,10 +44,16 @@ pub struct ReporterReward {
     pub bump: u8,
 
     /// Number of unclaimed address report rewards
-    pub address_counter: u64,
+    pub address_tracer_counter: u64,
 
-    /// Number of unclaimed confirmation rewards
-    pub confirmation_counter: u64,
+    /// Number of unclaimed address confirmation rewards
+    pub address_confirmation_counter: u64,
+
+    /// Number of unclaimed asset report rewards
+    pub asset_tracer_counter: u64,
+
+    /// Number of unclaimed asset confirmation rewards
+    pub asset_confirmation_counter: u64,
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

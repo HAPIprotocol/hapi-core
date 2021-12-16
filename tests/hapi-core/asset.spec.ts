@@ -50,10 +50,33 @@ describe("HapiCore Asset", () => {
     },
   };
 
-  const NETWORKS: Record<string, { name: string; rewardToken: TestToken }> = {
-    ethereum: { name: "ethereum", rewardToken: new TestToken(provider) },
-    solana: { name: "solana", rewardToken: new TestToken(provider) },
-    near: { name: "near", rewardToken: new TestToken(provider) },
+  const NETWORKS: Record<
+    string,
+    {
+      name: string;
+      rewardToken: TestToken;
+      addressTracerReward: u64;
+      addressConfirmationReward: u64;
+      assetTracerReward: u64;
+      assetConfirmationReward: u64;
+    }
+  > = {
+    ethereum: {
+      name: "ethereum",
+      rewardToken: new TestToken(provider),
+      addressTracerReward: new u64(1_000),
+      addressConfirmationReward: new u64(2_000),
+      assetTracerReward: new u64(3_000),
+      assetConfirmationReward: new u64(4_000),
+    },
+    solana: {
+      name: "solana",
+      rewardToken: new TestToken(provider),
+      addressTracerReward: new u64(1_001),
+      addressConfirmationReward: new u64(2_001),
+      assetTracerReward: new u64(3_001),
+      assetConfirmationReward: new u64(4_001),
+    },
   };
 
   const CASES: Record<
@@ -229,8 +252,10 @@ describe("HapiCore Asset", () => {
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
-          new u64(10_000),
-          new u64(20_000),
+          network.addressTracerReward,
+          network.addressConfirmationReward,
+          network.assetTracerReward,
+          network.assetConfirmationReward,
           bump,
           rewardSignerBump,
           {
@@ -706,6 +731,363 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.mint).toEqual(asset.mint);
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
+    });
+  });
+
+  describe("confirm_asset", () => {
+    beforeAll(async () => {
+      for (const reporterKey of Object.keys(REPORTERS)) {
+        const reporter = REPORTERS[reporterKey];
+
+        const [reporterAccount] = await program.findReporterAddress(
+          community.publicKey,
+          reporter.keypair.publicKey
+        );
+
+        for (const networkKey of Object.keys(NETWORKS)) {
+          const [networkAccount] = await program.findNetworkAddress(
+            community.publicKey,
+            NETWORKS[networkKey].name
+          );
+
+          const [reporterRewardAccount, bump] =
+            await program.findReporterRewardAddress(
+              networkAccount,
+              reporterAccount
+            );
+
+          await program.rpc.initializeReporterReward(bump, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              reporterReward: reporterRewardAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter.keypair],
+          });
+        }
+      }
+    });
+
+    it("fail - can't confirm an asset reported by yourself", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS[asset.reporter].keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const assetInfo = await program.account.asset.fetch(assetAccount);
+
+      const [assetReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          assetInfo.reporter
+        );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.confirmAsset({
+            accounts: {
+              sender: reporter.publicKey,
+              asset: assetAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              reporterReward: reporterRewardAccount,
+              assetReporterReward: assetReporterRewardAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("success - bob", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS.bob.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const assetInfo = await program.account.asset.fetch(assetAccount);
+
+      const [assetReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          assetInfo.reporter
+        );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const tx = await program.rpc.confirmAsset({
+        accounts: {
+          sender: reporter.publicKey,
+          asset: assetAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          assetReporterReward: assetReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      {
+        const fetchedAccount = await program.account.asset.fetch(assetAccount);
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          asset.caseId.toNumber()
+        );
+        expect(fetchedAccount.confirmations).toEqual(1);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          assetReporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+      }
+    });
+
+    it("success - dave", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const assetInfo = await program.account.asset.fetch(assetAccount);
+
+      const [assetReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          assetInfo.reporter
+        );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const tx = await program.rpc.confirmAsset({
+        accounts: {
+          sender: reporter.publicKey,
+          asset: assetAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          assetReporterReward: assetReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      {
+        const fetchedAccount = await program.account.asset.fetch(assetAccount);
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          asset.caseId.toNumber()
+        );
+        expect(fetchedAccount.confirmations).toEqual(2);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          assetReporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(1);
+      }
+    });
+
+    it("success - carol", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS.carol.keypair;
+
+      const [networkAccount] = await program.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] = await program.findReporterRewardAddress(
+        networkAccount,
+        reporterAccount
+      );
+
+      const assetInfo = await program.account.asset.fetch(assetAccount);
+
+      const [assetReporterRewardAccount] =
+        await program.findReporterRewardAddress(
+          networkAccount,
+          assetInfo.reporter
+        );
+
+      const [caseAccount] = await program.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const tx = await program.rpc.confirmAsset({
+        accounts: {
+          sender: reporter.publicKey,
+          asset: assetAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          assetReporterReward: assetReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      {
+        const fetchedAccount = await program.account.asset.fetch(assetAccount);
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          asset.caseId.toNumber()
+        );
+        expect(fetchedAccount.confirmations).toEqual(3);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          assetReporterRewardAccount
+        );
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(1);
+      }
     });
   });
 });

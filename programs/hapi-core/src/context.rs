@@ -88,7 +88,15 @@ pub struct SetCommunityAuthority<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(name: [u8; 32], tracer_reward: u64, confirmation_reward: u64, network_bump: u8, reward_signer_bump: u8)]
+#[instruction(
+    name: [u8; 32],
+    address_tracer_reward: u64,
+    address_confirmation_reward: u64,
+    asset_tracer_reward: u64,
+    asset_confirmation_reward: u64,
+    network_bump: u8,
+    reward_signer_bump: u8
+)]
 pub struct CreateNetwork<'info> {
     pub authority: Signer<'info>,
 
@@ -127,7 +135,12 @@ pub struct CreateNetwork<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(tracer_reward: u64, confirmation_reward: u64)]
+#[instruction(
+    address_tracer_reward: u64,
+    address_confirmation_reward: u64,
+    asset_tracer_reward: u64,
+    asset_confirmation_reward: u64,
+)]
 pub struct UpdateNetwork<'info> {
     pub authority: Signer<'info>,
 
@@ -205,9 +218,9 @@ pub struct InitializeReporterReward<'info> {
         owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump = bump,
-        space = 89,
+        space = 105,
     )]
-    pub reporter_reward: Account<'info, ReporterReward>,
+    pub reporter_reward: AccountLoader<'info, ReporterReward>,
 
     pub system_program: Program<'info, System>,
 }
@@ -483,19 +496,19 @@ pub struct ConfirmAddress<'info> {
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = reporter_reward.bump,
+        bump = reporter_reward.load()?.bump,
     )]
-    pub reporter_reward: Account<'info, ReporterReward>,
+    pub reporter_reward: AccountLoader<'info, ReporterReward>,
 
     #[account(
         mut,
         owner = id(),
         has_one = network,
-        constraint = address_reporter_reward.reporter == address.reporter @ ErrorCode::InvalidReporter,
+        constraint = address_reporter_reward.load()?.reporter == address.reporter @ ErrorCode::InvalidReporter,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), address.reporter.as_ref()],
-        bump = address_reporter_reward.bump,
+        bump = address_reporter_reward.load()?.bump,
     )]
-    pub address_reporter_reward: Account<'info, ReporterReward>,
+    pub address_reporter_reward: AccountLoader<'info, ReporterReward>,
 
     #[account(
         owner = id(),
@@ -615,6 +628,74 @@ pub struct UpdateAsset<'info> {
         mut,
         owner = id(),
         constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
+        has_one = network @ ErrorCode::NetworkMismatch,
+        seeds = [b"asset".as_ref(), network.key().as_ref(), asset.mint.as_ref(), asset.asset_id.as_ref()],
+        bump = asset.bump,
+    )]
+    pub asset: Account<'info, Asset>,
+}
+
+#[derive(Accounts)]
+pub struct ConfirmAsset<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = reporter,
+        has_one = network,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump = reporter_reward.load()?.bump,
+    )]
+    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = network,
+        constraint = asset_reporter_reward.load()?.reporter == asset.reporter @ ErrorCode::InvalidReporter,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), asset.reporter.as_ref()],
+        bump = asset_reporter_reward.load()?.bump,
+    )]
+    pub asset_reporter_reward: AccountLoader<'info, ReporterReward>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
+    )]
+    pub case: Account<'info, Case>,
+
+    #[account(
+        mut,
+        owner = id(),
+        constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
+        constraint = asset.reporter != reporter.key() @ ErrorCode::Unauthorized,
         has_one = network @ ErrorCode::NetworkMismatch,
         seeds = [b"asset".as_ref(), network.key().as_ref(), asset.mint.as_ref(), asset.asset_id.as_ref()],
         bump = asset.bump,
@@ -766,9 +847,9 @@ pub struct ClaimReporterReward<'info> {
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = reporter_reward.bump,
+        bump = reporter_reward.load()?.bump,
     )]
-    pub reporter_reward: Account<'info, ReporterReward>,
+    pub reporter_reward: AccountLoader<'info, ReporterReward>,
 
     #[account(
         mut,

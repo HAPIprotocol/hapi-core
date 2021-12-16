@@ -50,10 +50,33 @@ describe("HapiCore Address", () => {
     },
   };
 
-  const NETWORKS: Record<string, { name: string; rewardToken: TestToken }> = {
-    ethereum: { name: "ethereum", rewardToken: new TestToken(provider) },
-    solana: { name: "solana", rewardToken: new TestToken(provider) },
-    near: { name: "near", rewardToken: new TestToken(provider) },
+  const NETWORKS: Record<
+    string,
+    {
+      name: string;
+      rewardToken: TestToken;
+      addressTracerReward: u64;
+      addressConfirmationReward: u64;
+      assetTracerReward: u64;
+      assetConfirmationReward: u64;
+    }
+  > = {
+    ethereum: {
+      name: "ethereum",
+      rewardToken: new TestToken(provider),
+      addressTracerReward: new u64(1_000),
+      addressConfirmationReward: new u64(2_000),
+      assetTracerReward: new u64(3_000),
+      assetConfirmationReward: new u64(4_000),
+    },
+    solana: {
+      name: "solana",
+      rewardToken: new TestToken(provider),
+      addressTracerReward: new u64(1_001),
+      addressConfirmationReward: new u64(2_001),
+      assetTracerReward: new u64(3_001),
+      assetConfirmationReward: new u64(4_001),
+    },
   };
 
   const CASES: Record<
@@ -230,8 +253,10 @@ describe("HapiCore Address", () => {
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
-          new u64(10_000),
-          new u64(20_000),
+          network.addressTracerReward,
+          network.addressConfirmationReward,
+          network.assetTracerReward,
+          network.assetConfirmationReward,
           bump,
           rewardSignerBump,
           {
@@ -936,16 +961,16 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
       }
     });
 
@@ -1022,16 +1047,16 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(1);
       }
     });
 
@@ -1108,16 +1133,16 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.confirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressCounter.toNumber()).toBe(1);
+        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
+        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(1);
       }
     });
   });
