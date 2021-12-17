@@ -1,8 +1,10 @@
 import { web3 } from "@project-serum/anchor";
 
 export function silenceConsole() {
-  const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  const logSpy = jest.spyOn(console, "log").mockImplementation(() => undefined);
+  const errorSpy = jest
+    .spyOn(console, "error")
+    .mockImplementation(() => undefined);
 
   return {
     close: () => {
@@ -17,7 +19,7 @@ export async function expectThrowError(
   error?: string | jest.Constructable | RegExp | Error,
   isSilent = true
 ) {
-  let silencer = isSilent ? silenceConsole() : undefined;
+  const silencer = isSilent ? silenceConsole() : undefined;
 
   await expect(fn).rejects.toThrowError(error);
 
@@ -27,15 +29,12 @@ export async function expectThrowError(
 }
 
 export function listenSolanaLogs(connection: web3.Connection) {
-  const handle = connection.onLogs(
-    "all",
-    (logs: web3.Logs, ctx: web3.Context) => {
-      console.log(logs.logs.join("\n"));
-      if (logs.err) {
-        console.error(logs.err);
-      }
+  const handle = connection.onLogs("all", (logs: web3.Logs) => {
+    console.log(logs.logs.join("\n"));
+    if (logs.err) {
+      console.error(logs.err);
     }
-  );
+  });
 
   return {
     close: async () => {

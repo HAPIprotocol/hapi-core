@@ -1,5 +1,4 @@
 import { Provider, web3 } from "@project-serum/anchor";
-import { NodeWallet } from "@project-serum/anchor/dist/cjs/provider";
 import { Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 export { Token, u64 } from "@solana/spl-token";
 
@@ -20,7 +19,7 @@ export class TestToken {
   }
 
   get payer() {
-    return (this.provider.wallet as NodeWallet).payer;
+    return this.provider.wallet["payer"];
   }
 
   async mint(amount?: u64): Promise<void> {

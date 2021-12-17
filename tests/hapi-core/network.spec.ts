@@ -3,8 +3,8 @@ import { web3 } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
-import { bufferFromString, program } from "../../lib";
-import { AnchorError, anchorError, programError } from "../util/error";
+import { bufferFromString, HapiCore } from "../../lib";
+import { programError } from "../util/error";
 
 describe("HapiCore Network", () => {
   const provider = anchor.Provider.env();
@@ -36,11 +36,11 @@ describe("HapiCore Network", () => {
     await rewardToken.mint(new u64(0));
 
     const [tokenSignerAccount, tokenSignerBump] =
-      await program.findCommunityTokenSignerAddress(community.publicKey);
+      await HapiCore.findCommunityTokenSignerAddress(community.publicKey);
 
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
-    await program.rpc.initializeCommunity(
+    await HapiCore.rpc.initializeCommunity(
       new u64(1),
       2,
       addressTracerReward,
@@ -64,15 +64,15 @@ describe("HapiCore Network", () => {
 
   describe("create_network", () => {
     it("fail - invalid authority", async () => {
-      let name = bufferFromString("near", 32);
+      const name = bufferFromString("near", 32);
 
-      const [networkAccount, networkBump] = await program.findNetworkAddress(
+      const [networkAccount, networkBump] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
 
       const [rewardSignerAccount, rewardSignerBump] =
-        await program.findNetworkRewardSignerAddress(networkAccount);
+        await HapiCore.findNetworkRewardSignerAddress(networkAccount);
 
       const args = [
         name.toJSON().data,
@@ -86,7 +86,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.createNetwork(...args, {
+          HapiCore.rpc.createNetwork(...args, {
             accounts: {
               authority: nobody.publicKey,
               community: community.publicKey,
@@ -103,16 +103,18 @@ describe("HapiCore Network", () => {
     });
 
     it("fail - authority mismatch for community", async () => {
-      let name = bufferFromString("near", 32);
+      const name = bufferFromString("near", 32);
 
       const [tokenSignerAccount, tokenSignerBump] =
-        await program.findCommunityTokenSignerAddress(otherCommunity.publicKey);
+        await HapiCore.findCommunityTokenSignerAddress(
+          otherCommunity.publicKey
+        );
 
       const otherTokenAccount = await stakeToken.createAccount(
         tokenSignerAccount
       );
 
-      await program.rpc.initializeCommunity(
+      await HapiCore.rpc.initializeCommunity(
         new u64(1),
         2,
         new u64(1_000),
@@ -133,7 +135,7 @@ describe("HapiCore Network", () => {
         }
       );
 
-      await program.rpc.setCommunityAuthority({
+      await HapiCore.rpc.setCommunityAuthority({
         accounts: {
           authority: authority.publicKey,
           community: otherCommunity.publicKey,
@@ -141,13 +143,13 @@ describe("HapiCore Network", () => {
         },
       });
 
-      const [networkAccount, bump] = await program.findNetworkAddress(
+      const [networkAccount, bump] = await HapiCore.findNetworkAddress(
         otherCommunity.publicKey,
         "near"
       );
 
       const [rewardSignerAccount, rewardSignerBump] =
-        await program.findNetworkRewardSignerAddress(networkAccount);
+        await HapiCore.findNetworkRewardSignerAddress(networkAccount);
 
       const args = [
         name.toJSON().data,
@@ -161,7 +163,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.createNetwork(...args, {
+          HapiCore.rpc.createNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
               community: otherCommunity.publicKey,
@@ -177,15 +179,15 @@ describe("HapiCore Network", () => {
     });
 
     it("fail - community mismatch for network", async () => {
-      let name = bufferFromString("near", 32);
+      const name = bufferFromString("near", 32);
 
-      const [networkAccount, bump] = await program.findNetworkAddress(
+      const [networkAccount, bump] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
 
       const [rewardSignerAccount, rewardSignerBump] =
-        await program.findNetworkRewardSignerAddress(networkAccount);
+        await HapiCore.findNetworkRewardSignerAddress(networkAccount);
 
       const args = [
         name.toJSON().data,
@@ -199,7 +201,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.createNetwork(...args, {
+          HapiCore.rpc.createNetwork(...args, {
             accounts: {
               authority: nobody.publicKey,
               community: otherCommunity.publicKey,
@@ -218,13 +220,13 @@ describe("HapiCore Network", () => {
     it("success", async () => {
       const name = bufferFromString("near", 32);
 
-      const [networkAccount, bump] = await program.findNetworkAddress(
+      const [networkAccount, bump] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
 
       const [rewardSignerAccount, rewardSignerBump] =
-        await program.findNetworkRewardSignerAddress(networkAccount);
+        await HapiCore.findNetworkRewardSignerAddress(networkAccount);
 
       const args = [
         name.toJSON().data,
@@ -236,7 +238,7 @@ describe("HapiCore Network", () => {
         rewardSignerBump,
       ];
 
-      const tx = await program.rpc.createNetwork(...args, {
+      const tx = await HapiCore.rpc.createNetwork(...args, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
@@ -250,7 +252,7 @@ describe("HapiCore Network", () => {
 
       expect(tx).toBeTruthy();
 
-      const fetchedNetworkAccount = await program.account.network.fetch(
+      const fetchedNetworkAccount = await HapiCore.account.network.fetch(
         networkAccount
       );
       expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
@@ -274,20 +276,20 @@ describe("HapiCore Network", () => {
       const networkInfo = await provider.connection.getAccountInfoAndContext(
         networkAccount
       );
-      expect(networkInfo.value.owner).toEqual(program.programId);
+      expect(networkInfo.value.owner).toEqual(HapiCore.programId);
       expect(networkInfo.value.data).toHaveLength(200);
     });
 
     it("fail - network already exists", async () => {
-      let name = bufferFromString("near", 32);
+      const name = bufferFromString("near", 32);
 
-      const [networkAccount, bump] = await program.findNetworkAddress(
+      const [networkAccount, bump] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
 
       const [rewardSignerAccount, rewardSignerBump] =
-        await program.findNetworkRewardSignerAddress(community.publicKey);
+        await HapiCore.findNetworkRewardSignerAddress(community.publicKey);
 
       const args = [
         name.toJSON().data,
@@ -301,7 +303,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.createNetwork(...args, {
+          HapiCore.rpc.createNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
@@ -319,7 +321,7 @@ describe("HapiCore Network", () => {
 
   describe("update_network", () => {
     it("fail - authority mismatch for community", async () => {
-      const [networkAccount] = await program.findNetworkAddress(
+      const [networkAccount] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
@@ -333,7 +335,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.updateNetwork(...args, {
+          HapiCore.rpc.updateNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
               community: otherCommunity.publicKey,
@@ -345,7 +347,7 @@ describe("HapiCore Network", () => {
     });
 
     it("fail - network does not exist", async () => {
-      const [networkAccount] = await program.findNetworkAddress(
+      const [networkAccount] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "unknown"
       );
@@ -359,19 +361,19 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.updateNetwork(...args, {
+          HapiCore.rpc.updateNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
               community: community.publicKey,
               network: networkAccount,
             },
           }),
-        anchorError(AnchorError.AccountNotInitialized)
+        "3012: The program expected this account to be already initialized"
       );
     });
 
     it("success", async () => {
-      const [networkAccount] = await program.findNetworkAddress(
+      const [networkAccount] = await HapiCore.findNetworkAddress(
         community.publicKey,
         "near"
       );
@@ -383,7 +385,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward.addn(1),
       ];
 
-      const tx = await program.rpc.updateNetwork(...args, {
+      const tx = await HapiCore.rpc.updateNetwork(...args, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
@@ -393,7 +395,7 @@ describe("HapiCore Network", () => {
 
       expect(tx).toBeTruthy();
 
-      const fetchedNetworkAccount = await program.account.network.fetch(
+      const fetchedNetworkAccount = await HapiCore.account.network.fetch(
         networkAccount
       );
       expect(fetchedNetworkAccount.addressTracerReward.toNumber()).toEqual(
