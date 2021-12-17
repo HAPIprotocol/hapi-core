@@ -7,6 +7,13 @@
   "description": "Client library for HAPI core contract",
   "author": "HAPI Protocol",
   "license": "Apache-2.0",
+  "keywords": [
+    "HAPI",
+    "protocol",
+    "cybersecurity",
+    "Solana",
+    "client"
+  ],
   "main": "out-lib/index.cjs.js",
   "module": "out-lib/index.esm.js",
   "types": "out-lib/index.d.ts",
