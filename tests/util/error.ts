@@ -8,11 +8,11 @@ export function errorRegexp(code: number, instruction = 0) {
   );
 }
 
-export function programError(name: string): RegExp {
+export function programError(name: string): string {
   const error = errors.find((error) => error.name === name);
   if (!error) {
     throw new Error(`Error "${name}" is not found`);
   }
 
-  return errorRegexp(5700 + error.code);
+  return error.msg;
 }

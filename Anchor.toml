@@ -1,3 +1,5 @@
+anchor_version = "0.19.0"
+
 [programs.localnet]
 hapi_core = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
@@ -6,7 +8,7 @@ url = "https://anchor.projectserum.com"
 
 [provider]
 cluster = "localnet"
-wallet = "/home/dread/.config/solana/id.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "npx jest --verbose"
