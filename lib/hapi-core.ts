@@ -1,15 +1,18 @@
-import { Program, web3, BN } from "@project-serum/anchor";
+import { Program, web3, BN, Provider } from "@project-serum/anchor";
 
 import { IDL } from "../target/types/hapi_core";
 import { bufferFromString } from "./buffer";
 
-export function initHapiCore(hapiCoreProgramId: string | web3.PublicKey) {
+export function initHapiCore(
+  hapiCoreProgramId: string | web3.PublicKey,
+  provider?: Provider
+) {
   const programId =
     typeof hapiCoreProgramId === "string"
       ? new web3.PublicKey(hapiCoreProgramId)
       : hapiCoreProgramId;
 
-  const program = new Program(IDL, programId);
+  const program = new Program(IDL, programId, provider);
 
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
     return web3.PublicKey.findProgramAddress(
