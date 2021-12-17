@@ -1,6 +1,6 @@
 {
   "name": "@hapi.one/core-cli",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "publishConfig": {
     "access": "public"
   },
@@ -23,7 +23,7 @@
   "scripts": {
     "prebuild": "rimraf out-lib out-tsc",
     "build": "tsc && rollup -c",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "test": "anchor test",
     "lint": "eslint . --ext .ts"
   },
