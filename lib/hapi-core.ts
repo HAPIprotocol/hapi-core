@@ -2,16 +2,17 @@ import { Program, web3, BN } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 
 import { HapiCore as HapiCoreType } from "../target/types/hapi_core";
+import { metadata } from "../target/idl/hapi_core.json";
 import { bufferFromString } from "./buffer";
 
-const program = anchor["workspace"].HapiCore as Program<HapiCoreType>;
+export const HAPI_CORE_PROGRAM_ID = new web3.PublicKey(metadata.address);
 
 export async function findCommunityTokenSignerAddress(
   community: web3.PublicKey
 ) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("community_stash"), community.toBytes()],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
@@ -25,14 +26,14 @@ export async function findNetworkAddress(
       community.toBytes(),
       bufferFromString(name, 32),
     ],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
 export async function findNetworkRewardSignerAddress(network: web3.PublicKey) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("network_reward"), network.toBytes()],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
@@ -42,7 +43,7 @@ export async function findReporterAddress(
 ) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("reporter"), community.toBytes(), pubkey.toBytes()],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
@@ -56,14 +57,14 @@ export async function findReporterRewardAddress(
       network.toBytes(),
       reporter.toBytes(),
     ],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
 export async function findCaseAddress(community: web3.PublicKey, caseId: BN) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("case"), community.toBytes(), caseId.toBuffer("le", 8)],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
@@ -73,7 +74,7 @@ export async function findAddressAddress(
 ) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("address"), network.toBytes(), pubkey.toBytes()],
-    program.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
@@ -84,13 +85,15 @@ export async function findAssetAddress(
 ) {
   return web3.PublicKey.findProgramAddress(
     [bufferFromString("asset"), network.toBytes(), mint.toBuffer(), assetId],
-    HapiCore.programId
+    HAPI_CORE_PROGRAM_ID
   );
 }
 
+const program = anchor["workspace"].HapiCore as Program<HapiCoreType>;
+
 export const HapiCore = {
   ...program,
-  programId: program.programId,
+  programId: HAPI_CORE_PROGRAM_ID,
   findNetworkAddress,
   findNetworkRewardSignerAddress,
   findReporterAddress,
