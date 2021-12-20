@@ -16,3 +16,7 @@ export function bufferFromString(str: string, bufferSize?: number) {
     bufferSize
   );
 }
+
+export function stringFromArray(array: number[]) {
+  return anchor.utils.bytes.utf8.decode(new Uint8Array(array));
+}
