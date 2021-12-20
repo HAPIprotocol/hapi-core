@@ -1,7 +1,10 @@
 anchor_version = "0.19.0"
 
 [programs.localnet]
-hapi_core = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
+
+[programs.devnet]
+hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 
 [registry]
 url = "https://anchor.projectserum.com"
