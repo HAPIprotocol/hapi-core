@@ -1,3 +1,17 @@
+import { IDL } from "../target/types/hapi_core";
+
+// HapiCore Instructions
+export const HapiCoreInstructionVariants = IDL.instructions.map(
+  (ix) => ix.name
+);
+
+export type HapiCoreInstruction = typeof HapiCoreInstructionVariants[number];
+
+// HapiCore Accounts
+export const HapiCoreAccountVariants = IDL.accounts.map((acc) => acc.name);
+
+export type HapiCoreAccount = typeof HapiCoreAccountVariants[number];
+
 // ReporterRole
 export const ReporterRole = {
   Validator: { validator: {} },
