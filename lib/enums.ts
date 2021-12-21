@@ -1,27 +1,43 @@
+// ReporterRole
 export const ReporterRole = {
   Validator: { validator: {} },
   Tracer: { tracer: {} },
   Full: { full: {} },
   Authority: { authority: {} },
-};
+} as const;
 
-export type ReporterRoleType = "Validator" | "Tracer" | "Full" | "Authority";
+export type ReporterRoleKeys = keyof typeof ReporterRole;
 
+export const ReporterRoleVariants = Object.keys(ReporterRole) as Readonly<
+  ReporterRoleKeys[]
+>;
+
+// ReporterStatus
 export const ReporterStatus = {
   Inactive: { inactive: {} },
   Active: { active: {} },
   Unstaking: { unstaking: {} },
-};
+} as const;
 
-export type ReporterStatusType = "Inactive" | "Active" | "Unstaking";
+export type ReporterStatusKeys = keyof typeof ReporterStatus;
 
+export const ReporterStatusVariants = Object.keys(ReporterStatus) as Readonly<
+  ReporterStatusKeys[]
+>;
+
+// CaseStatus
 export const CaseStatus = {
   Closed: { closed: {} },
   Open: { open: {} },
-};
+} as const;
 
-export type CaseStatusType = "Closed" | "Open";
+export type CaseStatusKeys = keyof typeof CaseStatus;
 
+export const CaseStatusVariants = Object.keys(CaseStatus) as Readonly<
+  CaseStatusKeys[]
+>;
+
+// Category
 export const Category = {
   None: { none: {} },
   WalletService: { walletService: {} },
@@ -45,24 +61,8 @@ export const Category = {
   ChildAbuse: { childAbuse: {} },
 };
 
-export type CategoryType =
-  | "None"
-  | "WalletService"
-  | "MerchantService"
-  | "MiningPool"
-  | "LowRiskExchange"
-  | "MediumRiskExchange"
-  | "DeFi"
-  | "OTCBroker"
-  | "ATM"
-  | "Gambling"
-  | "IllicitOrganization"
-  | "Mixer"
-  | "DarknetService"
-  | "Scam"
-  | "Ransomware"
-  | "Theft"
-  | "Counterfeit"
-  | "TerroristFinancing"
-  | "Sanctions"
-  | "ChildAbuse";
+export type CategoryKeys = keyof typeof Category;
+
+export const CategoryVariants = Object.keys(Category) as Readonly<
+  CategoryKeys[]
+>;
