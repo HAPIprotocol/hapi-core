@@ -1,6 +1,6 @@
 {
   "name": "@hapi.one/core-cli",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "publishConfig": {
     "access": "public"
   },

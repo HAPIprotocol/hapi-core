@@ -67,7 +67,11 @@ export function initHapiCore(
 
   async function findCaseAddress(community: web3.PublicKey, caseId: BN) {
     return web3.PublicKey.findProgramAddress(
-      [bufferFromString("case"), community.toBytes(), caseId.toBuffer("le", 8)],
+      [
+        bufferFromString("case"),
+        community.toBytes(),
+        new Uint8Array(caseId.toArray("le", 8)),
+      ],
       programId
     );
   }
@@ -85,7 +89,7 @@ export function initHapiCore(
   async function findAssetAddress(
     network: web3.PublicKey,
     mint: web3.PublicKey,
-    assetId: Buffer
+    assetId: Buffer | Uint8Array
   ) {
     return web3.PublicKey.findProgramAddress(
       [bufferFromString("asset"), network.toBytes(), mint.toBuffer(), assetId],
