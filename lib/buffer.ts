@@ -18,5 +18,10 @@ export function bufferFromString(str: string, bufferSize?: number) {
 }
 
 export function stringFromArray(array: number[]) {
-  return anchor.utils.bytes.utf8.decode(new Uint8Array(array));
+  return (
+    anchor.utils.bytes.utf8
+      .decode(new Uint8Array(array))
+      // eslint-disable-next-line no-control-regex
+      .replace(/\x00/g, "")
+  );
 }
