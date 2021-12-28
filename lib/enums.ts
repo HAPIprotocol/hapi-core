@@ -16,7 +16,7 @@ export type HapiCoreAccount = typeof HapiCoreAccountVariants[number];
 export const ReporterRole = {
   Validator: { validator: {} },
   Tracer: { tracer: {} },
-  Full: { full: {} },
+  Publisher: { publisher: {} },
   Authority: { authority: {} },
 } as const;
 

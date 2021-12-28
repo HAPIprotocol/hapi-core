@@ -36,7 +36,7 @@ describe("HapiCore Reporter", () => {
     string,
     { name: string; keypair: web3.Keypair; role: keyof typeof ReporterRole }
   > = {
-    alice: { name: "alice", keypair: web3.Keypair.generate(), role: "Full" },
+    alice: { name: "alice", keypair: web3.Keypair.generate(), role: "Publisher" },
     bob: { name: "bob", keypair: web3.Keypair.generate(), role: "Tracer" },
     carol: {
       name: "carol",
@@ -837,7 +837,7 @@ describe("HapiCore Reporter", () => {
         stake = new u64(1_000);
       } else if (reporter.role === "Tracer") {
         stake = new u64(2_000);
-      } else if (reporter.role === "Full") {
+      } else if (reporter.role === "Publisher") {
         stake = new u64(3_000);
       } else if (reporter.role === "Authority") {
         stake = new u64(4_000);
@@ -891,7 +891,7 @@ describe("HapiCore Reporter", () => {
         stake = new u64(20_000_000);
       } else if (reporter.role === "Tracer") {
         stake = new u64(2_000);
-      } else if (reporter.role === "Full") {
+      } else if (reporter.role === "Publisher") {
         stake = new u64(3_000);
       } else if (reporter.role === "Authority") {
         stake = new u64(5_000);
@@ -945,7 +945,7 @@ describe("HapiCore Reporter", () => {
         stake = new u64(20_000_000);
       } else if (reporter.role === "Tracer") {
         stake = new u64(2_000);
-      } else if (reporter.role === "Full") {
+      } else if (reporter.role === "Publisher") {
         stake = new u64(3_000);
       } else if (reporter.role === "Authority") {
         stake = new u64(5_000);
@@ -999,7 +999,7 @@ describe("HapiCore Reporter", () => {
         stake = new u64(20_000_000);
       } else if (reporter.role === "Tracer") {
         stake = new u64(2_000);
-      } else if (reporter.role === "Full") {
+      } else if (reporter.role === "Publisher") {
         stake = new u64(3_000);
       } else if (reporter.role === "Authority") {
         stake = new u64(5_000);

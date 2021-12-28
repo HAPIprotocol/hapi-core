@@ -32,7 +32,7 @@ describe("HapiCore Case", () => {
     alice: {
       name: "alice",
       keypair: web3.Keypair.generate(),
-      role: "Full",
+      role: "Publisher",
     },
     bob: {
       name: "bob",

@@ -355,7 +355,7 @@ pub mod hapi_core {
         let stake = match reporter.role {
             ReporterRole::Validator => community.validator_stake,
             ReporterRole::Tracer => community.tracer_stake,
-            ReporterRole::Full => community.full_stake,
+            ReporterRole::Publisher => community.full_stake,
             ReporterRole::Authority => community.authority_stake,
         };
 

@@ -301,7 +301,7 @@ pub struct CreateCase<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.role == ReporterRole::Full || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.role == ReporterRole::Publisher || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
@@ -338,7 +338,7 @@ pub struct UpdateCase<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = (reporter.role == ReporterRole::Full
+        constraint = (reporter.role == ReporterRole::Publisher
             && case.reporter == reporter.key())
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
@@ -380,7 +380,7 @@ pub struct CreateAddress<'info> {
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Tracer
-            || reporter.role == ReporterRole::Full
+            || reporter.role == ReporterRole::Publisher
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
@@ -433,7 +433,7 @@ pub struct UpdateAddress<'info> {
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Authority
-            || (reporter.role == ReporterRole::Full
+            || (reporter.role == ReporterRole::Publisher
             && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
@@ -552,7 +552,7 @@ pub struct CreateAsset<'info> {
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Tracer
-            || reporter.role == ReporterRole::Full
+            || reporter.role == ReporterRole::Publisher
             || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
@@ -605,7 +605,7 @@ pub struct UpdateAsset<'info> {
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         constraint = reporter.role == ReporterRole::Authority
-            || (reporter.role == ReporterRole::Full
+            || (reporter.role == ReporterRole::Publisher
             && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,

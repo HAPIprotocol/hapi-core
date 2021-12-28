@@ -29,7 +29,7 @@ describe("HapiCore General", () => {
     string,
     { name: string; keypair: web3.Keypair; type: keyof typeof ReporterRole }
   > = {
-    alice: { name: "alice", keypair: web3.Keypair.generate(), type: "Full" },
+    alice: { name: "alice", keypair: web3.Keypair.generate(), type: "Publisher" },
     bob: { name: "bob", keypair: web3.Keypair.generate(), type: "Tracer" },
     carol: {
       name: "carol",
@@ -401,7 +401,7 @@ describe("HapiCore General", () => {
       stake = new u64(1_000);
     } else if (reporter.type === "Tracer") {
       stake = new u64(2_000);
-    } else if (reporter.type === "Full") {
+    } else if (reporter.type === "Publisher") {
       stake = new u64(3_000);
     } else if (reporter.type === "Authority") {
       stake = new u64(4_000);

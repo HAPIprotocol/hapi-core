@@ -82,8 +82,8 @@ pub enum ReporterRole {
     /// Tracer - can report and validate addresses
     Tracer = 1,
 
-    /// Full - can report cases and addresses
-    Full = 2,
+    /// Publisher - can report cases and addresses
+    Publisher = 2,
 
     /// Authority - can report and modify cases and addresses
     Authority = 3,
