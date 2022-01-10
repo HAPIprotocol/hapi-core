@@ -3,7 +3,7 @@ import { web3 } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
-import { bufferFromString, initHapiCore } from "../../lib";
+import { ACCOUNT_SIZE, bufferFromString, initHapiCore } from "../../lib";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
@@ -278,7 +278,7 @@ describe("HapiCore Network", () => {
         networkAccount
       );
       expect(networkInfo.value.owner).toEqual(program.programId);
-      expect(networkInfo.value.data).toHaveLength(200);
+      expect(networkInfo.value.data).toHaveLength(ACCOUNT_SIZE.network);
     });
 
     it("fail - network already exists", async () => {

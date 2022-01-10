@@ -32,7 +32,7 @@ pub struct Reporter {
 }
 
 #[account(zero_copy)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ReporterReward {
     /// Reporter account to keep reward counter for
     pub reporter: Pubkey,

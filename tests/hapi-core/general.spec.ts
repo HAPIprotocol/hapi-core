@@ -29,7 +29,11 @@ describe("HapiCore General", () => {
     string,
     { name: string; keypair: web3.Keypair; type: keyof typeof ReporterRole }
   > = {
-    alice: { name: "alice", keypair: web3.Keypair.generate(), type: "Publisher" },
+    alice: {
+      name: "alice",
+      keypair: web3.Keypair.generate(),
+      type: "Publisher",
+    },
     bob: { name: "bob", keypair: web3.Keypair.generate(), type: "Tracer" },
     carol: {
       name: "carol",
@@ -530,7 +534,7 @@ describe("HapiCore General", () => {
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(148);
+      expect(addressInfo.value.data).toHaveLength(152);
     }
   );
 
@@ -600,7 +604,7 @@ describe("HapiCore General", () => {
       assetAccount
     );
     expect(addressInfo.value.owner).toEqual(program.programId);
-    expect(addressInfo.value.data).toHaveLength(180);
+    expect(addressInfo.value.data).toHaveLength(184);
   });
 
   it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {

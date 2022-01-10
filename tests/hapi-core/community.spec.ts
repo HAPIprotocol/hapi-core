@@ -6,7 +6,7 @@ import { expectThrowError } from "../util/console";
 import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
-import { initHapiCore } from "../../lib";
+import { ACCOUNT_SIZE, initHapiCore } from "../../lib";
 
 describe("HapiCore Community", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
@@ -178,7 +178,7 @@ describe("HapiCore Community", () => {
         community.publicKey
       );
       expect(communityInfo.value.owner).toEqual(program.programId);
-      expect(communityInfo.value.data).toHaveLength(256);
+      expect(communityInfo.value.data).toHaveLength(ACCOUNT_SIZE.community);
     });
 
     it("fail - already exists", async () => {

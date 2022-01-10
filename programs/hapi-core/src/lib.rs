@@ -430,9 +430,9 @@ pub mod hapi_core {
 
         let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
 
-        let reward = reporter_reward.address_confirmation_counter
-            * network.address_confirmation_reward
-            + reporter_reward.address_tracer_counter * network.address_tracer_reward;
+        let reward = network.address_confirmation_reward
+            * reporter_reward.address_confirmation_counter as u64
+            + network.address_tracer_reward * reporter_reward.address_tracer_counter as u64;
 
         if reward == 0 {
             return print_error(ErrorCode::NoReward);

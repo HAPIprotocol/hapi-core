@@ -4,6 +4,7 @@ import { web3, BN } from "@project-serum/anchor";
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
+  ACCOUNT_SIZE,
   bufferFromString,
   CaseStatus,
   initHapiCore,
@@ -376,6 +377,12 @@ describe("HapiCore Case", () => {
         community.publicKey
       );
       expect(communityAccount.cases.toNumber()).toEqual(cs.caseId.toNumber());
+
+      const caseInfo = await provider.connection.getAccountInfoAndContext(
+        caseAccount
+      );
+      expect(caseInfo.value.owner).toEqual(program.programId);
+      expect(caseInfo.value.data).toHaveLength(ACCOUNT_SIZE.case);
 
       expect(true).toBeTruthy();
     });

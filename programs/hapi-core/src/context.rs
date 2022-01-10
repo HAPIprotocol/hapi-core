@@ -38,7 +38,7 @@ pub struct InitializeCommunity<'info> {
         init,
         payer = authority,
         owner = id(),
-        space = 256
+        space = 8 + std::mem::size_of::<Community>()
     )]
     pub community: Account<'info, Community>,
 
@@ -124,7 +124,7 @@ pub struct CreateNetwork<'info> {
         owner = id(),
         seeds = [b"network".as_ref(), community.key().as_ref(), &name],
         bump = network_bump,
-        space = 200
+        space = 8 + std::mem::size_of::<Network>()
     )]
     pub network: Account<'info, Network>,
 
@@ -176,7 +176,7 @@ pub struct CreateReporter<'info> {
         owner = id(),
         seeds = [b"reporter".as_ref(), community.key().as_ref(), pubkey.key().as_ref()],
         bump = bump,
-        space = 200
+        space = 8 + std::mem::size_of::<Reporter>()
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -218,7 +218,7 @@ pub struct InitializeReporterReward<'info> {
         owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump = bump,
-        space = 105,
+        space = 8 + std::mem::size_of::<ReporterReward>(),
     )]
     pub reporter_reward: AccountLoader<'info, ReporterReward>,
 
@@ -316,7 +316,7 @@ pub struct CreateCase<'info> {
         owner = id(),
         seeds = [b"case".as_ref(), community.key().as_ref(), &case_id.to_le_bytes()],
         bump = bump,
-        space = 200
+        space = 8 + std::mem::size_of::<Case>()
     )]
     pub case: Account<'info, Case>,
 
@@ -405,7 +405,7 @@ pub struct CreateAddress<'info> {
         payer = sender,
         seeds = [b"address".as_ref(), network.key().as_ref(), pubkey.as_ref()],
         bump = bump,
-        space = 148
+        space = 8 + std::mem::size_of::<Address>()
     )]
     pub address: Account<'info, Address>,
 
@@ -577,7 +577,7 @@ pub struct CreateAsset<'info> {
         payer = sender,
         seeds = [b"asset".as_ref(), network.key().as_ref(), mint.as_ref(), asset_id.as_ref()],
         bump = bump,
-        space = 180
+        space = 8 + std::mem::size_of::<Asset>()
     )]
     pub asset: Account<'info, Asset>,
 

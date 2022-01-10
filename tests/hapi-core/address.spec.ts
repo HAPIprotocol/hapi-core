@@ -2,13 +2,15 @@ import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
-import { expectThrowError } from "../util/console";
+import { expectThrowError, listenSolanaLogs } from "../util/console";
 import {
+  ACCOUNT_SIZE,
   bufferFromString,
   CaseStatus,
   Category,
   initHapiCore,
   ReporterRole,
+  u64FromBn,
 } from "../../lib";
 import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
@@ -532,7 +534,7 @@ describe("HapiCore Address", () => {
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(148);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
 
       expect(true).toBeTruthy();
     });
@@ -602,7 +604,7 @@ describe("HapiCore Address", () => {
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(148);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
 
       expect(true).toBeTruthy();
     });
@@ -893,6 +895,8 @@ describe("HapiCore Address", () => {
     });
 
     it("success - bob", async () => {
+      const l = listenSolanaLogs(provider.connection);
+
       const addr = ADDRESSES.blackhole1;
 
       const reporter = REPORTERS.bob.keypair;
@@ -945,6 +949,8 @@ describe("HapiCore Address", () => {
         signers: [reporter],
       });
 
+      l.close();
+
       expect(tx).toBeTruthy();
 
       {
@@ -966,16 +972,24 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
     });
 
@@ -1053,16 +1067,24 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(1);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
+        ).toBeTruthy();
       }
     });
 
@@ -1140,16 +1162,24 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(1);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
+        ).toBeTruthy();
       }
     });
   });

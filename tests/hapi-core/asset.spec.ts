@@ -4,11 +4,13 @@ import { web3, BN } from "@project-serum/anchor";
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
+  ACCOUNT_SIZE,
   bufferFromString,
   CaseStatus,
   Category,
   initHapiCore,
   ReporterRole,
+  u64FromBn,
 } from "../../lib";
 import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
@@ -537,7 +539,7 @@ describe("HapiCore Asset", () => {
         assetAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(180);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.asset);
 
       expect(true).toBeTruthy();
     });
@@ -904,20 +906,36 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           assetReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
     });
 
@@ -992,20 +1010,36 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           assetReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(1);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(1))
+        ).toBeTruthy();
       }
     });
 
@@ -1080,20 +1114,36 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(1);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(0);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(1))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           assetReporterRewardAccount
         );
-        expect(fetchedAccount.addressConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.addressTracerCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetConfirmationCounter.toNumber()).toBe(0);
-        expect(fetchedAccount.assetTracerCounter.toNumber()).toBe(1);
+        expect(
+          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetConfirmationCounter).eq(new u64(0))
+        ).toBeTruthy();
+        expect(
+          u64FromBn(fetchedAccount.assetTracerCounter).eq(new u64(1))
+        ).toBeTruthy();
       }
     });
   });

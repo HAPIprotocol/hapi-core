@@ -80,3 +80,13 @@ export type CategoryKeys = keyof typeof Category;
 export const CategoryVariants = Object.keys(Category) as Readonly<
   CategoryKeys[]
 >;
+
+export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
+  address: 152,
+  asset: 184,
+  case: 120,
+  community: 192,
+  network: 176,
+  reporter: 128,
+  reporterReward: 112,
+};

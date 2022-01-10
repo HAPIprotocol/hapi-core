@@ -1,4 +1,5 @@
-import { web3, utils } from "@project-serum/anchor";
+import { web3, utils, BN } from "@project-serum/anchor";
+import { u64 } from "@solana/spl-token";
 import { encode as eip55encode } from "eip55";
 
 export function bufferFromString(str: string, bufferSize?: number) {
@@ -59,4 +60,8 @@ export function pubkeyToEthereumAddress(pubkey: web3.PublicKey): string {
   const bytes = pubkey.toBuffer().subarray(0, 20);
 
   return eip55encode(utils.bytes.hex.encode(bytes));
+}
+
+export function u64FromBn(anchorBn: BN) {
+  return new u64(anchorBn.toArrayLike(Buffer, "le", 8));
 }

@@ -4,6 +4,7 @@ import { web3, BN } from "@project-serum/anchor";
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
+  ACCOUNT_SIZE,
   bufferFromString,
   Category,
   initHapiCore,
@@ -36,7 +37,11 @@ describe("HapiCore Reporter", () => {
     string,
     { name: string; keypair: web3.Keypair; role: keyof typeof ReporterRole }
   > = {
-    alice: { name: "alice", keypair: web3.Keypair.generate(), role: "Publisher" },
+    alice: {
+      name: "alice",
+      keypair: web3.Keypair.generate(),
+      role: "Publisher",
+    },
     bob: { name: "bob", keypair: web3.Keypair.generate(), role: "Tracer" },
     carol: {
       name: "carol",
@@ -333,7 +338,7 @@ describe("HapiCore Reporter", () => {
         reporterAccount
       );
       expect(reporterInfo.value.owner).toEqual(program.programId);
-      expect(reporterInfo.value.data).toHaveLength(200);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
     it("success - alice, community 2", async () => {
@@ -377,7 +382,7 @@ describe("HapiCore Reporter", () => {
         reporterAccount
       );
       expect(reporterInfo.value.owner).toEqual(program.programId);
-      expect(reporterInfo.value.data).toHaveLength(200);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
     it("success - bob", async () => {
@@ -421,7 +426,7 @@ describe("HapiCore Reporter", () => {
         reporterAccount
       );
       expect(reporterInfo.value.owner).toEqual(program.programId);
-      expect(reporterInfo.value.data).toHaveLength(200);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
     it("success - carol", async () => {
@@ -465,7 +470,7 @@ describe("HapiCore Reporter", () => {
         reporterAccount
       );
       expect(reporterInfo.value.owner).toEqual(program.programId);
-      expect(reporterInfo.value.data).toHaveLength(200);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
     it("success - dave", async () => {
@@ -509,7 +514,7 @@ describe("HapiCore Reporter", () => {
         reporterAccount
       );
       expect(reporterInfo.value.owner).toEqual(program.programId);
-      expect(reporterInfo.value.data).toHaveLength(200);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
     it("fail - reporter alice already exists", async () => {
@@ -654,7 +659,7 @@ describe("HapiCore Reporter", () => {
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(105);
+      expect(accountInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporterReward);
     });
 
     it("success - bob", async () => {
@@ -705,7 +710,7 @@ describe("HapiCore Reporter", () => {
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(105);
+      expect(accountInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporterReward);
     });
 
     it("success - dave", async () => {
@@ -756,7 +761,7 @@ describe("HapiCore Reporter", () => {
         reporterRewardAccount
       );
       expect(accountInfo.value.owner).toEqual(program.programId);
-      expect(accountInfo.value.data).toHaveLength(105);
+      expect(accountInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporterReward);
     });
   });
 
