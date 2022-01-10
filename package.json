@@ -7,6 +7,10 @@
   "description": "Client library for HAPI core contract",
   "author": "HAPI Protocol",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HAPIprotocol/hapi-core.git"
+  },
   "keywords": [
     "HAPI",
     "protocol",
