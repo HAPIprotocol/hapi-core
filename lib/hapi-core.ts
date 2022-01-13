@@ -76,23 +76,20 @@ export function initHapiCore(
     );
   }
 
-  async function findAddressAddress(
-    network: web3.PublicKey,
-    pubkey: web3.PublicKey
-  ) {
+  async function findAddressAddress(network: web3.PublicKey, pubkey: Buffer) {
     return web3.PublicKey.findProgramAddress(
-      [bufferFromString("address"), network.toBytes(), pubkey.toBytes()],
+      [bufferFromString("address"), network.toBytes(), pubkey],
       programId
     );
   }
 
   async function findAssetAddress(
     network: web3.PublicKey,
-    mint: web3.PublicKey,
+    mint: Buffer,
     assetId: Buffer | Uint8Array
   ) {
     return web3.PublicKey.findProgramAddress(
-      [bufferFromString("asset"), network.toBytes(), mint.toBuffer(), assetId],
+      [bufferFromString("asset"), network.toBytes(), mint, assetId],
       programId
     );
   }

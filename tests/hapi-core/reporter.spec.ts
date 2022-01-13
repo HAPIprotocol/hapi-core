@@ -11,7 +11,6 @@ import {
   ReporterRole,
   ReporterStatus,
 } from "../../lib";
-import { pubkeyFromHex } from "../util/crypto";
 import { errorRegexp, programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
@@ -92,7 +91,7 @@ describe("HapiCore Reporter", () => {
   const ADDRESSES: Record<
     string,
     {
-      pubkey: web3.PublicKey;
+      pubkey: Buffer;
       network: keyof typeof NETWORKS;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
@@ -101,8 +100,9 @@ describe("HapiCore Reporter", () => {
     }
   > = {
     blackhole1: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "ethereum",
       category: "None",

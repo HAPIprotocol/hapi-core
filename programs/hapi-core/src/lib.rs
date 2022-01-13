@@ -210,7 +210,7 @@ pub mod hapi_core {
 
     pub fn create_address(
         ctx: Context<CreateAddress>,
-        pubkey: Pubkey,
+        pubkey: [u8; 32],
         category: Category,
         risk: u8,
         bump: u8,
@@ -274,7 +274,7 @@ pub mod hapi_core {
 
     pub fn create_asset(
         ctx: Context<CreateAsset>,
-        mint: Pubkey,
+        mint: [u8; 32],
         asset_id: [u8; 32],
         category: Category,
         risk: u8,

@@ -12,7 +12,6 @@ import {
   ReporterRole,
   u64FromBn,
 } from "../../lib";
-import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
@@ -110,7 +109,7 @@ describe("HapiCore Asset", () => {
   const ASSETS: Record<
     string,
     {
-      mint: web3.PublicKey;
+      mint: Buffer;
       assetId: Buffer;
       network: keyof typeof NETWORKS;
       category: keyof typeof Category;
@@ -120,8 +119,9 @@ describe("HapiCore Asset", () => {
     }
   > = {
     stolenNft: {
-      mint: pubkeyFromHex(
-        "2873d85250e84e093c3f38c78e74c060c834db3cdaa4c09b4ed6aea9718959a8"
+      mint: Buffer.from(
+        "2873d85250e84e093c3f38c78e74c060c834db3cdaa4c09b4ed6aea9718959a8",
+        "hex"
       ),
       assetId: Buffer.from(
         "0000000000000000000000000000000000000000000000000000000000000001",
@@ -134,8 +134,9 @@ describe("HapiCore Asset", () => {
       risk: 0,
     },
     niceNft: {
-      mint: pubkeyFromHex(
-        "227b144f6d3dafb46cb632f12a260fac968455be71e289102ead3f95db7685bf"
+      mint: Buffer.from(
+        "227b144f6d3dafb46cb632f12a260fac968455be71e289102ead3f95db7685bf",
+        "hex"
       ),
       assetId: Buffer.from(
         "0000000000000000000000000000000000000000000000000000000000042069",
@@ -531,7 +532,7 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(asset.risk);
       expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-      expect(fetchedAssetAccount.mint).toEqual(asset.mint);
+      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
 
@@ -733,7 +734,7 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(8);
       expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-      expect(fetchedAssetAccount.mint).toEqual(asset.mint);
+      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
     });
@@ -898,7 +899,7 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(1);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1002,7 +1003,7 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(2);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1106,7 +1107,7 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(3);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.mint).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 

@@ -12,7 +12,6 @@ import {
   ReporterRole,
   u64FromBn,
 } from "../../lib";
-import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
@@ -110,7 +109,7 @@ describe("HapiCore Address", () => {
   const ADDRESSES: Record<
     string,
     {
-      pubkey: web3.PublicKey;
+      pubkey: Buffer;
       network: keyof typeof NETWORKS;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
@@ -119,8 +118,9 @@ describe("HapiCore Address", () => {
     }
   > = {
     blackhole1: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "ethereum",
       category: "None",
@@ -129,8 +129,9 @@ describe("HapiCore Address", () => {
       risk: 0,
     },
     blackhole2: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "solana",
       category: "None",
@@ -139,8 +140,9 @@ describe("HapiCore Address", () => {
       risk: 0,
     },
     nftMerchant: {
-      pubkey: pubkeyFromHex(
-        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
+      pubkey: Buffer.from(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
+        "hex"
       ),
       network: "ethereum",
       reporter: "bob",
@@ -526,7 +528,7 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
       expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(addr.pubkey);
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 
@@ -596,7 +598,7 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
       expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(addr.pubkey);
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 
@@ -793,7 +795,7 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(8);
       expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(addr.pubkey);
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
     });
@@ -964,7 +966,7 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.confirmations).toEqual(1);
         expect(fetchedAccount.risk).toEqual(8);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(addr.pubkey);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1059,7 +1061,7 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.confirmations).toEqual(2);
         expect(fetchedAccount.risk).toEqual(8);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(addr.pubkey);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1154,7 +1156,7 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.confirmations).toEqual(3);
         expect(fetchedAccount.risk).toEqual(8);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(addr.pubkey);
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 

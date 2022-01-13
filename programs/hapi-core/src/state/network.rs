@@ -31,4 +31,20 @@ pub struct Network {
 
     /// Reward amount for tracers and validators that confirm assets on this network
     pub asset_confirmation_reward: u64,
+
+    // Network address schema
+    pub schema: NetworkSchema,
+}
+
+#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+pub enum NetworkSchema {
+    Solana,
+    Ethereum,
+    Bitcoin,
+}
+
+impl Default for NetworkSchema {
+    fn default() -> Self {
+        NetworkSchema::Solana
+    }
 }

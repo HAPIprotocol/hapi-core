@@ -3,7 +3,6 @@ import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
-import { pubkeyFromHex } from "../util/crypto";
 import {
   CaseStatus,
   Category,
@@ -105,7 +104,7 @@ describe("HapiCore General", () => {
   const ADDRESSES: Record<
     string,
     {
-      pubkey: web3.PublicKey;
+      pubkey: Buffer;
       network: keyof typeof NETWORKS;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
@@ -114,8 +113,9 @@ describe("HapiCore General", () => {
     }
   > = {
     blackhole: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "ethereum",
       category: "None",
@@ -124,8 +124,9 @@ describe("HapiCore General", () => {
       risk: 0,
     },
     nftMerchant: {
-      pubkey: pubkeyFromHex(
-        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
+      pubkey: Buffer.from(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
+        "hex"
       ),
       network: "ethereum",
       reporter: "bob",
@@ -138,7 +139,7 @@ describe("HapiCore General", () => {
   const ASSETS: Record<
     string,
     {
-      mint: web3.PublicKey;
+      mint: Buffer;
       assetId: Buffer;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
@@ -148,8 +149,9 @@ describe("HapiCore General", () => {
     }
   > = {
     stolenNft: {
-      mint: pubkeyFromHex(
-        "2873d85250e84e093c3f38c78e74c060c834db3cdaa4c09b4ed6aea9718959a8"
+      mint: Buffer.from(
+        "2873d85250e84e093c3f38c78e74c060c834db3cdaa4c09b4ed6aea9718959a8",
+        "hex"
       ),
       assetId: Buffer.from(
         "0000000000000000000000000000000000000000000000000000000000000001",
@@ -526,7 +528,7 @@ describe("HapiCore General", () => {
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
       expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(addr.pubkey);
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 
@@ -595,7 +597,7 @@ describe("HapiCore General", () => {
     expect(fetchedAssetAccount.confirmations).toEqual(0);
     expect(fetchedAssetAccount.risk).toEqual(0);
     expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-    expect(fetchedAssetAccount.mint).toEqual(asset.mint);
+    expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
     expect(fetchedAssetAccount.assetId).toEqual(asset.assetId.toJSON().data);
     expect(fetchedAssetAccount.network).toEqual(networkAccount);
     expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
@@ -638,8 +640,9 @@ describe("HapiCore General", () => {
     const addr = {
       reporter: "alice",
       network: "ethereum",
-      pubkey: pubkeyFromHex(
-        "94df427bfa5c06a211e7c7fd0606bea32926b72cc31edd92aacaf3f2c2272bfa"
+      pubkey: Buffer.from(
+        "94df427bfa5c06a211e7c7fd0606bea32926b72cc31edd92aacaf3f2c2272bfa",
+        "hex"
       ),
       caseId: new BN(1),
       category: "Theft",

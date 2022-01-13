@@ -360,7 +360,7 @@ pub struct UpdateCase<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(pubkey: Pubkey, category: Category, risk: u8, bump: u8)]
+#[instruction(pubkey: [u8; 32], category: Category, risk: u8, bump: u8)]
 pub struct CreateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
