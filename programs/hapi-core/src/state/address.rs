@@ -9,7 +9,7 @@ pub struct Address {
     pub network: Pubkey,
 
     /// Actual address public key
-    pub address: [u8; 32],
+    pub address: [u8; 64],
 
     /// Seed bump for PDA
     pub bump: u8,

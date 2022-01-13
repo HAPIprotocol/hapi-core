@@ -9,6 +9,7 @@ import {
   CaseStatus,
   Category,
   initHapiCore,
+  padBuffer,
   ReporterRole,
   u64FromBn,
 } from "../../lib";
@@ -532,7 +533,9 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(asset.risk);
       expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
+      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(
+        padBuffer(asset.mint, 64)
+      );
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
 
@@ -734,7 +737,9 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(8);
       expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
+      expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(
+        padBuffer(asset.mint, 64)
+      );
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
     });
@@ -899,7 +904,9 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(1);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(
+          padBuffer(asset.mint, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1003,7 +1010,9 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(2);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(
+          padBuffer(asset.mint, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1107,7 +1116,9 @@ describe("HapiCore Asset", () => {
         );
         expect(fetchedAccount.confirmations).toEqual(3);
         expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(Buffer.from(fetchedAccount.mint)).toEqual(asset.mint);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(
+          padBuffer(asset.mint, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 

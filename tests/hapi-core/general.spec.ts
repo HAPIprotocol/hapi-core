@@ -10,6 +10,8 @@ import {
   bufferFromString,
   ReporterStatus,
   initHapiCore,
+  padBuffer,
+  ACCOUNT_SIZE,
 } from "../../lib";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
@@ -528,7 +530,9 @@ describe("HapiCore General", () => {
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
       expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(addr.pubkey);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
+        padBuffer(addr.pubkey, 64)
+      );
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 
@@ -536,7 +540,7 @@ describe("HapiCore General", () => {
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(152);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
     }
   );
 
@@ -597,7 +601,9 @@ describe("HapiCore General", () => {
     expect(fetchedAssetAccount.confirmations).toEqual(0);
     expect(fetchedAssetAccount.risk).toEqual(0);
     expect(fetchedAssetAccount.community).toEqual(community.publicKey);
-    expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(asset.mint);
+    expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(
+      padBuffer(asset.mint, 64)
+    );
     expect(fetchedAssetAccount.assetId).toEqual(asset.assetId.toJSON().data);
     expect(fetchedAssetAccount.network).toEqual(networkAccount);
     expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
@@ -606,7 +612,7 @@ describe("HapiCore General", () => {
       assetAccount
     );
     expect(addressInfo.value.owner).toEqual(program.programId);
-    expect(addressInfo.value.data).toHaveLength(184);
+    expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.asset);
   });
 
   it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {

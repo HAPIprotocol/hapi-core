@@ -1,7 +1,7 @@
 import { Program, web3, BN, Provider, Coder } from "@project-serum/anchor";
 
 import { IDL } from "../target/types/hapi_core";
-import { bufferFromString } from "./buffer";
+import { bufferFromString, addrToSeeds } from "./buffer";
 
 export function initHapiCore(
   hapiCoreProgramId: string | web3.PublicKey,
@@ -76,9 +76,9 @@ export function initHapiCore(
     );
   }
 
-  async function findAddressAddress(network: web3.PublicKey, pubkey: Buffer) {
+  async function findAddressAddress(network: web3.PublicKey, address: Buffer) {
     return web3.PublicKey.findProgramAddress(
-      [bufferFromString("address"), network.toBytes(), pubkey],
+      [bufferFromString("address"), network.toBytes(), ...addrToSeeds(address)],
       programId
     );
   }
@@ -89,7 +89,12 @@ export function initHapiCore(
     assetId: Buffer | Uint8Array
   ) {
     return web3.PublicKey.findProgramAddress(
-      [bufferFromString("asset"), network.toBytes(), mint, assetId],
+      [
+        bufferFromString("asset"),
+        network.toBytes(),
+        ...addrToSeeds(mint),
+        assetId,
+      ],
       programId
     );
   }

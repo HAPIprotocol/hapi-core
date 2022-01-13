@@ -360,7 +360,7 @@ pub struct UpdateCase<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(pubkey: [u8; 32], category: Category, risk: u8, bump: u8)]
+#[instruction(addr: [u8; 64], category: Category, risk: u8, bump: u8)]
 pub struct CreateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
@@ -403,7 +403,12 @@ pub struct CreateAddress<'info> {
         init,
         owner = id(),
         payer = sender,
-        seeds = [b"address".as_ref(), network.key().as_ref(), pubkey.as_ref()],
+        seeds = [
+            b"address".as_ref(),
+            network.key().as_ref(),
+            addr[0..32].as_ref(),
+            addr[32..64].as_ref(),
+        ],
         bump = bump,
         space = 8 + std::mem::size_of::<Address>()
     )]
@@ -457,7 +462,12 @@ pub struct UpdateAddress<'info> {
         owner = id(),
         constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
         has_one = network @ ErrorCode::NetworkMismatch,
-        seeds = [b"address".as_ref(), network.key().as_ref(), address.address.as_ref()],
+        seeds = [
+            b"address".as_ref(),
+            network.key().as_ref(),
+            address.address[0..32].as_ref(),
+            address.address[32..64].as_ref(),
+        ],
         bump = address.bump,
     )]
     pub address: Account<'info, Address>,
@@ -525,14 +535,19 @@ pub struct ConfirmAddress<'info> {
         constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
         constraint = address.reporter != reporter.key() @ ErrorCode::Unauthorized,
         has_one = network @ ErrorCode::NetworkMismatch,
-        seeds = [b"address".as_ref(), network.key().as_ref(), address.address.as_ref()],
+        seeds = [
+            b"address".as_ref(),
+            network.key().as_ref(),
+            address.address[0..32].as_ref(),
+            address.address[32..64].as_ref(),
+        ],
         bump = address.bump,
     )]
     pub address: Account<'info, Address>,
 }
 
 #[derive(Accounts)]
-#[instruction(mint: Pubkey, asset_id: [u8; 32], category: Category, risk: u8, bump: u8)]
+#[instruction(mint: [u8; 64], asset_id: [u8; 32], category: Category, risk: u8, bump: u8)]
 pub struct CreateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
@@ -575,7 +590,13 @@ pub struct CreateAsset<'info> {
         init,
         owner = id(),
         payer = sender,
-        seeds = [b"asset".as_ref(), network.key().as_ref(), mint.as_ref(), asset_id.as_ref()],
+        seeds = [
+            b"asset".as_ref(),
+            network.key().as_ref(),
+            mint[0..32].as_ref(),
+            mint[32..64].as_ref(),
+            asset_id.as_ref(),
+        ],
         bump = bump,
         space = 8 + std::mem::size_of::<Asset>()
     )]
@@ -629,7 +650,13 @@ pub struct UpdateAsset<'info> {
         owner = id(),
         constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
         has_one = network @ ErrorCode::NetworkMismatch,
-        seeds = [b"asset".as_ref(), network.key().as_ref(), asset.mint.as_ref(), asset.asset_id.as_ref()],
+        seeds = [
+            b"asset".as_ref(),
+            network.key().as_ref(),
+            asset.mint[0..32].as_ref(),
+            asset.mint[32..64].as_ref(),
+            asset.asset_id.as_ref(),
+        ],
         bump = asset.bump,
     )]
     pub asset: Account<'info, Asset>,
@@ -697,7 +724,13 @@ pub struct ConfirmAsset<'info> {
         constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
         constraint = asset.reporter != reporter.key() @ ErrorCode::Unauthorized,
         has_one = network @ ErrorCode::NetworkMismatch,
-        seeds = [b"asset".as_ref(), network.key().as_ref(), asset.mint.as_ref(), asset.asset_id.as_ref()],
+        seeds = [
+            b"asset".as_ref(),
+            network.key().as_ref(),
+            asset.mint[0..32].as_ref(),
+            asset.mint[32..64].as_ref(),
+            asset.asset_id.as_ref(),
+        ],
         bump = asset.bump,
     )]
     pub asset: Account<'info, Asset>,

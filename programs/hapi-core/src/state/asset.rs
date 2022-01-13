@@ -11,7 +11,7 @@ pub struct Asset {
     pub network: Pubkey,
 
     /// Asset mint account
-    pub mint: [u8; 32],
+    pub mint: [u8; 64],
 
     /// Asset ID
     pub asset_id: [u8; 32],
