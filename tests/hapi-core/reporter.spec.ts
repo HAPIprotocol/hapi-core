@@ -8,6 +8,8 @@ import {
   bufferFromString,
   Category,
   initHapiCore,
+  NetworkSchema,
+  NetworkSchemaKeys,
   ReporterRole,
   ReporterStatus,
 } from "../../lib";
@@ -54,6 +56,7 @@ describe("HapiCore Reporter", () => {
     string,
     {
       name: string;
+      schema: NetworkSchemaKeys;
       rewardToken: TestToken;
       addressTracerReward: u64;
       addressConfirmationReward: u64;
@@ -63,6 +66,7 @@ describe("HapiCore Reporter", () => {
   > = {
     ethereum: {
       name: "ethereum",
+      schema: "Ethereum",
       rewardToken: new TestToken(provider),
       addressTracerReward: new u64(1_000),
       addressConfirmationReward: new u64(2_000),
@@ -244,6 +248,7 @@ describe("HapiCore Reporter", () => {
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
+          NetworkSchema[network.schema],
           network.addressTracerReward,
           network.addressConfirmationReward,
           network.assetTracerReward,

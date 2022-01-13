@@ -9,7 +9,7 @@ use crate::{
         asset::Asset,
         case::{Case, CaseStatus},
         community::Community,
-        network::Network,
+        network::{Network, NetworkSchema},
         reporter::{Reporter, ReporterReward, ReporterRole, ReporterStatus},
     },
 };
@@ -90,12 +90,13 @@ pub struct SetCommunityAuthority<'info> {
 #[derive(Accounts)]
 #[instruction(
     name: [u8; 32],
+    schema: NetworkSchema,
     address_tracer_reward: u64,
     address_confirmation_reward: u64,
     asset_tracer_reward: u64,
     asset_confirmation_reward: u64,
     network_bump: u8,
-    reward_signer_bump: u8
+    reward_signer_bump: u8,
 )]
 pub struct CreateNetwork<'info> {
     pub authority: Signer<'info>,

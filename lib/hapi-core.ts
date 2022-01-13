@@ -1,4 +1,13 @@
-import { Program, web3, BN, Provider, Coder } from "@project-serum/anchor";
+import {
+  Program,
+  web3,
+  BN,
+  Provider,
+  Coder,
+  utils,
+} from "@project-serum/anchor";
+import { NetworkSchemaKeys, pubkeyFromBase58 } from ".";
+import { encode as eip55encode } from "eip55";
 
 import { IDL } from "../target/types/hapi_core";
 import { bufferFromString, addrToSeeds } from "./buffer";
@@ -15,6 +24,40 @@ export function initHapiCore(
   const program = new Program(IDL, programId, provider);
 
   const coder = new Coder(IDL);
+
+  function encodeAddress(address: string, schema: NetworkSchemaKeys): Buffer {
+    let buffer: Buffer = Buffer.from(address);
+
+    switch (schema) {
+      case "Ethereum": {
+        if (address.match(/^0x/)) {
+          address = address.substring(2);
+        }
+        buffer = Buffer.from(address);
+        break;
+      }
+      case "Solana": {
+        buffer = pubkeyFromBase58(address).toBuffer();
+        break;
+      }
+    }
+
+    return buffer;
+  }
+
+  function decodeAddress(address: Buffer, schema: NetworkSchemaKeys): string {
+    switch (schema) {
+      case "Ethereum": {
+        return eip55encode(utils.bytes.hex.encode(address));
+      }
+      case "Solana": {
+        return new web3.PublicKey(address).toBase58();
+      }
+      default: {
+        return address.toString();
+      }
+    }
+  }
 
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
     return web3.PublicKey.findProgramAddress(
@@ -103,6 +146,10 @@ export function initHapiCore(
     ...program,
     programId,
     coder,
+    util: {
+      encodeAddress,
+      decodeAddress,
+    },
     pda: {
       findNetworkAddress,
       findNetworkRewardSignerAddress,

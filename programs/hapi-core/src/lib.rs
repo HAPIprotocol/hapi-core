@@ -13,6 +13,7 @@ use error::{print_error, ErrorCode};
 use state::{
     address::Category,
     case::CaseStatus,
+    network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
 };
 
@@ -80,6 +81,7 @@ pub mod hapi_core {
     pub fn create_network(
         ctx: Context<CreateNetwork>,
         name: [u8; 32],
+        schema: NetworkSchema,
         address_tracer_reward: u64,
         address_confirmation_reward: u64,
         asset_tracer_reward: u64,
@@ -106,6 +108,7 @@ pub mod hapi_core {
         network.bump = network_bump;
 
         network.name = name;
+        network.schema = schema;
         network.reward_mint = ctx.accounts.reward_mint.key();
         network.reward_signer = ctx.accounts.reward_signer.key();
         network.reward_signer_bump = reward_signer_bump;

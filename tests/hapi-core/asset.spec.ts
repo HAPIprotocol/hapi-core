@@ -9,6 +9,8 @@ import {
   CaseStatus,
   Category,
   initHapiCore,
+  NetworkSchema,
+  NetworkSchemaKeys,
   padBuffer,
   ReporterRole,
   u64FromBn,
@@ -59,6 +61,7 @@ describe("HapiCore Asset", () => {
     string,
     {
       name: string;
+      schema: NetworkSchemaKeys;
       rewardToken: TestToken;
       addressTracerReward: u64;
       addressConfirmationReward: u64;
@@ -68,6 +71,7 @@ describe("HapiCore Asset", () => {
   > = {
     ethereum: {
       name: "ethereum",
+      schema: "Ethereum",
       rewardToken: new TestToken(provider),
       addressTracerReward: new u64(1_000),
       addressConfirmationReward: new u64(2_000),
@@ -76,6 +80,7 @@ describe("HapiCore Asset", () => {
     },
     solana: {
       name: "solana",
+      schema: "Solana",
       rewardToken: new TestToken(provider),
       addressTracerReward: new u64(1_001),
       addressConfirmationReward: new u64(2_001),
@@ -259,6 +264,7 @@ describe("HapiCore Asset", () => {
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
+          NetworkSchema[network.schema],
           network.addressTracerReward,
           network.addressConfirmationReward,
           network.assetTracerReward,

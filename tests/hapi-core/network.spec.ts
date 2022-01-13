@@ -3,7 +3,12 @@ import { web3 } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
-import { ACCOUNT_SIZE, bufferFromString, initHapiCore } from "../../lib";
+import {
+  ACCOUNT_SIZE,
+  bufferFromString,
+  initHapiCore,
+  NetworkSchema,
+} from "../../lib";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
@@ -69,6 +74,8 @@ describe("HapiCore Network", () => {
     it("fail - invalid authority", async () => {
       const name = bufferFromString("near", 32);
 
+      const schema = NetworkSchema.Near;
+
       const [networkAccount, networkBump] =
         await program.pda.findNetworkAddress(community.publicKey, "near");
 
@@ -77,6 +84,7 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
+        schema,
         addressTracerReward,
         addressConfirmationReward,
         assetTracerReward,
@@ -105,6 +113,8 @@ describe("HapiCore Network", () => {
 
     it("fail - authority mismatch for community", async () => {
       const name = bufferFromString("near", 32);
+
+      const schema = NetworkSchema.Near;
 
       const [tokenSignerAccount, tokenSignerBump] =
         await program.pda.findCommunityTokenSignerAddress(
@@ -154,6 +164,7 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
+        schema,
         addressTracerReward,
         addressConfirmationReward,
         assetTracerReward,
@@ -182,6 +193,8 @@ describe("HapiCore Network", () => {
     it("fail - community mismatch for network", async () => {
       const name = bufferFromString("near", 32);
 
+      const schema = NetworkSchema.Near;
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
         community.publicKey,
         "near"
@@ -192,6 +205,7 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
+        schema,
         addressTracerReward,
         addressConfirmationReward,
         assetTracerReward,
@@ -221,6 +235,8 @@ describe("HapiCore Network", () => {
     it("success", async () => {
       const name = bufferFromString("near", 32);
 
+      const schema = NetworkSchema.Near;
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
         community.publicKey,
         "near"
@@ -231,6 +247,7 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
+        schema,
         addressTracerReward,
         addressConfirmationReward,
         assetTracerReward,
@@ -257,6 +274,7 @@ describe("HapiCore Network", () => {
         networkAccount
       );
       expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
+      expect(fetchedNetworkAccount.schema).toEqual(NetworkSchema.Near);
       expect(fetchedNetworkAccount.bump).toEqual(bump);
       expect(fetchedNetworkAccount.addressTracerReward.toNumber()).toEqual(
         addressTracerReward.toNumber()
@@ -284,6 +302,8 @@ describe("HapiCore Network", () => {
     it("fail - network already exists", async () => {
       const name = bufferFromString("near", 32);
 
+      const schema = NetworkSchema.Near;
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
         community.publicKey,
         "near"
@@ -294,6 +314,7 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
+        schema,
         addressTracerReward,
         addressConfirmationReward,
         assetTracerReward,

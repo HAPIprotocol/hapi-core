@@ -11,6 +11,9 @@ pub struct Network {
     /// Network name (i.e. ethereum, solana, near)
     pub name: [u8; 32],
 
+    // Network address schema
+    pub schema: NetworkSchema,
+
     /// Reward token mint account
     pub reward_mint: Pubkey,
 
@@ -31,20 +34,19 @@ pub struct Network {
 
     /// Reward amount for tracers and validators that confirm assets on this network
     pub asset_confirmation_reward: u64,
-
-    // Network address schema
-    pub schema: NetworkSchema,
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum NetworkSchema {
+    Plain,
     Solana,
     Ethereum,
     Bitcoin,
+    Near,
 }
 
 impl Default for NetworkSchema {
     fn default() -> Self {
-        NetworkSchema::Solana
+        NetworkSchema::Plain
     }
 }
