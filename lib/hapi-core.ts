@@ -52,7 +52,8 @@ export function decodeAddress(
       return new web3.PublicKey(address.slice(0, 32)).toBase58();
     }
     default: {
-      return address.toString();
+      // Filtering out zero bytes
+      return address.filter((b) => b).toString();
     }
   }
 }
