@@ -8,7 +8,7 @@ export function addrToSeeds(buffer: Buffer | Uint8Array) {
 }
 
 export function padBuffer(buffer: Buffer | Uint8Array, targetSize: number) {
-  if (buffer instanceof Buffer) {
+  if (!(buffer instanceof Buffer)) {
     buffer = Buffer.from(buffer);
   }
 
