@@ -8,6 +8,10 @@ export function addrToSeeds(buffer: Buffer | Uint8Array) {
 }
 
 export function padBuffer(buffer: Buffer | Uint8Array, targetSize: number) {
+  if (buffer instanceof Buffer) {
+    buffer = Buffer.from(buffer);
+  }
+
   if (buffer.byteLength > targetSize) {
     throw new RangeError(`Buffer is larger than target size: ${targetSize}`);
   }
@@ -29,7 +33,7 @@ export function bufferFromString(str: string, bufferSize?: number) {
     throw RangeError("Buffer size too small to fit the string");
   }
 
-  return padBuffer(utf, bufferSize ? bufferSize : utf.byteLength);
+  return padBuffer(utf, bufferSize);
 }
 
 export function stringFromArray(array: number[]) {
