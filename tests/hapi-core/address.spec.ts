@@ -538,6 +538,9 @@ describe("HapiCore Address", () => {
       expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
         padBuffer(addr.pubkey, 64)
       );
+      expect(
+        program.util.decodeAddress(fetchedAddressAccount.address, "Ethereum")
+      ).toEqual("0x0000000000000000000000000000000000000000");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 
@@ -610,6 +613,9 @@ describe("HapiCore Address", () => {
       expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
         padBuffer(addr.pubkey, 64)
       );
+      expect(
+        program.util.decodeAddress(fetchedAddressAccount.address, "Solana")
+      ).toEqual("11111111111111111111111111111112");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
 

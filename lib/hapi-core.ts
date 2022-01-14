@@ -6,10 +6,10 @@ import {
   Coder,
   utils,
 } from "@project-serum/anchor";
-import { NetworkSchemaKeys, pubkeyFromBase58 } from ".";
 import { encode as eip55encode } from "eip55";
 
 import { IDL } from "../target/types/hapi_core";
+import { NetworkSchemaKeys, padBuffer, pubkeyFromBase58 } from ".";
 import { bufferFromString, addrToSeeds } from "./buffer";
 
 export function encodeAddress(
@@ -32,19 +32,24 @@ export function encodeAddress(
     }
   }
 
-  return buffer;
+  return padBuffer(buffer, 64);
 }
 
 export function decodeAddress(
-  address: Buffer,
+  address: Buffer | Uint8Array | number[],
   schema: NetworkSchemaKeys
 ): string {
+  if (!(address instanceof Buffer)) {
+    address = Buffer.from(address);
+  }
   switch (schema) {
     case "Ethereum": {
-      return eip55encode(utils.bytes.hex.encode(address));
+      return eip55encode(
+        utils.bytes.hex.encode((address as Buffer).slice(0, 20))
+      );
     }
     case "Solana": {
-      return new web3.PublicKey(address).toBase58();
+      return new web3.PublicKey(address.slice(0, 32)).toBase58();
     }
     default: {
       return address.toString();
