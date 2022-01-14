@@ -23,7 +23,7 @@ export function encodeAddress(
       if (address.match(/^0x/)) {
         address = address.substring(2);
       }
-      buffer = Buffer.from(address);
+      buffer = Buffer.from(address, "hex");
       break;
     }
     case "Solana": {
