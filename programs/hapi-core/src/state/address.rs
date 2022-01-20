@@ -46,12 +46,9 @@ pub enum Category {
     /// Mining pool
     MiningPool,
 
-    /// Exchange (Low Risk) - Exchange with high KYC standards
-    LowRiskExchange,
-
     // Tier 2 - Medium risk
-    /// Exchange (Medium Risk)
-    MediumRiskExchange,
+    /// Exchange
+    Exchange,
 
     /// DeFi application
     DeFi,
