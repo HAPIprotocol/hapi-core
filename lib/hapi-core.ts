@@ -162,6 +162,7 @@ export function initHapiCore(
       encodeAddress,
       decodeAddress,
     },
+    idl: IDL,
     pda: {
       findNetworkAddress,
       findNetworkRewardSignerAddress,
