@@ -82,10 +82,34 @@ const HAPI_PROGRAM_ID = new PublicKey(
 // Setup the client
 const hapiCore = initHapiCore(HAPI_PROGRAM_ID, provider);
 
-// Use client to fetch community account data
-const community = hapiCore.account.community.fetch(
-  new PublicKey("31gQ11Qsd7dPcnkdCJ2ZGnY2ijRXsvFCPWagpcFxYwem")
+// HAPI community account is a well-known public key
+const communityAccount = new PublicKey(
+  "31gQ11Qsd7dPcnkdCJ2ZGnY2ijRXsvFCPWagpcFxYwem"
 );
 
-console.log(community);
+// Use client to fetch community account data
+const communityData = await hapiCore.account.community.fetch(communityAccount);
+console.log(communityData);
+
+// Find a PDA for a particular network
+const [networkAccount] = await program.pda.findNetworkAddress(
+  communityAccount,
+  "solana"
+);
+
+// Encode address buffer
+const addressEncoded = hapiCore.util.encodeAddress(
+  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+  "Solana"
+);
+
+// Find a PDA for an address, which we want to check
+const [addressAccount] = await program.pda.findAddressAddress(
+  networkAccount,
+  addressEncoded
+);
+
+// Fetch address risk scoring data
+const addressData = await hapiCore.account.address.fetch(addressAccount);
+console.log(addressData);
 ```
