@@ -10,7 +10,8 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{
+pub use state::{
+    address::Address,
     address::Category,
     case::CaseStatus,
     network::NetworkSchema,
