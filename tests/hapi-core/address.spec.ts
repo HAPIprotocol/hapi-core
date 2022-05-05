@@ -110,6 +110,12 @@ describe("HapiCore Address", () => {
       name: "suspicious nft txes",
       reporter: "carol",
     },
+    newCase: {
+      network: "ethereum",
+      caseId: new BN(3),
+      name: "new case",
+      reporter: "alice",
+    },
   };
 
   const ADDRESSES: Record<
@@ -1210,4 +1216,183 @@ describe("HapiCore Address", () => {
       }
     });
   });
+
+  describe("change_address_case", () => {
+    it("fail - validator can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAddress(Category[addr.category], addr.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - tracer can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS.bob.keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAddress(Category[addr.category], addr.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - same case can not be provided", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        addr.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.changeAddressCase({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              newCase: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("SameCase")
+      );
+    });
+
+    it("success", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      const tx = await program.rpc.changeAddressCase({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          newCase: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        cs.caseId.toNumber()
+      );
+    });
+  });
+
 });

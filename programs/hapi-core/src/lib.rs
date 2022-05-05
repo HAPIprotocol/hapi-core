@@ -275,6 +275,14 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn change_address_case(ctx: Context<ChangeAddressCase>) -> ProgramResult {
+        let address = &mut ctx.accounts.address;
+
+        address.case_id = ctx.accounts.new_case.id;
+
+        Ok(())
+    }
+
     pub fn create_asset(
         ctx: Context<CreateAsset>,
         mint: [u8; 64],

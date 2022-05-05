@@ -475,6 +475,61 @@ pub struct UpdateAddress<'info> {
 }
 
 #[derive(Accounts)]
+pub struct ChangeAddressCase<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Authority
+            || (reporter.role == ReporterRole::Publisher
+            && new_case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = new_case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        constraint = new_case.id != address.case_id @ ErrorCode::SameCase,
+        seeds = [b"case".as_ref(), community.key().as_ref(), &new_case.id.to_le_bytes()],
+        bump = new_case.bump,
+    )]
+    pub new_case: Account<'info, Case>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = network @ ErrorCode::NetworkMismatch,
+        seeds = [
+            b"address".as_ref(),
+            network.key().as_ref(),
+            address.address[0..32].as_ref(),
+            address.address[32..64].as_ref(),
+        ],
+        bump = address.bump,
+    )]
+    pub address: Account<'info, Address>,
+}
+
+#[derive(Accounts)]
 pub struct ConfirmAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,

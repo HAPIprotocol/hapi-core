@@ -34,6 +34,8 @@ pub enum ErrorCode {
     NetworkMismatch,
     #[msg("Case mismatched")]
     CaseMismatch,
+    #[msg("Same address case")]
+    SameCase,
     #[msg("There is no reward to claim")]
     NoReward,
 }
