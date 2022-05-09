@@ -4,9 +4,10 @@ use spl_token::instruction::AuthorityType;
 
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
-mod context;
-mod error;
-mod state;
+pub mod context;
+pub mod error;
+pub mod state;
+pub mod checker;
 
 use context::*;
 use error::{print_error, ErrorCode};

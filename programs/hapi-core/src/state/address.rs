@@ -30,7 +30,7 @@ pub struct Address {
     pub confirmations: u8,
 }
 
-#[derive(Clone, AnchorDeserialize, AnchorSerialize)]
+#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum Category {
     // Tier 0
     /// None

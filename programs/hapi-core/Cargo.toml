@@ -1,7 +1,12 @@
 [package]
 name = "hapi-core"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "Core contract of HAPI Protocol"
+homepage = "https://hapi.one"
+repository = "https://github.com/HAPIprotocol/hapi-core"
+documentation = "https://hapi-one.gitbook.io/"
+license-file = "../LICENSE"
+readme = "../README.md"
 edition = "2018"
 
 [lib]
