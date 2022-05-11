@@ -77,7 +77,7 @@ impl HapiChecker {
         &self,
         address_info: &AccountInfo,
         payer_account: &Pubkey,
-    ) -> Result<(), HapiCheckerError> {
+    ) -> Result<()> {
         let (address_account, address_bump) = self.get_hapi_address(payer_account);
 
         if address_account != address_info.key() {

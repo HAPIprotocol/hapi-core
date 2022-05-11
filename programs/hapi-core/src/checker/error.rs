@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 /// Reasons the risk check may fail
-#[error]
+#[error_code]
 pub enum HapiCheckerError {
     #[msg("Unexpected account has been used")]
     UnexpectedAccount,

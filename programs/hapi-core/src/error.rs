@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[error]
+#[error_code]
 pub enum ErrorCode {
     #[msg("Unexpected account has been used")]
     UnexpectedAccount,
@@ -40,7 +40,7 @@ pub enum ErrorCode {
     NoReward,
 }
 
-pub fn print_error(error: ErrorCode) -> ProgramResult {
+pub fn print_error(error: ErrorCode) -> Result<()> {
     msg!("Error: {}", error);
     Err(error.into())
 }
