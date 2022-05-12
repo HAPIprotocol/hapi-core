@@ -38,6 +38,10 @@ pub enum ErrorCode {
     SameCase,
     #[msg("There is no reward to claim")]
     NoReward,
+    #[msg("Account has illegal owner")]
+    IllegalOwner,
+    #[msg("User account has high risk")]
+    HighAccountRisk,
 }
 
 pub fn print_error(error: ErrorCode) -> Result<()> {

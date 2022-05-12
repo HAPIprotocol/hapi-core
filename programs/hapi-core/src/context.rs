@@ -46,6 +46,7 @@ pub struct InitializeCommunity<'info> {
     #[account(owner = Token::id())]
     pub stake_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     pub token_signer: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -82,6 +83,7 @@ pub struct SetCommunityAuthority<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
     )]
@@ -115,6 +117,7 @@ pub struct CreateNetwork<'info> {
     )]
     pub reward_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"network_reward".as_ref(), network.key().as_ref()],
         bump = reward_signer_bump,
@@ -184,6 +187,7 @@ pub struct CreateReporter<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
+    /// CHECK: this account is not dangerous
     pub pubkey: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -877,6 +881,7 @@ pub struct ReleaseReporter<'info> {
     )]
     pub reporter_token_account: Account<'info, TokenAccount>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"community_stash".as_ref(), community.key().as_ref()],
         bump = community.token_signer_bump,
@@ -955,6 +960,7 @@ pub struct ClaimReporterReward<'info> {
     ]
     pub reward_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"network_reward".as_ref(), network.key().as_ref()],
         bump = network.reward_signer_bump,
