@@ -647,7 +647,6 @@ pub struct CreateAsset<'info> {
 
     #[account(
         init,
-        owner = id(),
         payer = sender,
         seeds = [
             b"asset".as_ref(),
@@ -659,7 +658,7 @@ pub struct CreateAsset<'info> {
         bump,
         space = 8 + std::mem::size_of::<Asset>()
     )]
-    pub asset: Account<'info, Asset>,
+    pub asset: Box<Account<'info, Asset>>,
 
     pub system_program: Program<'info, System>,
 }

@@ -4,7 +4,7 @@ use spl_token::instruction::AuthorityType;
 
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
-pub mod checker;
+// pub mod checker;
 pub mod context;
 pub mod error;
 pub mod state;

@@ -14,7 +14,5 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "npx jest --verbose address.spec"
+test = "npx jest --verbose"
 
-[features]
-safety_checks = false
