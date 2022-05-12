@@ -68,10 +68,6 @@ impl HapiChecker {
         Pubkey::find_program_address(&self.get_hapi_address_seeds(account), &self.program_id)
     }
 
-    pub fn get_account_data<'a>(data: &'a [u8], index: usize) -> u8 {
-        *data.get(index).unwrap()
-    }
-
     pub fn check_address_risk(
         &self,
         address_info: &AccountInfo,
