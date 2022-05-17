@@ -40,6 +40,11 @@ describe("HapiCore Network", () => {
     await stakeToken.mint(new u64(1_000_000_000));
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
 
+    await provider.connection.requestAirdrop(
+      nobody.publicKey,
+      1000000000
+    );
+
     rewardToken = new TestToken(provider);
     await rewardToken.mint(new u64(0));
 
@@ -107,7 +112,7 @@ describe("HapiCore Network", () => {
             },
             signers: [nobody],
           }),
-        /Cross-program invocation with unauthorized signer or writable account/
+        programError("AuthorityMismatch")
       );
     });
 

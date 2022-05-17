@@ -1,11 +1,10 @@
 mod address_data;
-pub mod error;
 
 use anchor_lang::prelude::*;
 use std::str::FromStr;
 
 use super::state::address::Category;
-use error::HapiCheckerError;
+use crate::error::ErrorCode;
 use address_data::AddressData;
 
 const MAINNET_SOLANA_NETWORK: &str = "GTBRKbzBtqDTvbBDmzAHRmUifyHqFGACgUxFrGHQgq4S";
@@ -69,23 +68,19 @@ impl HapiChecker {
         Pubkey::find_program_address(&self.get_hapi_address_seeds(account), &self.program_id)
     }
 
-    pub fn get_account_data<'a>(data: &'a [u8], index: usize) -> u8 {
-        *data.get(index).unwrap()
-    }
-
     pub fn check_address_risk(
         &self,
         address_info: &AccountInfo,
         payer_account: &Pubkey,
-    ) -> Result<(), HapiCheckerError> {
+    ) -> Result<()> {
         let (address_account, address_bump) = self.get_hapi_address(payer_account);
 
         if address_account != address_info.key() {
-            return Err(HapiCheckerError::UnexpectedAccount.into());
+            return Err(ErrorCode::UnexpectedAccount.into());
         }
 
         if address_info.owner.ne(&self.program_id) {
-            return Err(HapiCheckerError::IllegalOwner.into());
+            return Err(ErrorCode::IllegalOwner.into());
         }
 
         if address_info.data_is_empty() {
@@ -96,7 +91,7 @@ impl HapiChecker {
 
         if let Ok(data) = data {
             if address_bump != data.bump {
-                return Err(HapiCheckerError::UnexpectedAccount.into());
+                return Err(ErrorCode::UnexpectedAccount.into());
             }
 
             if self.ignored_categories.iter().any(|i| i == &data.category) {
@@ -104,7 +99,7 @@ impl HapiChecker {
             }
 
             if data.risk > self.max_risk {
-                return Err(HapiCheckerError::HighAccountRisk.into());
+                return Err(ErrorCode::HighAccountRisk.into());
             }
         }
 

@@ -25,6 +25,7 @@ use crate::{
     stash_bump: u8,
 )]
 pub struct InitializeCommunity<'info> {
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -45,6 +46,7 @@ pub struct InitializeCommunity<'info> {
     #[account(owner = Token::id())]
     pub stake_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     pub token_signer: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -81,6 +83,7 @@ pub struct SetCommunityAuthority<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
     )]
@@ -95,10 +98,11 @@ pub struct SetCommunityAuthority<'info> {
     address_confirmation_reward: u64,
     asset_tracer_reward: u64,
     asset_confirmation_reward: u64,
-    network_bump: u8,
+    bump: u8,
     reward_signer_bump: u8,
 )]
 pub struct CreateNetwork<'info> {
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -113,6 +117,7 @@ pub struct CreateNetwork<'info> {
     )]
     pub reward_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"network_reward".as_ref(), network.key().as_ref()],
         bump = reward_signer_bump,
@@ -124,7 +129,7 @@ pub struct CreateNetwork<'info> {
         payer = authority,
         owner = id(),
         seeds = [b"network".as_ref(), community.key().as_ref(), &name],
-        bump = network_bump,
+        bump,
         space = 8 + std::mem::size_of::<Network>()
     )]
     pub network: Account<'info, Network>,
@@ -163,6 +168,7 @@ pub struct UpdateNetwork<'info> {
 #[derive(Accounts)]
 #[instruction(role: ReporterRole, name: [u8; 32], bump: u8)]
 pub struct CreateReporter<'info> {
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -176,11 +182,12 @@ pub struct CreateReporter<'info> {
         payer = authority,
         owner = id(),
         seeds = [b"reporter".as_ref(), community.key().as_ref(), pubkey.key().as_ref()],
-        bump = bump,
+        bump,
         space = 8 + std::mem::size_of::<Reporter>()
     )]
     pub reporter: Account<'info, Reporter>,
 
+    /// CHECK: this account is not dangerous
     pub pubkey: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -218,7 +225,7 @@ pub struct InitializeReporterReward<'info> {
         payer = sender,
         owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = bump,
+        bump,
         space = 8 + std::mem::size_of::<ReporterReward>(),
     )]
     pub reporter_reward: AccountLoader<'info, ReporterReward>,
@@ -316,7 +323,7 @@ pub struct CreateCase<'info> {
         payer = sender,
         owner = id(),
         seeds = [b"case".as_ref(), community.key().as_ref(), &case_id.to_le_bytes()],
-        bump = bump,
+        bump,
         space = 8 + std::mem::size_of::<Case>()
     )]
     pub case: Account<'info, Case>,
@@ -410,7 +417,7 @@ pub struct CreateAddress<'info> {
             addr[0..32].as_ref(),
             addr[32..64].as_ref(),
         ],
-        bump = bump,
+        bump,
         space = 8 + std::mem::size_of::<Address>()
     )]
     pub address: Account<'info, Address>,
@@ -644,7 +651,6 @@ pub struct CreateAsset<'info> {
 
     #[account(
         init,
-        owner = id(),
         payer = sender,
         seeds = [
             b"asset".as_ref(),
@@ -653,10 +659,10 @@ pub struct CreateAsset<'info> {
             mint[32..64].as_ref(),
             asset_id.as_ref(),
         ],
-        bump = bump,
+        bump,
         space = 8 + std::mem::size_of::<Asset>()
     )]
-    pub asset: Account<'info, Asset>,
+    pub asset: Box<Account<'info, Asset>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -875,6 +881,7 @@ pub struct ReleaseReporter<'info> {
     )]
     pub reporter_token_account: Account<'info, TokenAccount>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"community_stash".as_ref(), community.key().as_ref()],
         bump = community.token_signer_bump,
@@ -953,6 +960,7 @@ pub struct ClaimReporterReward<'info> {
     ]
     pub reward_mint: Account<'info, Mint>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         seeds = [b"network_reward".as_ref(), network.key().as_ref()],
         bump = network.reward_signer_bump,

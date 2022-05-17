@@ -298,7 +298,7 @@ describe("HapiCore Reporter", () => {
             },
             signers: [nobody],
           }),
-        /Cross-program invocation with unauthorized signer or writable account/
+        programError("AuthorityMismatch")
       );
     });
 
