@@ -79,12 +79,12 @@ impl HapiChecker {
             return Err(ErrorCode::UnexpectedAccount.into());
         }
 
-        if address_info.owner.ne(&self.program_id) {
-            return Err(ErrorCode::IllegalOwner.into());
-        }
-
         if address_info.data_is_empty() {
             return Ok(());
+        }
+
+        if address_info.owner.ne(&self.program_id) {
+            return Err(ErrorCode::IllegalOwner.into());
         }
 
         let data = AddressData::from(address_info);
