@@ -1,6 +1,6 @@
 [package]
 name = "hapi-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Core contract of HAPI Protocol"
 homepage = "https://hapi.one"
 repository = "https://github.com/HAPIprotocol/hapi-core"
