@@ -11,7 +11,7 @@ import { ACCOUNT_SIZE, initHapiCore } from "../../lib";
 describe("HapiCore Community", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
 
-  const provider = anchor.Provider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const authority = provider.wallet;
@@ -61,7 +61,7 @@ describe("HapiCore Community", () => {
             },
             signers: [community],
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: token_account. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
@@ -96,7 +96,7 @@ describe("HapiCore Community", () => {
             },
             signers: [community],
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: stake_mint. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
@@ -242,7 +242,7 @@ describe("HapiCore Community", () => {
               community: someKey,
             },
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: community. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
@@ -264,7 +264,7 @@ describe("HapiCore Community", () => {
               community: community.publicKey,
             },
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: community. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
@@ -380,7 +380,7 @@ describe("HapiCore Community", () => {
               community: someKey,
             },
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: community. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
@@ -394,7 +394,7 @@ describe("HapiCore Community", () => {
               newAuthority: nobody.publicKey,
             },
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: community. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 

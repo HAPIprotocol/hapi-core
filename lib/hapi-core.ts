@@ -1,11 +1,4 @@
-import {
-  Program,
-  web3,
-  BN,
-  Provider,
-  Coder,
-  utils,
-} from "@project-serum/anchor";
+import { Program, web3, BN, Provider, utils } from "@project-serum/anchor";
 import { encode as eip55encode } from "eip55";
 
 import { IDL } from "../target/types/hapi_core";
@@ -69,7 +62,7 @@ export function initHapiCore(
 
   const program = new Program(IDL, programId, provider);
 
-  const coder = new Coder(IDL);
+  // const coder = new Coder(IDL);
 
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
     return web3.PublicKey.findProgramAddress(
@@ -157,7 +150,7 @@ export function initHapiCore(
   return {
     ...program,
     programId,
-    coder,
+    // coder,
     util: {
       encodeAddress,
       decodeAddress,

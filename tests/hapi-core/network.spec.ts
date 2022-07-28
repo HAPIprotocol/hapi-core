@@ -15,7 +15,7 @@ import { metadata } from "../../target/idl/hapi_core.json";
 describe("HapiCore Network", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
 
-  const provider = anchor.Provider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const authority = provider.wallet;
@@ -40,10 +40,7 @@ describe("HapiCore Network", () => {
     await stakeToken.mint(new u64(1_000_000_000));
     await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
 
-    await provider.connection.requestAirdrop(
-      nobody.publicKey,
-      1000000000
-    );
+    await provider.connection.requestAirdrop(nobody.publicKey, 1000000000);
 
     rewardToken = new TestToken(provider);
     await rewardToken.mint(new u64(0));
@@ -395,7 +392,7 @@ describe("HapiCore Network", () => {
               network: networkAccount,
             },
           }),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: network. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 

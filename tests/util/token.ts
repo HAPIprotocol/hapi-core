@@ -1,4 +1,5 @@
-import { Provider, web3 } from "@project-serum/anchor";
+import { AnchorProvider, web3 } from "@project-serum/anchor";
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 export { Token, u64 } from "@solana/spl-token";
 
@@ -6,7 +7,7 @@ export class TestToken {
   public token: Token;
 
   constructor(
-    private readonly provider: Provider,
+    private readonly provider: AnchorProvider,
     private readonly decimals: number = 9
   ) {}
 
@@ -19,7 +20,11 @@ export class TestToken {
   }
 
   get payer() {
-    return this.provider.wallet["payer"];
+    if (this.provider.wallet instanceof NodeWallet) {
+      return this.provider.wallet["payer"];
+    } else {
+      throw new Error(`NodeWallet compatible provider expected`);
+    }
   }
 
   async mint(amount?: u64): Promise<void> {

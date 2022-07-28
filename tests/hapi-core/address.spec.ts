@@ -21,7 +21,7 @@ import { metadata } from "../../target/idl/hapi_core.json";
 describe("HapiCore Address", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
 
-  const provider = anchor.Provider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const authority = provider.wallet;
@@ -186,7 +186,7 @@ describe("HapiCore Address", () => {
       )
     );
 
-    wait.push(provider.send(tx));
+    wait.push(provider.sendAndConfirm(tx));
 
     for (const reporter of Object.keys(REPORTERS)) {
       wait.push(
@@ -1394,5 +1394,4 @@ describe("HapiCore Address", () => {
       );
     });
   });
-
 });

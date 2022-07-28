@@ -21,7 +21,7 @@ import { metadata } from "../../target/idl/hapi_core.json";
 describe("HapiCore General", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
 
-  const provider = anchor.Provider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const authority = provider.wallet;
@@ -202,7 +202,7 @@ describe("HapiCore General", () => {
       })
     );
 
-    await provider.send(tx);
+    await provider.sendAndConfirm(tx);
 
     stakeToken = new TestToken(provider);
     await stakeToken.mint(new u64(1_000_000_000));
@@ -369,7 +369,7 @@ describe("HapiCore General", () => {
               signers: [reporter],
             }
           ),
-        "3012: The program expected this account to be already initialized"
+        "AnchorError caused by account: case. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     }
   );
