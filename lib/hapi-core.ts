@@ -1,4 +1,4 @@
-import { Program, web3, BN, Provider, utils } from "@coral-xyz/anchor";
+import { Program, web3, BN, Provider, utils } from "@project-serum/anchor";
 import { encode as eip55encode } from "eip55";
 
 import { IDL } from "../target/types/hapi_core";

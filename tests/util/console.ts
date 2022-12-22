@@ -1,4 +1,4 @@
-import { web3 } from "@coral-xyz/anchor";
+import { web3 } from "@project-serum/anchor";
 
 export function silenceConsole() {
   const logSpy = jest.spyOn(console, "log").mockImplementation(() => undefined);

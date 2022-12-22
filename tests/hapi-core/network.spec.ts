@@ -1,5 +1,5 @@
-import * as anchor from "@coral-xyz/anchor";
-import { web3 } from "@coral-xyz/anchor";
+import * as anchor from "@project-serum/anchor";
+import { web3 } from "@project-serum/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";

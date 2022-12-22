@@ -1,5 +1,5 @@
-import { AnchorProvider, web3 } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { AnchorProvider, web3 } from "@project-serum/anchor";
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 export { Token, u64 } from "@solana/spl-token";
 

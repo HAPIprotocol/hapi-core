@@ -62,7 +62,7 @@ Please view the test suite (`./tests/hapi-core/**.spec.ts`) to see how can this 
 
 ```typescript
 import { Connection, PublicKey } from "@solana/web3.js";
-import { Provider } from "@coral-xyz/anchor";
+import { Provider } from "@project-serum/anchor";
 import { initHapiCore } from "@hapi.one/core-cli";
 
 // Setup web3 Connection

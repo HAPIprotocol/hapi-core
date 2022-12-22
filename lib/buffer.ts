@@ -1,4 +1,4 @@
-import { web3, utils, BN } from "@coral-xyz/anchor";
+import { web3, utils, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { encode as eip55encode } from "eip55";
 
