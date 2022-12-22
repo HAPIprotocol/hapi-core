@@ -6,7 +6,7 @@ import dts from "rollup-plugin-dts";
 export default [
   {
     input: ["out-tsc/lib/index.js"],
-    external: ["@project-serum/anchor", "@solana/spl-token"],
+    external: ["@coral-xyz/anchor", "@solana/spl-token"],
     output: [
       {
         file: "out-lib/index.esm.js",
@@ -18,7 +18,7 @@ export default [
   },
   {
     input: ["out-tsc/lib/index.js"],
-    external: ["@project-serum/anchor", "@solana/spl-token"],
+    external: ["@coral-xyz/anchor", "@solana/spl-token"],
     output: [
       {
         file: "out-lib/index.cjs.js",

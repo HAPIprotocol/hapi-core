@@ -1,5 +1,5 @@
-import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 
 import { TestToken, u64 } from "../util/token";
 import { expectThrowError } from "../util/console";
@@ -220,7 +220,7 @@ describe("HapiCore Network", () => {
         () =>
           program.rpc.createNetwork(...args, {
             accounts: {
-              authority: nobody.publicKey,
+              authority: authority.publicKey,
               community: otherCommunity.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
@@ -228,9 +228,8 @@ describe("HapiCore Network", () => {
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [nobody],
           }),
-        /(custom program error: 0xbc4|Cross-program invocation with unauthorized signer or writable account|Program failed to complete)/
+        /(A seeds constraint was violated)/
       );
     });
 
