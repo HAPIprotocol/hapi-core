@@ -28,6 +28,9 @@ pub struct Address {
 
     /// Confirmation count for this address
     pub confirmations: u8,
+
+    /// Accumulated payment amount for report
+    pub replication_bounty: u64,
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

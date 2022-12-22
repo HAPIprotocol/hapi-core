@@ -31,6 +31,7 @@ describe("HapiCore Network", () => {
   const addressConfirmationReward = new u64(2_000);
   const assetTracerReward = new u64(3_000);
   const assetConfirmationReward = new u64(4_000);
+  const reportPrice = new u64(1_000);
 
   beforeAll(async () => {
     community = web3.Keypair.generate();
@@ -49,6 +50,7 @@ describe("HapiCore Network", () => {
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     await program.rpc.initializeCommunity(
       new u64(1),
@@ -63,7 +65,8 @@ describe("HapiCore Network", () => {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
-          tokenAccount: tokenAccount,
+          tokenAccount,
+          treasuryTokenAccount,
           tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -93,6 +96,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         networkBump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
@@ -126,6 +130,7 @@ describe("HapiCore Network", () => {
       const otherTokenAccount = await stakeToken.createAccount(
         tokenSignerAccount
       );
+      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await program.rpc.initializeCommunity(
         new u64(1),
@@ -141,6 +146,7 @@ describe("HapiCore Network", () => {
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
+            treasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -173,6 +179,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
@@ -214,6 +221,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
@@ -255,6 +263,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       const tx = await program.rpc.createNetwork(...args, {
@@ -322,6 +331,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(

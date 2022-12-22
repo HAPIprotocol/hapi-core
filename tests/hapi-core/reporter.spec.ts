@@ -62,6 +62,7 @@ describe("HapiCore Reporter", () => {
       addressConfirmationReward: u64;
       assetTracerReward: u64;
       assetConfirmationReward: u64;
+      reportPrice: u64,
     }
   > = {
     ethereum: {
@@ -72,6 +73,7 @@ describe("HapiCore Reporter", () => {
       addressConfirmationReward: new u64(2_000),
       assetTracerReward: new u64(3_000),
       assetConfirmationReward: new u64(4_000),
+      reportPrice: new u64(1_000),
     },
   };
 
@@ -180,6 +182,8 @@ describe("HapiCore Reporter", () => {
       tokenSignerAccount
     );
 
+    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+
     const [otherTokenSignerAccount, otherStashBump] =
       await program.pda.findCommunityTokenSignerAddress(
         otherCommunity.publicKey
@@ -188,6 +192,8 @@ describe("HapiCore Reporter", () => {
     const otherTokenAccount = await stakeToken.createAccount(
       otherTokenSignerAccount
     );
+
+    const otherTreasuryTokenAccount = await stakeToken.createAccount(otherTokenSignerAccount);
 
     wait.push(
       program.rpc.initializeCommunity(
@@ -205,6 +211,7 @@ describe("HapiCore Reporter", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: tokenSignerAccount,
             tokenAccount: communityTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
@@ -225,6 +232,7 @@ describe("HapiCore Reporter", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: otherTokenSignerAccount,
             tokenAccount: otherTokenAccount,
+            treasuryTokenAccount: otherTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [otherCommunity],
@@ -255,6 +263,7 @@ describe("HapiCore Reporter", () => {
           network.assetConfirmationReward,
           bump,
           rewardSignerBump,
+          network.reportPrice,
           {
             accounts: {
               authority: authority.publicKey,

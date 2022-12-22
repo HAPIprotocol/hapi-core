@@ -67,6 +67,7 @@ describe("HapiCore Asset", () => {
       addressConfirmationReward: u64;
       assetTracerReward: u64;
       assetConfirmationReward: u64;
+      reportPrice: u64;
     }
   > = {
     ethereum: {
@@ -77,6 +78,7 @@ describe("HapiCore Asset", () => {
       addressConfirmationReward: new u64(2_000),
       assetTracerReward: new u64(3_000),
       assetConfirmationReward: new u64(4_000),
+      reportPrice: new u64(1_000),
     },
     solana: {
       name: "solana",
@@ -86,6 +88,7 @@ describe("HapiCore Asset", () => {
       addressConfirmationReward: new u64(2_001),
       assetTracerReward: new u64(3_001),
       assetConfirmationReward: new u64(4_001),
+      reportPrice: new u64(1_001),
     },
   };
 
@@ -196,6 +199,7 @@ describe("HapiCore Asset", () => {
     const communityTokenAccount = await stakeToken.createAccount(
       tokenSignerAccount
     );
+    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     wait.push(
       program.rpc.initializeCommunity(
@@ -212,6 +216,7 @@ describe("HapiCore Asset", () => {
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -271,6 +276,7 @@ describe("HapiCore Asset", () => {
           network.assetConfirmationReward,
           bump,
           rewardSignerBump,
+          network.reportPrice,
           {
             accounts: {
               authority: authority.publicKey,

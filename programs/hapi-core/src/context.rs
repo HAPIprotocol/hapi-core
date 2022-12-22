@@ -36,6 +36,13 @@ pub struct InitializeCommunity<'info> {
     pub token_account: Account<'info, TokenAccount>,
 
     #[account(
+        constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(
         init,
         payer = authority,
         owner = id(),

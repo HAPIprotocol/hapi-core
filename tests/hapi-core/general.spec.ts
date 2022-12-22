@@ -55,6 +55,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: u64;
       assetTracerReward: u64;
       assetConfirmationReward: u64;
+      reportPrice: u64,
     }
   > = {
     ethereum: {
@@ -65,6 +66,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: new u64(2_000),
       assetTracerReward: new u64(3_000),
       assetConfirmationReward: new u64(4_000),
+      reportPrice: new u64(1_000),
     },
     solana: {
       name: "solana",
@@ -74,6 +76,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: new u64(2_001),
       assetTracerReward: new u64(3_001),
       assetConfirmationReward: new u64(4_001),
+      reportPrice: new u64(1_001),
     },
     near: {
       name: "near",
@@ -83,6 +86,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: new u64(2_002),
       assetTracerReward: new u64(3_002),
       assetConfirmationReward: new u64(4_002),
+      reportPrice: new u64(1_002),
     },
   };
 
@@ -226,6 +230,7 @@ describe("HapiCore General", () => {
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     const tx = await program.rpc.initializeCommunity(
       new u64(4),
@@ -241,6 +246,7 @@ describe("HapiCore General", () => {
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
+          treasuryTokenAccount,
           tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -275,6 +281,7 @@ describe("HapiCore General", () => {
       network.assetConfirmationReward,
       bump,
       rewardSignerBump,
+      network.reportPrice
     ];
 
     const tx = await program.rpc.createNetwork(...args, {

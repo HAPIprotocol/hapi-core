@@ -43,6 +43,7 @@ pub mod hapi_core {
         community.token_signer = ctx.accounts.token_signer.key();
         community.token_signer_bump = signer_bump;
         community.token_account = ctx.accounts.token_account.key();
+        community.treasury_token_account = ctx.accounts.treasury_token_account.key();
         community.validator_stake = validator_stake;
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;
@@ -90,6 +91,7 @@ pub mod hapi_core {
         asset_confirmation_reward: u64,
         network_bump: u8,
         reward_signer_bump: u8,
+        report_price: u64,
     ) -> Result<()> {
         // Pass authority to network signer PDA
         token::set_authority(
@@ -118,6 +120,7 @@ pub mod hapi_core {
         network.address_confirmation_reward = address_confirmation_reward;
         network.asset_tracer_reward = asset_tracer_reward;
         network.asset_confirmation_reward = asset_confirmation_reward;
+        network.report_price = report_price;
 
         Ok(())
     }
@@ -232,6 +235,7 @@ pub mod hapi_core {
         address.category = category;
         address.risk = risk;
         address.confirmations = 0;
+        address.replication_bounty = 0;
 
         Ok(())
     }
