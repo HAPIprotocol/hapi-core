@@ -721,6 +721,16 @@ describe("HapiCore Asset", () => {
         asset.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.updateAsset(Category[asset.category], asset.risk, {
@@ -731,6 +741,9 @@ describe("HapiCore Asset", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount: communityTreasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter],
           }),
@@ -764,6 +777,16 @@ describe("HapiCore Asset", () => {
         asset.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.updateAsset(Category[asset.category], asset.risk, {
@@ -774,6 +797,9 @@ describe("HapiCore Asset", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount: communityTreasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter],
           }),
@@ -807,6 +833,23 @@ describe("HapiCore Asset", () => {
         asset.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.updateAsset(Category.Exchange, 8, {
         accounts: {
           sender: reporter.publicKey,
@@ -815,6 +858,9 @@ describe("HapiCore Asset", () => {
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
+          reporterPaymentTokenAccount,
+          treasuryTokenAccount: communityTreasuryTokenAccount,
+          tokenProgram: stakeToken.programId,
         },
         signers: [reporter],
       });
@@ -824,6 +870,21 @@ describe("HapiCore Asset", () => {
       const fetchedAssetAccount = await program.account.asset.fetch(
         assetAccount
       );
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryCommunityBalance = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
       expect(fetchedAssetAccount.caseId.toNumber()).toEqual(
         asset.caseId.toNumber()
       );
@@ -836,6 +897,14 @@ describe("HapiCore Asset", () => {
       );
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
+
+      expect(
+        treasuryCommunityBalance.toNumber()
+      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
     });
   });
 
