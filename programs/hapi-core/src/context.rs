@@ -454,16 +454,14 @@ pub struct UpdateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
-        owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
-    pub network: Account<'info, Network>,
+    pub network: Box<Account<'info, Network>>,
 
     #[account(
         owner = id(),
@@ -502,6 +500,24 @@ pub struct UpdateAddress<'info> {
         bump = address.bump,
     )]
     pub address: Account<'info, Address>,
+
+    #[account(
+        mut,
+        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_payment_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
