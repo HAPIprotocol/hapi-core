@@ -1121,6 +1121,16 @@ describe("HapiCore Reporter", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
       await program.rpc.createAddress(
         addr.pubkey,
         Category[addr.category],
@@ -1134,6 +1144,9 @@ describe("HapiCore Reporter", () => {
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter.keypair],

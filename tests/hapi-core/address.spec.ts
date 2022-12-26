@@ -417,6 +417,16 @@ describe("HapiCore Address", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.createAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.createAddress(
@@ -432,6 +442,9 @@ describe("HapiCore Address", () => {
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount: communityTreasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -466,6 +479,16 @@ describe("HapiCore Address", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.createAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.createAddress(
@@ -481,6 +504,9 @@ describe("HapiCore Address", () => {
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount: communityTreasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -515,6 +541,23 @@ describe("HapiCore Address", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.createAddress(
         addr.pubkey,
         Category[addr.category],
@@ -528,6 +571,9 @@ describe("HapiCore Address", () => {
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter],
@@ -539,6 +585,21 @@ describe("HapiCore Address", () => {
       const fetchedAddressAccount = await program.account.address.fetch(
         addressAccount
       );
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryCommunityBalance = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -561,6 +622,14 @@ describe("HapiCore Address", () => {
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
       expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+
+      expect(
+        treasuryCommunityBalance.toNumber()
+      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
 
       expect(true).toBeTruthy();
     });
@@ -590,6 +659,23 @@ describe("HapiCore Address", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.createAddress(
         addr.pubkey,
         Category[addr.category],
@@ -603,6 +689,9 @@ describe("HapiCore Address", () => {
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter],
@@ -614,6 +703,21 @@ describe("HapiCore Address", () => {
       const fetchedAddressAccount = await program.account.address.fetch(
         addressAccount
       );
+
+      const reporterBalanceAfter = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryCommunityBalance = new u64(
+        (
+          await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -636,6 +740,14 @@ describe("HapiCore Address", () => {
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
       expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+
+      expect(
+        treasuryCommunityBalance.toNumber()
+      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
 
       expect(true).toBeTruthy();
     });
@@ -665,6 +777,16 @@ describe("HapiCore Address", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.createAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.createAddress(
@@ -680,6 +802,9 @@ describe("HapiCore Address", () => {
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount: communityTreasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],

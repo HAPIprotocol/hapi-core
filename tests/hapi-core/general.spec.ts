@@ -356,6 +356,16 @@ describe("HapiCore General", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
       await expectThrowError(
         () =>
           program.rpc.createAddress(
@@ -371,6 +381,9 @@ describe("HapiCore General", () => {
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount: communityTreasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -512,6 +525,16 @@ describe("HapiCore General", () => {
         addr.caseId
       );
 
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
       const tx = await program.rpc.createAddress(
         addr.pubkey,
         Category[addr.category],
@@ -525,6 +548,9 @@ describe("HapiCore General", () => {
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter],
@@ -691,6 +717,16 @@ describe("HapiCore General", () => {
       addr.caseId
     );
 
+    const communityInfo = await program.account.community.fetch(
+      community.publicKey
+    );
+
+    const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+    const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+      reporter.publicKey
+    );
+
     await expectThrowError(
       () =>
         program.rpc.createAddress(
@@ -706,6 +742,9 @@ describe("HapiCore General", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount: communityTreasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
 
