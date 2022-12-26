@@ -610,6 +610,17 @@ describe("HapiCore General", () => {
       asset.caseId
     );
 
+    const communityInfo = await program.account.community.fetch(
+      community.publicKey
+    );
+
+    const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+    const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+      reporter.publicKey
+    );
+
+
     const tx = await program.rpc.createAsset(
       asset.mint,
       asset.assetId,
@@ -624,6 +635,9 @@ describe("HapiCore General", () => {
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
+          reporterPaymentTokenAccount,
+          treasuryTokenAccount: communityTreasuryTokenAccount,
+          tokenProgram: stakeToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [reporter],

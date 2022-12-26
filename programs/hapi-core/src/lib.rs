@@ -323,6 +323,21 @@ pub mod hapi_core {
             return print_error(ErrorCode::RiskOutOfRange);
         }
 
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx
+                        .accounts
+                        .reporter_payment_token_account
+                        .to_account_info(),
+                    to: ctx.accounts.treasury_token_account.to_account_info(),
+                    authority: ctx.accounts.sender.to_account_info(),
+                },
+            ),
+            ctx.accounts.network.report_price,
+        )?;
+
         let asset = &mut ctx.accounts.asset;
 
         asset.network = ctx.accounts.network.key();
