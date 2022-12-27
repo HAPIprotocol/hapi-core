@@ -1,22 +1,21 @@
-import { AnchorProvider, web3 } from "@project-serum/anchor";
+import { AnchorProvider, web3, BN } from "@project-serum/anchor";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
-import { Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-export { Token, u64 } from "@solana/spl-token";
+import * as Token from "@solana/spl-token";
 
 export class TestToken {
-  public token: Token;
+  public token: web3.PublicKey;
 
-  constructor(
+  constructor (
     private readonly provider: AnchorProvider,
     private readonly decimals: number = 9
-  ) {}
+  ) { }
 
   get programId() {
-    return this.token.programId;
+    return Token.TOKEN_PROGRAM_ID;
   }
 
   get mintAccount() {
-    return this.token.publicKey;
+    return this.token;
   }
 
   get payer() {
@@ -27,25 +26,32 @@ export class TestToken {
     }
   }
 
-  async mint(amount?: u64): Promise<void> {
+  async mint(amount?: number): Promise<void> {
     const mint = await Token.createMint(
       this.provider.connection,
       this.payer,
       this.payer.publicKey,
       null,
       this.decimals,
-      TOKEN_PROGRAM_ID
+      undefined,
+      undefined,
+      Token.TOKEN_PROGRAM_ID
     );
 
-    const fromTokenAccount = await mint.getOrCreateAssociatedAccountInfo(
-      this.payer.publicKey
+    const fromTokenAccount = await Token.getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      this.payer,
+      mint,
+      this.payer.publicKey,
     );
 
     if (amount !== undefined) {
-      await mint.mintTo(
+      await Token.mintTo(
+        this.provider.connection,
+        this.payer,
+        mint,
         fromTokenAccount.address,
         this.payer.publicKey,
-        [],
         amount
       );
     }
@@ -58,13 +64,21 @@ export class TestToken {
       owner = this.payer.publicKey;
     }
 
-    const account = await this.token.createAccount(this.payer.publicKey);
+    const initialOwner = web3.Keypair.generate();
 
-    await this.token.setAuthority(
-      account,
-      owner,
-      "AccountOwner",
+    const account = await Token.createAssociatedTokenAccount(
+      this.provider.connection,
       this.payer,
+      this.token,
+      initialOwner.publicKey);
+
+    await Token.setAuthority(
+      this.provider.connection,
+      this.payer,
+      account,
+      initialOwner,
+      Token.AuthorityType.AccountOwner,
+      owner,
       []
     );
 
@@ -74,42 +88,56 @@ export class TestToken {
   async transfer(
     from: web3.Keypair | web3.Signer | null,
     to: web3.PublicKey,
-    amount: u64
+    amount: number
   ): Promise<void> {
     if (from === null) {
-      from = this.token.payer;
+      from = this.payer;
     }
 
-    const fromTokenAccount = await this.token.getOrCreateAssociatedAccountInfo(
-      from.publicKey
+    const fromTokenAccount = await Token.getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      this.payer,
+      this.token,
+      from.publicKey,
     );
 
-    const toTokenAccount = await this.token.getOrCreateAssociatedAccountInfo(
-      to
+    const toTokenAccount = await Token.getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      this.payer,
+      this.token,
+      to,
     );
 
-    await this.token.transfer(
+    await Token.transfer(
+      this.provider.connection,
+      this.payer,
       fromTokenAccount.address,
       toTokenAccount.address,
       from,
-      [],
       amount
     );
   }
 
-  async getBalance(account: web3.PublicKey): Promise<u64> {
-    const tokenAccount = await this.token.getOrCreateAssociatedAccountInfo(
-      account
+  async getBalance(account: web3.PublicKey): Promise<BN> {
+    const tokenAccount = await Token.getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      this.payer,
+      this.token,
+      account,
     );
+
     const { value } = await this.provider.connection.getTokenAccountBalance(
       tokenAccount.address
     );
-    return new u64(value.amount);
+    return new BN(value.amount);
   }
 
   async getTokenAccount(account: web3.PublicKey): Promise<web3.PublicKey> {
-    const { address } = await this.token.getOrCreateAssociatedAccountInfo(
-      account
+    const { address } = await Token.getOrCreateAssociatedTokenAccount(
+      this.provider.connection,
+      this.payer,
+      this.token,
+      account,
     );
 
     return address;

@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
+import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError } from "../util/console";
 import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
@@ -23,8 +23,8 @@ describe("HapiCore Community", () => {
 
   beforeAll(async () => {
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
-    await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
+    await stakeToken.mint(1_000_000_000);
+    await stakeToken.transfer(null, nobody.publicKey, 1_000_000);
   });
 
   describe("initialize_community", () => {
@@ -37,12 +37,12 @@ describe("HapiCore Community", () => {
         await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
       const args = [
-        new u64(3),
+        new BN(3),
         3,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
       ];
 
@@ -72,12 +72,12 @@ describe("HapiCore Community", () => {
         await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
       const args = [
-        new u64(3),
+        new BN(3),
         3,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
       ];
 
@@ -109,12 +109,12 @@ describe("HapiCore Community", () => {
         await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
       const args = [
-        new u64(3),
+        new BN(3),
         3,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
       ];
 
@@ -144,12 +144,12 @@ describe("HapiCore Community", () => {
         await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
       const args = [
-        new u64(3),
+        new BN(3),
         3,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
       ];
 
@@ -194,12 +194,12 @@ describe("HapiCore Community", () => {
         await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
       const args = [
-        new u64(3),
+        new BN(3),
         3,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
       ];
 
@@ -232,12 +232,12 @@ describe("HapiCore Community", () => {
 
     it("fail - community doesn't exist", async () => {
       const args = [
-        new u64(5),
+        new BN(5),
         6,
-        new u64(11_000),
-        new u64(12_000),
-        new u64(13_000),
-        new u64(14_000),
+        new BN(11_000),
+        new BN(12_000),
+        new BN(13_000),
+        new BN(14_000),
       ];
 
       const someKey = pubkeyFromHex(
@@ -258,12 +258,12 @@ describe("HapiCore Community", () => {
 
     it("fail - community not initialized", async () => {
       const args = [
-        new u64(5),
+        new BN(5),
         6,
-        new u64(11_000),
-        new u64(12_000),
-        new u64(13_000),
-        new u64(14_000),
+        new BN(11_000),
+        new BN(12_000),
+        new BN(13_000),
+        new BN(14_000),
       ];
 
       await expectThrowError(
@@ -286,12 +286,12 @@ describe("HapiCore Community", () => {
           );
 
         const args = [
-          new u64(3),
+          new BN(3),
           3,
-          new u64(1_000),
-          new u64(2_000),
-          new u64(3_000),
-          new u64(4_000),
+          new BN(1_000),
+          new BN(2_000),
+          new BN(3_000),
+          new BN(4_000),
           tokenSignerBump,
         ];
 
@@ -316,12 +316,12 @@ describe("HapiCore Community", () => {
 
       {
         const args = [
-          new u64(5),
+          new BN(5),
           6,
-          new u64(11_000),
-          new u64(12_000),
-          new u64(13_000),
-          new u64(14_000),
+          new BN(11_000),
+          new BN(12_000),
+          new BN(13_000),
+          new BN(14_000),
         ];
 
         const tx = await program.rpc.updateCommunity(...args, {
@@ -351,12 +351,12 @@ describe("HapiCore Community", () => {
 
     it("fail - invalid authority", async () => {
       const args = [
-        new u64(5),
+        new BN(5),
         6,
-        new u64(11_000),
-        new u64(12_000),
-        new u64(13_000),
-        new u64(14_000),
+        new BN(11_000),
+        new BN(12_000),
+        new BN(13_000),
+        new BN(14_000),
       ];
 
       await expectThrowError(
@@ -418,12 +418,12 @@ describe("HapiCore Community", () => {
           );
 
         const args = [
-          new u64(3),
+          new BN(3),
           3,
-          new u64(1_000),
-          new u64(2_000),
-          new u64(3_000),
-          new u64(4_000),
+          new BN(1_000),
+          new BN(2_000),
+          new BN(3_000),
+          new BN(4_000),
           tokenSignerBump,
         ];
 

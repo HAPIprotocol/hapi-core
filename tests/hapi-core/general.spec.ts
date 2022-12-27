@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
   CaseStatus,
@@ -51,42 +51,42 @@ describe("HapiCore General", () => {
       name: string;
       schema: NetworkSchemaKeys;
       rewardToken: TestToken;
-      addressTracerReward: u64;
-      addressConfirmationReward: u64;
-      assetTracerReward: u64;
-      assetConfirmationReward: u64;
-      reportPrice: u64,
+      addressTracerReward: BN;
+      addressConfirmationReward: BN;
+      assetTracerReward: BN;
+      assetConfirmationReward: BN;
+      reportPrice: BN.
     }
   > = {
     ethereum: {
       name: "ethereum",
       schema: "Ethereum",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_000),
-      addressConfirmationReward: new u64(2_000),
-      assetTracerReward: new u64(3_000),
-      assetConfirmationReward: new u64(4_000),
-      reportPrice: new u64(1_000),
+      addressTracerReward: new BN(1_000),
+      addressConfirmationReward: new BN(2_000),
+      assetTracerReward: new BN(3_000),
+      assetConfirmationReward: new BN(4_000),
+      reportPrice: new BN(1_000),
     },
     solana: {
       name: "solana",
       schema: "Solana",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_001),
-      addressConfirmationReward: new u64(2_001),
-      assetTracerReward: new u64(3_001),
-      assetConfirmationReward: new u64(4_001),
-      reportPrice: new u64(1_001),
+      addressTracerReward: new BN(1_001),
+      addressConfirmationReward: new BN(2_001),
+      assetTracerReward: new BN(3_001),
+      assetConfirmationReward: new BN(4_001),
+      reportPrice: new BN(1_001),
     },
     near: {
       name: "near",
       schema: "Near",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_002),
-      addressConfirmationReward: new u64(2_002),
-      assetTracerReward: new u64(3_002),
-      assetConfirmationReward: new u64(4_002),
-      reportPrice: new u64(1_002),
+      addressTracerReward: new BN(1_002),
+      addressConfirmationReward: new BN(2_002),
+      assetTracerReward: new BN(3_002),
+      assetConfirmationReward: new BN(4_002),
+      reportPrice: new BN(1_002),
     },
   };
 
@@ -209,22 +209,22 @@ describe("HapiCore General", () => {
     await provider.sendAndConfirm(tx);
 
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
+    await stakeToken.mint(1_000_000_000);
 
     for (const reporter of Object.keys(REPORTERS)) {
       const pubkey = REPORTERS[reporter].keypair.publicKey;
 
-      await stakeToken.transfer(null, pubkey, new u64(1_000_000));
+      await stakeToken.transfer(null, pubkey, 1_000_000);
     }
   });
 
   it("Community is initialized", async () => {
     community = web3.Keypair.generate();
 
-    const validatorStake = new u64(1_000);
-    const tracerStake = new u64(2_000);
-    const fullStake = new u64(3_000);
-    const authorityStake = new u64(4_000);
+    const validatorStake = new BN(1_000);
+    const tracerStake = new BN(2_000);
+    const fullStake = new BN(3_000);
+    const authorityStake = new BN(4_000);
 
     const [tokenSignerAccount, tokenSignerBump] =
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
@@ -233,7 +233,7 @@ describe("HapiCore General", () => {
     const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     const tx = await program.rpc.initializeCommunity(
-      new u64(4),
+      new BN(4),
       3,
       validatorStake,
       tracerStake,
@@ -431,15 +431,15 @@ describe("HapiCore General", () => {
     expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.type]);
     expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
 
-    let stake: u64;
+    let stake: BN;
     if (reporter.type === "Validator") {
-      stake = new u64(1_000);
+      stake = new BN(1_000);
     } else if (reporter.type === "Tracer") {
-      stake = new u64(2_000);
+      stake = new BN(2_000);
     } else if (reporter.type === "Publisher") {
-      stake = new u64(3_000);
+      stake = new BN(3_000);
     } else if (reporter.type === "Authority") {
-      stake = new u64(4_000);
+      stake = new BN(4_000);
     } else {
       throw new Error("Invalid reporter type");
     }

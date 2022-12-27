@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError, listenSolanaLogs } from "../util/console";
 import {
   ACCOUNT_SIZE,
@@ -13,7 +13,6 @@ import {
   NetworkSchemaKeys,
   padBuffer,
   ReporterRole,
-  u64FromBn,
 } from "../../lib";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
@@ -63,32 +62,32 @@ describe("HapiCore Address", () => {
       name: string;
       schema: NetworkSchemaKeys;
       rewardToken: TestToken;
-      addressTracerReward: u64;
-      addressConfirmationReward: u64;
-      assetTracerReward: u64;
-      assetConfirmationReward: u64;
-      reportPrice: u64
+      addressTracerReward: BN;
+      addressConfirmationReward: BN;
+      assetTracerReward: BN;
+      assetConfirmationReward: BN;
+      reportPrice: BN
     }
   > = {
     ethereum: {
       name: "ethereum",
       schema: "Ethereum",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_000),
-      addressConfirmationReward: new u64(2_000),
-      assetTracerReward: new u64(3_000),
-      assetConfirmationReward: new u64(4_000),
-      reportPrice: new u64(1_000),
+      addressTracerReward: new BN(1_000),
+      addressConfirmationReward: new BN(2_000),
+      assetTracerReward: new BN(3_000),
+      assetConfirmationReward: new BN(4_000),
+      reportPrice: new BN(1_000),
     },
     solana: {
       name: "solana",
       schema: "Solana",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_001),
-      addressConfirmationReward: new u64(2_001),
-      assetTracerReward: new u64(3_001),
-      assetConfirmationReward: new u64(4_001),
-      reportPrice: new u64(1_001),
+      addressTracerReward: new BN(1_001),
+      addressConfirmationReward: new BN(2_001),
+      assetTracerReward: new BN(3_001),
+      assetConfirmationReward: new BN(4_001),
+      reportPrice: new BN(1_001),
     },
   };
 
@@ -171,8 +170,8 @@ describe("HapiCore Address", () => {
     const wait: Promise<unknown>[] = [];
 
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
-    wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
+    await stakeToken.mint(1_000_000_000);
+    wait.push(stakeToken.transfer(null, nobody.publicKey, 1_000_000));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -196,7 +195,7 @@ describe("HapiCore Address", () => {
         stakeToken.transfer(
           null,
           REPORTERS[reporter].keypair.publicKey,
-          new u64(1_000_000)
+          1_000_000
         )
       );
     }
@@ -211,12 +210,12 @@ describe("HapiCore Address", () => {
 
     wait.push(
       program.rpc.initializeCommunity(
-        new u64(10),
+        new BN(10),
         2,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
         {
           accounts: {
@@ -551,7 +550,7 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
-      const reporterBalanceBefore = new u64(
+      const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
@@ -586,14 +585,14 @@ describe("HapiCore Address", () => {
         addressAccount
       );
 
-      const reporterBalanceAfter = new u64(
+      const reporterBalanceAfter = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
         10
       );
 
-      const treasuryCommunityBalance = new u64(
+      const treasuryCommunityBalance = new BN(
         (
           await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
         ).value.amount,
@@ -669,7 +668,7 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
-      const reporterBalanceBefore = new u64(
+      const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
@@ -704,14 +703,14 @@ describe("HapiCore Address", () => {
         addressAccount
       );
 
-      const reporterBalanceAfter = new u64(
+      const reporterBalanceAfter = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
         10
       );
 
-      const treasuryCommunityBalance = new u64(
+      const treasuryCommunityBalance = new BN(
         (
           await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
         ).value.amount,
@@ -961,7 +960,7 @@ describe("HapiCore Address", () => {
         reporter.publicKey
       );
 
-      const reporterBalanceBefore = new u64(
+      const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
@@ -989,14 +988,14 @@ describe("HapiCore Address", () => {
         addressAccount
       );
 
-      const reporterBalanceAfter = new u64(
+      const reporterBalanceAfter = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
         ).value.amount,
         10
       );
 
-      const treasuryCommunityBalance = new u64(
+      const treasuryCommunityBalance = new BN(
         (
           await provider.connection.getTokenAccountBalance(communityTreasuryTokenAccount)
         ).value.amount,
@@ -1202,11 +1201,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(1);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(0);
       }
 
       {
@@ -1214,11 +1213,11 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(0);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(0);
       }
     });
 
@@ -1299,11 +1298,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(1);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(0);
       }
 
       {
@@ -1311,11 +1310,11 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(0);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(1);
       }
     });
 
@@ -1396,11 +1395,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(0);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(0);
       }
 
       {
@@ -1408,11 +1407,11 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
-        ).toBeTruthy();
+          fetchedAccount.addressConfirmationCounter.toNumber()
+        ).toEqual(0);
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
-        ).toBeTruthy();
+          fetchedAccount.addressTracerCounter.toNumber()
+        ).toEqual(0);
       }
     });
   });
