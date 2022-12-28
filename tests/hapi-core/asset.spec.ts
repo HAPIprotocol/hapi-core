@@ -422,8 +422,8 @@ describe("HapiCore Asset", () => {
       await expectThrowError(
         () =>
           program.rpc.createAsset(
-            addr.mint,
-            addr.assetId,
+            [...addr.mint],
+            [...addr.assetId],
             Category[addr.category],
             100,
             bump,
@@ -486,8 +486,8 @@ describe("HapiCore Asset", () => {
       await expectThrowError(
         () =>
           program.rpc.createAsset(
-            asset.mint,
-            asset.assetId,
+            [...asset.mint],
+            [...asset.assetId],
             Category[asset.category],
             asset.risk,
             bump,
@@ -555,8 +555,8 @@ describe("HapiCore Asset", () => {
       );
 
       const tx = await program.rpc.createAsset(
-        asset.mint,
-        asset.assetId,
+        [...asset.mint],
+        [...asset.assetId],
         Category[asset.category],
         asset.risk,
         bump,
@@ -667,8 +667,8 @@ describe("HapiCore Asset", () => {
       await expectThrowError(
         () =>
           program.rpc.createAsset(
-            asset.mint,
-            asset.assetId,
+            [...asset.mint],
+            [...asset.assetId],
             Category[asset.category],
             asset.risk,
             bump,

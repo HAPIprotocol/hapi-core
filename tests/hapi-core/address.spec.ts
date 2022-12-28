@@ -429,7 +429,7 @@ describe("HapiCore Address", () => {
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             100,
             bump,
@@ -491,7 +491,7 @@ describe("HapiCore Address", () => {
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             addr.risk,
             bump,
@@ -558,7 +558,7 @@ describe("HapiCore Address", () => {
       );
 
       const tx = await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
@@ -676,7 +676,7 @@ describe("HapiCore Address", () => {
       );
 
       const tx = await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
@@ -789,7 +789,7 @@ describe("HapiCore Address", () => {
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             addr.risk,
             bump,
@@ -1200,18 +1200,24 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
+        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.log(fetchedAccount.addressConfirmationCounter);
+        
+
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(1);
+          fetchedAccount.addressConfirmationCounter.eqn(1)
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          fetchedAccount.addressTracerCounter.eqn(0)
+        ).toBeTruthy();
       }
 
       {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
+
         expect(
           fetchedAccount.addressConfirmationCounter.toNumber()
         ).toEqual(0);
@@ -1298,11 +1304,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(1);
+          fetchedAccount.addressConfirmationCounter.eqn(1)
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          fetchedAccount.addressTracerCounter.eqn(0)
+        ).toBeTruthy();
       }
 
       {
@@ -1395,11 +1401,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          fetchedAccount.addressConfirmationCounter.eqn(0)
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          fetchedAccount.addressTracerCounter.eqn(0)
+        ).toBeTruthy();
       }
 
       {

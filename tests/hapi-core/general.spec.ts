@@ -55,7 +55,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: BN;
       assetTracerReward: BN;
       assetConfirmationReward: BN;
-      reportPrice: BN.
+      reportPrice: BN
     }
   > = {
     ethereum: {
@@ -369,7 +369,7 @@ describe("HapiCore General", () => {
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             addr.risk,
             bump,
@@ -536,7 +536,7 @@ describe("HapiCore General", () => {
       );
 
       const tx = await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
@@ -622,8 +622,8 @@ describe("HapiCore General", () => {
 
 
     const tx = await program.rpc.createAsset(
-      asset.mint,
-      asset.assetId,
+      [...asset.mint],
+      [...asset.assetId],
       Category.None,
       0,
       bump,
@@ -744,7 +744,7 @@ describe("HapiCore General", () => {
     await expectThrowError(
       () =>
         program.rpc.createAddress(
-          addr.pubkey,
+          [...addr.pubkey],
           Category[addr.category],
           addr.risk,
           bump,

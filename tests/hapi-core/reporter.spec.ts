@@ -1132,7 +1132,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
