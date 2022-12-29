@@ -7,6 +7,7 @@ import {
   ACCOUNT_SIZE,
   bufferFromString,
   CaseStatus,
+  toNativeBn,
   Category,
   initHapiCore,
   NetworkSchema,
@@ -1076,18 +1077,19 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()
-        ).toEqual(1);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).eq(new BN(1))
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.assetTracerCounter).isZero()
+        ).toBeTruthy();
       }
 
       {
@@ -1095,17 +1097,17 @@ describe("HapiCore Asset", () => {
           assetReporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.assetTracerCounter).isZero()
+        ).toBeTruthy();
       }
     });
 
@@ -1182,18 +1184,19 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()
-        ).toEqual(1);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).eq(new BN(1))
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.assetTracerCounter).isZero()
+        ).toBeTruthy();
       }
 
       {
@@ -1201,13 +1204,17 @@ describe("HapiCore Asset", () => {
           assetReporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()).toEqual(1);
+          toNativeBn(fetchedAccount.assetTracerCounter).eq(new BN(1))
+        ).toBeTruthy();
       }
     });
 
@@ -1284,14 +1291,19 @@ describe("HapiCore Asset", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()).toEqual(1);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).eq(new BN(1))
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.assetTracerCounter).isZero()
+        ).toBeTruthy();
       }
 
       {
@@ -1299,13 +1311,17 @@ describe("HapiCore Asset", () => {
           assetReporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetConfirmationCounter.toNumber()).toEqual(0);
+          toNativeBn(fetchedAccount.assetConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.assetTracerCounter.toNumber()).toEqual(1);
+          toNativeBn(fetchedAccount.assetTracerCounter).eq(new BN(1))
+        ).toBeTruthy();
       }
     });
   });

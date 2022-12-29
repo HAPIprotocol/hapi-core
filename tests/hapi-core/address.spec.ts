@@ -7,6 +7,7 @@ import {
   ACCOUNT_SIZE,
   bufferFromString,
   CaseStatus,
+  toNativeBn,
   Category,
   initHapiCore,
   NetworkSchema,
@@ -1201,15 +1202,11 @@ describe("HapiCore Address", () => {
           reporterRewardAccount
         );
 
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        console.log(fetchedAccount.addressConfirmationCounter);
-        
-
         expect(
-          fetchedAccount.addressConfirmationCounter.eqn(1)
+          toNativeBn(fetchedAccount.addressConfirmationCounter).eq(new BN(1))
         ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.eqn(0)
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
         ).toBeTruthy();
       }
 
@@ -1219,11 +1216,11 @@ describe("HapiCore Address", () => {
         );
 
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
       }
     });
 
@@ -1303,11 +1300,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          fetchedAccount.addressConfirmationCounter.eqn(1)
+          toNativeBn(fetchedAccount.addressConfirmationCounter).eq(new BN(1))
         ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.eqn(0)
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
         ).toBeTruthy();
       }
 
@@ -1316,11 +1314,11 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(1);
+          toNativeBn(fetchedAccount.addressTracerCounter).eq(new BN(1))
+        ).toBeTruthy();
       }
     });
 
@@ -1400,11 +1398,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          fetchedAccount.addressConfirmationCounter.eqn(0)
+          toNativeBn(fetchedAccount.addressConfirmationCounter).eq(new BN(1))
         ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.eqn(0)
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
         ).toBeTruthy();
       }
 
@@ -1413,11 +1412,11 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          fetchedAccount.addressConfirmationCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
         expect(
-          fetchedAccount.addressTracerCounter.toNumber()
-        ).toEqual(0);
+          toNativeBn(fetchedAccount.addressTracerCounter).eq(new BN(1))
+        ).toBeTruthy();
       }
     });
   });

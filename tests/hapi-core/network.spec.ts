@@ -48,7 +48,7 @@ describe("HapiCore Network", () => {
 
     const [tokenSignerAccount, tokenSignerBump] =
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-      
+
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
     const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 

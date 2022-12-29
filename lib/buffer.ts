@@ -1,4 +1,4 @@
-import { web3, utils } from "@project-serum/anchor";
+import { web3, utils, BN } from "@project-serum/anchor";
 import { encode as eip55encode } from "eip55";
 
 export function addrToSeeds(buffer: Buffer | Uint8Array) {
@@ -76,4 +76,8 @@ export function pubkeyToEthereumAddress(pubkey: web3.PublicKey): string {
   const bytes = pubkey.toBuffer().subarray(0, 20);
 
   return eip55encode(utils.bytes.hex.encode(bytes));
+}
+
+export function toNativeBn(anchorBn: BN) {
+  return new BN(anchorBn.toArrayLike(Buffer, "le", 8));
 }
