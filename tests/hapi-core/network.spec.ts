@@ -305,7 +305,7 @@ describe("HapiCore Network", () => {
       expect(fetchedNetworkAccount.rewardSignerBump).toEqual(rewardSignerBump);
       expect(fetchedNetworkAccount.rewardMint).toEqual(rewardToken.mintAccount);
       expect(fetchedNetworkAccount.rewardSigner).toEqual(rewardSignerAccount);
-      expect(fetchedNetworkAccount.replicationPrice.toNumber()).toEqual(reportPrice);
+      expect(fetchedNetworkAccount.replicationPrice.eq(reportPrice)).toBeTruthy();
 
       const networkInfo = await provider.connection.getAccountInfoAndContext(
         networkAccount

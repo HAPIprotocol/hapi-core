@@ -1480,7 +1480,7 @@ describe("HapiCore Reporter", () => {
       const fetchedNetworkAccount = await program.account.network.fetch(
         networkAccount
       );
-      expect(fetchedNetworkAccount.replicationPrice).toEqual(newPrice);
+      expect(fetchedNetworkAccount.replicationPrice.eq(newPrice)).toBeTruthy();
     });
 
     it("fail - validator can't update update replication price", async () => {

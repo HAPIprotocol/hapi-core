@@ -355,6 +355,7 @@ describe("HapiCore Community", () => {
         expect(communityAccount.tracerStake.toNumber()).toEqual(12_000);
         expect(communityAccount.fullStake.toNumber()).toEqual(13_000);
         expect(communityAccount.authorityStake.toNumber()).toEqual(14_000);
+        expect(communityAccount.appraiserStake.toNumber()).toEqual(15_000);
       }
     });
 
