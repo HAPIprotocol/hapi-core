@@ -563,4 +563,15 @@ pub mod hapi_core {
 
         Ok(())
     }
+
+    pub fn update_replication_price(
+        ctx: Context<UpdateReplicationPrice>,
+        price: u64,
+    ) -> Result<()> {
+        let network = &mut ctx.accounts.network;
+
+        network.replication_price = price;
+
+        Ok(())
+    }
 }

@@ -1041,3 +1041,32 @@ pub struct ClaimReporterReward<'info> {
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,
 }
+
+#[derive(Accounts)]
+#[instruction(price: u64)]
+pub struct UpdateReplicationPrice<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    pub community: Box<Account<'info, Community>>,
+
+    #[account(
+        mut,
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Box<Account<'info, Network>>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Appraiser @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}

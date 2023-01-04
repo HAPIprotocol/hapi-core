@@ -49,7 +49,7 @@ describe("HapiCore Reporter", () => {
       keypair: web3.Keypair.generate(),
       role: "Authority",
     },
-    dave: { name: "dave", keypair: web3.Keypair.generate(), role: "Tracer" },
+    dave: { name: "dave", keypair: web3.Keypair.generate(), role: "Publisher" },
     erin: { name: "erin", keypair: web3.Keypair.generate(), role: "Appraiser" }
   };
 
@@ -678,6 +678,7 @@ describe("HapiCore Reporter", () => {
       const fetchedReporterAccount = await program.account.reporter.fetch(
         reporterAccount
       );
+
       expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
       expect(fetchedReporterAccount.role).toEqual(ReporterRole.Validator);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -1444,6 +1445,168 @@ describe("HapiCore Reporter", () => {
         expect(fetchedAccount.addressTracerCounter.toNumber()).toEqual(0);
       }
     });
+  });
+
+  describe("update_replication_price", () => {
+
+    it("success", async () => {
+      const reporter = REPORTERS.erin;
+      const newPrice = new BN(2_000);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      const tx = await program.rpc.updateReplicationPrice(newPrice, {
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedNetworkAccount = await program.account.network.fetch(
+        networkAccount
+      );
+      expect(fetchedNetworkAccount.replicationPrice).toEqual(newPrice);
+    });
+
+    it("fail - validator can't update update replication price", async () => {
+      const reporter = REPORTERS.alice;
+      const newPrice = new BN(2_000);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateReplicationPrice(newPrice, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+            },
+            signers: [reporter.keypair],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - tracer can't update update replication price", async () => {
+      const reporter = REPORTERS.bob;
+      const newPrice = new BN(2_000);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateReplicationPrice(newPrice, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+            },
+            signers: [reporter.keypair],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - authority can't update update replication price", async () => {
+      const reporter = REPORTERS.carol;
+      const newPrice = new BN(2_000);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateReplicationPrice(newPrice, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+            },
+            signers: [reporter.keypair],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - publisher can't update update replication price", async () => {
+      const reporter = REPORTERS.dave;
+      const newPrice = new BN(2_000);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const network = NETWORKS.ethereum;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        network.name
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateReplicationPrice(newPrice, {
+            accounts: {
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+            },
+            signers: [reporter.keypair],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
   });
 
   describe("deactivate_reporter", () => {
