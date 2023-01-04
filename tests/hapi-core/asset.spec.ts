@@ -598,6 +598,8 @@ describe("HapiCore Asset", () => {
         10
       );
 
+      let reportPrice = NETWORKS[asset.network].reportPrice.toNumber();
+
       expect(fetchedAssetAccount.bump).toEqual(bump);
       expect(fetchedAssetAccount.caseId.toNumber()).toEqual(
         asset.caseId.toNumber()
@@ -611,6 +613,7 @@ describe("HapiCore Asset", () => {
       );
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAssetAccount.replicationBounty.toNumber()).toEqual(reportPrice);
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         assetAccount
@@ -622,11 +625,11 @@ describe("HapiCore Asset", () => {
 
       expect(
         reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
-      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(
         treasuryCommunityBalance.toNumber()
-      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
     });
 
     it("fail - duplicate", async () => {
@@ -850,6 +853,12 @@ describe("HapiCore Asset", () => {
         10
       );
 
+      const fetchedAssetAccountBefore = await program.account.asset.fetch(
+        assetAccount
+      );
+
+      const replicationBountyBefore = fetchedAssetAccountBefore.replicationBounty.toNumber();
+
       const tx = await program.rpc.updateAsset(Category.Exchange, 8, {
         accounts: {
           sender: reporter.publicKey,
@@ -885,6 +894,8 @@ describe("HapiCore Asset", () => {
         10
       );
 
+      let reportPrice = NETWORKS[asset.network].reportPrice.toNumber();
+
       expect(fetchedAssetAccount.caseId.toNumber()).toEqual(
         asset.caseId.toNumber()
       );
@@ -897,14 +908,15 @@ describe("HapiCore Asset", () => {
       );
       expect(fetchedAssetAccount.network).toEqual(networkAccount);
       expect(fetchedAssetAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAssetAccount.replicationBounty.toNumber()).toEqual(replicationBountyBefore + reportPrice);
 
       expect(
         reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
-      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(
         treasuryCommunityBalance.toNumber()
-      ).toEqual(NETWORKS[asset.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
     });
   });
 

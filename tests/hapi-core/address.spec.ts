@@ -600,6 +600,8 @@ describe("HapiCore Address", () => {
         10
       );
 
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -616,6 +618,7 @@ describe("HapiCore Address", () => {
       ).toEqual("0x0000000000000000000000000000000000000000");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(reportPrice);
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         addressAccount
@@ -625,11 +628,11 @@ describe("HapiCore Address", () => {
 
       expect(
         reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(
         treasuryCommunityBalance.toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(true).toBeTruthy();
     });
@@ -718,6 +721,8 @@ describe("HapiCore Address", () => {
         10
       );
 
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -734,6 +739,7 @@ describe("HapiCore Address", () => {
       ).toEqual("11111111111111111111111111111112");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(reportPrice);
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         addressAccount
@@ -743,11 +749,11 @@ describe("HapiCore Address", () => {
 
       expect(
         reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(
         treasuryCommunityBalance.toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(true).toBeTruthy();
     });
@@ -968,6 +974,12 @@ describe("HapiCore Address", () => {
         10
       );
 
+      const fetchedAddressAccountBefore = await program.account.address.fetch(
+        addressAccount
+      );
+
+      const replicationBountyBefore = fetchedAddressAccountBefore.replicationBounty.toNumber();
+
       const tx = await program.rpc.updateAddress(Category.Gambling, 8, {
         accounts: {
           sender: reporter.publicKey,
@@ -1003,6 +1015,8 @@ describe("HapiCore Address", () => {
         10
       );
 
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
       );
@@ -1015,14 +1029,15 @@ describe("HapiCore Address", () => {
       );
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(replicationBountyBefore + reportPrice);
 
       expect(
         reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
 
       expect(
         treasuryCommunityBalance.toNumber()
-      ).toEqual(NETWORKS[addr.network].reportPrice.toNumber());
+      ).toEqual(reportPrice);
     });
   });
 

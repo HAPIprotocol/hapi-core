@@ -250,7 +250,7 @@ pub mod hapi_core {
         address.category = category;
         address.risk = risk;
         address.confirmations = 0;
-        address.replication_bounty = 0;
+        address.replication_bounty = ctx.accounts.network.replication_price;
 
         Ok(())
     }
@@ -299,6 +299,10 @@ pub mod hapi_core {
 
         address.risk = risk;
         address.category = category;
+        address.replication_bounty = address
+            .replication_bounty
+            .checked_add(ctx.accounts.network.replication_price)
+            .unwrap();
 
         Ok(())
     }
@@ -351,6 +355,7 @@ pub mod hapi_core {
         asset.category = category;
         asset.risk = risk;
         asset.confirmations = 0;
+        asset.replication_bounty = ctx.accounts.network.replication_price;
 
         Ok(())
     }
@@ -399,6 +404,10 @@ pub mod hapi_core {
 
         asset.risk = risk;
         asset.category = category;
+        asset.replication_bounty = asset
+            .replication_bounty
+            .checked_add(ctx.accounts.network.replication_price)
+            .unwrap();
 
         Ok(())
     }
