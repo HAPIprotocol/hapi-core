@@ -35,8 +35,8 @@ pub struct Network {
     /// Reward amount for tracers and validators that confirm assets on this network
     pub asset_confirmation_reward: u64,
 
-    /// Report price amount
-    pub report_price: u64,
+    /// Replication price amount
+    pub replication_price: u64,
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

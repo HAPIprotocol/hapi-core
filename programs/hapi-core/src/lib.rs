@@ -120,7 +120,7 @@ pub mod hapi_core {
         network.address_confirmation_reward = address_confirmation_reward;
         network.asset_tracer_reward = asset_tracer_reward;
         network.asset_confirmation_reward = asset_confirmation_reward;
-        network.report_price = report_price;
+        network.replication_price = report_price;
 
         Ok(())
     }
@@ -235,7 +235,7 @@ pub mod hapi_core {
                     authority: ctx.accounts.sender.to_account_info(),
                 },
             ),
-            ctx.accounts.network.report_price,
+            ctx.accounts.network.replication_price,
         )?;
 
         let address = &mut ctx.accounts.address;
@@ -292,7 +292,7 @@ pub mod hapi_core {
                     authority: ctx.accounts.sender.to_account_info(),
                 },
             ),
-            ctx.accounts.network.report_price,
+            ctx.accounts.network.replication_price,
         )?;
 
         let address = &mut ctx.accounts.address;
@@ -335,7 +335,7 @@ pub mod hapi_core {
                     authority: ctx.accounts.sender.to_account_info(),
                 },
             ),
-            ctx.accounts.network.report_price,
+            ctx.accounts.network.replication_price,
         )?;
 
         let asset = &mut ctx.accounts.asset;
@@ -392,7 +392,7 @@ pub mod hapi_core {
                     authority: ctx.accounts.sender.to_account_info(),
                 },
             ),
-            ctx.accounts.network.report_price,
+            ctx.accounts.network.replication_price,
         )?;
 
         let asset = &mut ctx.accounts.asset;
