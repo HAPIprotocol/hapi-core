@@ -122,6 +122,7 @@ describe("HapiCore Case", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
         {
           accounts: {

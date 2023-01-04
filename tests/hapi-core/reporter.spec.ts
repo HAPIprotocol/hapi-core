@@ -203,6 +203,7 @@ describe("HapiCore Reporter", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(5_000),
+        new BN(6_000),
         tokenSignerBump,
         {
           accounts: {
@@ -224,6 +225,7 @@ describe("HapiCore Reporter", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         otherStashBump,
         {
           accounts: {

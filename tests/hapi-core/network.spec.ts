@@ -1,5 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import { web3, BN} from "@project-serum/anchor";
+import { web3, BN } from "@project-serum/anchor";
 
 import { TestToken } from "../util/token";
 import { expectThrowError } from "../util/console";
@@ -31,6 +31,7 @@ describe("HapiCore Network", () => {
   const addressConfirmationReward = new BN(2_000);
   const assetTracerReward = new BN(3_000);
   const assetConfirmationReward = new BN(4_000);
+  const appraiserStake = new BN(5_000);
   const reportPrice = new BN(1_000);
 
   beforeAll(async () => {
@@ -59,6 +60,7 @@ describe("HapiCore Network", () => {
       addressConfirmationReward,
       assetTracerReward,
       assetConfirmationReward,
+      appraiserStake,
       tokenSignerBump,
       {
         accounts: {
@@ -72,8 +74,8 @@ describe("HapiCore Network", () => {
         },
         signers: [community],
       }
-      );
-    
+    );
+
   });
 
   describe("create_network", () => {
@@ -140,6 +142,7 @@ describe("HapiCore Network", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
         {
           accounts: {

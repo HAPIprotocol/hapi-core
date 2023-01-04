@@ -40,4 +40,7 @@ pub struct Community {
 
     /// Amount of stake required from a reporter of authority type
     pub authority_stake: u64,
+
+    /// Amount of stake required from a reporter of appraiser type
+    pub appraiser_stake: u64,
 }

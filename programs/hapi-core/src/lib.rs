@@ -31,6 +31,7 @@ pub mod hapi_core {
         tracer_stake: u64,
         full_stake: u64,
         authority_stake: u64,
+        appraiser_stake: u64,
         signer_bump: u8,
     ) -> Result<()> {
         let community = &mut ctx.accounts.community;
@@ -48,6 +49,7 @@ pub mod hapi_core {
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;
         community.authority_stake = authority_stake;
+        community.appraiser_stake = appraiser_stake;
 
         Ok(())
     }
@@ -60,6 +62,7 @@ pub mod hapi_core {
         tracer_stake: u64,
         full_stake: u64,
         authority_stake: u64,
+        appraiser_stake: u64,
     ) -> Result<()> {
         let community = &mut ctx.accounts.community;
 
@@ -69,6 +72,7 @@ pub mod hapi_core {
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;
         community.authority_stake = authority_stake;
+        community.appraiser_stake = appraiser_stake;
 
         Ok(())
     }
@@ -435,6 +439,7 @@ pub mod hapi_core {
             ReporterRole::Tracer => community.tracer_stake,
             ReporterRole::Publisher => community.full_stake,
             ReporterRole::Authority => community.authority_stake,
+            ReporterRole::Appraiser => community.appraiser_stake,
         };
 
         token::transfer(
