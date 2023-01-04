@@ -26,6 +26,9 @@ pub struct Community {
     /// Stake holding token account
     pub token_account: Pubkey,
 
+    /// Token account for reporter fee
+    pub treasury_token_account: Pubkey,
+
     /// Amount of stake required from a reporter of validator type
     pub validator_stake: u64,
 

@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
   ACCOUNT_SIZE,
@@ -76,8 +76,8 @@ describe("HapiCore Case", () => {
     const wait: Promise<unknown>[] = [];
 
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
-    wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
+    await stakeToken.mint(1_000_000_00);
+    wait.push(stakeToken.transfer(null, nobody.publicKey, 1_000_000));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -101,7 +101,7 @@ describe("HapiCore Case", () => {
         stakeToken.transfer(
           null,
           REPORTERS[reporter].keypair.publicKey,
-          new u64(1_000_000)
+          1_000_000
         )
       );
     }
@@ -112,15 +112,16 @@ describe("HapiCore Case", () => {
     const communityTokenAccount = await stakeToken.createAccount(
       tokenSignerAccount
     );
+    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     wait.push(
       program.rpc.initializeCommunity(
-        new u64(10),
+        new BN(10),
         2,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
         {
           accounts: {
@@ -128,6 +129,7 @@ describe("HapiCore Case", () => {
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
+            treasuryTokenAccount: communityTreasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },

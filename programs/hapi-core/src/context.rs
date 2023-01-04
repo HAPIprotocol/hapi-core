@@ -36,6 +36,13 @@ pub struct InitializeCommunity<'info> {
     pub token_account: Account<'info, TokenAccount>,
 
     #[account(
+        constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(
         init,
         payer = authority,
         owner = id(),
@@ -373,16 +380,14 @@ pub struct CreateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
-        owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
-    pub network: Account<'info, Network>,
+    pub network: Box<Account<'info, Network>>,
 
     #[account(
         owner = id(),
@@ -422,6 +427,24 @@ pub struct CreateAddress<'info> {
     )]
     pub address: Account<'info, Address>,
 
+    #[account(
+        mut,
+        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_payment_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -431,16 +454,14 @@ pub struct UpdateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
-        owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
-    pub network: Account<'info, Network>,
+    pub network: Box<Account<'info, Network>>,
 
     #[account(
         owner = id(),
@@ -479,6 +500,24 @@ pub struct UpdateAddress<'info> {
         bump = address.bump,
     )]
     pub address: Account<'info, Address>,
+
+    #[account(
+        mut,
+        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_payment_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -615,16 +654,14 @@ pub struct CreateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
-        owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
-    pub network: Account<'info, Network>,
+    pub network: Box<Account<'info, Network>>,
 
     #[account(
         owner = id(),
@@ -664,6 +701,24 @@ pub struct CreateAsset<'info> {
     )]
     pub asset: Box<Account<'info, Asset>>,
 
+    #[account(
+        mut,
+        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_payment_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -673,16 +728,14 @@ pub struct UpdateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
-        owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
         seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
-    pub network: Account<'info, Network>,
+    pub network: Box<Account<'info, Network>>,
 
     #[account(
         owner = id(),
@@ -722,6 +775,24 @@ pub struct UpdateAsset<'info> {
         bump = asset.bump,
     )]
     pub asset: Account<'info, Asset>,
+
+    #[account(
+        mut,
+        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
+    )]
+    pub reporter_payment_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]

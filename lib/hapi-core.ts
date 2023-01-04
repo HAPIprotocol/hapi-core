@@ -65,14 +65,14 @@ export function initHapiCore(
   // const coder = new Coder(IDL);
 
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("community_stash"), community.toBytes()],
       programId
     );
   }
 
   async function findNetworkAddress(community: web3.PublicKey, name: string) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("network"),
         community.toBytes(),
@@ -83,7 +83,7 @@ export function initHapiCore(
   }
 
   async function findNetworkRewardSignerAddress(network: web3.PublicKey) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("network_reward"), network.toBytes()],
       programId
     );
@@ -93,7 +93,7 @@ export function initHapiCore(
     community: web3.PublicKey,
     pubkey: web3.PublicKey
   ) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("reporter"), community.toBytes(), pubkey.toBytes()],
       programId
     );
@@ -103,7 +103,7 @@ export function initHapiCore(
     network: web3.PublicKey,
     reporter: web3.PublicKey
   ) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("reporter_reward"),
         network.toBytes(),
@@ -114,7 +114,7 @@ export function initHapiCore(
   }
 
   async function findCaseAddress(community: web3.PublicKey, caseId: BN) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("case"),
         community.toBytes(),
@@ -125,7 +125,7 @@ export function initHapiCore(
   }
 
   async function findAddressAddress(network: web3.PublicKey, address: Buffer) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("address"), network.toBytes(), ...addrToSeeds(address)],
       programId
     );
@@ -136,7 +136,7 @@ export function initHapiCore(
     mint: Buffer,
     assetId: Buffer | Uint8Array
   ) {
-    return web3.PublicKey.findProgramAddress(
+    return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("asset"),
         network.toBytes(),

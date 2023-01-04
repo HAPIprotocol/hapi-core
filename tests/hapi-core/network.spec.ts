@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
+import { web3, BN} from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError } from "../util/console";
 import {
   ACCOUNT_SIZE,
@@ -27,31 +27,33 @@ describe("HapiCore Network", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
-  const addressTracerReward = new u64(1_000);
-  const addressConfirmationReward = new u64(2_000);
-  const assetTracerReward = new u64(3_000);
-  const assetConfirmationReward = new u64(4_000);
+  const addressTracerReward = new BN(1_000);
+  const addressConfirmationReward = new BN(2_000);
+  const assetTracerReward = new BN(3_000);
+  const assetConfirmationReward = new BN(4_000);
+  const reportPrice = new BN(1_000);
 
   beforeAll(async () => {
     community = web3.Keypair.generate();
     otherCommunity = web3.Keypair.generate();
 
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
-    await stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000));
+    await stakeToken.mint(1_000_000_000);
+    await stakeToken.transfer(null, nobody.publicKey, 1_000_000);
 
     await provider.connection.requestAirdrop(nobody.publicKey, 1000000000);
 
     rewardToken = new TestToken(provider);
-    await rewardToken.mint(new u64(0));
+    await rewardToken.mint(0);
 
     const [tokenSignerAccount, tokenSignerBump] =
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     await program.rpc.initializeCommunity(
-      new u64(1),
+      new BN(1),
       2,
       addressTracerReward,
       addressConfirmationReward,
@@ -63,13 +65,15 @@ describe("HapiCore Network", () => {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
-          tokenAccount: tokenAccount,
+          tokenAccount,
+          treasuryTokenAccount,
           tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],
       }
-    );
+      );
+    
   });
 
   describe("create_network", () => {
@@ -93,6 +97,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         networkBump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
@@ -126,14 +131,15 @@ describe("HapiCore Network", () => {
       const otherTokenAccount = await stakeToken.createAccount(
         tokenSignerAccount
       );
+      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await program.rpc.initializeCommunity(
-        new u64(1),
+        new BN(1),
         2,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
         tokenSignerBump,
         {
           accounts: {
@@ -141,6 +147,7 @@ describe("HapiCore Network", () => {
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
+            treasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -173,6 +180,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
@@ -214,13 +222,14 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
         () =>
           program.rpc.createNetwork(...args, {
             accounts: {
-              authority: nobody.publicKey,
+              authority: authority.publicKey,
               community: otherCommunity.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
@@ -228,9 +237,8 @@ describe("HapiCore Network", () => {
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [nobody],
           }),
-        /(custom program error: 0xbc4|Cross-program invocation with unauthorized signer or writable account|Program failed to complete)/
+        /(A seeds constraint was violated)/
       );
     });
 
@@ -256,6 +264,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       const tx = await program.rpc.createNetwork(...args, {
@@ -323,6 +332,7 @@ describe("HapiCore Network", () => {
         assetConfirmationReward,
         bump,
         rewardSignerBump,
+        reportPrice
       ];
 
       await expectThrowError(
