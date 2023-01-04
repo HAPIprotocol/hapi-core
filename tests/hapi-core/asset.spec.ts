@@ -55,6 +55,11 @@ describe("HapiCore Asset", () => {
       keypair: web3.Keypair.generate(),
       role: "Validator",
     },
+    erin: {
+      name: "erin",
+      keypair: web3.Keypair.generate(),
+      role: "Appraiser",
+    },
   };
 
   const NETWORKS: Record<
@@ -811,6 +816,62 @@ describe("HapiCore Asset", () => {
       );
     });
 
+    it("fail - appraiser can't update an address", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS.erin.keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.pda.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
+
+      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAsset(Category[asset.category], asset.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              asset: assetAccount,
+              community: community.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount: communityTreasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
     it("success", async () => {
       const asset = ASSETS.stolenNft;
 
@@ -1293,6 +1354,113 @@ describe("HapiCore Asset", () => {
           asset.caseId.toNumber()
         );
         expect(fetchedAccount.confirmations).toEqual(3);
+        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(Buffer.from(fetchedAccount.mint)).toEqual(
+          padBuffer(asset.mint, 64)
+        );
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+
+        expect(
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.assetConfirmationCounter).eq(new BN(1))
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.assetTracerCounter).isZero()
+        ).toBeTruthy();
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          assetReporterRewardAccount
+        );
+        expect(
+          toNativeBn(fetchedAccount.addressConfirmationCounter).isZero()
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.addressTracerCounter).isZero()
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.assetConfirmationCounter).isZero()
+        ).toBeTruthy();
+        expect(
+          toNativeBn(fetchedAccount.assetTracerCounter).eq(new BN(1))
+        ).toBeTruthy();
+      }
+    });
+
+    it("success - erin", async () => {
+      const asset = ASSETS.stolenNft;
+
+      const reporter = REPORTERS.erin.keypair;
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        community.publicKey,
+        asset.network
+      );
+
+      const [assetAccount] = await program.pda.findAssetAddress(
+        networkAccount,
+        asset.mint,
+        asset.assetId
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] =
+        await program.pda.findReporterRewardAddress(
+          networkAccount,
+          reporterAccount
+        );
+
+      const assetInfo = await program.account.asset.fetch(assetAccount);
+
+      const [assetReporterRewardAccount] =
+        await program.pda.findReporterRewardAddress(
+          networkAccount,
+          assetInfo.reporter
+        );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        asset.caseId
+      );
+
+      const tx = await program.rpc.confirmAsset({
+        accounts: {
+          sender: reporter.publicKey,
+          asset: assetAccount,
+          community: community.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          assetReporterReward: assetReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      {
+        const fetchedAccount = await program.account.asset.fetch(assetAccount);
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          asset.caseId.toNumber()
+        );
+        expect(fetchedAccount.confirmations).toEqual(4);
         expect(fetchedAccount.community).toEqual(community.publicKey);
         expect(Buffer.from(fetchedAccount.mint)).toEqual(
           padBuffer(asset.mint, 64)

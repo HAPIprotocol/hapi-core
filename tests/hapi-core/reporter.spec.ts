@@ -50,6 +50,7 @@ describe("HapiCore Reporter", () => {
       role: "Authority",
     },
     dave: { name: "dave", keypair: web3.Keypair.generate(), role: "Tracer" },
+    erin: { name: "erin", keypair: web3.Keypair.generate(), role: "Appraiser" }
   };
 
   const NETWORKS: Record<
@@ -118,6 +119,14 @@ describe("HapiCore Reporter", () => {
     },
   };
 
+  const reporterStake = {
+    "Validator": 1_000,
+    "Tracer": 2_000,
+    "Publisher": 3_000,
+    "Authority": 4_000,
+    "Appraiser": 5_000,
+  };
+
   beforeAll(async () => {
     const wait: Promise<unknown>[] = [];
 
@@ -155,6 +164,11 @@ describe("HapiCore Reporter", () => {
       web3.SystemProgram.transfer({
         fromPubkey: authority.publicKey,
         toPubkey: REPORTERS.dave.keypair.publicKey,
+        lamports: 10_000_000,
+      }),
+      web3.SystemProgram.transfer({
+        fromPubkey: authority.publicKey,
+        toPubkey: REPORTERS.erin.keypair.publicKey,
         lamports: 10_000_000,
       })
     );
@@ -202,8 +216,8 @@ describe("HapiCore Reporter", () => {
         new BN(20_000_000),
         new BN(2_000),
         new BN(3_000),
+        new BN(4_000),
         new BN(5_000),
-        new BN(6_000),
         tokenSignerBump,
         {
           accounts: {
@@ -533,6 +547,50 @@ describe("HapiCore Reporter", () => {
       expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
     });
 
+    it("success - erin", async () => {
+      const reporter = REPORTERS.erin;
+
+      const name = bufferFromString(reporter.name, 32);
+
+      const [reporterAccount, bump] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const reporterRole = ReporterRole[reporter.role];
+
+      const tx = await program.rpc.createReporter(
+        reporterRole,
+        name.toJSON().data,
+        bump,
+        {
+          accounts: {
+            authority: authority.publicKey,
+            community: community.publicKey,
+            reporter: reporterAccount,
+            pubkey: reporter.keypair.publicKey,
+            systemProgram: web3.SystemProgram.programId,
+          },
+        }
+      );
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+      expect(fetchedReporterAccount.bump).toEqual(bump);
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+
+      const reporterInfo = await provider.connection.getAccountInfoAndContext(
+        reporterAccount
+      );
+      expect(reporterInfo.value.owner).toEqual(program.programId);
+      expect(reporterInfo.value.data).toHaveLength(ACCOUNT_SIZE.reporter);
+    });
+
     it("fail - reporter alice already exists", async () => {
       const reporter = REPORTERS.alice;
 
@@ -782,6 +840,7 @@ describe("HapiCore Reporter", () => {
   });
 
   describe("activate_reporter", () => {
+
     it("fail - alice doesn't have enough tokens for a stake", async () => {
       const reporter = REPORTERS.alice;
 
@@ -853,18 +912,10 @@ describe("HapiCore Reporter", () => {
       expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
 
-      let stake: BN;
-      if (reporter.role === "Validator") {
-        stake = new BN(1_000);
-      } else if (reporter.role === "Tracer") {
-        stake = new BN(2_000);
-      } else if (reporter.role === "Publisher") {
-        stake = new BN(3_000);
-      } else if (reporter.role === "Authority") {
-        stake = new BN(4_000);
-      } else {
+      if (!reporterStake.hasOwnProperty(reporter.role))
         throw new Error("Invalid reporter role");
-      }
+
+      let stake = new BN(reporterStake[reporter.role]);
 
       const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
       expect(balance.add(stake).toString(10)).toEqual("1000000");
@@ -907,18 +958,10 @@ describe("HapiCore Reporter", () => {
       expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
 
-      let stake: BN;
-      if (reporter.role === "Validator") {
-        stake = new BN(20_000_000);
-      } else if (reporter.role === "Tracer") {
-        stake = new BN(2_000);
-      } else if (reporter.role === "Publisher") {
-        stake = new BN(3_000);
-      } else if (reporter.role === "Authority") {
-        stake = new BN(5_000);
-      } else {
+      if (!reporterStake.hasOwnProperty(reporter.role))
         throw new Error("Invalid reporter role");
-      }
+
+      let stake = new BN(reporterStake[reporter.role]);
 
       const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
       expect(balance.add(stake).toString(10)).toEqual("1000000");
@@ -961,18 +1004,10 @@ describe("HapiCore Reporter", () => {
       expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
 
-      let stake: BN;
-      if (reporter.role === "Validator") {
-        stake = new BN(20_000_000);
-      } else if (reporter.role === "Tracer") {
-        stake = new BN(2_000);
-      } else if (reporter.role === "Publisher") {
-        stake = new BN(3_000);
-      } else if (reporter.role === "Authority") {
-        stake = new BN(5_000);
-      } else {
+      if (!reporterStake.hasOwnProperty(reporter.role))
         throw new Error("Invalid reporter role");
-      }
+
+      let stake = new BN(reporterStake[reporter.role]);
 
       const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
       expect(balance.add(stake).toString(10)).toEqual("1000000");
@@ -1015,18 +1050,56 @@ describe("HapiCore Reporter", () => {
       expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
 
-      let stake: BN;
-      if (reporter.role === "Validator") {
-        stake = new BN(20_000_000);
-      } else if (reporter.role === "Tracer") {
-        stake = new BN(2_000);
-      } else if (reporter.role === "Publisher") {
-        stake = new BN(3_000);
-      } else if (reporter.role === "Authority") {
-        stake = new BN(5_000);
-      } else {
+      if (!reporterStake.hasOwnProperty(reporter.role))
         throw new Error("Invalid reporter role");
-      }
+
+      let stake = new BN(reporterStake[reporter.role]);
+
+      const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
+      expect(balance.add(stake).toString(10)).toEqual("1000000");
+    });
+
+    it("success - erin", async () => {
+      const reporter = REPORTERS.erin;
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      const tokenAccount = await stakeToken.getTokenAccount(
+        reporter.keypair.publicKey
+      );
+
+      const communityInfo = await program.account.community.fetch(
+        community.publicKey
+      );
+
+      const tx = await program.rpc.activateReporter({
+        accounts: {
+          sender: reporter.keypair.publicKey,
+          community: community.publicKey,
+          reporter: reporterAccount,
+          stakeMint: stakeToken.mintAccount,
+          reporterTokenAccount: tokenAccount,
+          communityTokenAccount: communityInfo.tokenAccount,
+          tokenProgram: stakeToken.programId,
+        },
+        signers: [reporter.keypair],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedReporterAccount = await program.account.reporter.fetch(
+        reporterAccount
+      );
+      expect(fetchedReporterAccount.role).toEqual(ReporterRole[reporter.role]);
+      expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+
+      if (!reporterStake.hasOwnProperty(reporter.role))
+        throw new Error("Invalid reporter role");
+
+      let stake = new BN(reporterStake[reporter.role]);
 
       const balance = await stakeToken.getBalance(reporter.keypair.publicKey);
       expect(balance.add(stake).toString(10)).toEqual("1000000");
