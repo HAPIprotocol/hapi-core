@@ -225,6 +225,7 @@ describe("HapiCore General", () => {
     const tracerStake = new BN(2_000);
     const fullStake = new BN(3_000);
     const authorityStake = new BN(4_000);
+    const appraiserStake = new BN(5_000);
 
     const [tokenSignerAccount, tokenSignerBump] =
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
@@ -239,6 +240,7 @@ describe("HapiCore General", () => {
       tracerStake,
       fullStake,
       authorityStake,
+      appraiserStake,
       tokenSignerBump,
       {
         accounts: {

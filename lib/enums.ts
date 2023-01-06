@@ -18,6 +18,7 @@ export const ReporterRole = {
   Tracer: { tracer: {} },
   Publisher: { publisher: {} },
   Authority: { authority: {} },
+  Appraiser: { appraiser: {} },
 } as const;
 
 export type ReporterRoleKeys = keyof typeof ReporterRole;
@@ -98,7 +99,7 @@ export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   address: 192,
   asset: 224,
   case: 120,
-  community: 224,
+  community: 232,
   network: 184,
   reporter: 128,
   reporterReward: 112,

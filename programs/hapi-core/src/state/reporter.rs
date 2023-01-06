@@ -87,6 +87,9 @@ pub enum ReporterRole {
 
     /// Authority - can report and modify cases and addresses
     Authority = 3,
+
+    /// Appraiser - can update replication price
+    Appraiser = 4,
 }
 
 impl Default for ReporterRole {

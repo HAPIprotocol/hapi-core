@@ -50,6 +50,11 @@ describe("HapiCore Case", () => {
       keypair: web3.Keypair.generate(),
       role: "Validator",
     },
+    erin: {
+      name: "erin",
+      keypair: web3.Keypair.generate(),
+      role: "Appraiser",
+    },
   };
 
   const CASES: Record<
@@ -122,6 +127,7 @@ describe("HapiCore Case", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
         {
           accounts: {
@@ -305,6 +311,39 @@ describe("HapiCore Case", () => {
       const cs = CASES.safe;
 
       const reporter = REPORTERS.dave;
+
+      const caseName = bufferFromString(cs.name, 32);
+
+      const [caseAccount, bump] = await program.pda.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.keypair.publicKey
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.createCase(cs.caseId, caseName.toJSON().data, bump, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.keypair.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            },
+            signers: [reporter.keypair],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - appraiser can't report cases", async () => {
+      const cs = CASES.safe;
+
+      const reporter = REPORTERS.erin;
 
       const caseName = bufferFromString(cs.name, 32);
 
@@ -625,6 +664,37 @@ describe("HapiCore Case", () => {
       const cs = CASES.nftTracking;
 
       const reporter = REPORTERS.bob.keypair;
+      const newCaseName = bufferFromString("new_name", 32);
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        community.publicKey,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        community.publicKey,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateCase(newCaseName.toJSON().data, CaseStatus.Closed, {
+            accounts: {
+              reporter: reporterAccount,
+              sender: reporter.publicKey,
+              community: community.publicKey,
+              case: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - appraiser can't update a case", async () => {
+      const cs = CASES.nftTracking;
+
+      const reporter = REPORTERS.erin.keypair;
       const newCaseName = bufferFromString("new_name", 32);
 
       const [reporterAccount] = await program.pda.findReporterAddress(

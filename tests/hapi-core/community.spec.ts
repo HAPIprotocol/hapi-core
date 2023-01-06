@@ -43,6 +43,7 @@ describe("HapiCore Community", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
       ];
 
@@ -78,6 +79,7 @@ describe("HapiCore Community", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
       ];
 
@@ -115,6 +117,7 @@ describe("HapiCore Community", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
       ];
 
@@ -150,6 +153,7 @@ describe("HapiCore Community", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
       ];
 
@@ -200,6 +204,7 @@ describe("HapiCore Community", () => {
         new BN(2_000),
         new BN(3_000),
         new BN(4_000),
+        new BN(5_000),
         tokenSignerBump,
       ];
 
@@ -238,6 +243,7 @@ describe("HapiCore Community", () => {
         new BN(12_000),
         new BN(13_000),
         new BN(14_000),
+        new BN(15_000),
       ];
 
       const someKey = pubkeyFromHex(
@@ -264,6 +270,7 @@ describe("HapiCore Community", () => {
         new BN(12_000),
         new BN(13_000),
         new BN(14_000),
+        new BN(15_000),
       ];
 
       await expectThrowError(
@@ -292,6 +299,7 @@ describe("HapiCore Community", () => {
           new BN(2_000),
           new BN(3_000),
           new BN(4_000),
+          new BN(5_000),
           tokenSignerBump,
         ];
 
@@ -322,6 +330,7 @@ describe("HapiCore Community", () => {
           new BN(12_000),
           new BN(13_000),
           new BN(14_000),
+          new BN(15_000),
         ];
 
         const tx = await program.rpc.updateCommunity(...args, {
@@ -346,6 +355,7 @@ describe("HapiCore Community", () => {
         expect(communityAccount.tracerStake.toNumber()).toEqual(12_000);
         expect(communityAccount.fullStake.toNumber()).toEqual(13_000);
         expect(communityAccount.authorityStake.toNumber()).toEqual(14_000);
+        expect(communityAccount.appraiserStake.toNumber()).toEqual(15_000);
       }
     });
 
@@ -357,6 +367,7 @@ describe("HapiCore Community", () => {
         new BN(12_000),
         new BN(13_000),
         new BN(14_000),
+        new BN(15_000),
       ];
 
       await expectThrowError(
@@ -424,6 +435,7 @@ describe("HapiCore Community", () => {
           new BN(2_000),
           new BN(3_000),
           new BN(4_000),
+          new BN(5_000),
           tokenSignerBump,
         ];
 
