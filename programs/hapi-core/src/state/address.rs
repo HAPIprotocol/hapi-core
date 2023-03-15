@@ -63,18 +63,18 @@ pub struct Address {
     pub replication_bounty: u64,
 }
 
-impl From<DeprecatedAddress> for Address {
-    fn from(address: DeprecatedAddress) -> Self {
+impl Address {
+    pub fn from_deprecated(deprecated: DeprecatedAddress) -> Self {
         Self {
-            community: address.community,
-            network: address.network,
-            address: address.address,
-            bump: address.bump,
-            case_id: address.case_id,
-            reporter: address.reporter,
-            category: address.category,
-            risk: address.risk,
-            confirmations: address.confirmations,
+            community: deprecated.community,
+            network: deprecated.network,
+            address: deprecated.address,
+            bump: deprecated.bump,
+            case_id: deprecated.case_id,
+            reporter: deprecated.reporter,
+            category: deprecated.category,
+            risk: deprecated.risk,
+            confirmations: deprecated.confirmations,
             replication_bounty: 0,
         }
     }

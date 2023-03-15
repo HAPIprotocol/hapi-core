@@ -80,6 +80,23 @@ pub struct UpdateCommunity<'info> {
 }
 
 #[derive(Accounts)]
+pub struct MigrateCommunity<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    /// CHECK: this account is not dangerous
+    #[account(
+        mut,
+        owner = id()
+    )]
+    pub community: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct SetCommunityAuthority<'info> {
     pub authority: Signer<'info>,
 
@@ -557,20 +574,7 @@ pub struct MigrateAddress<'info> {
     )]
     pub case: Account<'info, Case>,
 
-    // #[account(
-    //     mut,
-    //     owner = id(),
-    //     constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
-    //     has_one = network @ ErrorCode::NetworkMismatch,
-    //     seeds = [
-    //         b"address".as_ref(),
-    //         network.key().as_ref(),
-    //         address.address[0..32].as_ref(),
-    //         address.address[32..64].as_ref(),
-    //     ],
-    //     bump = address.bump,
-    // )]
-    // pub address: Account<'info, Address>,
+    /// CHECK: this account is not dangerous
     #[account(
         mut,
         owner = id()
@@ -578,7 +582,7 @@ pub struct MigrateAddress<'info> {
     pub address: AccountInfo<'info>,
 
     pub rent: Sysvar<'info, Rent>,
-    
+
     pub system_program: Program<'info, System>,
 }
 

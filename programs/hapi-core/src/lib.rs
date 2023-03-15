@@ -3,7 +3,7 @@ use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 use std::io::Write;
 
-declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
+declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
 
 pub mod checker;
 pub mod context;
@@ -16,14 +16,15 @@ pub use state::{
     address::Address,
     address::Category,
     case::CaseStatus,
+    community::Community,
     network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
 };
 
 fn realloc_and_rent<'info>(
-    account: AccountInfo<'info>,
-    payer: Signer<'info>,
-    rent: Sysvar<'info, Rent>,
+    account: &AccountInfo<'info>,
+    payer: &Signer<'info>,
+    rent: &Sysvar<'info, Rent>,
     len: usize,
 ) -> anchor_lang::solana_program::entrypoint::ProgramResult {
     // Realloc
@@ -46,12 +47,15 @@ fn realloc_and_rent<'info>(
         min_balance - balance,
     );
 
-    anchor_lang::solana_program::program::invoke(&ix, &[payer.to_account_info(), account])
+    anchor_lang::solana_program::program::invoke(
+        &ix,
+        &[payer.to_account_info(), account.to_account_info()],
+    )
 }
 
 #[program]
 pub mod hapi_core {
-    use crate::state::address::DeprecatedAddress;
+    use crate::state::{address::DeprecatedAddress, community::DeprecatedCommunity};
 
     use super::*;
 
@@ -105,6 +109,47 @@ pub mod hapi_core {
         community.full_stake = full_stake;
         community.authority_stake = authority_stake;
         community.appraiser_stake = appraiser_stake;
+
+        Ok(())
+    }
+
+    pub fn migrate_community(
+        ctx: Context<MigrateCommunity>,
+        treasury_token_account: Pubkey,
+        appraiser_stake: u64,
+    ) -> Result<()> {
+        let deprecated_community = DeprecatedCommunity::try_deserialize_unchecked(
+            &mut ctx.accounts.community.try_borrow_data()?.as_ref(),
+        )?;
+
+        if deprecated_community.authority != ctx.accounts.sender.key() {
+            return print_error(ErrorCode::NetworkMismatch);
+        }
+
+        let community = Community::from_deprecated(
+            deprecated_community,
+            treasury_token_account,
+            appraiser_stake,
+        );
+        let community_size = std::mem::size_of::<Address>();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        community.try_serialize(&mut buffer)?;
+
+        if buffer.len() != community_size {
+            return print_error(ErrorCode::AccountDidNotSerialize);
+        }
+
+        realloc_and_rent(
+            &ctx.accounts.community,
+            &ctx.accounts.sender,
+            &ctx.accounts.rent,
+            community_size,
+        )?;
+        ctx.accounts
+            .community
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
 
         Ok(())
     }
@@ -368,20 +413,21 @@ pub mod hapi_core {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let address: Address = deprecated_address.into();
+        let address = Address::from_deprecated(deprecated_address);
+        let address_size = std::mem::size_of::<Address>();
 
         let mut buffer: Vec<u8> = Vec::new();
         address.try_serialize(&mut buffer)?;
 
-        if buffer.len() != 8 + std::mem::size_of::<Address>() {
+        if buffer.len() != address_size {
             return print_error(ErrorCode::AccountDidNotSerialize);
         }
 
         realloc_and_rent(
-            ctx.accounts.address.clone(),
-            ctx.accounts.sender.clone(),
-            ctx.accounts.rent.clone(),
-            std::mem::size_of::<Address>(),
+            &ctx.accounts.address,
+            &ctx.accounts.sender,
+            &ctx.accounts.rent,
+            address_size,
         )?;
         ctx.accounts
             .address
