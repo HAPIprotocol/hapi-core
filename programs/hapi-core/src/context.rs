@@ -91,6 +91,19 @@ pub struct MigrateCommunity<'info> {
     )]
     pub community: AccountInfo<'info>,
 
+    #[account(
+            constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+            constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+            owner = Token::id(),
+        )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
+
+    #[account(owner = Token::id())]
+    pub stake_mint: Account<'info, Mint>,
+
+    /// CHECK: this account is not dangerous
+    pub token_signer: AccountInfo<'info>,
+
     pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,

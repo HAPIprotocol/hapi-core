@@ -115,11 +115,7 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_community(
-        ctx: Context<MigrateCommunity>,
-        treasury_token_account: Pubkey,
-        appraiser_stake: u64,
-    ) -> Result<()> {
+    pub fn migrate_community(ctx: Context<MigrateCommunity>, appraiser_stake: u64) -> Result<()> {
         let deprecated_community = DeprecatedCommunity::try_deserialize_unchecked(
             &mut ctx.accounts.community.try_borrow_data()?.as_ref(),
         )?;
@@ -130,7 +126,7 @@ pub mod hapi_core {
 
         let community = Community::from_deprecated(
             deprecated_community,
-            treasury_token_account,
+            ctx.accounts.treasury_token_account.key(),
             appraiser_stake,
         );
         let community_size = std::mem::size_of::<Community>();
@@ -146,7 +142,7 @@ pub mod hapi_core {
             &ctx.accounts.community,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            community_size,
+            community_size + 25,
         )?;
         ctx.accounts
             .community
