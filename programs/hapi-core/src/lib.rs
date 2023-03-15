@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
+use std::io::Write;
 
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
@@ -19,8 +20,39 @@ pub use state::{
     reporter::{ReporterRole, ReporterStatus},
 };
 
+fn realloc_and_rent<'info>(
+    account: AccountInfo<'info>,
+    payer: Signer<'info>,
+    rent: Sysvar<'info, Rent>,
+    len: usize,
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    // Realloc
+    account.realloc(len, false)?;
+
+    let balance = account.lamports();
+    if rent.is_exempt(balance, len) {
+        return Ok(());
+    }
+
+    // Transfer some lamports
+    let min_balance = rent.minimum_balance(len);
+    if balance.ge(&min_balance) {
+        return Ok(());
+    }
+
+    let ix = anchor_lang::solana_program::system_instruction::transfer(
+        &payer.key(),
+        &account.key(),
+        min_balance - balance,
+    );
+
+    anchor_lang::solana_program::program::invoke(&ix, &[payer.to_account_info(), account])
+}
+
 #[program]
 pub mod hapi_core {
+    use crate::state::address::DeprecatedAddress;
+
     use super::*;
 
     pub fn initialize_community(
@@ -307,6 +339,54 @@ pub mod hapi_core {
             .replication_bounty
             .checked_add(ctx.accounts.network.replication_price)
             .unwrap();
+
+        Ok(())
+    }
+
+    pub fn migrate_address(ctx: Context<MigrateAddress>) -> Result<()> {
+        let deprecated_address = DeprecatedAddress::try_deserialize_unchecked(
+            &mut ctx.accounts.address.try_borrow_data()?.as_ref(),
+        )?;
+
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"address".as_ref(),
+                ctx.accounts.network.key().as_ref(),
+                deprecated_address.address[0..32].as_ref(),
+                deprecated_address.address[32..64].as_ref(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.address.key() == pda && deprecated_address.bump == bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if deprecated_address.case_id != ctx.accounts.case.id {
+            return print_error(ErrorCode::CaseMismatch);
+        }
+        if deprecated_address.network != ctx.accounts.network.key() {
+            return print_error(ErrorCode::NetworkMismatch);
+        }
+
+        let address: Address = deprecated_address.into();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        address.try_serialize(&mut buffer)?;
+
+        if buffer.len() != 8 + std::mem::size_of::<Address>() {
+            return print_error(ErrorCode::AccountDidNotSerialize);
+        }
+
+        realloc_and_rent(
+            ctx.accounts.address.clone(),
+            ctx.accounts.sender.clone(),
+            ctx.accounts.rent.clone(),
+            std::mem::size_of::<Address>(),
+        )?;
+        ctx.accounts
+            .address
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
 
         Ok(())
     }

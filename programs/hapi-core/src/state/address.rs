@@ -1,6 +1,36 @@
 use anchor_lang::prelude::*;
 
 #[account]
+pub struct DeprecatedAddress {
+    /// Community account, which this address belongs to
+    pub community: Pubkey,
+
+    /// Network account, which this address belongs to
+    pub network: Pubkey,
+
+    /// Actual address public key
+    pub address: [u8; 64],
+
+    /// Seed bump for PDA
+    pub bump: u8,
+
+    /// ID of the associated case
+    pub case_id: u64,
+
+    /// Reporter account public key
+    pub reporter: Pubkey,
+
+    /// Category of illicit activity identified with this address
+    pub category: Category,
+
+    /// Address risk score 0..10 (0 is safe, 10 is maximum risk)
+    pub risk: u8,
+
+    /// Confirmation count for this address
+    pub confirmations: u8,
+}
+
+#[account]
 pub struct Address {
     /// Community account, which this address belongs to
     pub community: Pubkey,
@@ -31,6 +61,23 @@ pub struct Address {
 
     /// Accumulated payment amount for report
     pub replication_bounty: u64,
+}
+
+impl From<DeprecatedAddress> for Address {
+    fn from(address: DeprecatedAddress) -> Self {
+        Self {
+            community: address.community,
+            network: address.network,
+            address: address.address,
+            bump: address.bump,
+            case_id: address.case_id,
+            reporter: address.reporter,
+            category: address.category,
+            risk: address.risk,
+            confirmations: address.confirmations,
+            replication_bounty: 0,
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

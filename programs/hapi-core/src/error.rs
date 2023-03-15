@@ -42,6 +42,8 @@ pub enum ErrorCode {
     IllegalOwner,
     #[msg("User account has high risk")]
     HighAccountRisk,
+    #[msg("Failed to serialize the account")]
+    AccountDidNotSerialize,
 }
 
 pub fn print_error(error: ErrorCode) -> Result<()> {
