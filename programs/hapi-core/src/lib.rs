@@ -12,17 +12,17 @@ pub mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
+use state::{
+    address::DeprecatedAddress,
+    asset::{Asset, DeprecatedAsset},
+    community::{Community, DeprecatedCommunity},
+    network::{DeprecatedNetwork, Network},
+};
 pub use state::{
-    address::Address,
-    address::Category,
+    address::{Address, Category},
     case::CaseStatus,
     network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
-};
-use state::{
-    address::DeprecatedAddress,
-    community::{Community, DeprecatedCommunity},
-    network::{DeprecatedNetwork, Network},
 };
 
 fn realloc_and_rent<'info>(
@@ -133,7 +133,7 @@ pub mod hapi_core {
             treasury_token_account,
             appraiser_stake,
         );
-        let community_size = std::mem::size_of::<Address>();
+        let community_size = std::mem::size_of::<Community>();
 
         let mut buffer: Vec<u8> = Vec::new();
         community.try_serialize(&mut buffer)?;
@@ -247,7 +247,7 @@ pub mod hapi_core {
         }
 
         let network = Network::from_deprecated(deprecated_network);
-        let network_size = std::mem::size_of::<Address>();
+        let network_size = std::mem::size_of::<Network>();
 
         let mut buffer: Vec<u8> = Vec::new();
         network.try_serialize(&mut buffer)?;
@@ -585,6 +585,56 @@ pub mod hapi_core {
             .replication_bounty
             .checked_add(ctx.accounts.network.replication_price)
             .unwrap();
+
+        Ok(())
+    }
+
+    pub fn migrate_asset(ctx: Context<MigrateAsset>) -> Result<()> {
+        let deprecated_asset = DeprecatedAsset::try_deserialize_unchecked(
+            &mut ctx.accounts.asset.try_borrow_data()?.as_ref(),
+        )?;
+
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"asset".as_ref(),
+                ctx.accounts.network.key().as_ref(),
+                deprecated_asset.mint[0..32].as_ref(),
+                deprecated_asset.mint[32..64].as_ref(),
+                deprecated_asset.asset_id.as_ref(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.asset.key() == pda && deprecated_asset.bump == bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if deprecated_asset.case_id != ctx.accounts.case.id {
+            return print_error(ErrorCode::CaseMismatch);
+        }
+        if deprecated_asset.network != ctx.accounts.network.key() {
+            return print_error(ErrorCode::NetworkMismatch);
+        }
+
+        let asset = Asset::from_deprecated(deprecated_asset);
+        let asset_size = std::mem::size_of::<Asset>();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        asset.try_serialize(&mut buffer)?;
+
+        if buffer.len() != asset_size {
+            return print_error(ErrorCode::AccountDidNotSerialize);
+        }
+
+        realloc_and_rent(
+            &ctx.accounts.asset,
+            &ctx.accounts.authority,
+            &ctx.accounts.rent,
+            asset_size,
+        )?;
+        ctx.accounts
+            .asset
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
 
         Ok(())
     }
