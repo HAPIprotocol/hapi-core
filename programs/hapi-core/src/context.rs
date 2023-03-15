@@ -82,7 +82,7 @@ pub struct UpdateCommunity<'info> {
 #[derive(Accounts)]
 pub struct MigrateCommunity<'info> {
     #[account(mut)]
-    pub sender: Signer<'info>,
+    pub authority: Signer<'info>,
 
     /// CHECK: this account is not dangerous
     #[account(
@@ -187,6 +187,28 @@ pub struct UpdateNetwork<'info> {
         bump = network.bump,
     )]
     pub network: Account<'info, Network>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateNetwork<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    /// CHECK: this account is not dangerous
+    #[account(
+            mut,
+            owner = id()
+        )]
+    pub network: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -540,8 +562,11 @@ pub struct UpdateAddress<'info> {
 #[derive(Accounts)]
 pub struct MigrateAddress<'info> {
     #[account(mut)]
-    pub sender: Signer<'info>,
+    pub authority: Signer<'info>,
 
+    #[account(
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -557,7 +582,7 @@ pub struct MigrateAddress<'info> {
         constraint = reporter.role == ReporterRole::Authority
             || (reporter.role == ReporterRole::Publisher
             && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
-        constraint = reporter.pubkey == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
         seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],

@@ -16,9 +16,13 @@ pub use state::{
     address::Address,
     address::Category,
     case::CaseStatus,
-    community::Community,
     network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
+};
+use state::{
+    address::DeprecatedAddress,
+    community::{Community, DeprecatedCommunity},
+    network::{DeprecatedNetwork, Network},
 };
 
 fn realloc_and_rent<'info>(
@@ -55,8 +59,6 @@ fn realloc_and_rent<'info>(
 
 #[program]
 pub mod hapi_core {
-    use crate::state::{address::DeprecatedAddress, community::DeprecatedCommunity};
-
     use super::*;
 
     pub fn initialize_community(
@@ -122,7 +124,7 @@ pub mod hapi_core {
             &mut ctx.accounts.community.try_borrow_data()?.as_ref(),
         )?;
 
-        if deprecated_community.authority != ctx.accounts.sender.key() {
+        if deprecated_community.authority != ctx.accounts.authority.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
@@ -142,7 +144,7 @@ pub mod hapi_core {
 
         realloc_and_rent(
             &ctx.accounts.community,
-            &ctx.accounts.sender,
+            &ctx.accounts.authority,
             &ctx.accounts.rent,
             community_size,
         )?;
@@ -219,6 +221,51 @@ pub mod hapi_core {
         network.address_confirmation_reward = address_confirmation_reward;
         network.asset_tracer_reward = asset_tracer_reward;
         network.asset_confirmation_reward = asset_confirmation_reward;
+
+        Ok(())
+    }
+
+    pub fn migrate_network(ctx: Context<MigrateNetwork>) -> Result<()> {
+        let deprecated_network = DeprecatedNetwork::try_deserialize_unchecked(
+            &mut ctx.accounts.network.try_borrow_data()?.as_ref(),
+        )?;
+
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"network".as_ref(),
+                ctx.accounts.community.key().as_ref(),
+                deprecated_network.name.as_ref(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.network.key() == pda && deprecated_network.bump == bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if deprecated_network.community != ctx.accounts.community.key() {
+            return print_error(ErrorCode::CommunityMismatch);
+        }
+
+        let network = Network::from_deprecated(deprecated_network);
+        let network_size = std::mem::size_of::<Address>();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        network.try_serialize(&mut buffer)?;
+
+        if buffer.len() != network_size {
+            return print_error(ErrorCode::AccountDidNotSerialize);
+        }
+
+        realloc_and_rent(
+            &ctx.accounts.network,
+            &ctx.accounts.authority,
+            &ctx.accounts.rent,
+            network_size,
+        )?;
+        ctx.accounts
+            .network
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
 
         Ok(())
     }
@@ -425,7 +472,7 @@ pub mod hapi_core {
 
         realloc_and_rent(
             &ctx.accounts.address,
-            &ctx.accounts.sender,
+            &ctx.accounts.authority,
             &ctx.accounts.rent,
             address_size,
         )?;
