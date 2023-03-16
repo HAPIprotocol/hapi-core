@@ -46,7 +46,7 @@ pub struct InitializeCommunity<'info> {
         init,
         payer = authority,
         owner = id(),
-        space = 8 + std::mem::size_of::<Community>()
+        space = Community::LEN + 32
     )]
     pub community: Account<'info, Community>,
 
@@ -167,7 +167,7 @@ pub struct CreateNetwork<'info> {
         owner = id(),
         seeds = [b"network".as_ref(), community.key().as_ref(), &name],
         bump,
-        space = 8 + std::mem::size_of::<Network>()
+        space = Network::LEN + 32
     )]
     pub network: Account<'info, Network>,
 
@@ -475,7 +475,7 @@ pub struct CreateAddress<'info> {
             addr[32..64].as_ref(),
         ],
         bump,
-        space = 8 + std::mem::size_of::<Address>()
+        space = Address::LEN + 32
     )]
     pub address: Account<'info, Address>,
 
@@ -801,7 +801,7 @@ pub struct CreateAsset<'info> {
             asset_id.as_ref(),
         ],
         bump,
-        space = 8 + std::mem::size_of::<Asset>()
+        space = Asset::LEN + 32
     )]
     pub asset: Box<Account<'info, Asset>>,
 
