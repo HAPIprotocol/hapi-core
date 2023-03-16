@@ -242,7 +242,7 @@ pub struct CreateReporter<'info> {
         owner = id(),
         seeds = [b"reporter".as_ref(), community.key().as_ref(), pubkey.key().as_ref()],
         bump,
-        space = 8 + std::mem::size_of::<Reporter>()
+        space = Reporter::LEN + 32
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -285,7 +285,7 @@ pub struct InitializeReporterReward<'info> {
         owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump,
-        space = 8 + std::mem::size_of::<ReporterReward>(),
+        space = ReporterReward::LEN + 32
     )]
     pub reporter_reward: AccountLoader<'info, ReporterReward>,
 
@@ -383,7 +383,7 @@ pub struct CreateCase<'info> {
         owner = id(),
         seeds = [b"case".as_ref(), community.key().as_ref(), &case_id.to_le_bytes()],
         bump,
-        space = 8 + std::mem::size_of::<Case>()
+        space = Case::LEN + 32
     )]
     pub case: Account<'info, Case>,
 

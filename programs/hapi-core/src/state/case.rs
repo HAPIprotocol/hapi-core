@@ -1,3 +1,4 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -19,6 +20,10 @@ pub struct Case {
 
     /// Short case description
     pub name: [u8; 32],
+}
+
+impl Case {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 1 + 8 + 32 + 1 + 32);
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
