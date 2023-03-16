@@ -53,7 +53,7 @@ pub struct DeprecatedAsset {
 }
 
 impl Asset {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
 
     pub fn from_deprecated(deprecated: DeprecatedAsset) -> Self {
         Self {

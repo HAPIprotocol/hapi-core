@@ -204,7 +204,7 @@ pub mod hapi_core {
             &id(),
         );
 
-        if ctx.accounts.network.key() == pda && deprecated_network.bump == bump {
+        if ctx.accounts.network.key() != pda || deprecated_network.bump != bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
         if deprecated_network.community != ctx.accounts.community.key() {
@@ -414,7 +414,7 @@ pub mod hapi_core {
             &id(),
         );
 
-        if ctx.accounts.address.key() == pda && deprecated_address.bump == bump {
+        if ctx.accounts.address.key() != pda || deprecated_address.bump != bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
         if deprecated_address.case_id != ctx.accounts.case.id {
