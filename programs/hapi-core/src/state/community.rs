@@ -1,3 +1,4 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -62,6 +63,9 @@ pub struct DeprecatedCommunity {
 }
 
 impl Community {
+    pub const LEN: usize =
+        DISCRIMINATOR_LENGTH + (32 + 8 + 1 + 8 + 32 + 32 + 1 + 32 + 32 + 8 + 8 + 8 + 8 + 8);
+
     pub fn from_deprecated(
         deprecated: DeprecatedCommunity,
         treasury_token_account: Pubkey,

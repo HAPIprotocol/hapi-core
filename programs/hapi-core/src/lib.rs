@@ -9,6 +9,7 @@ pub mod checker;
 pub mod context;
 pub mod error;
 pub mod state;
+pub mod utils;
 
 use context::*;
 use error::{print_error, ErrorCode};
@@ -24,38 +25,7 @@ pub use state::{
     network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
 };
-
-fn realloc_and_rent<'info>(
-    account: &AccountInfo<'info>,
-    payer: &Signer<'info>,
-    rent: &Sysvar<'info, Rent>,
-    len: usize,
-) -> anchor_lang::solana_program::entrypoint::ProgramResult {
-    // Realloc
-    account.realloc(len, false)?;
-
-    let balance = account.lamports();
-    if rent.is_exempt(balance, len) {
-        return Ok(());
-    }
-
-    // Transfer some lamports
-    let min_balance = rent.minimum_balance(len);
-    if balance.ge(&min_balance) {
-        return Ok(());
-    }
-
-    let ix = anchor_lang::solana_program::system_instruction::transfer(
-        &payer.key(),
-        &account.key(),
-        min_balance - balance,
-    );
-
-    anchor_lang::solana_program::program::invoke(
-        &ix,
-        &[payer.to_account_info(), account.to_account_info()],
-    )
-}
+use utils::realloc_and_rent;
 
 #[program]
 pub mod hapi_core {
@@ -129,12 +99,11 @@ pub mod hapi_core {
             ctx.accounts.treasury_token_account.key(),
             appraiser_stake,
         );
-        let community_size = std::mem::size_of::<Community>();
 
         let mut buffer: Vec<u8> = Vec::new();
         community.try_serialize(&mut buffer)?;
 
-        if buffer.len() != community_size {
+        if buffer.len() != Community::LEN {
             return print_error(ErrorCode::AccountDidNotSerialize);
         }
 
@@ -142,7 +111,7 @@ pub mod hapi_core {
             &ctx.accounts.community,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            community_size + 25,
+            Community::LEN + 32,
         )?;
         ctx.accounts
             .community
@@ -243,12 +212,11 @@ pub mod hapi_core {
         }
 
         let network = Network::from_deprecated(deprecated_network);
-        let network_size = std::mem::size_of::<Network>();
 
         let mut buffer: Vec<u8> = Vec::new();
         network.try_serialize(&mut buffer)?;
 
-        if buffer.len() != network_size {
+        if buffer.len() != Network::LEN {
             return print_error(ErrorCode::AccountDidNotSerialize);
         }
 
@@ -256,7 +224,7 @@ pub mod hapi_core {
             &ctx.accounts.network,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            network_size,
+            Network::LEN + 32,
         )?;
         ctx.accounts
             .network
@@ -457,12 +425,11 @@ pub mod hapi_core {
         }
 
         let address = Address::from_deprecated(deprecated_address);
-        let address_size = std::mem::size_of::<Address>();
 
         let mut buffer: Vec<u8> = Vec::new();
         address.try_serialize(&mut buffer)?;
 
-        if buffer.len() != address_size {
+        if buffer.len() != Address::LEN {
             return print_error(ErrorCode::AccountDidNotSerialize);
         }
 
@@ -470,7 +437,7 @@ pub mod hapi_core {
             &ctx.accounts.address,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            address_size,
+            Address::LEN + 32,
         )?;
         ctx.accounts
             .address
@@ -612,12 +579,11 @@ pub mod hapi_core {
         }
 
         let asset = Asset::from_deprecated(deprecated_asset);
-        let asset_size = std::mem::size_of::<Asset>();
 
         let mut buffer: Vec<u8> = Vec::new();
         asset.try_serialize(&mut buffer)?;
 
-        if buffer.len() != asset_size {
+        if buffer.len() != Asset::LEN {
             return print_error(ErrorCode::AccountDidNotSerialize);
         }
 
@@ -625,7 +591,7 @@ pub mod hapi_core {
             &ctx.accounts.asset,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            asset_size,
+            Asset::LEN + 32,
         )?;
         ctx.accounts
             .asset

@@ -1,4 +1,5 @@
 use super::address::Category;
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -52,6 +53,8 @@ pub struct DeprecatedAsset {
 }
 
 impl Asset {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1);
+
     pub fn from_deprecated(deprecated: DeprecatedAsset) -> Self {
         Self {
             community: deprecated.community,

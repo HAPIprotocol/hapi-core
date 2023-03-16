@@ -1,3 +1,4 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
@@ -55,6 +56,8 @@ pub struct DeprecatedNetwork {
 }
 
 impl Network {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 1 + 32 + 1 + 32 + 32 + 1 + 8 + 8 + 8 + 8);
+
     pub fn from_deprecated(deprecated: DeprecatedNetwork) -> Self {
         Self {
             community: deprecated.community,
