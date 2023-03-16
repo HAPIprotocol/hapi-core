@@ -204,6 +204,7 @@ pub struct UpdateNetwork<'info> {
 
 #[derive(Accounts)]
 pub struct MigrateNetwork<'info> {
+    #[account(mut)]
     pub authority: Signer<'info>,
 
     #[account(
@@ -293,6 +294,48 @@ pub struct InitializeReporterReward<'info> {
 }
 
 #[derive(Accounts)]
+pub struct MigrateReporterReward<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(owner = id())]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"network".as_ref(), community.key().as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = reporter,
+        has_one = network,
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump,
+        realloc = ReporterReward::LEN + 32,
+        realloc::payer = authority,
+        realloc::zero = false,
+    )]
+    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(role: ReporterRole, name: [u8; 32])]
 pub struct UpdateReporter<'info> {
     pub authority: Signer<'info>,
@@ -311,6 +354,32 @@ pub struct UpdateReporter<'info> {
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateReporter<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        mut,
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+        realloc = Reporter::LEN + 32,
+        realloc::payer = authority,
+        realloc::zero = false,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -424,6 +493,46 @@ pub struct UpdateCase<'info> {
         bump = case.bump,
     )]
     pub case: Account<'info, Case>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateCase<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    #[account(
+        mut,
+        owner = id()
+    )]
+    pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = (reporter.role == ReporterRole::Publisher
+            && case.reporter == reporter.key())
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        has_one = community,
+        owner = id(),
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
+        realloc = Case::LEN + 32,
+        realloc::payer = authority,
+        realloc::zero = false,
+    )]
+    pub case: Account<'info, Case>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]

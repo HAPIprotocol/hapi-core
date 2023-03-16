@@ -268,6 +268,10 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn migrate_reporter(_ctx: Context<MigrateReporter>) -> Result<()> {
+        Ok(())
+    }
+
     pub fn create_case(
         ctx: Context<CreateCase>,
         case_id: u64,
@@ -301,6 +305,10 @@ pub mod hapi_core {
         case.name = name;
         case.status = status;
 
+        Ok(())
+    }
+
+    pub fn migrate_case(_ctx: Context<MigrateCase>) -> Result<()> {
         Ok(())
     }
 
