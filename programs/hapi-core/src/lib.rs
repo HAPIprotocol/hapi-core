@@ -272,6 +272,10 @@ pub mod hapi_core {
         Ok(())
     }
 
+    pub fn migrate_reporter_reward(_ctx: Context<MigrateReporterReward>) -> Result<()> {
+        Ok(())
+    }
+
     pub fn create_case(
         ctx: Context<CreateCase>,
         case_id: u64,
