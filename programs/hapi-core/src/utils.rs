@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+
 pub const DISCRIMINATOR_LENGTH: usize = 8;
 
 pub fn realloc_and_rent<'info>(
