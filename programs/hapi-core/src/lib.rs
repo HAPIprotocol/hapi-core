@@ -18,17 +18,20 @@ use state::{
     asset::{Asset, DeprecatedAsset},
     community::{Community, DeprecatedCommunity},
     network::{DeprecatedNetwork, Network},
+    reporter::DeprecatedReporterReward,
 };
+use utils::{close, realloc_and_rent};
+
 pub use state::{
     address::{Address, Category},
     case::CaseStatus,
     network::NetworkSchema,
     reporter::{ReporterRole, ReporterStatus},
 };
-use utils::realloc_and_rent;
 
 #[program]
 pub mod hapi_core {
+
     use super::*;
 
     pub fn initialize_community(
@@ -273,12 +276,31 @@ pub mod hapi_core {
     }
 
     pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
-        let deprecated_reporter_reward = &mut ctx.accounts.deprecated_reporter_reward.load_mut()?;
+        let deprecated_reporter_reward = DeprecatedReporterReward::try_deserialize_unchecked(
+            &mut ctx
+                .accounts
+                .deprecated_reporter_reward
+                .try_borrow_data()?
+                .as_ref(),
+        )?;
+
+        if deprecated_reporter_reward.reporter != ctx.accounts.reporter.key() {
+            return print_error(ErrorCode::InvalidReporter);
+        }
+        if deprecated_reporter_reward.network != ctx.accounts.network.key() {
+            return print_error(ErrorCode::NetworkMismatch);
+        }
+
         let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         reporter_reward.network = deprecated_reporter_reward.network;
         reporter_reward.reporter = deprecated_reporter_reward.reporter;
         reporter_reward.bump = deprecated_reporter_reward.bump;
+
+        close(
+            ctx.accounts.deprecated_reporter_reward.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
 
         Ok(())
     }

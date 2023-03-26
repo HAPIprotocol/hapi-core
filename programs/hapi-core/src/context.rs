@@ -10,9 +10,7 @@ use crate::{
         case::{Case, CaseStatus},
         community::Community,
         network::{Network, NetworkSchema},
-        reporter::{
-            DeprecatedReporterReward, Reporter, ReporterReward, ReporterRole, ReporterStatus,
-        },
+        reporter::{Reporter, ReporterReward, ReporterRole, ReporterStatus},
     },
 };
 
@@ -325,22 +323,20 @@ pub struct MigrateReporterReward<'info> {
         init,
         payer = authority,
         owner = id(),
-        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        seeds = [b"reporter_reward2".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump,
         space = ReporterReward::LEN + 32
     )]
     pub reporter_reward: Account<'info, ReporterReward>,
 
+    /// CHECK: this account is not dangerous
     #[account(
         mut,
-        close = authority,
         owner = id(),
-        has_one = reporter,
-        has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = deprecated_reporter_reward.load()?.bump,
+        bump,
     )]
-    pub deprecated_reporter_reward: AccountLoader<'info, DeprecatedReporterReward>,
+    pub deprecated_reporter_reward: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 }
