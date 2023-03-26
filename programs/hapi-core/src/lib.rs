@@ -272,7 +272,14 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_reporter_reward(_ctx: Context<MigrateReporterReward>) -> Result<()> {
+    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
+        let deprecated_reporter_reward = &mut ctx.accounts.deprecated_reporter_reward.load_mut()?;
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
+
+        reporter_reward.network = deprecated_reporter_reward.network;
+        reporter_reward.reporter = deprecated_reporter_reward.reporter;
+        reporter_reward.bump = deprecated_reporter_reward.bump;
+
         Ok(())
     }
 
@@ -367,12 +374,12 @@ pub mod hapi_core {
         let community = &ctx.accounts.community;
 
         if address.confirmations == community.confirmation_threshold {
-            let address_reporter_reward = &mut ctx.accounts.address_reporter_reward.load_mut()?;
+            let address_reporter_reward = &mut ctx.accounts.address_reporter_reward;
 
             address_reporter_reward.address_tracer_counter += 1;
         }
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         reporter_reward.address_confirmation_counter += 1;
 
@@ -520,12 +527,12 @@ pub mod hapi_core {
         let community = &ctx.accounts.community;
 
         if asset.confirmations == community.confirmation_threshold {
-            let asset_reporter_reward = &mut ctx.accounts.asset_reporter_reward.load_mut()?;
+            let asset_reporter_reward = &mut ctx.accounts.asset_reporter_reward;
 
             asset_reporter_reward.asset_tracer_counter += 1;
         }
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         reporter_reward.asset_confirmation_counter += 1;
 
@@ -617,7 +624,7 @@ pub mod hapi_core {
         ctx: Context<InitializeReporterReward>,
         bump: u8,
     ) -> Result<()> {
-        let reporter_reward = &mut ctx.accounts.reporter_reward.load_init()?;
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         reporter_reward.network = ctx.accounts.network.key();
         reporter_reward.reporter = ctx.accounts.reporter.key();
@@ -708,7 +715,7 @@ pub mod hapi_core {
     pub fn claim_reporter_reward(ctx: Context<ClaimReporterReward>) -> Result<()> {
         let network = &ctx.accounts.network;
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward.load_mut()?;
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
 
         let reward = network.address_confirmation_reward
             * reporter_reward.address_confirmation_counter as u64

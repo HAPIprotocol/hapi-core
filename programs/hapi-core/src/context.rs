@@ -10,7 +10,9 @@ use crate::{
         case::{Case, CaseStatus},
         community::Community,
         network::{Network, NetworkSchema},
-        reporter::{Reporter, ReporterReward, ReporterRole, ReporterStatus},
+        reporter::{
+            DeprecatedReporterReward, Reporter, ReporterReward, ReporterRole, ReporterStatus,
+        },
     },
 };
 
@@ -288,7 +290,7 @@ pub struct InitializeReporterReward<'info> {
         bump,
         space = ReporterReward::LEN + 32
     )]
-    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     pub system_program: Program<'info, System>,
 }
@@ -320,17 +322,25 @@ pub struct MigrateReporterReward<'info> {
     pub reporter: Account<'info, Reporter>,
 
     #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+        bump,
+        space = ReporterReward::LEN + 32
+    )]
+    pub reporter_reward: Account<'info, ReporterReward>,
+
+    #[account(
         mut,
+        close = authority,
         owner = id(),
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump,
-        realloc = ReporterReward::LEN + 32,
-        realloc::payer = authority,
-        realloc::zero = false,
+        bump = deprecated_reporter_reward.load()?.bump,
     )]
-    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub deprecated_reporter_reward: AccountLoader<'info, DeprecatedReporterReward>,
 
     pub system_program: Program<'info, System>,
 }
@@ -821,19 +831,19 @@ pub struct ConfirmAddress<'info> {
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = reporter_reward.load()?.bump,
+        bump = reporter_reward.bump,
     )]
-    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         mut,
         owner = id(),
         has_one = network,
-        constraint = address_reporter_reward.load()?.reporter == address.reporter @ ErrorCode::InvalidReporter,
+        constraint = address_reporter_reward.reporter == address.reporter @ ErrorCode::InvalidReporter,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), address.reporter.as_ref()],
-        bump = address_reporter_reward.load()?.bump,
+        bump = address_reporter_reward.bump,
     )]
-    pub address_reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub address_reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         owner = id(),
@@ -1093,19 +1103,19 @@ pub struct ConfirmAsset<'info> {
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = reporter_reward.load()?.bump,
+        bump = reporter_reward.bump,
     )]
-    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         mut,
         owner = id(),
         has_one = network,
-        constraint = asset_reporter_reward.load()?.reporter == asset.reporter @ ErrorCode::InvalidReporter,
+        constraint = asset_reporter_reward.reporter == asset.reporter @ ErrorCode::InvalidReporter,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), asset.reporter.as_ref()],
-        bump = asset_reporter_reward.load()?.bump,
+        bump = asset_reporter_reward.bump,
     )]
-    pub asset_reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub asset_reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         owner = id(),
@@ -1279,9 +1289,9 @@ pub struct ClaimReporterReward<'info> {
         has_one = reporter,
         has_one = network,
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump = reporter_reward.load()?.bump,
+        bump = reporter_reward.bump,
     )]
-    pub reporter_reward: AccountLoader<'info, ReporterReward>,
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     #[account(
         mut,

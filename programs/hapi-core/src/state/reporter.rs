@@ -36,7 +36,7 @@ impl Reporter {
     pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 1 + 1 + 1 + 1 + 32 + 32 + 8 + 8);
 }
 
-#[account(zero_copy)]
+#[account]
 #[derive(Default, Debug)]
 pub struct ReporterReward {
     /// Reporter account to keep reward counter for
@@ -58,6 +58,18 @@ pub struct ReporterReward {
     pub asset_tracer_counter: u64,
 
     /// Number of unclaimed asset confirmation rewards
+    pub asset_confirmation_counter: u64,
+}
+
+#[account(zero_copy)]
+#[derive(Default, Debug)]
+pub struct DeprecatedReporterReward {
+    pub reporter: Pubkey,
+    pub network: Pubkey,
+    pub bump: u8,
+    pub address_tracer_counter: u64,
+    pub address_confirmation_counter: u64,
+    pub asset_tracer_counter: u64,
     pub asset_confirmation_counter: u64,
 }
 
