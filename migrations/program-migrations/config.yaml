@@ -1,0 +1,14 @@
+program_id: "8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE"
+keypair_path: "/home/olha/.config/solana/id.json"
+communities:
+  - pubkey: "2hW3RyMf3yb29XWxYFkqWicaCmYKsJtd3zm9iXG2iuRx"
+    treasury_token_account: "EHymK1mmUYzisaMgzez8NL24ZjhaTJiRJaa31jMwxZzE"
+    appraiser_stake: 123
+
+  - pubkey: "4BwzVfoDGEHn2NMQGDw3bgkD1diZ6MUmfnjXvuaqtfBr"
+    treasury_token_account: "DzioDTVJVvEYntArQ6iuHTBwiG4zkBmHdw2mmRRXuCR8"
+    appraiser_stake: 123
+
+  - pubkey: "CHFf59pmARzEu2ejSBmd9VjbKKMK4dSFnn7CMG3cymmt"
+    treasury_token_account: "6KsNjfZAEUBxcN7qqmbXj47sDmea5odYvTtDXSyL2hzv"
+    appraiser_stake: 123
