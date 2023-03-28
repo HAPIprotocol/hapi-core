@@ -24,7 +24,7 @@ You can copy `config.sample.yaml` to `config.yaml` to use the template in the re
 program_id: ""                    # The public key of the account containing a program
                                   # (optional, default - program id from the HAPI CORE crate)
 environment: ""                   # Solana environment cluster (must be one of [localnet, 
-                                  # testnet, mainnet, devnet] or be an http or https url, default - lacalhost)
+                                  # testnet, mainnet, devnet] or be an http or https url, default - localnet)
 keypair_path: ""                  # Reporter keypair path
 communities:                      # HAPI CORE communities data (must be set for each initialized community)
     - pubkey: ""                  # The public key of the account
