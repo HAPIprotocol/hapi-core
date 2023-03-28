@@ -14,7 +14,7 @@ pub mod utils;
 use context::*;
 use error::{print_error, ErrorCode};
 use state::{
-    asset::{Asset, DeprecatedAsset},
+    asset::Asset,
     community::{Community, DeprecatedCommunity},
     network::Network,
     reporter::DeprecatedReporterReward,
@@ -30,7 +30,6 @@ pub use state::{
 
 #[program]
 pub mod hapi_core {
-
     use super::*;
 
     pub fn initialize_community(
@@ -590,33 +589,30 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_asset(ctx: Context<MigrateAsset>) -> Result<()> {
-        let deprecated_asset = DeprecatedAsset::try_deserialize_unchecked(
-            &mut ctx.accounts.asset.try_borrow_data()?.as_ref(),
-        )?;
+    pub fn migrate_asset(ctx: Context<MigrateAsset>, version: u8) -> Result<()> {
+        let asset =
+            Asset::from_deprecated(version, &mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
                 b"asset".as_ref(),
                 ctx.accounts.network.key().as_ref(),
-                deprecated_asset.mint[0..32].as_ref(),
-                deprecated_asset.mint[32..64].as_ref(),
-                deprecated_asset.asset_id.as_ref(),
+                asset.mint[0..32].as_ref(),
+                asset.mint[32..64].as_ref(),
+                asset.asset_id.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.asset.key() == pda && deprecated_asset.bump == bump {
+        if ctx.accounts.asset.key() == pda && asset.bump == bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if deprecated_asset.case_id != ctx.accounts.case.id {
+        if asset.case_id != ctx.accounts.case.id {
             return print_error(ErrorCode::CaseMismatch);
         }
-        if deprecated_asset.network != ctx.accounts.network.key() {
+        if asset.network != ctx.accounts.network.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
-
-        let asset = Asset::from_deprecated(deprecated_asset);
 
         let mut buffer: Vec<u8> = Vec::new();
         asset.try_serialize(&mut buffer)?;

@@ -38,36 +38,6 @@ pub struct Asset {
     pub replication_bounty: u64,
 }
 
-#[account]
-pub struct DeprecatedAsset {
-    pub community: Pubkey,
-    pub network: Pubkey,
-    pub mint: [u8; 64],
-    pub asset_id: [u8; 32],
-    pub bump: u8,
-    pub case_id: u64,
-    pub reporter: Pubkey,
-    pub category: Category,
-    pub risk: u8,
-    pub confirmations: u8,
-}
-
 impl Asset {
     pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
-
-    pub fn from_deprecated(deprecated: DeprecatedAsset) -> Self {
-        Self {
-            community: deprecated.community,
-            network: deprecated.network,
-            mint: deprecated.mint,
-            asset_id: deprecated.asset_id,
-            bump: deprecated.bump,
-            case_id: deprecated.case_id,
-            reporter: deprecated.reporter,
-            category: deprecated.category,
-            risk: deprecated.risk,
-            confirmations: deprecated.confirmations,
-            replication_bounty: 0,
-        }
-    }
 }
