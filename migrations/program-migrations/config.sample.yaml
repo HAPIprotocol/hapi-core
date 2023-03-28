@@ -1,0 +1,6 @@
+program_id: "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
+keypair_path: "~/.config/solana/id.json"
+communities:
+  - pubkey: "B7JizsfxERnN5s1STwJyJoij68Zab9PQUV57QiYNoYYq"
+    treasury_token_account: "BzYGf8rZKS6YAadNFu9s3kNhYCEN3bVTvYA3ov3vkXXT"
+    appraiser_stake: 123
