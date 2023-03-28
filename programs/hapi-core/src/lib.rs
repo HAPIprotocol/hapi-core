@@ -14,10 +14,7 @@ pub mod utils;
 use context::*;
 use error::{print_error, ErrorCode};
 use state::{
-    asset::Asset,
-    community::{Community, DeprecatedCommunity},
-    network::Network,
-    reporter::DeprecatedReporterReward,
+    asset::Asset, community::Community, network::Network, reporter::DeprecatedReporterReward,
 };
 use utils::{close, realloc_and_rent};
 
@@ -86,20 +83,15 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_community(ctx: Context<MigrateCommunity>, appraiser_stake: u64) -> Result<()> {
-        let deprecated_community = DeprecatedCommunity::try_deserialize_unchecked(
+    pub fn migrate_community(ctx: Context<MigrateCommunity>, version: u8) -> Result<()> {
+        let community = Community::from_deprecated(
+            version,
             &mut ctx.accounts.community.try_borrow_data()?.as_ref(),
         )?;
 
-        if deprecated_community.authority != ctx.accounts.authority.key() {
+        if community.authority != ctx.accounts.authority.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
-
-        let community = Community::from_deprecated(
-            deprecated_community,
-            ctx.accounts.treasury_token_account.key(),
-            appraiser_stake,
-        );
 
         let mut buffer: Vec<u8> = Vec::new();
         community.try_serialize(&mut buffer)?;

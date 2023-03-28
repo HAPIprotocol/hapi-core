@@ -91,6 +91,7 @@ pub struct MigrateCommunity<'info> {
     )]
     pub community: AccountInfo<'info>,
 
+    // TODO: Remove treasury token account
     #[account(
             constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
             constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,

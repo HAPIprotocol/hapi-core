@@ -46,46 +46,7 @@ pub struct Community {
     pub appraiser_stake: u64,
 }
 
-#[account]
-pub struct DeprecatedCommunity {
-    pub authority: Pubkey,
-    pub cases: u64,
-    pub confirmation_threshold: u8,
-    pub stake_unlock_epochs: u64,
-    pub stake_mint: Pubkey,
-    pub token_signer: Pubkey,
-    pub token_signer_bump: u8,
-    pub token_account: Pubkey,
-    pub validator_stake: u64,
-    pub tracer_stake: u64,
-    pub full_stake: u64,
-    pub authority_stake: u64,
-}
-
 impl Community {
     pub const LEN: usize =
         DISCRIMINATOR_LENGTH + (32 + 8 + 1 + 8 + 32 + 32 + 1 + 32 + 32 + 8 + 8 + 8 + 8 + 8);
-
-    pub fn from_deprecated(
-        deprecated: DeprecatedCommunity,
-        treasury_token_account: Pubkey,
-        appraiser_stake: u64,
-    ) -> Self {
-        Self {
-            authority: deprecated.authority,
-            cases: deprecated.cases,
-            confirmation_threshold: deprecated.confirmation_threshold,
-            stake_unlock_epochs: deprecated.stake_unlock_epochs,
-            stake_mint: deprecated.stake_mint,
-            token_signer: deprecated.token_signer,
-            token_signer_bump: deprecated.token_signer_bump,
-            token_account: deprecated.token_account,
-            validator_stake: deprecated.validator_stake,
-            tracer_stake: deprecated.tracer_stake,
-            full_stake: deprecated.full_stake,
-            authority_stake: deprecated.authority_stake,
-            treasury_token_account,
-            appraiser_stake,
-        }
-    }
 }
