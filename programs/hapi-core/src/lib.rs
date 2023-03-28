@@ -14,9 +14,9 @@ pub mod utils;
 use context::*;
 use error::{print_error, ErrorCode};
 use state::{
-    address::DeprecatedAddress,
     asset::{Asset, DeprecatedAsset},
     community::{Community, DeprecatedCommunity},
+    deprecated::deprecated_address::{get_deprecated_address, CheckDeprecated},
     network::{DeprecatedNetwork, Network},
     reporter::DeprecatedReporterReward,
 };
@@ -107,7 +107,7 @@ pub mod hapi_core {
         community.try_serialize(&mut buffer)?;
 
         if buffer.len() != Community::LEN {
-            return print_error(ErrorCode::AccountDidNotSerialize);
+            return print_error(ErrorCode::UnexpectedLength);
         }
 
         realloc_and_rent(
@@ -220,7 +220,7 @@ pub mod hapi_core {
         network.try_serialize(&mut buffer)?;
 
         if buffer.len() != Network::LEN {
-            return print_error(ErrorCode::AccountDidNotSerialize);
+            return print_error(ErrorCode::UnexpectedLength);
         }
 
         realloc_and_rent(
@@ -440,38 +440,25 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_address(ctx: Context<MigrateAddress>) -> Result<()> {
-        let deprecated_address = DeprecatedAddress::try_deserialize_unchecked(
+    pub fn migrate_address(ctx: Context<MigrateAddress>, version: u8) -> Result<()> {
+        let deprecated_address = get_deprecated_address(
+            version,
             &mut ctx.accounts.address.try_borrow_data()?.as_ref(),
         )?;
 
-        let (pda, bump) = Pubkey::find_program_address(
-            &[
-                b"address".as_ref(),
-                ctx.accounts.network.key().as_ref(),
-                deprecated_address.address[0..32].as_ref(),
-                deprecated_address.address[32..64].as_ref(),
-            ],
-            &id(),
-        );
+        deprecated_address.check(
+            &ctx.accounts.address.key(),
+            &ctx.accounts.network.key(),
+            ctx.accounts.case.id,
+        )?;
 
-        if ctx.accounts.address.key() != pda || deprecated_address.bump != bump {
-            return print_error(ErrorCode::UnexpectedAccount);
-        }
-        if deprecated_address.case_id != ctx.accounts.case.id {
-            return print_error(ErrorCode::CaseMismatch);
-        }
-        if deprecated_address.network != ctx.accounts.network.key() {
-            return print_error(ErrorCode::NetworkMismatch);
-        }
-
-        let address = Address::from_deprecated(deprecated_address);
+        let address: Address = deprecated_address.into();
 
         let mut buffer: Vec<u8> = Vec::new();
         address.try_serialize(&mut buffer)?;
 
         if buffer.len() != Address::LEN {
-            return print_error(ErrorCode::AccountDidNotSerialize);
+            return print_error(ErrorCode::UnexpectedLength);
         }
 
         realloc_and_rent(
@@ -625,7 +612,7 @@ pub mod hapi_core {
         asset.try_serialize(&mut buffer)?;
 
         if buffer.len() != Asset::LEN {
-            return print_error(ErrorCode::AccountDidNotSerialize);
+            return print_error(ErrorCode::UnexpectedLength);
         }
 
         realloc_and_rent(
