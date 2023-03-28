@@ -16,7 +16,7 @@ use error::{print_error, ErrorCode};
 use state::{
     asset::{Asset, DeprecatedAsset},
     community::{Community, DeprecatedCommunity},
-    network::{DeprecatedNetwork, Network},
+    network::Network,
     reporter::DeprecatedReporterReward,
 };
 use utils::{close, realloc_and_rent};
@@ -192,8 +192,9 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_network(ctx: Context<MigrateNetwork>) -> Result<()> {
-        let deprecated_network = DeprecatedNetwork::try_deserialize_unchecked(
+    pub fn migrate_network(ctx: Context<MigrateNetwork>, version: u8) -> Result<()> {
+        let network = Network::from_deprecated(
+            version,
             &mut ctx.accounts.network.try_borrow_data()?.as_ref(),
         )?;
 
@@ -201,19 +202,17 @@ pub mod hapi_core {
             &[
                 b"network".as_ref(),
                 ctx.accounts.community.key().as_ref(),
-                deprecated_network.name.as_ref(),
+                network.name.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.network.key() != pda || deprecated_network.bump != bump {
+        if ctx.accounts.network.key() != pda || network.bump != bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if deprecated_network.community != ctx.accounts.community.key() {
+        if network.community != ctx.accounts.community.key() {
             return print_error(ErrorCode::CommunityMismatch);
         }
-
-        let network = Network::from_deprecated(deprecated_network);
 
         let mut buffer: Vec<u8> = Vec::new();
         network.try_serialize(&mut buffer)?;
