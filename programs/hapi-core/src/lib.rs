@@ -16,7 +16,6 @@ use error::{print_error, ErrorCode};
 use state::{
     asset::{Asset, DeprecatedAsset},
     community::{Community, DeprecatedCommunity},
-    deprecated::deprecated_address::{get_deprecated_address, CheckDeprecated},
     network::{DeprecatedNetwork, Network},
     reporter::DeprecatedReporterReward,
 };
@@ -441,18 +440,30 @@ pub mod hapi_core {
     }
 
     pub fn migrate_address(ctx: Context<MigrateAddress>, version: u8) -> Result<()> {
-        let deprecated_address = get_deprecated_address(
+        let address = Address::from_deprecated(
             version,
             &mut ctx.accounts.address.try_borrow_data()?.as_ref(),
         )?;
 
-        deprecated_address.check(
-            &ctx.accounts.address.key(),
-            &ctx.accounts.network.key(),
-            ctx.accounts.case.id,
-        )?;
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"address".as_ref(),
+                ctx.accounts.network.key().as_ref(),
+                address.address[0..32].as_ref(),
+                address.address[32..64].as_ref(),
+            ],
+            &id(),
+        );
 
-        let address: Address = deprecated_address.into();
+        if ctx.accounts.address.key() != pda || address.bump != bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if address.case_id != ctx.accounts.case.id {
+            return print_error(ErrorCode::CaseMismatch);
+        }
+        if address.network != ctx.accounts.network.key() {
+            return print_error(ErrorCode::NetworkMismatch);
+        }
 
         let mut buffer: Vec<u8> = Vec::new();
         address.try_serialize(&mut buffer)?;
