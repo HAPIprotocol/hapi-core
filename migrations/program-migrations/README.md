@@ -17,7 +17,7 @@ cargo build
 ### Configure
 
 To run migration script set configuration before start.
-You use`config.yaml` to as the template in the repo root or define other file in HAPI_CFG env variable to initialize the config file with required fields:
+You can copy `config.sample.yaml` to `config.yaml` to use the template in the repo root or define other file in HAPI_CFG env variable to initialize the config file with required fields:
 ```yaml
                                   # This is configuration parameters for to HAPI CORE migration
 
@@ -27,9 +27,9 @@ environment: ""                   # Solana environment cluster (must be one of [
                                   # testnet, mainnet, devnet] or be an http or https url, default - lacalhost)
 keypair_path: ""                  # Reporter keypair path
 communities:                      # HAPI CORE communities data (must be set for each initialized community)
-    - pubkey: ""
-    - treasury_token_account: ""
-    - appraiser_stake: 123
+    - pubkey: ""                  # The public key of the account
+    - treasury_token_account: ""  # Token account for reporter fee
+    - appraiser_stake: 123        # Amount of stake required from a reporter of appraiser type
 
 migrate_accounts: []              # Define what accounts should be migrated (optional, default - All)
                                   # Variants:

@@ -18,7 +18,7 @@ fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
                 hapi_cli.migrate_cases()?;
                 hapi_cli.migrate_addresses()?;
                 hapi_cli.migrate_assets()?;
-                return Ok(());
+                break;
             }
             MigrateAccount::Community => {
                 hapi_cli.migrate_communities(&cfg.communities)?;
@@ -51,13 +51,19 @@ fn main() {
     let cfg = HapiCfg::build().expect("Unable to configure");
     let hapi_cli = HapiCli::new(&cfg);
 
-    let exit_code = match migrate(&hapi_cli, cfg) {
-        Ok(()) => {
-            println!("{}", "Migration successfully completed".green());
-            0
-        }
+    let exit_code = match hapi_cli {
+        Ok(cli) => match migrate(&cli, cfg) {
+            Ok(()) => {
+                println!("{}", "Migration successfully completed".green());
+                0
+            }
+            Err(err) => {
+                println!("{}: {}", "Migration failed".red(), err);
+                1
+            }
+        },
         Err(err) => {
-            println!("{}: {}", "Migration failed".red(), err);
+            println!("{}: {}", "Failed to initialize client".red(), err);
             1
         }
     };

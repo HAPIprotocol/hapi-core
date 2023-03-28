@@ -8,7 +8,7 @@ use {
         },
         Client, Cluster, Program,
     },
-    anyhow::Result,
+    anyhow::{Error, Result},
     colored::*,
     hapi_core::{
         accounts, id, instruction,
@@ -26,11 +26,12 @@ use {
 };
 
 /// Returns rpc client
-pub fn get_program(cfg: &HapiCfg) -> Program {
-    let payer = read_keypair_file(cfg.keypair_path.clone()).expect("Failed to read keypair");
-    let environment = Cluster::from_str(&cfg.environment).expect("Failed to initialize cluster");
+pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
+    let payer =
+        read_keypair_file(cfg.keypair_path.clone()).map_err(|err| Error::msg(err.to_string()))?;
+    let environment = Cluster::from_str(&cfg.environment)?;
     let program_id = if !cfg.program_id.is_empty() {
-        cfg.program_id.parse::<Pubkey>().expect("Invalid pubkey")
+        cfg.program_id.parse::<Pubkey>()?
     } else {
         id()
     };
@@ -38,7 +39,7 @@ pub fn get_program(cfg: &HapiCfg) -> Program {
     let client =
         Client::new_with_options(environment, Rc::new(payer), CommitmentConfig::processed());
 
-    client.program(program_id)
+    Ok(client.program(program_id))
 }
 
 pub struct HapiCli {
@@ -46,10 +47,10 @@ pub struct HapiCli {
 }
 
 impl HapiCli {
-    pub fn new(cfg: &HapiCfg) -> Self {
-        Self {
-            cli: get_program(cfg),
-        }
+    pub fn new(cfg: &HapiCfg) -> Result<Self> {
+        Ok(Self {
+            cli: get_program(cfg)?,
+        })
     }
 
     fn get_program_accounts<T: AccountDeserialize + Discriminator>(
