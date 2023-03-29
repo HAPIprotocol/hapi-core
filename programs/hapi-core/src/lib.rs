@@ -13,10 +13,8 @@ pub mod utils;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{
-    asset::Asset, community::Community, network::Network, reporter::DeprecatedReporterReward,
-};
-use utils::{close, realloc_and_rent};
+use state::{asset::Asset, community::Community, network::Network, reporter::ReporterReward};
+use utils::realloc_and_rent;
 
 pub use state::{
     address::{Address, Category},
@@ -264,32 +262,47 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
-        let deprecated_reporter_reward = DeprecatedReporterReward::try_deserialize_unchecked(
-            &mut ctx
-                .accounts
-                .deprecated_reporter_reward
-                .try_borrow_data()?
-                .as_ref(),
+    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>, version: u8) -> Result<()> {
+        let reporter_reward = ReporterReward::from_deprecated(
+            version,
+            &mut ctx.accounts.reporter_reward.try_borrow_data()?.as_ref(),
         )?;
 
-        if deprecated_reporter_reward.reporter != ctx.accounts.reporter.key() {
+        if reporter_reward.reporter != ctx.accounts.reporter.key() {
             return print_error(ErrorCode::InvalidReporter);
         }
-        if deprecated_reporter_reward.network != ctx.accounts.network.key() {
+        if reporter_reward.network != ctx.accounts.network.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let reporter_reward = &mut ctx.accounts.reporter_reward;
+        let mut buffer: Vec<u8> = Vec::new();
+        reporter_reward.try_serialize(&mut buffer)?;
 
-        reporter_reward.network = deprecated_reporter_reward.network;
-        reporter_reward.reporter = deprecated_reporter_reward.reporter;
-        reporter_reward.bump = deprecated_reporter_reward.bump;
+        if buffer.len() != ReporterReward::LEN {
+            return print_error(ErrorCode::UnexpectedLength);
+        }
 
-        close(
-            ctx.accounts.deprecated_reporter_reward.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
+        realloc_and_rent(
+            &ctx.accounts.reporter_reward,
+            &ctx.accounts.authority,
+            &ctx.accounts.rent,
+            ReporterReward::LEN + 32,
         )?;
+        ctx.accounts
+            .reporter_reward
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
+
+        // let reporter_reward = &mut ctx.accounts.reporter_reward;
+
+        // reporter_reward.network = reporter_reward.network;
+        // reporter_reward.reporter = reporter_reward.reporter;
+        // reporter_reward.bump = reporter_reward.bump;
+
+        // close(
+        //     ctx.accounts.deprecated_reporter_reward.to_account_info(),
+        //     ctx.accounts.authority.to_account_info(),
+        // )?;
 
         Ok(())
     }

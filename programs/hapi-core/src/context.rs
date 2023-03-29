@@ -320,16 +320,15 @@ pub struct MigrateReporterReward<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
-    #[account(
-        init,
-        payer = authority,
-        owner = id(),
-        seeds = [b"reporter_reward2".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-        bump,
-        space = ReporterReward::LEN + 32
-    )]
-    pub reporter_reward: Account<'info, ReporterReward>,
-
+    // #[account(
+    //     init,
+    //     payer = authority,
+    //     owner = id(),
+    //     seeds = [b"reporter_reward2".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
+    //     bump,
+    //     space = ReporterReward::LEN + 32
+    // )]
+    // pub reporter_reward: Account<'info, ReporterReward>,
     /// CHECK: this account is not dangerous
     #[account(
         mut,
@@ -337,7 +336,9 @@ pub struct MigrateReporterReward<'info> {
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump,
     )]
-    pub deprecated_reporter_reward: AccountInfo<'info>,
+    pub reporter_reward: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
 }
