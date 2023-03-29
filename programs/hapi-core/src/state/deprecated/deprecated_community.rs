@@ -3,13 +3,13 @@ use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Community {
     pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Community> {
-        let address: Community = match version {
+        let community: Community = match version {
             1 => CommunityV1::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
 
-        Ok(address)
+        Ok(community)
     }
 }
 

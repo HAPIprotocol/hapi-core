@@ -3,7 +3,7 @@ use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 use std::io::Write;
 
-declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
+declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
 
 pub mod checker;
 pub mod context;
@@ -292,17 +292,6 @@ pub mod hapi_core {
             .reporter_reward
             .try_borrow_mut_data()?
             .write_all(&buffer)?;
-
-        // let reporter_reward = &mut ctx.accounts.reporter_reward;
-
-        // reporter_reward.network = reporter_reward.network;
-        // reporter_reward.reporter = reporter_reward.reporter;
-        // reporter_reward.bump = reporter_reward.bump;
-
-        // close(
-        //     ctx.accounts.deprecated_reporter_reward.to_account_info(),
-        //     ctx.accounts.authority.to_account_info(),
-        // )?;
 
         Ok(())
     }

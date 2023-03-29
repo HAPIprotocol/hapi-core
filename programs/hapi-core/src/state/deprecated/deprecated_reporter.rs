@@ -3,13 +3,13 @@ use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl ReporterReward {
     pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<ReporterReward> {
-        let address: ReporterReward = match version {
+        let reward: ReporterReward = match version {
             1 => ReporterRewardV1::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
 
-        Ok(address)
+        Ok(reward)
     }
 }
 

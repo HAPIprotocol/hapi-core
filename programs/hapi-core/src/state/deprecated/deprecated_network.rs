@@ -6,13 +6,13 @@ use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Network {
     pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Network> {
-        let address: Network = match version {
+        let network: Network = match version {
             1 => NetworkV1::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
 
-        Ok(address)
+        Ok(network)
     }
 }
 

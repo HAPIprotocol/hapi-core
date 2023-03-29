@@ -6,13 +6,13 @@ use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Asset {
     pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Asset> {
-        let address: Asset = match version {
+        let asset: Asset = match version {
             1 => AssetV1::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
 
-        Ok(address)
+        Ok(asset)
     }
 }
 
