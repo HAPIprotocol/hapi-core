@@ -12,6 +12,7 @@ use crate::{
         network::{Network, NetworkSchema},
         reporter::{Reporter, ReporterReward, ReporterRole, ReporterStatus},
     },
+    utils::ACCOUNT_RESERVE_SPACE,
 };
 
 #[derive(Accounts)]
@@ -46,7 +47,7 @@ pub struct InitializeCommunity<'info> {
         init,
         payer = authority,
         owner = id(),
-        space = Community::LEN + 32
+        space = Community::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub community: Account<'info, Community>,
 
@@ -167,7 +168,7 @@ pub struct CreateNetwork<'info> {
         owner = id(),
         seeds = [b"network".as_ref(), community.key().as_ref(), &name],
         bump,
-        space = Network::LEN + 32
+        space = Network::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub network: Account<'info, Network>,
 
@@ -243,7 +244,7 @@ pub struct CreateReporter<'info> {
         owner = id(),
         seeds = [b"reporter".as_ref(), community.key().as_ref(), pubkey.key().as_ref()],
         bump,
-        space = Reporter::LEN + 32
+        space = Reporter::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub reporter: Account<'info, Reporter>,
 
@@ -286,7 +287,7 @@ pub struct InitializeReporterReward<'info> {
         owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump,
-        space = ReporterReward::LEN + 32
+        space = ReporterReward::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub reporter_reward: Account<'info, ReporterReward>,
 
@@ -447,7 +448,7 @@ pub struct CreateCase<'info> {
         owner = id(),
         seeds = [b"case".as_ref(), community.key().as_ref(), &case_id.to_le_bytes()],
         bump,
-        space = Case::LEN + 32
+        space = Case::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub case: Account<'info, Case>,
 
@@ -573,7 +574,7 @@ pub struct CreateAddress<'info> {
             addr[32..64].as_ref(),
         ],
         bump,
-        space = Address::LEN + 32
+        space = Address::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub address: Account<'info, Address>,
 
@@ -899,7 +900,7 @@ pub struct CreateAsset<'info> {
             asset_id.as_ref(),
         ],
         bump,
-        space = Asset::LEN + 32
+        space = Asset::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub asset: Box<Account<'info, Asset>>,
 

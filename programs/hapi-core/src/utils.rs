@@ -1,19 +1,23 @@
-use anchor_lang::{
-    __private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*, solana_program::entrypoint::ProgramResult,
-};
+use anchor_lang::prelude::*;
 use std::{
     io::{Cursor, Write},
     ops::DerefMut,
 };
 
-pub const DISCRIMINATOR_LENGTH: usize = 8;
+use crate::error::{print_error, ErrorCode};
 
+/// Anchor discriminator length
+pub const DISCRIMINATOR_LENGTH: usize = 8;
+/// Account reserve space
+pub const ACCOUNT_RESERVE_SPACE: usize = 32;
+
+// TODO: rm pub
 pub fn realloc_and_rent<'info>(
     account: &AccountInfo<'info>,
     payer: &Signer<'info>,
     rent: &Sysvar<'info, Rent>,
     len: usize,
-) -> ProgramResult {
+) -> Result<()> {
     // Realloc
     account.realloc(len, false)?;
 
@@ -37,26 +41,27 @@ pub fn realloc_and_rent<'info>(
     anchor_lang::solana_program::program::invoke(
         &ix,
         &[payer.to_account_info(), account.to_account_info()],
-    )
+    )?;
+
+    Ok(())
 }
 
-pub fn close<'info>(account: AccountInfo<'info>, destination: AccountInfo<'info>) -> ProgramResult {
-    let dest_starting_lamports = destination.lamports();
+pub fn migrate<'info, Acc: AccountSerialize>(
+    account_data: Acc,
+    account: &AccountInfo<'info>,
+    payer: &Signer<'info>,
+    rent: &Sysvar<'info, Rent>,
+    len: usize,
+) -> Result<()> {
+    let mut buffer: Vec<u8> = Vec::new();
+    account_data.try_serialize(&mut buffer)?;
 
-    **destination.lamports.borrow_mut() = dest_starting_lamports
-        .checked_add(account.lamports())
-        .unwrap();
-
-    **account.lamports.borrow_mut() = 0;
-
-    let mut data = account.try_borrow_mut_data()?;
-    for byte in data.deref_mut().iter_mut() {
-        *byte = 0;
+    if buffer.len() != len {
+        return print_error(ErrorCode::UnexpectedLength);
     }
 
-    let dst: &mut [u8] = &mut data;
-    let mut cursor = Cursor::new(dst);
-    cursor.write_all(&CLOSED_ACCOUNT_DISCRIMINATOR).unwrap();
+    realloc_and_rent(account, payer, rent, len + ACCOUNT_RESERVE_SPACE)?;
+    account.try_borrow_mut_data()?.write_all(&buffer)?;
 
     Ok(())
 }

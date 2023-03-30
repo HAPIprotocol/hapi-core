@@ -20,7 +20,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::realloc_and_rent;
+use utils::{migrate, realloc_and_rent};
 
 pub use state::{
     address::{Address, Category},
@@ -96,25 +96,31 @@ pub mod hapi_core {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        community.try_serialize(&mut buffer)?;
+        // let mut buffer: Vec<u8> = Vec::new();
+        // community.try_serialize(&mut buffer)?;
 
-        if buffer.len() != Community::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
+        // if buffer.len() != Community::LEN {
+        //     return print_error(ErrorCode::UnexpectedLength);
+        // }
 
-        realloc_and_rent(
+        // realloc_and_rent(
+        //     &ctx.accounts.community,
+        //     &ctx.accounts.authority,
+        //     &ctx.accounts.rent,
+        //     Community::LEN + 32,
+        // )?;
+        // ctx.accounts
+        //     .community
+        //     .try_borrow_mut_data()?
+        //     .write_all(&buffer)?;
+
+        migrate(
+            community,
             &ctx.accounts.community,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Community::LEN + 32,
-        )?;
-        ctx.accounts
-            .community
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Community::LEN,
+        )
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> Result<()> {
@@ -294,7 +300,7 @@ pub mod hapi_core {
             &ctx.accounts.reporter,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Network::LEN + 32,
+            Reporter::LEN + 32,
         )?;
 
         ctx.accounts
@@ -414,7 +420,7 @@ pub mod hapi_core {
             &ctx.accounts.case,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Network::LEN + 32,
+            Case::LEN + 32,
         )?;
 
         ctx.accounts
