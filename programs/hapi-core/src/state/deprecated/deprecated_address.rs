@@ -5,9 +5,11 @@ use crate::{
 use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Address {
-    pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Address> {
-        let address: Address = match version {
-            1 => AddressV1::try_deserialize_unchecked(account_data)?,
+    pub fn from_deprecated(account_data: &mut &[u8]) -> Result<Address> {
+        // TODO: current account version must be less than deprecated account version (exept V0)
+        let address: Address = match Address::VERSION {
+            // Warning! V0 migration can be performed only once
+            1 => AddressV0::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
@@ -17,7 +19,7 @@ impl Address {
 }
 
 #[account]
-pub struct AddressV1 {
+pub struct AddressV0 {
     pub community: Pubkey,
     pub network: Pubkey,
     pub address: [u8; 64],
@@ -29,10 +31,11 @@ pub struct AddressV1 {
     pub confirmations: u8,
 }
 
-impl TryInto<Address> for AddressV1 {
+impl TryInto<Address> for AddressV0 {
     type Error = Error;
     fn try_into(self) -> Result<Address> {
         Ok(Address {
+            version: Address::VERSION,
             community: self.community,
             network: self.network,
             address: self.address,

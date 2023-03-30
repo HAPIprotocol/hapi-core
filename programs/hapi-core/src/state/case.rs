@@ -3,6 +3,9 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Case {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this case belongs to
     pub community: Pubkey,
 
@@ -24,6 +27,7 @@ pub struct Case {
 
 impl Case {
     pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 1 + 8 + 32 + 1 + 32);
+    pub const VERSION: u16 = 1;
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

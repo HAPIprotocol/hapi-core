@@ -91,20 +91,19 @@ pub struct MigrateCommunity<'info> {
     )]
     pub community: AccountInfo<'info>,
 
-    // TODO: Remove treasury token account
-    #[account(
-            constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-            constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
-            owner = Token::id(),
-        )]
-    pub treasury_token_account: Account<'info, TokenAccount>,
+    // // TODO: Remove treasury token account
+    // #[account(
+    //         constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+    //         constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+    //         owner = Token::id(),
+    //     )]
+    // pub treasury_token_account: Account<'info, TokenAccount>,
 
-    #[account(owner = Token::id())]
-    pub stake_mint: Account<'info, Mint>,
+    // #[account(owner = Token::id())]
+    // pub stake_mint: Account<'info, Mint>,
 
-    /// CHECK: this account is not dangerous
-    pub token_signer: AccountInfo<'info>,
-
+    // /// CHECK: this account is not dangerous
+    // pub token_signer: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
@@ -320,15 +319,6 @@ pub struct MigrateReporterReward<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
-    // #[account(
-    //     init,
-    //     payer = authority,
-    //     owner = id(),
-    //     seeds = [b"reporter_reward2".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
-    //     bump,
-    //     space = ReporterReward::LEN + 32
-    // )]
-    // pub reporter_reward: Account<'info, ReporterReward>,
     /// CHECK: this account is not dangerous
     #[account(
         mut,
@@ -375,17 +365,14 @@ pub struct MigrateReporter<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    /// CHECK: this account is not dangerous
     #[account(
-        mut,
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
-        bump = reporter.bump,
-        realloc = Reporter::LEN + 32,
-        realloc::payer = authority,
-        realloc::zero = false,
-    )]
-    pub reporter: Account<'info, Reporter>,
+            mut,
+            owner = id()
+        )]
+    pub reporter: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
 }
@@ -517,9 +504,6 @@ pub struct MigrateCase<'info> {
     #[account(
         owner = id(),
         has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key())
-            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
@@ -528,17 +512,14 @@ pub struct MigrateCase<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
+    /// CHECK: this account is not dangerous
     #[account(
-        mut,
-        has_one = community,
-        owner = id(),
-        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
-        bump = case.bump,
-        realloc = Case::LEN + 32,
-        realloc::payer = authority,
-        realloc::zero = false,
-    )]
-    pub case: Account<'info, Case>,
+                mut,
+                owner = id()
+            )]
+    pub case: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
 }

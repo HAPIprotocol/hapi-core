@@ -3,6 +3,9 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Community {
+    /// Account version
+    pub version: u16,
+
     /// Community authority wallet
     pub authority: Pubkey,
 
@@ -24,11 +27,11 @@ pub struct Community {
     /// Seed bump for token signer PDA
     pub token_signer_bump: u8,
 
-    /// Stake holding token account
+    /// Stake holding token account // owner - community (transfer all funds from old to new and remove token_signer)
     pub token_account: Pubkey,
 
     /// Token account for reporter fee
-    pub treasury_token_account: Pubkey,
+    pub treasury_token_account: Pubkey, // The same logic as token_account but with reward_mint from network
 
     /// Amount of stake required from a reporter of validator type
     pub validator_stake: u64,
@@ -49,4 +52,6 @@ pub struct Community {
 impl Community {
     pub const LEN: usize =
         DISCRIMINATOR_LENGTH + (32 + 8 + 1 + 8 + 32 + 32 + 1 + 32 + 32 + 8 + 8 + 8 + 8 + 8);
+
+    pub const VERSION: u16 = 1;
 }

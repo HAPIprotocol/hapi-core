@@ -3,6 +3,9 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Network {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this network belongs to
     pub community: Pubkey,
 
@@ -43,6 +46,8 @@ pub struct Network {
 impl Network {
     pub const LEN: usize =
         DISCRIMINATOR_LENGTH + (32 + 1 + 32 + 1 + 32 + 32 + 1 + 8 + 8 + 8 + 8 + 8);
+
+    pub const VERSION: u16 = 1;
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

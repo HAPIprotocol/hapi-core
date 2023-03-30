@@ -2,9 +2,11 @@ use crate::{error::ErrorCode, state::community::Community};
 use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Community {
-    pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Community> {
-        let community: Community = match version {
-            1 => CommunityV1::try_deserialize_unchecked(account_data)?,
+    pub fn from_deprecated(account_data: &mut &[u8]) -> Result<Community> {
+        // TODO: current account version must be less than deprecated account version (exept V0)
+        let community: Community = match Community::VERSION {
+            // Warning! V0 migration can be performed only once
+            1 => CommunityV0::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
@@ -14,7 +16,7 @@ impl Community {
 }
 
 #[account]
-pub struct CommunityV1 {
+pub struct CommunityV0 {
     pub authority: Pubkey,
     pub cases: u64,
     pub confirmation_threshold: u8,
@@ -29,10 +31,11 @@ pub struct CommunityV1 {
     pub authority_stake: u64,
 }
 
-impl TryInto<Community> for CommunityV1 {
+impl TryInto<Community> for CommunityV0 {
     type Error = Error;
     fn try_into(self) -> Result<Community> {
         Ok(Community {
+            version: Community::VERSION,
             authority: self.authority,
             cases: self.cases,
             confirmation_threshold: self.confirmation_threshold,

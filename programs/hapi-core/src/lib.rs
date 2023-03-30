@@ -13,7 +13,13 @@ pub mod utils;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{asset::Asset, community::Community, network::Network, reporter::ReporterReward};
+use state::{
+    asset::Asset,
+    case::Case,
+    community::Community,
+    network::Network,
+    reporter::{Reporter, ReporterReward},
+};
 use utils::realloc_and_rent;
 
 pub use state::{
@@ -54,6 +60,7 @@ pub mod hapi_core {
         community.full_stake = full_stake;
         community.authority_stake = authority_stake;
         community.appraiser_stake = appraiser_stake;
+        community.version = Community::VERSION;
 
         Ok(())
     }
@@ -81,11 +88,9 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_community(ctx: Context<MigrateCommunity>, version: u8) -> Result<()> {
-        let community = Community::from_deprecated(
-            version,
-            &mut ctx.accounts.community.try_borrow_data()?.as_ref(),
-        )?;
+    pub fn migrate_community(ctx: Context<MigrateCommunity>) -> Result<()> {
+        let community =
+            Community::from_deprecated(&mut ctx.accounts.community.try_borrow_data()?.as_ref())?;
 
         if community.authority != ctx.accounts.authority.key() {
             return print_error(ErrorCode::NetworkMismatch);
@@ -160,6 +165,7 @@ pub mod hapi_core {
         network.asset_tracer_reward = asset_tracer_reward;
         network.asset_confirmation_reward = asset_confirmation_reward;
         network.replication_price = report_price;
+        network.version = Network::VERSION;
 
         Ok(())
     }
@@ -181,11 +187,9 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_network(ctx: Context<MigrateNetwork>, version: u8) -> Result<()> {
-        let network = Network::from_deprecated(
-            version,
-            &mut ctx.accounts.network.try_borrow_data()?.as_ref(),
-        )?;
+    pub fn migrate_network(ctx: Context<MigrateNetwork>) -> Result<()> {
+        let network =
+            Network::from_deprecated(&mut ctx.accounts.network.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
@@ -241,6 +245,7 @@ pub mod hapi_core {
         reporter.name = name;
         reporter.is_frozen = false;
         reporter.stake = 0;
+        reporter.version = Reporter::VERSION;
 
         Ok(())
     }
@@ -258,13 +263,50 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_reporter(_ctx: Context<MigrateReporter>) -> Result<()> {
+    pub fn migrate_reporter(ctx: Context<MigrateReporter>) -> Result<()> {
+        let reporter =
+            Reporter::from_deprecated(&mut ctx.accounts.reporter.try_borrow_data()?.as_ref())?;
+
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"reporter".as_ref(),
+                ctx.accounts.community.key().as_ref(),
+                reporter.pubkey.as_ref(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.reporter.key() != pda || reporter.bump != bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if reporter.community != ctx.accounts.community.key() {
+            return print_error(ErrorCode::CommunityMismatch);
+        }
+
+        let mut buffer: Vec<u8> = Vec::new();
+        reporter.try_serialize(&mut buffer)?;
+
+        if buffer.len() != Reporter::LEN {
+            return print_error(ErrorCode::UnexpectedLength);
+        }
+
+        realloc_and_rent(
+            &ctx.accounts.reporter,
+            &ctx.accounts.authority,
+            &ctx.accounts.rent,
+            Network::LEN + 32,
+        )?;
+
+        ctx.accounts
+            .reporter
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
+
         Ok(())
     }
 
-    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>, version: u8) -> Result<()> {
+    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
         let reporter_reward = ReporterReward::from_deprecated(
-            version,
             &mut ctx.accounts.reporter_reward.try_borrow_data()?.as_ref(),
         )?;
 
@@ -319,6 +361,7 @@ pub mod hapi_core {
         case.name = name;
         case.status = CaseStatus::Open;
         case.reporter = ctx.accounts.reporter.key();
+        case.version = Case::VERSION;
 
         Ok(())
     }
@@ -332,7 +375,53 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_case(_ctx: Context<MigrateCase>) -> Result<()> {
+    pub fn migrate_case(ctx: Context<MigrateCase>) -> Result<()> {
+        let case = Case::from_deprecated(&mut ctx.accounts.case.try_borrow_data()?.as_ref())?;
+
+        let (pda, bump) = Pubkey::find_program_address(
+            &[
+                b"case".as_ref(),
+                ctx.accounts.community.key().as_ref(),
+                &case.id.to_le_bytes(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.case.key() != pda || case.bump != bump {
+            return print_error(ErrorCode::UnexpectedAccount);
+        }
+        if case.community != ctx.accounts.community.key() {
+            return print_error(ErrorCode::CommunityMismatch);
+        }
+
+        {
+            let reporter = &ctx.accounts.reporter;
+            if !(reporter.role == ReporterRole::Publisher && case.reporter == reporter.key())
+                && reporter.role != ReporterRole::Authority
+            {
+                return print_error(ErrorCode::Unauthorized);
+            }
+        }
+
+        let mut buffer: Vec<u8> = Vec::new();
+        case.try_serialize(&mut buffer)?;
+
+        if buffer.len() != Case::LEN {
+            return print_error(ErrorCode::UnexpectedLength);
+        }
+
+        realloc_and_rent(
+            &ctx.accounts.case,
+            &ctx.accounts.authority,
+            &ctx.accounts.rent,
+            Network::LEN + 32,
+        )?;
+
+        ctx.accounts
+            .case
+            .try_borrow_mut_data()?
+            .write_all(&buffer)?;
+
         Ok(())
     }
 
@@ -375,6 +464,7 @@ pub mod hapi_core {
         address.risk = risk;
         address.confirmations = 0;
         address.replication_bounty = ctx.accounts.network.replication_price;
+        address.version = Address::VERSION;
 
         Ok(())
     }
@@ -431,11 +521,9 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_address(ctx: Context<MigrateAddress>, version: u8) -> Result<()> {
-        let address = Address::from_deprecated(
-            version,
-            &mut ctx.accounts.address.try_borrow_data()?.as_ref(),
-        )?;
+    pub fn migrate_address(ctx: Context<MigrateAddress>) -> Result<()> {
+        let address =
+            Address::from_deprecated(&mut ctx.accounts.address.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
@@ -527,6 +615,7 @@ pub mod hapi_core {
         asset.risk = risk;
         asset.confirmations = 0;
         asset.replication_bounty = ctx.accounts.network.replication_price;
+        asset.version = Asset::VERSION;
 
         Ok(())
     }
@@ -583,9 +672,8 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_asset(ctx: Context<MigrateAsset>, version: u8) -> Result<()> {
-        let asset =
-            Asset::from_deprecated(version, &mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
+    pub fn migrate_asset(ctx: Context<MigrateAsset>) -> Result<()> {
+        let asset = Asset::from_deprecated(&mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
@@ -638,6 +726,7 @@ pub mod hapi_core {
         reporter_reward.network = ctx.accounts.network.key();
         reporter_reward.reporter = ctx.accounts.reporter.key();
         reporter_reward.bump = bump;
+        reporter_reward.version = ReporterReward::VERSION;
 
         Ok(())
     }

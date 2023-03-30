@@ -5,9 +5,11 @@ use crate::{
 use {anchor_lang::prelude::*, std::convert::TryInto};
 
 impl Asset {
-    pub fn from_deprecated(version: u8, account_data: &mut &[u8]) -> Result<Asset> {
-        let asset: Asset = match version {
-            1 => AssetV1::try_deserialize_unchecked(account_data)?,
+    pub fn from_deprecated(account_data: &mut &[u8]) -> Result<Asset> {
+        // TODO: current account version must be less than deprecated account version (exept V0)
+        let asset: Asset = match Asset::VERSION {
+            // Warning! V0 migration can be performed only once
+            1 => AssetV0::try_deserialize_unchecked(account_data)?,
             _ => return Err(ErrorCode::InvalidAccountVersion.into()),
         }
         .try_into()?;
@@ -17,7 +19,7 @@ impl Asset {
 }
 
 #[account]
-pub struct AssetV1 {
+pub struct AssetV0 {
     pub community: Pubkey,
     pub network: Pubkey,
     pub mint: [u8; 64],
@@ -30,10 +32,11 @@ pub struct AssetV1 {
     pub confirmations: u8,
 }
 
-impl TryInto<Asset> for AssetV1 {
+impl TryInto<Asset> for AssetV0 {
     type Error = Error;
     fn try_into(self) -> Result<Asset> {
         Ok(Asset {
+            version: Asset::VERSION,
             community: self.community,
             network: self.network,
             mint: self.mint,
