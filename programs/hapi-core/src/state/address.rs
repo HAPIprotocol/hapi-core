@@ -96,6 +96,9 @@ pub enum Category {
 
     /// Child abuse and porn materials
     ChildAbuse,
+
+    /// Address belongs to a person or an organization from a high risk jurisdiction
+    HighRiskJurisdiction,
 }
 
 impl Default for Category {
