@@ -1,8 +1,5 @@
 use anchor_lang::prelude::*;
-use std::{
-    io::{Cursor, Write},
-    ops::DerefMut,
-};
+use std::io::Write;
 
 use crate::error::{print_error, ErrorCode};
 
@@ -11,8 +8,7 @@ pub const DISCRIMINATOR_LENGTH: usize = 8;
 /// Account reserve space
 pub const ACCOUNT_RESERVE_SPACE: usize = 32;
 
-// TODO: rm pub
-pub fn realloc_and_rent<'info>(
+fn realloc_and_rent<'info>(
     account: &AccountInfo<'info>,
     payer: &Signer<'info>,
     rent: &Sysvar<'info, Rent>,

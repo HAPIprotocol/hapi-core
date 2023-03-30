@@ -42,6 +42,8 @@ pub struct Asset {
 }
 
 impl Asset {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
+    pub const LEN: usize =
+        DISCRIMINATOR_LENGTH + (2 + 32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
+        
     pub const VERSION: u16 = 1;
 }

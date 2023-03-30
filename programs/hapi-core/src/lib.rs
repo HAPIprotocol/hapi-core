@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
-use std::io::Write;
 
 declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
 
@@ -20,7 +19,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::{migrate, realloc_and_rent};
+use utils::migrate;
 
 pub use state::{
     address::{Address, Category},
@@ -95,24 +94,6 @@ pub mod hapi_core {
         if community.authority != ctx.accounts.authority.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
-
-        // let mut buffer: Vec<u8> = Vec::new();
-        // community.try_serialize(&mut buffer)?;
-
-        // if buffer.len() != Community::LEN {
-        //     return print_error(ErrorCode::UnexpectedLength);
-        // }
-
-        // realloc_and_rent(
-        //     &ctx.accounts.community,
-        //     &ctx.accounts.authority,
-        //     &ctx.accounts.rent,
-        //     Community::LEN + 32,
-        // )?;
-        // ctx.accounts
-        //     .community
-        //     .try_borrow_mut_data()?
-        //     .write_all(&buffer)?;
 
         migrate(
             community,
@@ -213,25 +194,13 @@ pub mod hapi_core {
             return print_error(ErrorCode::CommunityMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        network.try_serialize(&mut buffer)?;
-
-        if buffer.len() != Network::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            network,
             &ctx.accounts.network,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Network::LEN + 32,
-        )?;
-        ctx.accounts
-            .network
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Network::LEN,
+        )
     }
 
     pub fn create_reporter(
@@ -289,26 +258,13 @@ pub mod hapi_core {
             return print_error(ErrorCode::CommunityMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        reporter.try_serialize(&mut buffer)?;
-
-        if buffer.len() != Reporter::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            reporter,
             &ctx.accounts.reporter,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Reporter::LEN + 32,
-        )?;
-
-        ctx.accounts
-            .reporter
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Reporter::LEN,
+        )
     }
 
     pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
@@ -323,25 +279,13 @@ pub mod hapi_core {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        reporter_reward.try_serialize(&mut buffer)?;
-
-        if buffer.len() != ReporterReward::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            reporter_reward,
             &ctx.accounts.reporter_reward,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            ReporterReward::LEN + 32,
-        )?;
-        ctx.accounts
-            .reporter_reward
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            ReporterReward::LEN,
+        )
     }
 
     pub fn create_case(
@@ -409,26 +353,13 @@ pub mod hapi_core {
             }
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        case.try_serialize(&mut buffer)?;
-
-        if buffer.len() != Case::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            case,
             &ctx.accounts.case,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Case::LEN + 32,
-        )?;
-
-        ctx.accounts
-            .case
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Case::LEN,
+        )
     }
 
     pub fn create_address(
@@ -551,25 +482,13 @@ pub mod hapi_core {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        address.try_serialize(&mut buffer)?;
-
-        if buffer.len() != Address::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            address,
             &ctx.accounts.address,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Address::LEN + 32,
-        )?;
-        ctx.accounts
-            .address
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Address::LEN,
+        )
     }
 
     pub fn change_address_case(ctx: Context<ChangeAddressCase>) -> Result<()> {
@@ -702,25 +621,13 @@ pub mod hapi_core {
             return print_error(ErrorCode::NetworkMismatch);
         }
 
-        let mut buffer: Vec<u8> = Vec::new();
-        asset.try_serialize(&mut buffer)?;
-
-        if buffer.len() != Asset::LEN {
-            return print_error(ErrorCode::UnexpectedLength);
-        }
-
-        realloc_and_rent(
+        migrate(
+            asset,
             &ctx.accounts.asset,
             &ctx.accounts.authority,
             &ctx.accounts.rent,
-            Asset::LEN + 32,
-        )?;
-        ctx.accounts
-            .asset
-            .try_borrow_mut_data()?
-            .write_all(&buffer)?;
-
-        Ok(())
+            Asset::LEN,
+        )
     }
 
     pub fn initialize_reporter_reward(

@@ -26,7 +26,7 @@ pub struct Case {
 }
 
 impl Case {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (32 + 1 + 8 + 32 + 1 + 32);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 1 + 8 + 32 + 1 + 32);
     pub const VERSION: u16 = 1;
 }
 
