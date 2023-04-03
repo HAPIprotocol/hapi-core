@@ -137,7 +137,6 @@ pub struct SetCommunityAuthority<'info> {
     asset_tracer_reward: u64,
     asset_confirmation_reward: u64,
     bump: u8,
-    reward_signer_bump: u8,
 )]
 pub struct CreateNetwork<'info> {
     #[account(mut)]
@@ -154,13 +153,6 @@ pub struct CreateNetwork<'info> {
         owner = Token::id(),
     )]
     pub reward_mint: Account<'info, Mint>,
-
-    /// CHECK: this account is not dangerous
-    #[account(
-        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
-        bump = reward_signer_bump,
-    )]
-    pub reward_signer: AccountInfo<'info>,
 
     #[account(
         init,
@@ -783,8 +775,7 @@ pub struct ConfirmAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
         owner = id(),
@@ -1055,8 +1046,7 @@ pub struct ConfirmAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
-    pub community: Account<'info, Community>,
+    pub community: Box<Account<'info, Community>>,
 
     #[account(
         owner = id(),
@@ -1285,13 +1275,6 @@ pub struct ClaimReporterReward<'info> {
         owner = Token::id())
     ]
     pub reward_mint: Account<'info, Mint>,
-
-    /// CHECK: this account is not dangerous
-    #[account(
-        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
-        bump = network.reward_signer_bump,
-    )]
-    pub reward_signer: AccountInfo<'info>,
 
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,

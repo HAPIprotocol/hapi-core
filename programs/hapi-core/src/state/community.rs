@@ -30,6 +30,7 @@ pub struct Community {
     /// Stake holding token account // owner - community (transfer all funds from old to new and remove token_signer)
     pub token_account: Pubkey,
 
+    // TODO: remove
     /// Token account for reporter fee
     pub treasury_token_account: Pubkey, // The same logic as token_account but with reward_mint from network
 

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 
-declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
+declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
 pub mod checker;
 pub mod context;
@@ -121,10 +121,11 @@ pub mod hapi_core {
         asset_tracer_reward: u64,
         asset_confirmation_reward: u64,
         network_bump: u8,
-        reward_signer_bump: u8,
         report_price: u64,
     ) -> Result<()> {
-        // Pass authority to network signer PDA
+        let network = &mut ctx.accounts.network;
+
+        // Pass authority to network PDA
         token::set_authority(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -134,19 +135,14 @@ pub mod hapi_core {
                 },
             ),
             AuthorityType::MintTokens,
-            Some(ctx.accounts.reward_signer.key()),
+            Some(network.key()),
         )?;
-
-        let network = &mut ctx.accounts.network;
 
         network.community = ctx.accounts.community.key();
         network.bump = network_bump;
-
         network.name = name;
         network.schema = schema;
         network.reward_mint = ctx.accounts.reward_mint.key();
-        network.reward_signer = ctx.accounts.reward_signer.key();
-        network.reward_signer_bump = reward_signer_bump;
         network.address_tracer_reward = address_tracer_reward;
         network.address_confirmation_reward = address_confirmation_reward;
         network.asset_tracer_reward = asset_tracer_reward;
@@ -739,12 +735,11 @@ pub mod hapi_core {
         reporter_reward.address_confirmation_counter = 0;
         reporter_reward.address_tracer_counter = 0;
 
-        let reward_signer = &ctx.accounts.reward_signer;
-
-        let seeds = &[
-            b"network_reward",
-            network.to_account_info().key.as_ref(),
-            &[network.reward_signer_bump],
+        let signer = &[
+            b"network",
+            network.community.as_ref(),
+            network.name.as_ref(),
+            &[network.bump],
         ];
 
         token::mint_to(
@@ -753,9 +748,9 @@ pub mod hapi_core {
                 MintTo {
                     mint: ctx.accounts.reward_mint.to_account_info(),
                     to: ctx.accounts.reporter_token_account.to_account_info(),
-                    authority: reward_signer.to_account_info(),
+                    authority: ctx.accounts.network.to_account_info(),
                 },
-                &[&seeds[..]],
+                &[&signer[..]],
             ),
             reward,
         )?;

@@ -266,9 +266,6 @@ describe("HapiCore Reporter", () => {
         network.name
       );
 
-      const [rewardSignerAccount, rewardSignerBump] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
@@ -278,7 +275,6 @@ describe("HapiCore Reporter", () => {
           network.assetTracerReward,
           network.assetConfirmationReward,
           bump,
-          rewardSignerBump,
           network.reportPrice,
           {
             accounts: {
@@ -286,7 +282,6 @@ describe("HapiCore Reporter", () => {
               community: community.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
-              rewardSigner: rewardSignerAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -1311,9 +1306,6 @@ describe("HapiCore Reporter", () => {
           reporterAccount
         );
 
-      const [rewardSignerAccount] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
       const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterTokenAccount)
@@ -1330,7 +1322,6 @@ describe("HapiCore Reporter", () => {
           reporterReward: reporterRewardAccount,
           reporterTokenAccount,
           rewardMint: rewardToken.mintAccount,
-          rewardSigner: rewardSignerAccount,
           tokenProgram: rewardToken.programId,
         },
         signers: [reporter.keypair],
@@ -1390,9 +1381,6 @@ describe("HapiCore Reporter", () => {
           reporterAccount
         );
 
-      const [rewardSignerAccount] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
       const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterTokenAccount)
@@ -1409,7 +1397,6 @@ describe("HapiCore Reporter", () => {
           reporterReward: reporterRewardAccount,
           reporterTokenAccount,
           rewardMint: rewardToken.mintAccount,
-          rewardSigner: rewardSignerAccount,
           tokenProgram: rewardToken.programId,
         },
         signers: [reporter.keypair],

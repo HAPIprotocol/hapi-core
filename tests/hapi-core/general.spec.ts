@@ -271,9 +271,6 @@ describe("HapiCore General", () => {
       network.name
     );
 
-    const [rewardSignerAccount, rewardSignerBump] =
-      await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
     const args = [
       name.toJSON().data,
       NetworkSchema[network.schema],
@@ -282,7 +279,6 @@ describe("HapiCore General", () => {
       network.assetTracerReward,
       network.assetConfirmationReward,
       bump,
-      rewardSignerBump,
       network.reportPrice
     ];
 
@@ -292,7 +288,6 @@ describe("HapiCore General", () => {
         community: community.publicKey,
         network: networkAccount,
         rewardMint: network.rewardToken.mintAccount,
-        rewardSigner: rewardSignerAccount,
         tokenProgram: network.rewardToken.programId,
         systemProgram: web3.SystemProgram.programId,
       },

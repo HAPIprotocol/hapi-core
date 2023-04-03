@@ -43,8 +43,6 @@ impl TryInto<Network> for NetworkV0 {
             name: self.name,
             schema: self.schema,
             reward_mint: self.reward_mint,
-            reward_signer: self.reward_signer,
-            reward_signer_bump: self.reward_signer_bump,
             address_tracer_reward: self.address_tracer_reward,
             address_confirmation_reward: self.address_confirmation_reward,
             asset_tracer_reward: self.asset_tracer_reward,
