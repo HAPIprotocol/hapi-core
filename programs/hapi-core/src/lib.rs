@@ -53,7 +53,6 @@ pub mod hapi_core {
         community.token_signer = ctx.accounts.token_signer.key();
         community.token_signer_bump = signer_bump;
         community.token_account = ctx.accounts.token_account.key();
-        community.treasury_token_account = ctx.accounts.treasury_token_account.key();
         community.validator_stake = validator_stake;
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;

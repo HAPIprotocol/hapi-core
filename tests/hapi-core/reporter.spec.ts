@@ -138,7 +138,7 @@ describe("HapiCore Reporter", () => {
     wait.push(stakeToken.transfer(null, nobody.publicKey, 1_000_000));
 
     rewardToken = new TestToken(provider);
-    await rewardToken.mint(0);
+    await rewardToken.mint(1_000_000_000);
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -146,31 +146,13 @@ describe("HapiCore Reporter", () => {
         toPubkey: nobody.publicKey,
         lamports: 10_000_000,
       }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.alice.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.bob.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.carol.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.dave.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.erin.keypair.publicKey,
-        lamports: 10_000_000,
-      })
+      ...Object.keys(REPORTERS).map((key) =>
+        web3.SystemProgram.transfer({
+          fromPubkey: authority.publicKey,
+          toPubkey: REPORTERS[key].keypair.publicKey,
+          lamports: 10_000_000,
+        })
+      )
     );
 
     wait.push(provider.sendAndConfirm(tx));
@@ -185,7 +167,11 @@ describe("HapiCore Reporter", () => {
       );
 
       wait.push(
-        rewardToken.getTokenAccount(REPORTERS[reporter].keypair.publicKey)
+        rewardToken.transfer(
+          null,
+          REPORTERS[reporter].keypair.publicKey,
+          1_000_000
+        )
       );
     }
 
@@ -196,8 +182,6 @@ describe("HapiCore Reporter", () => {
       tokenSignerAccount
     );
 
-    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-
     const [otherTokenSignerAccount, otherStashBump] =
       await program.pda.findCommunityTokenSignerAddress(
         otherCommunity.publicKey
@@ -206,8 +190,6 @@ describe("HapiCore Reporter", () => {
     const otherTokenAccount = await stakeToken.createAccount(
       otherTokenSignerAccount
     );
-
-    const otherTreasuryTokenAccount = await stakeToken.createAccount(otherTokenSignerAccount);
 
     wait.push(
       program.rpc.initializeCommunity(
@@ -226,7 +208,6 @@ describe("HapiCore Reporter", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: tokenSignerAccount,
             tokenAccount: communityTokenAccount,
-            treasuryTokenAccount: communityTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
@@ -248,7 +229,6 @@ describe("HapiCore Reporter", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: otherTokenSignerAccount,
             tokenAccount: otherTokenAccount,
-            treasuryTokenAccount: otherTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [otherCommunity],
@@ -264,6 +244,10 @@ describe("HapiCore Reporter", () => {
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
         community.publicKey,
         network.name
+      );
+
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
       );
 
       wait.push(
@@ -282,6 +266,7 @@ describe("HapiCore Reporter", () => {
               community: community.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -1192,13 +1177,11 @@ describe("HapiCore Reporter", () => {
         addr.caseId
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
       );
 
-      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
-
-      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+      const reporterPaymentTokenAccount = await rewardToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
@@ -1216,7 +1199,7 @@ describe("HapiCore Reporter", () => {
             reporter: reporterAccount,
             case: caseAccount,
             reporterPaymentTokenAccount,
-            treasuryTokenAccount: communityTreasuryTokenAccount,
+            treasuryTokenAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -1313,6 +1296,10 @@ describe("HapiCore Reporter", () => {
         10
       );
 
+      const supplyBefore = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+
       const tx = await program.rpc.claimReporterReward({
         accounts: {
           sender: reporter.keypair.publicKey,
@@ -1340,11 +1327,12 @@ describe("HapiCore Reporter", () => {
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
       ).toEqual(network.addressTracerReward.toNumber());
 
-      const supply = await provider.connection.getTokenSupply(
+      const supplyAfter = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual(
-        network.addressTracerReward.toString()
+
+      expect(new BN(supplyAfter.value.amount)).toEqual(
+        new BN(supplyBefore.value.amount).add(network.addressTracerReward)
       );
 
       {
@@ -1388,6 +1376,10 @@ describe("HapiCore Reporter", () => {
         10
       );
 
+      const supplyBefore = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+
       const tx = await program.rpc.claimReporterReward({
         accounts: {
           sender: reporter.keypair.publicKey,
@@ -1415,13 +1407,12 @@ describe("HapiCore Reporter", () => {
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
       ).toEqual(network.addressConfirmationReward.toNumber());
 
-      const supply = await provider.connection.getTokenSupply(
+      const supplyAfter = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual(
-        network.addressTracerReward
-          .add(network.addressConfirmationReward)
-          .toString()
+
+      expect(new BN(supplyAfter.value.amount).toNumber()).toEqual(
+        new BN(supplyBefore.value.amount).add(network.addressConfirmationReward).toNumber()
       );
 
       {

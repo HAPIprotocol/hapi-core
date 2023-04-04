@@ -72,7 +72,6 @@ describe("HapiCore Network", () => {
       await program.pda.findCommunityTokenSignerAddress(community.publicKey);
 
     const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-    const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     await program.rpc.initializeCommunity(
       new BN(1),
@@ -89,7 +88,6 @@ describe("HapiCore Network", () => {
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
-          treasuryTokenAccount,
           tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -107,6 +105,10 @@ describe("HapiCore Network", () => {
 
       const [networkAccount, networkBump] =
         await program.pda.findNetworkAddress(community.publicKey, "near");
+
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
+      );
 
       const args = [
         name.toJSON().data,
@@ -127,6 +129,7 @@ describe("HapiCore Network", () => {
               community: community.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -149,7 +152,6 @@ describe("HapiCore Network", () => {
       const otherTokenAccount = await stakeToken.createAccount(
         tokenSignerAccount
       );
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await program.rpc.initializeCommunity(
         new BN(1),
@@ -166,7 +168,6 @@ describe("HapiCore Network", () => {
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
-            treasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -187,6 +188,10 @@ describe("HapiCore Network", () => {
         "near"
       );
 
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
+      );
+
       const args = [
         name.toJSON().data,
         schema,
@@ -206,6 +211,7 @@ describe("HapiCore Network", () => {
               community: otherCommunity.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -224,6 +230,10 @@ describe("HapiCore Network", () => {
         "near"
       );
 
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
+      );
+
       const args = [
         name.toJSON().data,
         schema,
@@ -243,6 +253,7 @@ describe("HapiCore Network", () => {
               community: otherCommunity.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -259,6 +270,10 @@ describe("HapiCore Network", () => {
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
         community.publicKey,
         "near"
+      );
+
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
       );
 
       const args = [
@@ -278,6 +293,7 @@ describe("HapiCore Network", () => {
           community: community.publicKey,
           network: networkAccount,
           rewardMint: rewardToken.mintAccount,
+          treasuryTokenAccount,
           tokenProgram: rewardToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -323,6 +339,10 @@ describe("HapiCore Network", () => {
         "near"
       );
 
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
+      );
+
       const args = [
         name.toJSON().data,
         schema,
@@ -342,6 +362,7 @@ describe("HapiCore Network", () => {
               community: community.publicKey,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },

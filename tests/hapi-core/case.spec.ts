@@ -117,7 +117,6 @@ describe("HapiCore Case", () => {
     const communityTokenAccount = await stakeToken.createAccount(
       tokenSignerAccount
     );
-    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
     wait.push(
       program.rpc.initializeCommunity(
@@ -135,7 +134,6 @@ describe("HapiCore Case", () => {
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
-            treasuryTokenAccount: communityTreasuryTokenAccount,
             tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },

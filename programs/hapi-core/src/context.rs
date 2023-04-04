@@ -37,13 +37,6 @@ pub struct InitializeCommunity<'info> {
     pub token_account: Account<'info, TokenAccount>,
 
     #[account(
-        constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
-        owner = Token::id(),
-    )]
-    pub treasury_token_account: Account<'info, TokenAccount>,
-
-    #[account(
         init,
         payer = authority,
         owner = id(),
@@ -163,6 +156,13 @@ pub struct CreateNetwork<'info> {
         space = Network::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub network: Account<'info, Network>,
+
+    #[account(
+        constraint = treasury_token_account.mint == reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
 
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,
@@ -572,15 +572,15 @@ pub struct CreateAddress<'info> {
 
     #[account(
         mut,
-        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
         constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
     )]
     pub reporter_payment_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = treasury_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub treasury_token_account: Account<'info, TokenAccount>,
@@ -646,15 +646,15 @@ pub struct UpdateAddress<'info> {
 
     #[account(
         mut,
-        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
         constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
     )]
     pub reporter_payment_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = treasury_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub treasury_token_account: Account<'info, TokenAccount>,
@@ -897,15 +897,15 @@ pub struct CreateAsset<'info> {
 
     #[account(
         mut,
-        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
         constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
     )]
     pub reporter_payment_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = treasury_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub treasury_token_account: Account<'info, TokenAccount>,
@@ -972,15 +972,15 @@ pub struct UpdateAsset<'info> {
 
     #[account(
         mut,
-        constraint = reporter_payment_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_payment_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
         constraint = reporter_payment_token_account.owner == sender.key() @ ProgramError::IllegalOwner,
     )]
     pub reporter_payment_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        constraint = treasury_token_account.mint == community.stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = treasury_token_account.owner == community.token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = treasury_token_account.mint == network.reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub treasury_token_account: Account<'info, TokenAccount>,

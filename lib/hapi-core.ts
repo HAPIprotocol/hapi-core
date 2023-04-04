@@ -82,6 +82,7 @@ export function initHapiCore(
     );
   }
 
+  // TODO: deprecated
   async function findNetworkRewardSignerAddress(network: web3.PublicKey) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("network_reward"), network.toBytes()],

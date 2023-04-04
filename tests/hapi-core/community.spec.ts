@@ -48,7 +48,6 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = web3.Keypair.generate().publicKey;
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await expectThrowError(
         () =>
@@ -59,7 +58,6 @@ describe("HapiCore Community", () => {
               stakeMint: stakeToken.mintAccount,
               tokenSigner: tokenSignerAccount,
               tokenAccount,
-              treasuryTokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [community],
@@ -86,7 +84,6 @@ describe("HapiCore Community", () => {
       const fakeMint = web3.Keypair.generate().publicKey;
 
       const tokenAccount = await stakeToken.createAccount();
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await expectThrowError(
         () =>
@@ -97,7 +94,6 @@ describe("HapiCore Community", () => {
               stakeMint: fakeMint,
               tokenSigner: tokenSignerAccount,
               tokenAccount,
-              treasuryTokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [community],
@@ -122,7 +118,6 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.createAccount();
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await expectThrowError(
         () =>
@@ -133,7 +128,6 @@ describe("HapiCore Community", () => {
               stakeMint: stakeToken.mintAccount,
               tokenSigner: tokenSignerAccount,
               tokenAccount,
-              treasuryTokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [],
@@ -158,7 +152,7 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+
 
       const tx = await program.rpc.initializeCommunity(...args, {
         accounts: {
@@ -167,7 +161,7 @@ describe("HapiCore Community", () => {
           stakeMint: stakeToken.mintAccount,
           tokenSigner: tokenSignerAccount,
           tokenAccount,
-          treasuryTokenAccount,
+
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],
@@ -209,7 +203,6 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.createAccount();
-      const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
 
       await expectThrowError(
         () =>
@@ -220,7 +213,6 @@ describe("HapiCore Community", () => {
               stakeMint: stakeToken.mintAccount,
               tokenSigner: tokenSignerAccount,
               tokenAccount,
-              treasuryTokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
             signers: [community],
@@ -304,7 +296,7 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-        const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
@@ -313,7 +305,7 @@ describe("HapiCore Community", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: tokenSignerAccount,
             tokenAccount,
-            treasuryTokenAccount,
+
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
@@ -440,7 +432,7 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-        const treasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
@@ -449,7 +441,7 @@ describe("HapiCore Community", () => {
             stakeMint: stakeToken.mintAccount,
             tokenSigner: tokenSignerAccount,
             tokenAccount,
-            treasuryTokenAccount,
+
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],

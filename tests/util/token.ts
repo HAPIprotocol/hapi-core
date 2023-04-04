@@ -132,12 +132,13 @@ export class TestToken {
     return new BN(value.amount);
   }
 
-  async getTokenAccount(account: web3.PublicKey): Promise<web3.PublicKey> {
+  async getTokenAccount(account: web3.PublicKey, allowOwnerOffCurve = false): Promise<web3.PublicKey> {
     const { address } = await Token.getOrCreateAssociatedTokenAccount(
       this.provider.connection,
       this.payer,
       this.token,
       account,
+      allowOwnerOffCurve
     );
 
     return address;

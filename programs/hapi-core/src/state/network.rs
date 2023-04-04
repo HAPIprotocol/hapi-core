@@ -21,14 +21,6 @@ pub struct Network {
     /// Reward token mint account
     pub reward_mint: Pubkey,
 
-    // /// Token account for reporter fee
-    // pub treasury_token_account: Pubkey, // The same logic as token_account but with reward_mint from network
-
-    // /// Reward signer PDA
-    // pub reward_signer: Pubkey,
-
-    // /// Seed bump for reward signer PDA
-    // pub reward_signer_bump: u8,
     /// Reward amount for tracers that report addresses to this network
     pub address_tracer_reward: u64,
 

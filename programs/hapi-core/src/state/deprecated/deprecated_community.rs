@@ -48,7 +48,6 @@ impl TryInto<Community> for CommunityV0 {
             tracer_stake: self.tracer_stake,
             full_stake: self.full_stake,
             authority_stake: self.authority_stake,
-            treasury_token_account: Pubkey::default(),
             appraiser_stake: u64::MAX,
         })
     }
