@@ -16,15 +16,6 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(
-    stake_unlock_epochs: u64,
-    confirmation_threshold: u8,
-    validator_stake: u64,
-    tracer_stake: u64,
-    full_stake: u64,
-    authority_stake: u64,
-    stash_bump: u8,
-)]
 pub struct InitializeCommunity<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -71,6 +62,9 @@ pub struct UpdateCommunity<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(
+    token_signer_bump: u8
+)]
 pub struct MigrateCommunity<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -82,20 +76,36 @@ pub struct MigrateCommunity<'info> {
     )]
     pub community: AccountInfo<'info>,
 
-    // // TODO: Remove treasury token account
-    // #[account(
-    //         constraint = treasury_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-    //         constraint = treasury_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
-    //         owner = Token::id(),
-    //     )]
-    // pub treasury_token_account: Account<'info, TokenAccount>,
+    #[account(
+        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = token_account.owner == community.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub token_account: Account<'info, TokenAccount>,
 
-    // #[account(owner = Token::id())]
-    // pub stake_mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub old_token_account: Account<'info, TokenAccount>,
 
-    // /// CHECK: this account is not dangerous
-    // pub token_signer: AccountInfo<'info>,
+    #[account(owner = Token::id())]
+    pub stake_mint: Account<'info, Mint>,
+
+    /// CHECK: this account is not dangerous
+    #[account(
+        mut,
+        seeds = [b"community_stash".as_ref(), community.key().as_ref()],
+        bump = token_signer_bump
+    )]
+    pub token_signer: AccountInfo<'info>,
+
     pub rent: Sysvar<'info, Rent>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 
     pub system_program: Program<'info, System>,
 }
@@ -193,6 +203,9 @@ pub struct UpdateNetwork<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(
+    reward_signer_bump: u8
+)]
 pub struct MigrateNetwork<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -210,13 +223,24 @@ pub struct MigrateNetwork<'info> {
         )]
     pub network: AccountInfo<'info>,
 
-    // Transfer authority of reward mint to network
-    // #[account(
-    //     seeds = [b"network_reward".as_ref(), network.key().as_ref()],
-    //     bump = network.reward_signer_bump,
-    // )]
-    // pub reward_signer: AccountInfo<'info>,
+    /// CHECK: this account is not dangerous
+    #[account(
+        mut,
+        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
+        bump = reward_signer_bump,
+    )]
+    pub reward_signer: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        owner = Token::id(),
+    )]
+    pub reward_mint: Account<'info, Mint>,
+
     pub rent: Sysvar<'info, Rent>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
 
     pub system_program: Program<'info, System>,
 }

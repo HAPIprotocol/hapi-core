@@ -19,7 +19,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::migrate;
+use utils::{close, migrate};
 
 pub use state::{
     address::{Address, Category},
@@ -82,13 +82,45 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_community(ctx: Context<MigrateCommunity>) -> Result<()> {
+    pub fn migrate_community(ctx: Context<MigrateCommunity>, token_signer_bump: u8) -> Result<()> {
         let community =
             Community::from_deprecated(&mut ctx.accounts.community.try_borrow_data()?.as_ref())?;
 
         if community.authority != ctx.accounts.authority.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
+
+        let seeds = &[
+            b"community_stash".as_ref(),
+            ctx.accounts.community.to_account_info().key.as_ref(),
+            &[token_signer_bump],
+        ];
+        let signer = &[&seeds[..]];
+
+        // Transfer all tokens to new ATA
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.old_token_account.to_account_info(),
+                    to: ctx.accounts.token_account.to_account_info(),
+                    authority: ctx.accounts.token_signer.to_account_info(),
+                },
+                signer,
+            ),
+            ctx.accounts.old_token_account.amount,
+        )?;
+
+        // Close old token account and token signer
+        close(
+            ctx.accounts.old_token_account.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
+
+        close(
+            ctx.accounts.token_signer.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
 
         migrate(
             community,
@@ -184,6 +216,25 @@ pub mod hapi_core {
         if network.community != ctx.accounts.community.key() {
             return print_error(ErrorCode::CommunityMismatch);
         }
+
+        // Set reward mint authority to network
+        token::set_authority(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                SetAuthority {
+                    current_authority: ctx.accounts.reward_signer.to_account_info(),
+                    account_or_mint: ctx.accounts.reward_mint.to_account_info(),
+                },
+            ),
+            AuthorityType::MintTokens,
+            Some(ctx.accounts.network.key()),
+        )?;
+
+        // Close reward signer
+        close(
+            ctx.accounts.reward_signer.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
 
         migrate(
             network,
@@ -686,16 +737,17 @@ pub mod hapi_core {
 
         let community = ctx.accounts.community.clone();
 
-        let cpi_context = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.community_token_account.to_account_info(),
-                to: ctx.accounts.reporter_token_account.to_account_info(),
-                authority: community.to_account_info(),
-            },
-        );
-
-        token::transfer(cpi_context, reporter.stake)?;
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.community_token_account.to_account_info(),
+                    to: ctx.accounts.reporter_token_account.to_account_info(),
+                    authority: community.to_account_info(),
+                },
+            ),
+            reporter.stake,
+        )?;
 
         reporter.status = ReporterStatus::Inactive;
         reporter.unlock_epoch = 0;
