@@ -228,10 +228,9 @@ describe("HapiCore General", () => {
     const authorityStake = new BN(4_000);
     const appraiserStake = new BN(5_000);
 
-    const [tokenSignerAccount, tokenSignerBump] =
-      await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
-    const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const tokenAccount = await stakeToken.getTokenAccount(
+      community.publicKey
+    );
 
     const tx = await program.rpc.initializeCommunity(
       new BN(4),
@@ -241,14 +240,12 @@ describe("HapiCore General", () => {
       fullStake,
       authorityStake,
       appraiserStake,
-      tokenSignerBump,
       {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
-          tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],
@@ -411,7 +408,7 @@ describe("HapiCore General", () => {
       reporter.keypair.publicKey
     );
 
-    const communityInfo = await program.account.community.fetch(
+    const communityTokenAccount = await stakeToken.getTokenAccount(
       community.publicKey
     );
 
@@ -422,7 +419,7 @@ describe("HapiCore General", () => {
         reporter: reporterAccount,
         stakeMint: stakeToken.mintAccount,
         reporterTokenAccount: tokenAccount,
-        communityTokenAccount: communityInfo.tokenAccount,
+        communityTokenAccount,
         tokenProgram: stakeToken.programId,
       },
       signers: [reporter.keypair],

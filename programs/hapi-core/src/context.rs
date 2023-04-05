@@ -31,7 +31,7 @@ pub struct InitializeCommunity<'info> {
 
     #[account(
         constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = token_account.owner == community.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub token_account: Account<'info, TokenAccount>,
@@ -46,9 +46,6 @@ pub struct InitializeCommunity<'info> {
 
     #[account(owner = Token::id())]
     pub stake_mint: Account<'info, Mint>,
-
-    /// CHECK: this account is not dangerous
-    pub token_signer: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -213,6 +210,12 @@ pub struct MigrateNetwork<'info> {
         )]
     pub network: AccountInfo<'info>,
 
+    // Transfer authority of reward mint to network
+    // #[account(
+    //     seeds = [b"network_reward".as_ref(), network.key().as_ref()],
+    //     bump = network.reward_signer_bump,
+    // )]
+    // pub reward_signer: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
 
     pub system_program: Program<'info, System>,
@@ -1137,6 +1140,7 @@ pub struct ActivateReporter<'info> {
     #[account(
         mut,
         constraint = community_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = community_token_account.owner == community.key() @ ProgramError::IllegalOwner,
     )]
     pub community_token_account: Account<'info, TokenAccount>,
 
@@ -1182,7 +1186,7 @@ pub struct ReleaseReporter<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(signer, owner = id())]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -1197,17 +1201,10 @@ pub struct ReleaseReporter<'info> {
     )]
     pub reporter_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: this account is not dangerous
-    #[account(
-        seeds = [b"community_stash".as_ref(), community.key().as_ref()],
-        bump = community.token_signer_bump,
-    )]
-    pub community_token_signer: AccountInfo<'info>,
-
     #[account(
         mut,
         constraint = community_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = community_token_account.owner == community_token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = community_token_account.owner == community.key() @ ProgramError::IllegalOwner,
     )]
     pub community_token_account: Account<'info, TokenAccount>,
 

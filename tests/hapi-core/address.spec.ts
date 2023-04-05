@@ -205,11 +205,8 @@ describe("HapiCore Address", () => {
       );
     }
 
-    const [tokenSignerAccount, tokenSignerBump] =
-      await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
-    const communityTokenAccount = await stakeToken.createAccount(
-      tokenSignerAccount
+    const communityTokenAccount = await stakeToken.getTokenAccount(
+      community.publicKey
     );
 
     wait.push(
@@ -221,14 +218,12 @@ describe("HapiCore Address", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
-            tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
@@ -336,8 +331,8 @@ describe("HapiCore Address", () => {
               community: community.publicKey,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: reporterTokenAccount,
-              communityTokenAccount: communityTokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],

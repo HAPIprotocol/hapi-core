@@ -64,6 +64,7 @@ export function initHapiCore(
 
   // const coder = new Coder(IDL);
 
+  // TODO: deprecated
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("community_stash"), community.toBytes()],

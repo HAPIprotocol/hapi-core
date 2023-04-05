@@ -21,15 +21,6 @@ pub struct Community {
     /// Stake token mint account
     pub stake_mint: Pubkey,
 
-    /// Token signer PDA
-    pub token_signer: Pubkey,
-
-    /// Seed bump for token signer PDA
-    pub token_signer_bump: u8,
-
-    /// Stake holding token account // owner - community (transfer all funds from old to new and remove token_signer)
-    pub token_account: Pubkey,
-
     /// Amount of stake required from a reporter of validator type
     pub validator_stake: u64,
 
@@ -47,8 +38,7 @@ pub struct Community {
 }
 
 impl Community {
-    pub const LEN: usize =
-        DISCRIMINATOR_LENGTH + (2 + 32 + 8 + 1 + 8 + 32 + 32 + 1 + 32 + 32 + 8 + 8 + 8 + 8 + 8);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 8 + 1 + 8 + 32 + 8 + 8 + 8 + 8 + 8);
 
     pub const VERSION: u16 = 1;
 }

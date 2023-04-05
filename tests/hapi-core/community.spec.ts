@@ -33,9 +33,6 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid token account", async () => {
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
       const args = [
         new BN(3),
         3,
@@ -44,7 +41,6 @@ describe("HapiCore Community", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
       ];
 
       const tokenAccount = web3.Keypair.generate().publicKey;
@@ -56,7 +52,6 @@ describe("HapiCore Community", () => {
               authority: authority.publicKey,
               community: community.publicKey,
               stakeMint: stakeToken.mintAccount,
-              tokenSigner: tokenSignerAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -67,9 +62,6 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid mint account", async () => {
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
       const args = [
         new BN(3),
         3,
@@ -78,7 +70,6 @@ describe("HapiCore Community", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
       ];
 
       const fakeMint = web3.Keypair.generate().publicKey;
@@ -92,7 +83,6 @@ describe("HapiCore Community", () => {
               authority: authority.publicKey,
               community: community.publicKey,
               stakeMint: fakeMint,
-              tokenSigner: tokenSignerAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -103,9 +93,6 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid community", async () => {
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
       const args = [
         new BN(3),
         3,
@@ -114,7 +101,6 @@ describe("HapiCore Community", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
       ];
 
       const tokenAccount = await stakeToken.createAccount();
@@ -126,7 +112,6 @@ describe("HapiCore Community", () => {
               authority: authority.publicKey,
               community: nobody.publicKey,
               stakeMint: stakeToken.mintAccount,
-              tokenSigner: tokenSignerAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -137,9 +122,6 @@ describe("HapiCore Community", () => {
     });
 
     it("success", async () => {
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
       const args = [
         new BN(3),
         3,
@@ -148,20 +130,18 @@ describe("HapiCore Community", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
       ];
 
-      const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-
+      const tokenAccount = await stakeToken.getTokenAccount(
+        community.publicKey
+      );
 
       const tx = await program.rpc.initializeCommunity(...args, {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
-          tokenSigner: tokenSignerAccount,
           tokenAccount,
-
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],
@@ -175,9 +155,6 @@ describe("HapiCore Community", () => {
 
       expect(communityAccount.authority).toEqual(authority.publicKey);
       expect(communityAccount.cases.toNumber()).toEqual(0);
-      expect(communityAccount.tokenSignerBump).toEqual(tokenSignerBump);
-      expect(communityAccount.tokenSigner).toEqual(tokenSignerAccount);
-      expect(communityAccount.tokenAccount).toEqual(tokenAccount);
       expect(communityAccount.stakeMint).toEqual(stakeToken.mintAccount);
 
       const communityInfo = await provider.connection.getAccountInfoAndContext(
@@ -188,9 +165,6 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - already exists", async () => {
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
       const args = [
         new BN(3),
         3,
@@ -199,10 +173,11 @@ describe("HapiCore Community", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
       ];
 
-      const tokenAccount = await stakeToken.createAccount();
+      const tokenAccount = await stakeToken.getTokenAccount(
+        community.publicKey
+      );
 
       await expectThrowError(
         () =>
@@ -211,7 +186,6 @@ describe("HapiCore Community", () => {
               authority: authority.publicKey,
               community: community.publicKey,
               stakeMint: stakeToken.mintAccount,
-              tokenSigner: tokenSignerAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -279,10 +253,6 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       {
-        const [tokenSignerAccount, tokenSignerBump] =
-          await program.pda.findCommunityTokenSignerAddress(
-            community.publicKey
-          );
 
         const args = [
           new BN(3),
@@ -292,20 +262,18 @@ describe("HapiCore Community", () => {
           new BN(3_000),
           new BN(4_000),
           new BN(5_000),
-          tokenSignerBump,
         ];
 
-        const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-
+        const tokenAccount = await stakeToken.getTokenAccount(
+          community.publicKey
+        );
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
-            tokenSigner: tokenSignerAccount,
             tokenAccount,
-
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],
@@ -415,11 +383,6 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       {
-        const [tokenSignerAccount, tokenSignerBump] =
-          await program.pda.findCommunityTokenSignerAddress(
-            community.publicKey
-          );
-
         const args = [
           new BN(3),
           3,
@@ -428,20 +391,18 @@ describe("HapiCore Community", () => {
           new BN(3_000),
           new BN(4_000),
           new BN(5_000),
-          tokenSignerBump,
         ];
 
-        const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-
+        const tokenAccount = await stakeToken.getTokenAccount(
+          community.publicKey
+        );
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
             community: community.publicKey,
             stakeMint: stakeToken.mintAccount,
-            tokenSigner: tokenSignerAccount,
             tokenAccount,
-
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [community],

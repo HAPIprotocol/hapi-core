@@ -68,10 +68,9 @@ describe("HapiCore Network", () => {
     rewardToken = new TestToken(provider);
     await rewardToken.mint(0);
 
-    const [tokenSignerAccount, tokenSignerBump] =
-      await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
-    const tokenAccount = await stakeToken.createAccount(tokenSignerAccount);
+    const tokenAccount = await stakeToken.getTokenAccount(
+      community.publicKey
+    );
 
     await program.rpc.initializeCommunity(
       new BN(1),
@@ -81,14 +80,12 @@ describe("HapiCore Network", () => {
       assetTracerReward,
       assetConfirmationReward,
       appraiserStake,
-      tokenSignerBump,
       {
         accounts: {
           authority: authority.publicKey,
           community: community.publicKey,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
-          tokenSigner: tokenSignerAccount,
           systemProgram: web3.SystemProgram.programId,
         },
         signers: [community],
@@ -144,13 +141,8 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
-      const [tokenSignerAccount, tokenSignerBump] =
-        await program.pda.findCommunityTokenSignerAddress(
-          otherCommunity.publicKey
-        );
-
-      const otherTokenAccount = await stakeToken.createAccount(
-        tokenSignerAccount
+      const otherTokenAccount = await stakeToken.getTokenAccount(
+        otherCommunity.publicKey
       );
 
       await program.rpc.initializeCommunity(
@@ -161,14 +153,12 @@ describe("HapiCore Network", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
             community: otherCommunity.publicKey,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
-            tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [otherCommunity],
@@ -560,7 +550,7 @@ describe("HapiCore Network", () => {
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
+      const communityTokenAccount = await stakeToken.getTokenAccount(
         community.publicKey
       );
 
@@ -571,7 +561,7 @@ describe("HapiCore Network", () => {
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
           reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],

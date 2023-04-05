@@ -41,7 +41,6 @@ pub mod hapi_core {
         full_stake: u64,
         authority_stake: u64,
         appraiser_stake: u64,
-        signer_bump: u8,
     ) -> Result<()> {
         let community = &mut ctx.accounts.community;
 
@@ -50,9 +49,6 @@ pub mod hapi_core {
         community.stake_unlock_epochs = stake_unlock_epochs;
         community.confirmation_threshold = confirmation_threshold;
         community.stake_mint = ctx.accounts.stake_mint.to_account_info().key();
-        community.token_signer = ctx.accounts.token_signer.key();
-        community.token_signer_bump = signer_bump;
-        community.token_account = ctx.accounts.token_account.key();
         community.validator_stake = validator_stake;
         community.tracer_stake = tracer_stake;
         community.full_stake = full_stake;
@@ -690,23 +686,13 @@ pub mod hapi_core {
 
         let community = ctx.accounts.community.clone();
 
-        let token_signer = ctx.accounts.community_token_signer.clone();
-
-        let seeds = &[
-            b"community_stash".as_ref(),
-            community.to_account_info().key.as_ref(),
-            &[community.token_signer_bump],
-        ];
-        let signer = &[&seeds[..]];
-
-        let cpi_context = CpiContext::new_with_signer(
+        let cpi_context = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
                 from: ctx.accounts.community_token_account.to_account_info(),
                 to: ctx.accounts.reporter_token_account.to_account_info(),
-                authority: token_signer.to_account_info(),
+                authority: community.to_account_info(),
             },
-            signer,
         );
 
         token::transfer(cpi_context, reporter.stake)?;
