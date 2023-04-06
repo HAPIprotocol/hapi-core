@@ -1,4 +1,4 @@
-use crate::configuration::{CommunityCfg, HapiCfg};
+use crate::configuration::HapiCfg;
 
 use {
     anchor_client::{
@@ -13,15 +13,25 @@ use {
     hapi_core::{
         accounts, id, instruction,
         state::{
-            address::{Address, DeprecatedAddress},
-            asset::{Asset, DeprecatedAsset},
+            address::Address,
+            asset::Asset,
             case::Case,
-            community::{Community, DeprecatedCommunity},
-            network::{DeprecatedNetwork, Network},
+            community::Community,
+            deprecated::{
+                deprecated_address::AddressV0, deprecated_asset::AssetV0, deprecated_case::CaseV0,
+                deprecated_community::CommunityV0, deprecated_network::NetworkV0,
+                deprecated_reporter::ReporterV0, deprecated_reporter_reward::ReporterRewardV0,
+            },
+            network::Network,
             reporter::{Reporter, ReporterReward},
         },
     },
-    solana_program::{system_program, sysvar::rent},
+    spl_associated_token_account::{
+        get_associated_token_address,
+        instruction::create_associated_token_account,
+        solana_program::{system_program, sysvar::rent},
+        ID as ATAId,
+    },
     std::{rc::Rc, str::FromStr},
 };
 
@@ -53,12 +63,6 @@ impl HapiCli {
         })
     }
 
-    fn get_program_accounts<T: AccountDeserialize + Discriminator>(
-        &self,
-    ) -> Result<Vec<(Pubkey, T)>> {
-        Ok(self.cli.accounts::<T>(vec![])?)
-    }
-
     fn get_program_accounts_with_discriminator<T: AccountDeserialize>(
         &self,
         discriminator: [u8; 8],
@@ -82,10 +86,9 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    pub fn migrate_communities(&self, communities_cfg: &[CommunityCfg]) -> Result<()> {
-        let communities = self.get_program_accounts_with_discriminator::<DeprecatedCommunity>(
-            Community::discriminator(),
-        )?;
+    pub fn migrate_communities(&self) -> Result<()> {
+        let communities = self
+            .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
 
         if communities.is_empty() {
             println!("{}", "This program has no communities\n".yellow());
@@ -93,19 +96,21 @@ impl HapiCli {
             println!("Starting migration of {} communities", communities.len());
 
             for (pk, community) in communities {
-                let cfg = communities_cfg
-                    .iter()
-                    .find(|cfg| cfg.pubkey == pk.to_string())
-                    .ok_or_else(|| {
-                        anyhow::Error::msg(format!("Community {} is absent in config", pk))
-                    })?;
+                println!("Migrating community: {}", pk);
 
-                let treasury_token_account = Pubkey::from_str(&cfg.treasury_token_account)?;
+                self.cli
+                    .request()
+                    .instruction(create_associated_token_account(
+                        &self.cli.payer(),
+                        &pk,
+                        &community.stake_mint,
+                        &ATAId,
+                    ))
+                    .send()?;
 
-                println!(
-                    "Migrating community: {}, treasury token account: {}, appraiser stake: {}",
-                    pk, cfg.treasury_token_account, cfg.appraiser_stake
-                );
+                let token_account = get_associated_token_address(&pk, &community.stake_mint);
+
+                println!("New community ATA: {}", token_account);
 
                 let signature = self
                     .cli
@@ -113,14 +118,16 @@ impl HapiCli {
                     .accounts(accounts::MigrateCommunity {
                         authority: self.cli.payer(),
                         community: pk,
-                        treasury_token_account,
                         stake_mint: community.stake_mint,
                         token_signer: community.token_signer,
+                        old_token_account: community.token_account,
+                        token_account,
                         rent: rent::ID,
+                        token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateCommunity {
-                        appraiser_stake: cfg.appraiser_stake,
+                        token_signer_bump: community.token_signer_bump,
                     })
                     .send()?;
 
@@ -133,9 +140,8 @@ impl HapiCli {
     }
 
     pub fn migrate_networks(&self) -> Result<()> {
-        let networks = self.get_program_accounts_with_discriminator::<DeprecatedNetwork>(
-            Network::discriminator(),
-        )?;
+        let networks =
+            self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
 
         if networks.is_empty() {
             println!("{}", "This program has no networks\n".yellow());
@@ -152,7 +158,10 @@ impl HapiCli {
                         authority: self.cli.payer(),
                         community: network.community,
                         network: pk,
+                        reward_signer: network.reward_signer,
+                        reward_mint: network.reward_mint,
                         rent: rent::ID,
+                        token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateNetwork)
@@ -167,7 +176,8 @@ impl HapiCli {
     }
 
     pub fn migrate_reporters(&self) -> Result<()> {
-        let reporters = self.get_program_accounts::<Reporter>()?;
+        let reporters =
+            self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
 
         if reporters.is_empty() {
             println!("{}", "This program has no reporters\n".yellow());
@@ -184,6 +194,7 @@ impl HapiCli {
                         authority: self.cli.payer(),
                         community: reporter.community,
                         reporter: pk,
+                        rent: rent::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateReporter)
@@ -202,7 +213,9 @@ impl HapiCli {
             "{}",
             "Warning: reporter reward account can migrate only one time".yellow()
         );
-        let rewards = self.get_program_accounts::<ReporterReward>()?;
+        let rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
+            ReporterReward::discriminator(),
+        )?;
 
         if rewards.is_empty() {
             println!("{}", "This program has no reporter rewards\n".yellow());
@@ -214,22 +227,6 @@ impl HapiCli {
 
                 let reporter = self.cli.account::<Reporter>(reward.reporter)?;
 
-                let (reporter_reward, _) = Pubkey::find_program_address(
-                    &[
-                        b"reporter_reward2".as_ref(),
-                        reward.network.as_ref(),
-                        reward.reporter.as_ref(),
-                    ],
-                    &self.cli.id(),
-                );
-
-                if pk == reporter_reward {
-                    println!("{}", "Account already migrated".yellow());
-                    continue;
-                }
-
-                println!("New reporter reward account: {}", reporter_reward);
-
                 let signature = self
                     .cli
                     .request()
@@ -238,8 +235,8 @@ impl HapiCli {
                         community: reporter.community,
                         network: reward.network,
                         reporter: reward.reporter,
-                        reporter_reward,
-                        deprecated_reporter_reward: pk,
+                        reporter_reward: pk,
+                        rent: rent::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateReporterReward)
@@ -254,7 +251,7 @@ impl HapiCli {
     }
 
     pub fn migrate_cases(&self) -> Result<()> {
-        let cases = self.get_program_accounts::<Case>()?;
+        let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
 
         if cases.is_empty() {
             println!("{}", "This program has no cases\n".yellow());
@@ -272,6 +269,7 @@ impl HapiCli {
                         community: case.community,
                         reporter: case.reporter,
                         case: pk,
+                        rent: rent::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateCase)
@@ -286,9 +284,8 @@ impl HapiCli {
     }
 
     pub fn migrate_addresses(&self) -> Result<()> {
-        let addresses = self.get_program_accounts_with_discriminator::<DeprecatedAddress>(
-            Address::discriminator(),
-        )?;
+        let addresses =
+            self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
 
         if addresses.is_empty() {
             println!("{}", "This program has no addresses\n".yellow());
@@ -332,8 +329,8 @@ impl HapiCli {
     }
 
     pub fn migrate_assets(&self) -> Result<()> {
-        let assets = self
-            .get_program_accounts_with_discriminator::<DeprecatedAsset>(Asset::discriminator())?;
+        let assets =
+            self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator())?;
 
         if assets.is_empty() {
             println!("{}", "This program has no assets\n".yellow());

@@ -11,7 +11,7 @@ fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
     for acc in &cfg.migrate_accounts {
         match acc {
             MigrateAccount::All => {
-                hapi_cli.migrate_communities(&cfg.communities)?;
+                hapi_cli.migrate_communities()?;
                 hapi_cli.migrate_networks()?;
                 hapi_cli.migrate_reporters()?;
                 hapi_cli.migrate_reporter_rewards()?;
@@ -21,7 +21,7 @@ fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
                 break;
             }
             MigrateAccount::Community => {
-                hapi_cli.migrate_communities(&cfg.communities)?;
+                hapi_cli.migrate_communities()?;
             }
             MigrateAccount::Network => {
                 hapi_cli.migrate_networks()?;
