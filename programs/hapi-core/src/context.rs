@@ -72,11 +72,13 @@ pub struct MigrateCommunity<'info> {
     /// CHECK: this account is not dangerous
     #[account(
         mut,
+        signer,
         owner = id()
     )]
     pub community: AccountInfo<'info>,
 
     #[account(
+        mut,
         constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
         constraint = token_account.owner == community.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
@@ -85,8 +87,8 @@ pub struct MigrateCommunity<'info> {
 
     #[account(
         mut,
-        constraint = token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
+        constraint = old_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = old_token_account.owner == token_signer.key() @ ProgramError::IllegalOwner,
         owner = Token::id(),
     )]
     pub old_token_account: Account<'info, TokenAccount>,
@@ -236,6 +238,13 @@ pub struct MigrateNetwork<'info> {
         owner = Token::id(),
     )]
     pub reward_mint: Account<'info, Mint>,
+
+    #[account(
+        constraint = treasury_token_account.mint == reward_mint.key() @ ErrorCode::InvalidToken,
+        constraint = treasury_token_account.owner == network.key() @ ProgramError::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub treasury_token_account: Account<'info, TokenAccount>,
 
     pub rent: Sysvar<'info, Rent>,
 

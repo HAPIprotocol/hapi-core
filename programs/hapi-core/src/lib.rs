@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo, SetAuthority, Transfer};
+use anchor_spl::token::{self, CloseAccount, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
@@ -112,10 +112,15 @@ pub mod hapi_core {
         )?;
 
         // Close old token account and token signer
-        close(
-            ctx.accounts.old_token_account.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
-        )?;
+        token::close_account(CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            CloseAccount {
+                account: ctx.accounts.old_token_account.to_account_info(),
+                destination: ctx.accounts.authority.to_account_info(),
+                authority: ctx.accounts.token_signer.to_account_info(),
+            },
+            signer,
+        ))?;
 
         close(
             ctx.accounts.token_signer.to_account_info(),

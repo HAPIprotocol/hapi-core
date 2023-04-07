@@ -8,43 +8,42 @@ use anyhow::Result;
 use colored::*;
 
 fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
-    for acc in &cfg.migrate_accounts {
-        match acc {
-            MigrateAccount::All => {
-                hapi_cli.migrate_communities()?;
-                hapi_cli.migrate_networks()?;
-                hapi_cli.migrate_reporters()?;
-                hapi_cli.migrate_reporter_rewards()?;
-                hapi_cli.migrate_cases()?;
-                hapi_cli.migrate_addresses()?;
-                hapi_cli.migrate_assets()?;
-                break;
-            }
-            MigrateAccount::Community => {
-                hapi_cli.migrate_communities()?;
-            }
-            MigrateAccount::Network => {
-                hapi_cli.migrate_networks()?;
-            }
-            MigrateAccount::Reporter => {
-                hapi_cli.migrate_reporters()?;
-            }
-            MigrateAccount::ReporterReward => {
-                hapi_cli.migrate_reporter_rewards()?;
-            }
-            MigrateAccount::Case => {
-                hapi_cli.migrate_cases()?;
-            }
-            MigrateAccount::Address => {
-                hapi_cli.migrate_addresses()?;
-            }
-            MigrateAccount::Asset => {
-                hapi_cli.migrate_assets()?;
-            }
-        }
-    }
-
-    Ok(())
+    hapi_cli.migrate_communities(&cfg.communities)
+    // for acc in &cfg.migrate_accounts {
+    //     match acc {
+    //         MigrateAccount::All => {
+    //             hapi_cli.migrate_communities()?;
+    //             hapi_cli.migrate_networks()?;
+    //             hapi_cli.migrate_reporters()?;
+    //             hapi_cli.migrate_reporter_rewards()?;
+    //             hapi_cli.migrate_cases()?;
+    //             hapi_cli.migrate_addresses()?;
+    //             hapi_cli.migrate_assets()?;
+    //             break;
+    //         }
+    //         MigrateAccount::Community => {
+    //             hapi_cli.migrate_communities()?;
+    //         }
+    //         MigrateAccount::Network => {
+    //             hapi_cli.migrate_networks()?;
+    //         }
+    //         MigrateAccount::Reporter => {
+    //             hapi_cli.migrate_reporters()?;
+    //         }
+    //         MigrateAccount::ReporterReward => {
+    //             hapi_cli.migrate_reporter_rewards()?;
+    //         }
+    //         MigrateAccount::Case => {
+    //             hapi_cli.migrate_cases()?;
+    //         }
+    //         MigrateAccount::Address => {
+    //             hapi_cli.migrate_addresses()?;
+    //         }
+    //         MigrateAccount::Asset => {
+    //             hapi_cli.migrate_assets()?;
+    //         }
+    //     }
+    // }
 }
 
 fn main() {

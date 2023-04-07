@@ -4,6 +4,12 @@ use {
     std::env,
 };
 
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct CommunityCfg {
+    pub pubkey: String,
+    pub keypair_path: String,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub enum MigrateAccount {
     All,
@@ -23,6 +29,7 @@ pub struct HapiCfg {
     pub program_id: String,
     #[serde(default = "localhost_node")]
     pub environment: String,
+    pub communities: Vec<CommunityCfg>,
     #[serde(default = "migrate_all")]
     pub migrate_accounts: Vec<MigrateAccount>,
 }

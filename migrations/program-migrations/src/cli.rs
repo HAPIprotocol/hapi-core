@@ -1,4 +1,4 @@
-use crate::configuration::HapiCfg;
+use crate::configuration::{CommunityCfg, HapiCfg};
 
 use {
     anchor_client::{
@@ -28,9 +28,8 @@ use {
     },
     spl_associated_token_account::{
         get_associated_token_address,
-        instruction::create_associated_token_account,
+        instruction::create_associated_token_account_idempotent,
         solana_program::{system_program, sysvar::rent},
-        ID as ATAId,
     },
     std::{rc::Rc, str::FromStr},
 };
@@ -86,7 +85,7 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    pub fn migrate_communities(&self) -> Result<()> {
+    pub fn migrate_communities(&self, communities_cfg: &[CommunityCfg]) -> Result<()> {
         let communities = self
             .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
 
@@ -98,19 +97,29 @@ impl HapiCli {
             for (pk, community) in communities {
                 println!("Migrating community: {}", pk);
 
+                let cfg = communities_cfg
+                    .iter()
+                    .find(|cfg| cfg.pubkey == pk.to_string())
+                    .ok_or_else(|| {
+                        anyhow::Error::msg(format!("Community {} is absent in config", pk))
+                    })?;
+
                 self.cli
                     .request()
-                    .instruction(create_associated_token_account(
+                    .instruction(create_associated_token_account_idempotent(
                         &self.cli.payer(),
                         &pk,
                         &community.stake_mint,
-                        &ATAId,
+                        &spl_token::ID,
                     ))
                     .send()?;
 
                 let token_account = get_associated_token_address(&pk, &community.stake_mint);
 
                 println!("New community ATA: {}", token_account);
+
+                let signer = read_keypair_file(cfg.keypair_path.clone())
+                    .map_err(|err| Error::msg(err.to_string()))?;
 
                 let signature = self
                     .cli
@@ -129,6 +138,7 @@ impl HapiCli {
                     .args(instruction::MigrateCommunity {
                         token_signer_bump: community.token_signer_bump,
                     })
+                    .signer(&signer)
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
@@ -151,6 +161,9 @@ impl HapiCli {
             for (pk, network) in networks {
                 println!("Migrating network: {}", pk);
 
+                let treasury_token_account =
+                    get_associated_token_address(&pk, &network.reward_mint);
+
                 let signature = self
                     .cli
                     .request()
@@ -160,6 +173,7 @@ impl HapiCli {
                         network: pk,
                         reward_signer: network.reward_signer,
                         reward_mint: network.reward_mint,
+                        treasury_token_account,
                         rent: rent::ID,
                         token_program: spl_token::ID,
                         system_program: system_program::ID,
