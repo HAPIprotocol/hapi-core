@@ -28,7 +28,9 @@ use {
     },
     spl_associated_token_account::{
         get_associated_token_address,
-        instruction::create_associated_token_account_idempotent,
+        instruction::{
+            create_associated_token_account, create_associated_token_account_idempotent,
+        },
         solana_program::{system_program, sysvar::rent},
     },
     std::{rc::Rc, str::FromStr},
@@ -90,7 +92,10 @@ impl HapiCli {
             .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
 
         if communities.is_empty() {
-            println!("{}", "This program has no communities\n".yellow());
+            println!(
+                "{}",
+                "This program has no communities to migrate\n".yellow()
+            );
         } else {
             println!("Starting migration of {} communities", communities.len());
 
@@ -106,7 +111,7 @@ impl HapiCli {
 
                 self.cli
                     .request()
-                    .instruction(create_associated_token_account_idempotent(
+                    .instruction(create_associated_token_account(
                         &self.cli.payer(),
                         &pk,
                         &community.stake_mint,
@@ -154,7 +159,7 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
 
         if networks.is_empty() {
-            println!("{}", "This program has no networks\n".yellow());
+            println!("{}", "This program has no networks to migrate\n".yellow());
         } else {
             println!("Starting migration of {} networks", networks.len());
 
@@ -163,7 +168,7 @@ impl HapiCli {
 
                 self.cli
                     .request()
-                    .instruction(create_associated_token_account_idempotent(
+                    .instruction(create_associated_token_account(
                         &self.cli.payer(),
                         &pk,
                         &network.reward_mint,
@@ -208,7 +213,7 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
 
         if reporters.is_empty() {
-            println!("{}", "This program has no reporters\n".yellow());
+            println!("{}", "This program has no reporters to migrate\n".yellow());
         } else {
             println!("Starting migration of {} reporters", reporters.len());
 
@@ -246,7 +251,10 @@ impl HapiCli {
         )?;
 
         if rewards.is_empty() {
-            println!("{}", "This program has no reporter rewards\n".yellow());
+            println!(
+                "{}",
+                "This program has no reporter rewards to migrate\n".yellow()
+            );
         } else {
             println!("Starting migration of {} reporter rewards", rewards.len());
 
@@ -282,7 +290,7 @@ impl HapiCli {
         let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
 
         if cases.is_empty() {
-            println!("{}", "This program has no cases\n".yellow());
+            println!("{}", "This program has no cases to migrate\n".yellow());
         } else {
             println!("Starting migration of {} cases", cases.len());
 
@@ -316,7 +324,7 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
 
         if addresses.is_empty() {
-            println!("{}", "This program has no addresses\n".yellow());
+            println!("{}", "This program has no addresses to migrate\n".yellow());
         } else {
             println!("Starting migration of {} addresses", addresses.len());
 
@@ -361,7 +369,7 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator())?;
 
         if assets.is_empty() {
-            println!("{}", "This program has no assets\n".yellow());
+            println!("{}", "This program has no assets to migrate\n".yellow());
         } else {
             println!("Starting migration of {} assets", assets.len());
 
