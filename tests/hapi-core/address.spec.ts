@@ -449,7 +449,7 @@ describe("HapiCore Address", () => {
                 case: caseAccount,
                 reporterPaymentTokenAccount,
                 treasuryTokenAccount,
-                : stakeToken.programId,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],

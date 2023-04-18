@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 
-declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
+declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
 pub mod checker;
 pub mod context;
@@ -122,12 +122,6 @@ pub mod hapi_core {
             signer,
         ))?;
 
-        // Close token signer
-        // close(
-        //     ctx.accounts.token_signer.to_account_info(),
-        //     ctx.accounts.authority.to_account_info(),
-        // )?;
-
         migrate(
             community,
             &ctx.accounts.community,
@@ -242,12 +236,6 @@ pub mod hapi_core {
             AuthorityType::MintTokens,
             Some(ctx.accounts.network.key()),
         )?;
-
-        // Close reward signer
-        // close(
-        //     ctx.accounts.reward_signer.to_account_info(),
-        //     ctx.accounts.authority.to_account_info(),
-        // )?;
 
         migrate(
             network,

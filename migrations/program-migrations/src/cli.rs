@@ -28,9 +28,7 @@ use {
     },
     spl_associated_token_account::{
         get_associated_token_address,
-        instruction::{
-            create_associated_token_account, create_associated_token_account_idempotent,
-        },
+        instruction::create_associated_token_account,
         solana_program::{system_program, sysvar::rent},
     },
     std::{rc::Rc, str::FromStr},
