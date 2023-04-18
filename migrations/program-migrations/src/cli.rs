@@ -161,8 +161,20 @@ impl HapiCli {
             for (pk, network) in networks {
                 println!("Migrating network: {}", pk);
 
+                self.cli
+                    .request()
+                    .instruction(create_associated_token_account_idempotent(
+                        &self.cli.payer(),
+                        &pk,
+                        &network.reward_mint,
+                        &spl_token::ID,
+                    ))
+                    .send()?;
+
                 let treasury_token_account =
                     get_associated_token_address(&pk, &network.reward_mint);
+
+                println!("Network treasury ATA: {}", treasury_token_account);
 
                 let signature = self
                     .cli
@@ -178,7 +190,9 @@ impl HapiCli {
                         token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
-                    .args(instruction::MigrateNetwork)
+                    .args(instruction::MigrateNetwork {
+                        reward_signer_bump: network.reward_signer_bump,
+                    })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);

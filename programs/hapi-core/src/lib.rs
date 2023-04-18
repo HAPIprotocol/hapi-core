@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 
-declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
+declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
 
 pub mod checker;
 pub mod context;
@@ -19,7 +19,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::{close, migrate};
+use utils::migrate;
 
 pub use state::{
     address::{Address, Category},
@@ -122,10 +122,11 @@ pub mod hapi_core {
             signer,
         ))?;
 
-        close(
-            ctx.accounts.token_signer.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
-        )?;
+        // Close token signer
+        // close(
+        //     ctx.accounts.token_signer.to_account_info(),
+        //     ctx.accounts.authority.to_account_info(),
+        // )?;
 
         migrate(
             community,
@@ -202,7 +203,7 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_network(ctx: Context<MigrateNetwork>) -> Result<()> {
+    pub fn migrate_network(ctx: Context<MigrateNetwork>, reward_signer_bump: u8) -> Result<()> {
         let network =
             Network::from_deprecated(&mut ctx.accounts.network.try_borrow_data()?.as_ref())?;
 
@@ -222,24 +223,31 @@ pub mod hapi_core {
             return print_error(ErrorCode::CommunityMismatch);
         }
 
+        let seeds = &[
+            b"network_reward".as_ref(),
+            ctx.accounts.network.to_account_info().key.as_ref(),
+            &[reward_signer_bump],
+        ];
+
         // Set reward mint authority to network
         token::set_authority(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 SetAuthority {
                     current_authority: ctx.accounts.reward_signer.to_account_info(),
                     account_or_mint: ctx.accounts.reward_mint.to_account_info(),
                 },
+                &[&seeds[..]],
             ),
             AuthorityType::MintTokens,
             Some(ctx.accounts.network.key()),
         )?;
 
         // Close reward signer
-        close(
-            ctx.accounts.reward_signer.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
-        )?;
+        // close(
+        //     ctx.accounts.reward_signer.to_account_info(),
+        //     ctx.accounts.authority.to_account_info(),
+        // )?;
 
         migrate(
             network,

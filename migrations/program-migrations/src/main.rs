@@ -8,7 +8,8 @@ use anyhow::Result;
 use colored::*;
 
 fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
-    hapi_cli.migrate_communities(&cfg.communities)
+    hapi_cli.migrate_communities(&cfg.communities)?;
+    hapi_cli.migrate_networks()
     // for acc in &cfg.migrate_accounts {
     //     match acc {
     //         MigrateAccount::All => {
