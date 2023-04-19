@@ -1,4 +1,4 @@
-# HAPI Core
+# HAPI Core migration
 
 HAPI Core migration script
 
