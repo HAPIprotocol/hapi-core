@@ -53,12 +53,14 @@ pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
 
 pub struct HapiCli {
     cli: Program,
+    communities_cfg: Vec<CommunityCfg>,
 }
 
 impl HapiCli {
     pub fn new(cfg: &HapiCfg) -> Result<Self> {
         Ok(Self {
             cli: get_program(cfg)?,
+            communities_cfg: cfg.communities.clone(),
         })
     }
 
@@ -85,9 +87,17 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    pub fn migrate_communities(&self, communities_cfg: &[CommunityCfg]) -> Result<()> {
-        let communities = self
+    fn match_community(&self, pk: &Pubkey) -> bool {
+        self.communities_cfg
+            .iter()
+            .any(|cfg| cfg.pubkey == pk.to_string())
+    }
+
+    pub fn migrate_communities(&self) -> Result<()> {
+        let mut communities = self
             .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
+
+        communities.retain(|(pk, _)| self.match_community(pk));
 
         if communities.is_empty() {
             println!(
@@ -100,7 +110,9 @@ impl HapiCli {
             for (pk, community) in communities {
                 println!("Migrating community: {}", pk);
 
-                let cfg = communities_cfg
+                // TODO: remove
+                let cfg = self
+                    .communities_cfg
                     .iter()
                     .find(|cfg| cfg.pubkey == pk.to_string())
                     .ok_or_else(|| {
@@ -153,8 +165,10 @@ impl HapiCli {
     }
 
     pub fn migrate_networks(&self) -> Result<()> {
-        let networks =
+        let mut networks =
             self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
+
+        networks.retain(|(_, old_acc)| self.match_community(&old_acc.community));
 
         if networks.is_empty() {
             println!("{}", "This program has no networks to migrate\n".yellow());
@@ -207,8 +221,10 @@ impl HapiCli {
     }
 
     pub fn migrate_reporters(&self) -> Result<()> {
-        let reporters =
+        let mut reporters =
             self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
+
+        reporters.retain(|(_, old_acc)| self.match_community(&old_acc.community));
 
         if reporters.is_empty() {
             println!("{}", "This program has no reporters to migrate\n".yellow());
@@ -244,22 +260,36 @@ impl HapiCli {
             "{}",
             "Warning: reporter reward account can migrate only one time".yellow()
         );
-        let rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
-            ReporterReward::discriminator(),
-        )?;
 
-        if rewards.is_empty() {
+        let mut reporter_rewards = vec![];
+
+        {
+            let rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
+                ReporterReward::discriminator(),
+            )?;
+
+            for (pk, reward) in rewards {
+                let reporter = self.cli.account::<Reporter>(reward.reporter)?;
+
+                if self.match_community(&reporter.community) {
+                    reporter_rewards.push((pk, reward, reporter));
+                }
+            }
+        }
+
+        if reporter_rewards.is_empty() {
             println!(
                 "{}",
                 "This program has no reporter rewards to migrate\n".yellow()
             );
         } else {
-            println!("Starting migration of {} reporter rewards", rewards.len());
+            println!(
+                "Starting migration of {} reporter rewards",
+                reporter_rewards.len()
+            );
 
-            for (pk, reward) in rewards {
+            for (pk, reward, reporter) in reporter_rewards {
                 println!("Migrating reporter reward: {}", pk);
-
-                let reporter = self.cli.account::<Reporter>(reward.reporter)?;
 
                 let signature = self
                     .cli
@@ -285,7 +315,10 @@ impl HapiCli {
     }
 
     pub fn migrate_cases(&self) -> Result<()> {
-        let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
+        let mut cases =
+            self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
+
+        cases.retain(|(_, old_acc)| self.match_community(&old_acc.community));
 
         if cases.is_empty() {
             println!("{}", "This program has no cases to migrate\n".yellow());
@@ -318,8 +351,10 @@ impl HapiCli {
     }
 
     pub fn migrate_addresses(&self) -> Result<()> {
-        let addresses =
+        let mut addresses =
             self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
+
+        addresses.retain(|(_, old_acc)| self.match_community(&old_acc.community));
 
         if addresses.is_empty() {
             println!("{}", "This program has no addresses to migrate\n".yellow());
@@ -363,8 +398,10 @@ impl HapiCli {
     }
 
     pub fn migrate_assets(&self) -> Result<()> {
-        let assets =
+        let mut assets =
             self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator())?;
+
+        assets.retain(|(_, old_acc)| self.match_community(&old_acc.community));
 
         if assets.is_empty() {
             println!("{}", "This program has no assets to migrate\n".yellow());
