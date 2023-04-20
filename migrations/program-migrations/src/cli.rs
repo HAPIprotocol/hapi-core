@@ -268,11 +268,12 @@ impl HapiCli {
                 ReporterReward::discriminator(),
             )?;
 
+            // Rewards could migrate only if reporter already migrated and it belongs to specified community
             for (pk, reward) in rewards {
-                let reporter = self.cli.account::<Reporter>(reward.reporter)?;
-
-                if self.match_community(&reporter.community) {
-                    reporter_rewards.push((pk, reward, reporter));
+                if let Ok(reporter) = self.cli.account::<Reporter>(reward.reporter) {
+                    if self.match_community(&reporter.community) {
+                        reporter_rewards.push((pk, reward, reporter));
+                    }
                 }
             }
         }
