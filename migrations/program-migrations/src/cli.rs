@@ -153,7 +153,7 @@ impl HapiCli {
                     .args(instruction::MigrateCommunity {
                         token_signer_bump: community.token_signer_bump,
                     })
-                    .signer(&signer)
+                    // .signer(&signer)
                     .send()?;
 
                 println!("Migration success, signature {}", signature);

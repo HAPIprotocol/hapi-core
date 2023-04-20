@@ -72,7 +72,7 @@ pub struct MigrateCommunity<'info> {
     /// CHECK: this account is not dangerous
     #[account(
         mut,
-        signer,
+        // signer,
         owner = id()
     )]
     pub community: AccountInfo<'info>,

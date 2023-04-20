@@ -12,12 +12,12 @@ fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
         match acc {
             MigrateAccount::All => {
                 hapi_cli.migrate_communities()?;
-                hapi_cli.migrate_networks()?;
-                hapi_cli.migrate_reporters()?;
-                hapi_cli.migrate_reporter_rewards()?;
-                hapi_cli.migrate_cases()?;
-                hapi_cli.migrate_addresses()?;
-                hapi_cli.migrate_assets()?;
+                // hapi_cli.migrate_networks()?;
+                // hapi_cli.migrate_reporters()?;
+                // hapi_cli.migrate_reporter_rewards()?;
+                // hapi_cli.migrate_cases()?;
+                // hapi_cli.migrate_addresses()?;
+                // hapi_cli.migrate_assets()?;
                 break;
             }
             MigrateAccount::Community => {
