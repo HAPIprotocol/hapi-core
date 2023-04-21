@@ -46,6 +46,8 @@ impl TryInto<Community> for CommunityV0 {
             full_stake: self.full_stake,
             authority_stake: self.authority_stake,
             appraiser_stake: u64::MAX,
+            community_id: 0,
+            bump: 0,
         })
     }
 }

@@ -16,6 +16,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
+#[instruction(community_id: u64, bump: u8)]
 pub struct InitializeCommunity<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -31,6 +32,8 @@ pub struct InitializeCommunity<'info> {
         init,
         payer = authority,
         owner = id(),
+        seeds = [b"community".as_ref(), &community_id.to_le_bytes()],
+        bump,
         space = Community::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub community: Account<'info, Community>,
@@ -57,25 +60,38 @@ pub struct UpdateCommunity<'info> {
         mut,
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 }
 
 #[derive(Accounts)]
 #[instruction(
+    community_id: u64,
+    bump: u8,
     token_signer_bump: u8
 )]
 pub struct MigrateCommunity<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"community".as_ref(), &community_id.to_le_bytes()],
+        bump,
+        space = Community::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub community: Account<'info, Community>,
+
     /// CHECK: this account is not dangerous
     #[account(
         mut,
-        // signer,
         owner = id()
     )]
-    pub community: AccountInfo<'info>,
+    pub old_community: AccountInfo<'info>,
 
     #[account(
         mut,
@@ -120,6 +136,8 @@ pub struct SetCommunityAuthority<'info> {
         mut,
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -147,6 +165,8 @@ pub struct CreateNetwork<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -192,6 +212,8 @@ pub struct UpdateNetwork<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -215,6 +237,8 @@ pub struct MigrateNetwork<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -263,6 +287,8 @@ pub struct CreateReporter<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -288,7 +314,11 @@ pub struct InitializeReporterReward<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),         
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -327,7 +357,11 @@ pub struct MigrateReporterReward<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -370,6 +404,8 @@ pub struct UpdateReporter<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -391,6 +427,8 @@ pub struct MigrateReporter<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -413,6 +451,8 @@ pub struct FreezeReporter<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -433,6 +473,8 @@ pub struct UnfreezeReporter<'info> {
     #[account(
         owner = id(),
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -454,7 +496,9 @@ pub struct CreateCase<'info> {
 
     #[account(
         mut,
-        owner = id()
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -491,7 +535,9 @@ pub struct UpdateCase<'info> {
 
     #[account(
         mut,
-        owner = id()
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -526,7 +572,9 @@ pub struct MigrateCase<'info> {
 
     #[account(
         mut,
-        owner = id()
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Account<'info, Community>,
 
@@ -559,6 +607,10 @@ pub struct CreateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -633,6 +685,10 @@ pub struct UpdateAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -706,6 +762,8 @@ pub struct MigrateAddress<'info> {
 
     #[account(
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Box<Account<'info, Community>>,
 
@@ -756,7 +814,11 @@ pub struct ChangeAddressCase<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -811,6 +873,10 @@ pub struct ConfirmAddress<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -884,6 +950,10 @@ pub struct CreateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -958,6 +1028,10 @@ pub struct UpdateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -1032,6 +1106,8 @@ pub struct MigrateAsset<'info> {
 
     #[account(
         has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
     )]
     pub community: Box<Account<'info, Community>>,
 
@@ -1082,6 +1158,10 @@ pub struct ConfirmAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(
@@ -1155,7 +1235,11 @@ pub struct ActivateReporter<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -1198,7 +1282,11 @@ pub struct DeactivateReporter<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -1219,7 +1307,11 @@ pub struct ReleaseReporter<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(signer, owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -1262,7 +1354,11 @@ pub struct ClaimReporterReward<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
-    #[account(owner = id())]
+    #[account(
+        owner = id(),
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Account<'info, Community>,
 
     #[account(
@@ -1316,6 +1412,10 @@ pub struct UpdateReplicationPrice<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
 
+    #[account(
+        seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
+        bump = community.bump,
+    )]
     pub community: Box<Account<'info, Community>>,
 
     #[account(

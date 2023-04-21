@@ -9,6 +9,12 @@ pub struct Community {
     /// Community authority wallet
     pub authority: Pubkey,
 
+    /// Community ID
+    pub community_id: u64,
+
+    /// Seed bump for PDA
+    pub bump: u8,
+
     /// Community case counter
     pub cases: u64,
 

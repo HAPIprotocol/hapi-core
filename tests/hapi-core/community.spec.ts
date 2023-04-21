@@ -18,7 +18,6 @@ describe("HapiCore Community", () => {
 
   const nobody = web3.Keypair.generate();
 
-  let community: web3.Keypair;
   let stakeToken: TestToken;
 
   beforeAll(async () => {
@@ -28,12 +27,15 @@ describe("HapiCore Community", () => {
   });
 
   describe("initialize_community", () => {
-    beforeAll(async () => {
-      community = web3.Keypair.generate();
-    });
-
     it("fail - invalid token account", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const args = [
+        new BN(1),
+        communityBump,
         new BN(3),
         3,
         new BN(1_000),
@@ -50,19 +52,25 @@ describe("HapiCore Community", () => {
           program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               stakeMint: stakeToken.mintAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [community],
           }),
         "AnchorError caused by account: token_account. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
     it("fail - invalid mint account", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const args = [
+        new BN(1),
+        communityBump,
         new BN(3),
         3,
         new BN(1_000),
@@ -81,19 +89,25 @@ describe("HapiCore Community", () => {
           program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               stakeMint: fakeMint,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [community],
           }),
         "AnchorError caused by account: stake_mint. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
       );
     });
 
     it("fail - invalid community", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const args = [
+        new BN(1),
+        communityBump,
         new BN(3),
         3,
         new BN(1_000),
@@ -117,12 +131,19 @@ describe("HapiCore Community", () => {
             },
             signers: [],
           }),
-        "Signature verification failed"
+        "A seeds constraint was violated"
       );
     });
 
     it("success", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const args = [
+        new BN(1),
+        communityBump,
         new BN(3),
         3,
         new BN(1_000),
@@ -133,39 +154,47 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.getTokenAccount(
-        community.publicKey
+        communityAccount, true
       );
 
       const tx = await program.rpc.initializeCommunity(...args, {
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
           systemProgram: web3.SystemProgram.programId,
         },
-        signers: [community],
       });
 
       expect(tx).toBeTruthy();
 
-      const communityAccount = await program.account.community.fetch(
-        community.publicKey
+      const communityData = await program.account.community.fetch(
+        communityAccount
       );
 
-      expect(communityAccount.authority).toEqual(authority.publicKey);
-      expect(communityAccount.cases.toNumber()).toEqual(0);
-      expect(communityAccount.stakeMint).toEqual(stakeToken.mintAccount);
+      expect(communityData.authority).toEqual(authority.publicKey);
+      expect(communityData.cases.toNumber()).toEqual(0);
+      expect(communityData.stakeMint).toEqual(stakeToken.mintAccount);
+      expect(communityData.bump).toEqual(communityBump);
+      expect(communityData.communityId.toNumber()).toEqual(1);
 
       const communityInfo = await provider.connection.getAccountInfoAndContext(
-        community.publicKey
+        communityAccount
       );
       expect(communityInfo.value.owner).toEqual(program.programId);
       expect(communityInfo.value.data).toHaveLength(ACCOUNT_SIZE.community);
     });
 
     it("fail - already exists", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const args = [
+        new BN(1),
+        communityBump,
         new BN(3),
         3,
         new BN(1_000),
@@ -176,7 +205,7 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.getTokenAccount(
-        community.publicKey
+        communityAccount, true
       );
 
       await expectThrowError(
@@ -184,12 +213,11 @@ describe("HapiCore Community", () => {
           program.rpc.initializeCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               stakeMint: stakeToken.mintAccount,
               tokenAccount,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [community],
           }),
         /failed to send transaction/
       );
@@ -197,10 +225,6 @@ describe("HapiCore Community", () => {
   });
 
   describe("update_community", () => {
-    beforeAll(async () => {
-      community = web3.Keypair.generate();
-    });
-
     it("fail - community doesn't exist", async () => {
       const args = [
         new BN(5),
@@ -229,6 +253,11 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - community not initialized", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const args = [
         new BN(5),
         6,
@@ -244,7 +273,7 @@ describe("HapiCore Community", () => {
           program.rpc.updateCommunity(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
             },
           }),
         "AnchorError caused by account: community. Error Code: AccountNotInitialized. Error Number: 3012. Error Message: The program expected this account to be already initialized."
@@ -253,8 +282,14 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       {
+        const [communityAccount, communityBump] =
+          await program.pda.findCommunityAddress(
+            new BN(2)
+          );
 
         const args = [
+          new BN(2),
+          communityBump,
           new BN(3),
           3,
           new BN(1_000),
@@ -265,24 +300,28 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.getTokenAccount(
-          community.publicKey
+          communityAccount, true
         );
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             stakeMint: stakeToken.mintAccount,
             tokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [community],
         });
 
         expect(tx).toBeTruthy();
       }
 
       {
+        const [communityAccount, communityBump] =
+          await program.pda.findCommunityAddress(
+            new BN(2)
+          );
+
         const args = [
           new BN(5),
           6,
@@ -296,30 +335,37 @@ describe("HapiCore Community", () => {
         const tx = await program.rpc.updateCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
           },
         });
 
         expect(tx).toBeTruthy();
 
-        const communityAccount = await program.account.community.fetch(
-          community.publicKey
+        const communityData = await program.account.community.fetch(
+          communityAccount
         );
 
-        expect(communityAccount.authority).toEqual(authority.publicKey);
-        expect(communityAccount.cases.toNumber()).toEqual(0);
+        expect(communityData.authority).toEqual(authority.publicKey);
+        expect(communityData.cases.toNumber()).toEqual(0);
+        expect(communityData.bump).toEqual(communityBump);
+        expect(communityData.communityId.toNumber()).toEqual(2);
 
-        expect(communityAccount.stakeUnlockEpochs.toNumber()).toEqual(5);
-        expect(communityAccount.confirmationThreshold).toEqual(6);
-        expect(communityAccount.validatorStake.toNumber()).toEqual(11_000);
-        expect(communityAccount.tracerStake.toNumber()).toEqual(12_000);
-        expect(communityAccount.fullStake.toNumber()).toEqual(13_000);
-        expect(communityAccount.authorityStake.toNumber()).toEqual(14_000);
-        expect(communityAccount.appraiserStake.toNumber()).toEqual(15_000);
+        expect(communityData.stakeUnlockEpochs.toNumber()).toEqual(5);
+        expect(communityData.confirmationThreshold).toEqual(6);
+        expect(communityData.validatorStake.toNumber()).toEqual(11_000);
+        expect(communityData.tracerStake.toNumber()).toEqual(12_000);
+        expect(communityData.fullStake.toNumber()).toEqual(13_000);
+        expect(communityData.authorityStake.toNumber()).toEqual(14_000);
+        expect(communityData.appraiserStake.toNumber()).toEqual(15_000);
       }
     });
 
     it("fail - invalid authority", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const args = [
         new BN(5),
         6,
@@ -335,7 +381,7 @@ describe("HapiCore Community", () => {
           program.rpc.updateCommunity(...args, {
             accounts: {
               authority: nobody.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
             },
             signers: [nobody],
           }),
@@ -345,10 +391,6 @@ describe("HapiCore Community", () => {
   });
 
   describe("set_community_authority", () => {
-    beforeAll(async () => {
-      community = web3.Keypair.generate();
-    });
-
     it("fail - community doesn't exist", async () => {
       const someKey = pubkeyFromHex(
         "e1230a131f3747484f98d10b8d2a8759dcf597db3cf87c9b53e7862e756f0663"
@@ -368,12 +410,17 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - community not initialized", async () => {
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(3)
+        );
+
       await expectThrowError(
         () =>
           program.rpc.setCommunityAuthority({
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               newAuthority: nobody.publicKey,
             },
           }),
@@ -382,8 +429,15 @@ describe("HapiCore Community", () => {
     });
 
     it("success", async () => {
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(3)
+        );
+
       {
         const args = [
+          new BN(3),
+          communityBump,
           new BN(3),
           3,
           new BN(1_000),
@@ -394,18 +448,17 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.getTokenAccount(
-          community.publicKey
+          communityAccount, true
         );
 
         const tx = await program.rpc.initializeCommunity(...args, {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             stakeMint: stakeToken.mintAccount,
             tokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [community],
         });
 
         expect(tx).toBeTruthy();
@@ -415,28 +468,34 @@ describe("HapiCore Community", () => {
         const tx = await program.rpc.setCommunityAuthority({
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             newAuthority: nobody.publicKey,
           },
         });
 
         expect(tx).toBeTruthy();
 
-        const communityAccount = await program.account.community.fetch(
-          community.publicKey
+        const communityData = await program.account.community.fetch(
+          communityAccount
         );
 
-        expect(communityAccount.authority).toEqual(nobody.publicKey);
+        expect(communityData.authority).toEqual(nobody.publicKey);
       }
     });
 
     it("fail - invalid authority", async () => {
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(3)
+        );
+
+
       await expectThrowError(
         () =>
           program.rpc.setCommunityAuthority({
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               newAuthority: nobody.publicKey,
             },
           }),
@@ -445,12 +504,18 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - can't set the same authority", async () => {
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(3)
+        );
+
+
       await expectThrowError(
         () =>
           program.rpc.setCommunityAuthority({
             accounts: {
               authority: nobody.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               newAuthority: nobody.publicKey,
             },
             signers: [nobody],

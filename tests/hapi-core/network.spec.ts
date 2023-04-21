@@ -24,8 +24,6 @@ describe("HapiCore Network", () => {
 
   const nobody = web3.Keypair.generate();
 
-  let community: web3.Keypair;
-  let otherCommunity: web3.Keypair;
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
@@ -56,9 +54,6 @@ describe("HapiCore Network", () => {
   };
 
   beforeAll(async () => {
-    community = web3.Keypair.generate();
-    otherCommunity = web3.Keypair.generate();
-
     stakeToken = new TestToken(provider);
     await stakeToken.mint(1_000_000_000);
     await stakeToken.transfer(null, nobody.publicKey, 1_000_000);
@@ -68,11 +63,18 @@ describe("HapiCore Network", () => {
     rewardToken = new TestToken(provider);
     await rewardToken.mint(0);
 
+    const [communityAccount, communityBump] =
+      await program.pda.findCommunityAddress(
+        new BN(1)
+      );
+
     const tokenAccount = await stakeToken.getTokenAccount(
-      community.publicKey
+      communityAccount, true
     );
 
     await program.rpc.initializeCommunity(
+      new BN(1),
+      communityBump,
       new BN(1),
       2,
       addressTracerReward,
@@ -83,12 +85,11 @@ describe("HapiCore Network", () => {
       {
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           stakeMint: stakeToken.mintAccount,
           tokenAccount,
           systemProgram: web3.SystemProgram.programId,
         },
-        signers: [community],
       }
     );
 
@@ -100,8 +101,13 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount, networkBump] =
-        await program.pda.findNetworkAddress(community.publicKey, "near");
+        await program.pda.findNetworkAddress(communityAccount, "near");
 
       const treasuryTokenAccount = await rewardToken.getTokenAccount(
         networkAccount, true
@@ -123,7 +129,7 @@ describe("HapiCore Network", () => {
           program.rpc.createNetwork(...args, {
             accounts: {
               authority: nobody.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
               treasuryTokenAccount,
@@ -141,11 +147,18 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
+      const [otherCommunityAccount, otherCommunityBump] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const otherTokenAccount = await stakeToken.getTokenAccount(
-        otherCommunity.publicKey
+        otherCommunityAccount, true
       );
 
       await program.rpc.initializeCommunity(
+        new BN(2),
+        otherCommunityBump,
         new BN(1),
         2,
         new BN(1_000),
@@ -156,25 +169,24 @@ describe("HapiCore Network", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: otherCommunity.publicKey,
+            community: otherCommunityAccount,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: otherTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [otherCommunity],
         }
       );
 
       await program.rpc.setCommunityAuthority({
         accounts: {
           authority: authority.publicKey,
-          community: otherCommunity.publicKey,
+          community: otherCommunityAccount,
           newAuthority: nobody.publicKey,
         },
       });
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        otherCommunity.publicKey,
+        otherCommunityAccount,
         "near"
       );
 
@@ -198,7 +210,7 @@ describe("HapiCore Network", () => {
           program.rpc.createNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: otherCommunity.publicKey,
+              community: otherCommunityAccount,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
               treasuryTokenAccount,
@@ -215,8 +227,18 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+      const [otherCommunityAccount, __] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -240,7 +262,7 @@ describe("HapiCore Network", () => {
           program.rpc.createNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: otherCommunity.publicKey,
+              community: otherCommunityAccount,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
               treasuryTokenAccount,
@@ -257,8 +279,13 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -280,7 +307,7 @@ describe("HapiCore Network", () => {
       const tx = await program.rpc.createNetwork(...args, {
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           rewardMint: rewardToken.mintAccount,
           treasuryTokenAccount,
@@ -324,8 +351,13 @@ describe("HapiCore Network", () => {
 
       const schema = NetworkSchema.Near;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -349,7 +381,7 @@ describe("HapiCore Network", () => {
           program.rpc.createNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
               treasuryTokenAccount,
@@ -364,8 +396,19 @@ describe("HapiCore Network", () => {
 
   describe("update_network", () => {
     it("fail - authority mismatch for community", async () => {
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+      const [otherCommunityAccount, __] =
+        await program.pda.findCommunityAddress(
+          new BN(2)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -381,7 +424,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: otherCommunity.publicKey,
+              community: otherCommunityAccount,
               network: networkAccount,
             },
           }),
@@ -390,8 +433,13 @@ describe("HapiCore Network", () => {
     });
 
     it("fail - network does not exist", async () => {
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "unknown"
       );
 
@@ -407,7 +455,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateNetwork(...args, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
             },
           }),
@@ -416,8 +464,13 @@ describe("HapiCore Network", () => {
     });
 
     it("success", async () => {
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -431,7 +484,7 @@ describe("HapiCore Network", () => {
       const tx = await program.rpc.updateNetwork(...args, {
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
         },
       });
@@ -513,8 +566,13 @@ describe("HapiCore Network", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -527,7 +585,7 @@ describe("HapiCore Network", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -541,8 +599,13 @@ describe("HapiCore Network", () => {
     it.each(Object.keys(REPORTERS))("Setup - reporter %s is activated", async (key) => {
       const reporter = REPORTERS[key];
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -551,13 +614,13 @@ describe("HapiCore Network", () => {
       );
 
       const communityTokenAccount = await stakeToken.getTokenAccount(
-        community.publicKey
+        communityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
           reporterTokenAccount: tokenAccount,
@@ -572,22 +635,28 @@ describe("HapiCore Network", () => {
 
     it("success", async () => {
       const reporter = REPORTERS.erin;
+
       const newPrice = new BN(2_000);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
       const tx = await program.rpc.updateReplicationPrice(newPrice, {
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
         },
@@ -604,15 +673,21 @@ describe("HapiCore Network", () => {
 
     it("fail - validator can't update replication price", async () => {
       const reporter = REPORTERS.alice;
+
       const newPrice = new BN(2_000);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -621,7 +696,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateReplicationPrice(newPrice, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
             },
@@ -633,15 +708,21 @@ describe("HapiCore Network", () => {
 
     it("fail - tracer can't update replication price", async () => {
       const reporter = REPORTERS.bob;
+
       const newPrice = new BN(2_000);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -650,7 +731,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateReplicationPrice(newPrice, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
             },
@@ -662,15 +743,21 @@ describe("HapiCore Network", () => {
 
     it("fail - authority can't update replication price", async () => {
       const reporter = REPORTERS.carol;
+
       const newPrice = new BN(2_000);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -679,7 +766,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateReplicationPrice(newPrice, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
             },
@@ -691,15 +778,21 @@ describe("HapiCore Network", () => {
 
     it("fail - publisher can't update replication price", async () => {
       const reporter = REPORTERS.dave;
+
       const newPrice = new BN(2_000);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         "near"
       );
 
@@ -708,7 +801,7 @@ describe("HapiCore Network", () => {
           program.rpc.updateReplicationPrice(newPrice, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
             },

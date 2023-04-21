@@ -1,5 +1,11 @@
 use crate::error::{print_error, ErrorCode};
-use {anchor_lang::prelude::*, std::io::Write};
+use anchor_lang::{
+    __private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*, solana_program::entrypoint::ProgramResult,
+};
+use std::{
+    io::{Cursor, Write},
+    ops::DerefMut,
+};
 
 /// Anchor discriminator length
 pub const DISCRIMINATOR_LENGTH: usize = 8;
@@ -56,6 +62,27 @@ pub fn migrate<'info, Acc: AccountSerialize>(
 
     realloc_and_rent(account, payer, rent, len + ACCOUNT_RESERVE_SPACE)?;
     account.try_borrow_mut_data()?.write_all(&buffer)?;
+
+    Ok(())
+}
+
+pub fn close<'info>(account: AccountInfo<'info>, destination: AccountInfo<'info>) -> ProgramResult {
+    let dest_starting_lamports = destination.lamports();
+
+    **destination.lamports.borrow_mut() = dest_starting_lamports
+        .checked_add(account.lamports())
+        .unwrap();
+
+    **account.lamports.borrow_mut() = 0;
+
+    let mut data = account.try_borrow_mut_data()?;
+    for byte in data.deref_mut().iter_mut() {
+        *byte = 0;
+    }
+
+    let dst: &mut [u8] = &mut data;
+    let mut cursor = Cursor::new(dst);
+    cursor.write_all(&CLOSED_ACCOUNT_DISCRIMINATOR).unwrap();
 
     Ok(())
 }

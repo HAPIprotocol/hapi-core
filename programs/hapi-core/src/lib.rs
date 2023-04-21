@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, CloseAccount, MintTo, SetAuthority, Transfer};
 use spl_token::instruction::AuthorityType;
 
-declare_id!("8DCgGWyLHPsESt5EgPG2asnxhhC7P3f8ZoK4zZ93hoQE");
+declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
 pub mod checker;
 pub mod context;
@@ -19,7 +19,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::migrate;
+use utils::{close, migrate};
 
 pub use state::{
     address::{Address, Category},
@@ -34,6 +34,8 @@ pub mod hapi_core {
 
     pub fn initialize_community(
         ctx: Context<InitializeCommunity>,
+        community_id: u64,
+        bump: u8,
         stake_unlock_epochs: u64,
         confirmation_threshold: u8,
         validator_stake: u64,
@@ -45,6 +47,8 @@ pub mod hapi_core {
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.authority.key;
+        community.community_id = community_id;
+        community.bump = bump;
         community.cases = 0;
         community.stake_unlock_epochs = stake_unlock_epochs;
         community.confirmation_threshold = confirmation_threshold;
@@ -82,17 +86,34 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_community(ctx: Context<MigrateCommunity>, token_signer_bump: u8) -> Result<()> {
-        let community =
-            Community::from_deprecated(&mut ctx.accounts.community.try_borrow_data()?.as_ref())?;
+    pub fn migrate_community(
+        ctx: Context<MigrateCommunity>,
+        community_id: u64,
+        bump: u8,
+        token_signer_bump: u8,
+    ) -> Result<()> {
+        let community_data = Community::from_deprecated(
+            &mut ctx.accounts.old_community.try_borrow_data()?.as_ref(),
+        )?;
 
-        if community.authority != ctx.accounts.authority.key() {
-            return print_error(ErrorCode::NetworkMismatch);
+        if community_data.authority != ctx.accounts.authority.key() {
+            return print_error(ErrorCode::AuthorityMismatch);
         }
+
+        let community = &mut ctx.accounts.community;
+        community.set_inner(community_data);
+        community.community_id = community_id;
+        community.bump = bump;
+
+        // Closing old token account
+        close(
+            ctx.accounts.old_community.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
 
         let seeds = &[
             b"community_stash".as_ref(),
-            ctx.accounts.community.to_account_info().key.as_ref(),
+            ctx.accounts.old_community.to_account_info().key.as_ref(),
             &[token_signer_bump],
         ];
         let signer = &[&seeds[..]];
@@ -111,7 +132,7 @@ pub mod hapi_core {
             ctx.accounts.old_token_account.amount,
         )?;
 
-        // Close old token account and token signer
+        // Close old token account
         token::close_account(CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             CloseAccount {
@@ -120,15 +141,7 @@ pub mod hapi_core {
                 authority: ctx.accounts.token_signer.to_account_info(),
             },
             signer,
-        ))?;
-
-        migrate(
-            community,
-            &ctx.accounts.community,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Community::LEN,
-        )
+        ))
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> Result<()> {
@@ -738,14 +751,21 @@ pub mod hapi_core {
 
         let community = ctx.accounts.community.clone();
 
+        let seeds = &[
+            b"community".as_ref(),
+            &community.community_id.to_le_bytes(),
+            &[community.bump],
+        ];
+
         token::transfer(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
                     from: ctx.accounts.community_token_account.to_account_info(),
                     to: ctx.accounts.reporter_token_account.to_account_info(),
                     authority: community.to_account_info(),
                 },
+                &[&seeds[..]],
             ),
             reporter.stake,
         )?;

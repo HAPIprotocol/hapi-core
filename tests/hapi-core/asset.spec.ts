@@ -26,7 +26,6 @@ describe("HapiCore Asset", () => {
   const authority = provider.wallet;
 
   const nobody = web3.Keypair.generate();
-  const community = web3.Keypair.generate();
 
   let stakeToken: TestToken;
 
@@ -197,12 +196,19 @@ describe("HapiCore Asset", () => {
       );
     }
 
+    const [communityAccount, communityBump] =
+      await program.pda.findCommunityAddress(
+        new BN(1)
+      );
+
     const communityTokenAccount = await stakeToken.getTokenAccount(
-      community.publicKey
+      communityAccount, true
     );
 
     wait.push(
       program.rpc.initializeCommunity(
+        new BN(1),
+        communityBump,
         new BN(10),
         2,
         new BN(1_000),
@@ -213,12 +219,11 @@ describe("HapiCore Asset", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [community],
         }
       )
     );
@@ -229,7 +234,7 @@ describe("HapiCore Asset", () => {
       const reporter = REPORTERS[key];
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -241,7 +246,7 @@ describe("HapiCore Asset", () => {
           {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               pubkey: reporter.keypair.publicKey,
               systemProgram: web3.SystemProgram.programId,
@@ -257,7 +262,7 @@ describe("HapiCore Asset", () => {
       await network.rewardToken.mint(1_000_000_000);
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -288,7 +293,7 @@ describe("HapiCore Asset", () => {
           {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               rewardMint: network.rewardToken.mintAccount,
               tokenProgram: network.rewardToken.programId,
@@ -308,7 +313,7 @@ describe("HapiCore Asset", () => {
       wait.push(
         (async () => {
           const [reporterAccount] = await program.pda.findReporterAddress(
-            community.publicKey,
+            communityAccount,
             reporter.keypair.publicKey
           );
 
@@ -319,7 +324,7 @@ describe("HapiCore Asset", () => {
           await program.rpc.activateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
               reporterTokenAccount,
@@ -341,12 +346,12 @@ describe("HapiCore Asset", () => {
       const caseName = bufferFromString(cs.name, 32);
 
       const [caseAccount, bump] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         cs.caseId
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -354,7 +359,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           reporter: reporterAccount,
           sender: reporter.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           case: caseAccount,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -370,12 +375,12 @@ describe("HapiCore Asset", () => {
       const caseName = bufferFromString(cs.name, 32);
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         cs.caseId
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -383,7 +388,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           reporter: reporterAccount,
           sender: reporter.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           case: caseAccount,
         },
         signers: [reporter],
@@ -397,8 +402,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -409,12 +419,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -436,7 +446,7 @@ describe("HapiCore Asset", () => {
               accounts: {
                 sender: reporter.publicKey,
                 asset: assetAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
@@ -457,8 +467,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -469,12 +485,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -496,7 +512,7 @@ describe("HapiCore Asset", () => {
               accounts: {
                 sender: reporter.publicKey,
                 asset: assetAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
@@ -517,8 +533,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -529,12 +551,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -568,7 +590,7 @@ describe("HapiCore Asset", () => {
           accounts: {
             sender: reporter.publicKey,
             asset: assetAccount,
-            community: community.publicKey,
+            community: communityAccount,
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
@@ -610,7 +632,7 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.category).toEqual(Category[asset.category]);
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(asset.risk);
-      expect(fetchedAssetAccount.community).toEqual(community.publicKey);
+      expect(fetchedAssetAccount.community).toEqual(communityAccount);
       expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(
         padBuffer(asset.mint, 64)
       );
@@ -640,8 +662,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -652,12 +680,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -679,7 +707,7 @@ describe("HapiCore Asset", () => {
               accounts: {
                 sender: reporter.publicKey,
                 asset: assetAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
@@ -702,8 +730,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.dave.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -714,12 +748,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -735,7 +769,7 @@ describe("HapiCore Asset", () => {
             accounts: {
               sender: reporter.publicKey,
               asset: assetAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
@@ -754,8 +788,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.bob.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -766,12 +806,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -787,7 +827,7 @@ describe("HapiCore Asset", () => {
             accounts: {
               sender: reporter.publicKey,
               asset: assetAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
@@ -806,8 +846,14 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.erin.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -818,12 +864,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -839,7 +885,7 @@ describe("HapiCore Asset", () => {
             accounts: {
               sender: reporter.publicKey,
               asset: assetAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
@@ -858,8 +904,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -870,12 +921,12 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -909,7 +960,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
@@ -948,7 +999,7 @@ describe("HapiCore Asset", () => {
       expect(fetchedAssetAccount.category).toEqual(Category.Exchange);
       expect(fetchedAssetAccount.confirmations).toEqual(0);
       expect(fetchedAssetAccount.risk).toEqual(8);
-      expect(fetchedAssetAccount.community).toEqual(community.publicKey);
+      expect(fetchedAssetAccount.community).toEqual(communityAccount);
       expect(Buffer.from(fetchedAssetAccount.mint)).toEqual(
         padBuffer(asset.mint, 64)
       );
@@ -971,14 +1022,19 @@ describe("HapiCore Asset", () => {
       for (const reporterKey of Object.keys(REPORTERS)) {
         const reporter = REPORTERS[reporterKey];
 
+        const [communityAccount, _] =
+          await program.pda.findCommunityAddress(
+            new BN(1)
+          );
+
         const [reporterAccount] = await program.pda.findReporterAddress(
-          community.publicKey,
+          communityAccount,
           reporter.keypair.publicKey
         );
 
         for (const networkKey of Object.keys(NETWORKS)) {
           const [networkAccount] = await program.pda.findNetworkAddress(
-            community.publicKey,
+            communityAccount,
             NETWORKS[networkKey].name
           );
 
@@ -991,7 +1047,7 @@ describe("HapiCore Asset", () => {
           await program.rpc.initializeReporterReward(bump, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               reporterReward: reporterRewardAccount,
@@ -1008,8 +1064,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS[asset.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -1020,7 +1081,7 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1039,7 +1100,7 @@ describe("HapiCore Asset", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -1049,7 +1110,7 @@ describe("HapiCore Asset", () => {
             accounts: {
               sender: reporter.publicKey,
               asset: assetAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               reporterReward: reporterRewardAccount,
@@ -1067,8 +1128,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.bob.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -1079,7 +1145,7 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1098,7 +1164,7 @@ describe("HapiCore Asset", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -1106,7 +1172,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1124,7 +1190,7 @@ describe("HapiCore Asset", () => {
           asset.caseId.toNumber()
         );
         expect(fetchedAccount.confirmations).toEqual(1);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
         expect(Buffer.from(fetchedAccount.mint)).toEqual(
           padBuffer(asset.mint, 64)
         );
@@ -1174,8 +1240,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.dave.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -1186,7 +1257,7 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1205,7 +1276,7 @@ describe("HapiCore Asset", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -1213,7 +1284,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1231,7 +1302,7 @@ describe("HapiCore Asset", () => {
           asset.caseId.toNumber()
         );
         expect(fetchedAccount.confirmations).toEqual(2);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
         expect(Buffer.from(fetchedAccount.mint)).toEqual(
           padBuffer(asset.mint, 64)
         );
@@ -1281,8 +1352,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.carol.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -1293,7 +1369,7 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1312,7 +1388,7 @@ describe("HapiCore Asset", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -1320,7 +1396,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1338,7 +1414,7 @@ describe("HapiCore Asset", () => {
           asset.caseId.toNumber()
         );
         expect(fetchedAccount.confirmations).toEqual(3);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
         expect(Buffer.from(fetchedAccount.mint)).toEqual(
           padBuffer(asset.mint, 64)
         );
@@ -1388,8 +1464,13 @@ describe("HapiCore Asset", () => {
 
       const reporter = REPORTERS.erin.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          new BN(1)
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         asset.network
       );
 
@@ -1400,7 +1481,7 @@ describe("HapiCore Asset", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1419,7 +1500,7 @@ describe("HapiCore Asset", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         asset.caseId
       );
 
@@ -1427,7 +1508,7 @@ describe("HapiCore Asset", () => {
         accounts: {
           sender: reporter.publicKey,
           asset: assetAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1445,7 +1526,7 @@ describe("HapiCore Asset", () => {
           asset.caseId.toNumber()
         );
         expect(fetchedAccount.confirmations).toEqual(4);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
         expect(Buffer.from(fetchedAccount.mint)).toEqual(
           padBuffer(asset.mint, 64)
         );
