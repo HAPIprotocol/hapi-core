@@ -1,5 +1,3 @@
 program_id: "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 keypair_path: "~/.config/solana/id.json"
-communities:
-    pubkey: "B7JizsfxERnN5s1STwJyJoij68Zab9PQUV57QiYNoYYq"
-    keypair_path: "~/.config/solana/community.json"
+communities: ["B7JizsfxERnN5s1STwJyJoij68Zab9PQUV57QiYNoYYq"]

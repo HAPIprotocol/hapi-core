@@ -1,4 +1,4 @@
-use crate::configuration::{CommunityCfg, HapiCfg};
+use crate::configuration::HapiCfg;
 
 use {
     anchor_client::{
@@ -53,7 +53,7 @@ pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
 
 pub struct HapiCli {
     cli: Program,
-    communities_cfg: Vec<CommunityCfg>,
+    communities_cfg: Vec<String>,
 }
 
 impl HapiCli {
@@ -88,9 +88,7 @@ impl HapiCli {
     }
 
     fn match_community(&self, pk: &Pubkey) -> bool {
-        self.communities_cfg
-            .iter()
-            .any(|cfg| cfg.pubkey == pk.to_string())
+        self.communities_cfg.contains(&pk.to_string())
     }
 
     pub fn migrate_communities(&self) -> Result<()> {
@@ -110,15 +108,6 @@ impl HapiCli {
             for (pk, community) in communities {
                 println!("Migrating community: {}", pk);
 
-                // TODO: remove
-                let cfg = self
-                    .communities_cfg
-                    .iter()
-                    .find(|cfg| cfg.pubkey == pk.to_string())
-                    .ok_or_else(|| {
-                        anyhow::Error::msg(format!("Community {} is absent in config", pk))
-                    })?;
-
                 self.cli
                     .request()
                     .instruction(create_associated_token_account(
@@ -132,9 +121,6 @@ impl HapiCli {
                 let token_account = get_associated_token_address(&pk, &community.stake_mint);
 
                 println!("New community ATA: {}", token_account);
-
-                let signer = read_keypair_file(cfg.keypair_path.clone())
-                    .map_err(|err| Error::msg(err.to_string()))?;
 
                 let signature = self
                     .cli
@@ -153,7 +139,6 @@ impl HapiCli {
                     .args(instruction::MigrateCommunity {
                         token_signer_bump: community.token_signer_bump,
                     })
-                    // .signer(&signer)
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
