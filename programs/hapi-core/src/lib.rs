@@ -83,7 +83,6 @@ pub mod hapi_core {
     }
 
     pub fn migrate_community(ctx: Context<MigrateCommunity>, token_signer_bump: u8) -> Result<()> {
-        return Ok(());
         let community =
             Community::from_deprecated(&mut ctx.accounts.community.try_borrow_data()?.as_ref())?;
 
@@ -98,31 +97,30 @@ pub mod hapi_core {
         ];
         let signer = &[&seeds[..]];
 
-        // // Transfer all tokens to new ATA
-        // token::transfer(
-        //     CpiContext::new_with_signer(
-        //         ctx.accounts.token_program.to_account_info(),
-        //         Transfer {
-        //             from: ctx.accounts.old_token_account.to_account_info(),
-        //             to: ctx.accounts.token_account.to_account_info(),
-        //             authority: ctx.accounts.token_signer.to_account_info(),
-        //         },
-        //         signer,
-        //     ),
-        //     ctx.accounts.old_token_account.amount,
-        // )?;
+        // Transfer all tokens to new ATA
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.old_token_account.to_account_info(),
+                    to: ctx.accounts.token_account.to_account_info(),
+                    authority: ctx.accounts.token_signer.to_account_info(),
+                },
+                signer,
+            ),
+            ctx.accounts.old_token_account.amount,
+        )?;
 
-        // // Close old token account and token signer
-        // token::close_account(CpiContext::new_with_signer(
-        //     ctx.accounts.token_program.to_account_info(),
-        //     CloseAccount {
-        //         account: ctx.accounts.old_token_account.to_account_info(),
-        //         destination: ctx.accounts.authority.to_account_info(),
-        //         authority: ctx.accounts.token_signer.to_account_info(),
-        //     },
-        //     signer,
-        // ))?;
-
+        // Close old token account and token signer
+        token::close_account(CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            CloseAccount {
+                account: ctx.accounts.old_token_account.to_account_info(),
+                destination: ctx.accounts.authority.to_account_info(),
+                authority: ctx.accounts.token_signer.to_account_info(),
+            },
+            signer,
+        ))?;
 
         migrate(
             community,
