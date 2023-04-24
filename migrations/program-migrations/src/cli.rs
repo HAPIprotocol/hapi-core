@@ -53,14 +53,14 @@ pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
 
 pub struct HapiCli {
     cli: Program,
-    communities_cfg: Vec<String>,
+    communities: Vec<String>,
 }
 
 impl HapiCli {
     pub fn new(cfg: &HapiCfg) -> Result<Self> {
         Ok(Self {
             cli: get_program(cfg)?,
-            communities_cfg: cfg.communities.clone(),
+            communities: cfg.communities.clone(),
         })
     }
 
@@ -87,39 +87,35 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    fn match_community(&self, pk: &Pubkey) -> bool {
-        self.communities_cfg.contains(&pk.to_string())
+    fn get_community(&self, id: usize) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 2] = [b"community", &id.to_le_bytes()];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
     }
 
     pub fn migrate_communities(&self) -> Result<()> {
-        let mut communities = self
+        let communities = self
             .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
+        let mut migrations = 0;
 
-        communities.retain(|(pk, _)| self.match_community(pk));
-
-        if communities.is_empty() {
-            println!(
-                "{}",
-                "This program has no communities to migrate\n".yellow()
-            );
-        } else {
-            println!("Starting migration of {} communities", communities.len());
-
-            for (pk, community) in communities {
-                println!("Migrating community: {}", pk);
+        for (pk, data) in communities {
+            if let Ok(community_id) = self.communities.binary_search(&pk.to_string()) {
+                let (community, bump) = self.get_community(community_id);
+                println!(
+                    "Migrating community: {}, new community pda: {}",
+                    pk, community
+                );
 
                 self.cli
                     .request()
                     .instruction(create_associated_token_account(
                         &self.cli.payer(),
-                        &pk,
-                        &community.stake_mint,
+                        &community,
+                        &data.stake_mint,
                         &spl_token::ID,
                     ))
                     .send()?;
 
-                let token_account = get_associated_token_address(&pk, &community.stake_mint);
-
+                let token_account = get_associated_token_address(&community, &data.stake_mint);
                 println!("New community ATA: {}", token_account);
 
                 let signature = self
@@ -127,41 +123,45 @@ impl HapiCli {
                     .request()
                     .accounts(accounts::MigrateCommunity {
                         authority: self.cli.payer(),
-                        community: pk,
-                        stake_mint: community.stake_mint,
-                        token_signer: community.token_signer,
-                        old_token_account: community.token_account,
+                        old_community: pk,
+                        community,
+                        stake_mint: data.stake_mint,
+                        token_signer: data.token_signer,
+                        old_token_account: data.token_account,
                         token_account,
                         rent: rent::ID,
                         token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateCommunity {
-                        token_signer_bump: community.token_signer_bump,
+                        token_signer_bump: data.token_signer_bump,
+                        community_id: community_id as u64,
+                        bump,
                     })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All communities migrated\n".green());
         }
 
+        println!("{}{}", migrations, " communities migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_networks(&self) -> Result<()> {
-        let mut networks =
+        let networks =
             self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
+        let mut migrations = 0;
 
-        networks.retain(|(_, old_acc)| self.match_community(&old_acc.community));
-
-        if networks.is_empty() {
-            println!("{}", "This program has no networks to migrate\n".yellow());
-        } else {
-            println!("Starting migration of {} networks", networks.len());
-
-            for (pk, network) in networks {
+        for (pk, network) in networks {
+            if let Ok(community_id) = self
+                .communities
+                .binary_search(&network.community.to_string())
+            {
                 println!("Migrating network: {}", pk);
+
+                let (community, _) = self.get_community(community_id);
 
                 self.cli
                     .request()
@@ -183,7 +183,7 @@ impl HapiCli {
                     .request()
                     .accounts(accounts::MigrateNetwork {
                         authority: self.cli.payer(),
-                        community: network.community,
+                        community,
                         network: pk,
                         reward_signer: network.reward_signer,
                         reward_mint: network.reward_mint,
@@ -198,33 +198,33 @@ impl HapiCli {
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All networks migrated\n".green());
         }
 
+        println!("{}{}", migrations, " networks migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_reporters(&self) -> Result<()> {
-        let mut reporters =
+        let reporters =
             self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
+        let mut migrations = 0;
 
-        reporters.retain(|(_, old_acc)| self.match_community(&old_acc.community));
-
-        if reporters.is_empty() {
-            println!("{}", "This program has no reporters to migrate\n".yellow());
-        } else {
-            println!("Starting migration of {} reporters", reporters.len());
-
-            for (pk, reporter) in reporters {
+        for (pk, reporter) in reporters {
+            if let Ok(community_id) = self
+                .communities
+                .binary_search(&reporter.community.to_string())
+            {
                 println!("Migrating reporter: {}", pk);
+                let (community, _) = self.get_community(community_id);
 
                 let signature = self
                     .cli
                     .request()
                     .accounts(accounts::MigrateReporter {
                         authority: self.cli.payer(),
-                        community: reporter.community,
+                        community,
                         reporter: pk,
                         rent: rent::ID,
                         system_program: system_program::ID,
@@ -233,93 +233,69 @@ impl HapiCli {
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All reporters migrated\n".green());
         }
 
+        println!("{}{}", migrations, " reporters migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_reporter_rewards(&self) -> Result<()> {
-        println!(
-            "{}",
-            "Warning: reporter reward account can migrate only one time".yellow()
-        );
+        let reporter_rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
+            ReporterReward::discriminator(),
+        )?;
+        let mut migrations = 0;
 
-        let mut reporter_rewards = vec![];
+        for (pk, reward) in reporter_rewards {
+            if let Ok(reporter) = self.cli.account::<Reporter>(reward.reporter) {
+                if let Ok(community_id) = self
+                    .communities
+                    .binary_search(&reporter.community.to_string())
+                {
+                    println!("Migrating reporter reward: {}", pk);
+                    let (community, _) = self.get_community(community_id);
 
-        {
-            let rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
-                ReporterReward::discriminator(),
-            )?;
+                    let signature = self
+                        .cli
+                        .request()
+                        .accounts(accounts::MigrateReporterReward {
+                            authority: self.cli.payer(),
+                            community,
+                            network: reward.network,
+                            reporter: reward.reporter,
+                            reporter_reward: pk,
+                            rent: rent::ID,
+                            system_program: system_program::ID,
+                        })
+                        .args(instruction::MigrateReporterReward)
+                        .send()?;
 
-            // Rewards could migrate only if reporter already migrated and it belongs to specified community
-            for (pk, reward) in rewards {
-                if let Ok(reporter) = self.cli.account::<Reporter>(reward.reporter) {
-                    if self.match_community(&reporter.community) {
-                        reporter_rewards.push((pk, reward, reporter));
-                    }
+                    println!("Migration success, signature {}", signature);
+                    migrations += 1;
                 }
             }
         }
 
-        if reporter_rewards.is_empty() {
-            println!(
-                "{}",
-                "This program has no reporter rewards to migrate\n".yellow()
-            );
-        } else {
-            println!(
-                "Starting migration of {} reporter rewards",
-                reporter_rewards.len()
-            );
-
-            for (pk, reward, reporter) in reporter_rewards {
-                println!("Migrating reporter reward: {}", pk);
-
-                let signature = self
-                    .cli
-                    .request()
-                    .accounts(accounts::MigrateReporterReward {
-                        authority: self.cli.payer(),
-                        community: reporter.community,
-                        network: reward.network,
-                        reporter: reward.reporter,
-                        reporter_reward: pk,
-                        rent: rent::ID,
-                        system_program: system_program::ID,
-                    })
-                    .args(instruction::MigrateReporterReward)
-                    .send()?;
-
-                println!("Migration success, signature {}", signature);
-            }
-            println!("{}", "All reporter rewards migrated\n".green());
-        }
-
+        println!("{}{}", migrations, " reporter rewards migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_cases(&self) -> Result<()> {
-        let mut cases =
-            self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
+        let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
+        let mut migrations = 0;
 
-        cases.retain(|(_, old_acc)| self.match_community(&old_acc.community));
-
-        if cases.is_empty() {
-            println!("{}", "This program has no cases to migrate\n".yellow());
-        } else {
-            println!("Starting migration of {} cases", cases.len());
-
-            for (pk, case) in cases {
+        for (pk, case) in cases {
+            if let Ok(community_id) = self.communities.binary_search(&case.community.to_string()) {
                 println!("Migrating case: {}", pk);
+                let (community, _) = self.get_community(community_id);
 
                 let signature = self
                     .cli
                     .request()
                     .accounts(accounts::MigrateCase {
                         authority: self.cli.payer(),
-                        community: case.community,
+                        community,
                         reporter: case.reporter,
                         case: pk,
                         rent: rent::ID,
@@ -329,26 +305,26 @@ impl HapiCli {
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All cases migrated\n".green());
         }
 
+        println!("{}{}", migrations, " cases migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_addresses(&self) -> Result<()> {
-        let mut addresses =
+        let addresses =
             self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
+        let mut migrations = 0;
 
-        addresses.retain(|(_, old_acc)| self.match_community(&old_acc.community));
-
-        if addresses.is_empty() {
-            println!("{}", "This program has no addresses to migrate\n".yellow());
-        } else {
-            println!("Starting migration of {} addresses", addresses.len());
-
-            for (pk, address) in addresses {
-                println!("Migrating reporter: {}", pk);
+        for (pk, address) in addresses {
+            if let Ok(community_id) = self
+                .communities
+                .binary_search(&address.community.to_string())
+            {
+                println!("Migrating address: {}", pk);
+                let (community, _) = self.get_community(community_id);
 
                 let (case, _) = Pubkey::find_program_address(
                     &[
@@ -364,7 +340,7 @@ impl HapiCli {
                     .request()
                     .accounts(accounts::MigrateAddress {
                         authority: self.cli.payer(),
-                        community: address.community,
+                        community,
                         network: address.network,
                         reporter: address.reporter,
                         case,
@@ -376,26 +352,24 @@ impl HapiCli {
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All addresses migrated\n".green());
         }
 
+        println!("{}{}", migrations, " addresses migrated\n".green());
         Ok(())
     }
 
     pub fn migrate_assets(&self) -> Result<()> {
-        let mut assets =
+        let assets =
             self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator())?;
 
-        assets.retain(|(_, old_acc)| self.match_community(&old_acc.community));
+        let mut migrations = 0;
 
-        if assets.is_empty() {
-            println!("{}", "This program has no assets to migrate\n".yellow());
-        } else {
-            println!("Starting migration of {} assets", assets.len());
-
-            for (pk, asset) in assets {
-                println!("Migrating reporter: {}", pk);
+        for (pk, asset) in assets {
+            if let Ok(community_id) = self.communities.binary_search(&asset.community.to_string()) {
+                println!("Migrating address: {}", pk);
+                let (community, _) = self.get_community(community_id);
 
                 let (case, _) = Pubkey::find_program_address(
                     &[
@@ -411,7 +385,7 @@ impl HapiCli {
                     .request()
                     .accounts(accounts::MigrateAsset {
                         authority: self.cli.payer(),
-                        community: asset.community,
+                        community,
                         network: asset.network,
                         reporter: asset.reporter,
                         case,
@@ -423,10 +397,11 @@ impl HapiCli {
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
+                migrations += 1;
             }
-            println!("{}", "All assets migrated\n".green());
         }
 
+        println!("{}{}", migrations, " assets migrated\n".green());
         Ok(())
     }
 }
