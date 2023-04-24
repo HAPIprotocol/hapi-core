@@ -4,7 +4,7 @@ HAPI Core contract built on Anchor for Solana. If you want to know more about HA
 
 ## Dependencies
 
-To install everything you need to work with this project, you'll need to install dependencies as described in [Anchor](https://project-serum.github.io/anchor/getting-started/installation.html) documentation.
+To install everything you need to work with this project, you'll need to install dependencies as described in [Anchor](https://www.anchor-lang.com/docs/installation) documentation.
 
 ## Program
 
