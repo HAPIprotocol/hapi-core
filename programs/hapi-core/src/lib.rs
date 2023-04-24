@@ -105,12 +105,6 @@ pub mod hapi_core {
         community.community_id = community_id;
         community.bump = bump;
 
-        // Closing old token account
-        close(
-            ctx.accounts.old_community.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
-        )?;
-
         let seeds = &[
             b"community_stash".as_ref(),
             ctx.accounts.old_community.to_account_info().key.as_ref(),
@@ -130,6 +124,12 @@ pub mod hapi_core {
                 signer,
             ),
             ctx.accounts.old_token_account.amount,
+        )?;
+
+        // Closing old community account
+        close(
+            ctx.accounts.old_community.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )?;
 
         // Close old token account
@@ -211,7 +211,7 @@ pub mod hapi_core {
     }
 
     pub fn migrate_network(ctx: Context<MigrateNetwork>, reward_signer_bump: u8) -> Result<()> {
-        let network =
+        let mut network =
             Network::from_deprecated(&mut ctx.accounts.network.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
@@ -226,15 +226,15 @@ pub mod hapi_core {
         if ctx.accounts.network.key() != pda || network.bump != bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if network.community != ctx.accounts.community.key() {
-            return print_error(ErrorCode::CommunityMismatch);
-        }
 
         let seeds = &[
             b"network_reward".as_ref(),
             ctx.accounts.network.to_account_info().key.as_ref(),
             &[reward_signer_bump],
         ];
+
+        // Updating community
+        network.community = ctx.accounts.community.key();
 
         // Set reward mint authority to network
         token::set_authority(
