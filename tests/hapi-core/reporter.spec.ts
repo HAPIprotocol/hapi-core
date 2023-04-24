@@ -29,6 +29,9 @@ describe("HapiCore Reporter", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
+  const communityId = new BN(10);
+  const otherCommunityId = new BN(11);
+
   let currentEpoch: number;
 
   const REPORTERS: Record<
@@ -174,12 +177,12 @@ describe("HapiCore Reporter", () => {
 
     const [communityAccount, communityBump] =
       await program.pda.findCommunityAddress(
-        new BN(1)
+        communityId
       );
 
     const [otherCommunityAccount, otherCommunityBump] =
       await program.pda.findCommunityAddress(
-        new BN(2)
+        otherCommunityId
       );
 
     const communityTokenAccount = await stakeToken.getTokenAccount(
@@ -192,7 +195,7 @@ describe("HapiCore Reporter", () => {
 
     wait.push(
       program.rpc.initializeCommunity(
-        new BN(1),
+        communityId,
         communityBump,
         new BN(0), // unlocks in current epoch
         1,
@@ -212,7 +215,7 @@ describe("HapiCore Reporter", () => {
         }
       ),
       program.rpc.initializeCommunity(
-        new BN(2),
+        otherCommunityId,
         otherCommunityBump,
         new BN(10), // unlocks in the future
         2,
@@ -283,7 +286,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -316,7 +319,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -365,7 +368,7 @@ describe("HapiCore Reporter", () => {
 
       const [otherCommunityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          otherCommunityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -414,7 +417,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -463,7 +466,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -512,7 +515,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -561,7 +564,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -610,7 +613,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
@@ -648,7 +651,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -678,7 +681,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -718,7 +721,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -774,7 +777,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -830,7 +833,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -889,7 +892,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -928,7 +931,7 @@ describe("HapiCore Reporter", () => {
 
       const [otherCommunityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          otherCommunityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -979,7 +982,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1030,7 +1033,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1081,7 +1084,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1132,7 +1135,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1183,7 +1186,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1229,7 +1232,7 @@ describe("HapiCore Reporter", () => {
 
         const [communityAccount, _] =
           await program.pda.findCommunityAddress(
-            new BN(1)
+            communityId
           );
 
         const [caseAccount, bump] = await program.pda.findCaseAddress(
@@ -1262,7 +1265,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
@@ -1323,7 +1326,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
@@ -1382,7 +1385,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1467,7 +1470,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1554,7 +1557,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1581,7 +1584,7 @@ describe("HapiCore Reporter", () => {
 
       const [otherCommunityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          otherCommunityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1615,7 +1618,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1649,7 +1652,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1678,7 +1681,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1717,7 +1720,7 @@ describe("HapiCore Reporter", () => {
 
       const [otherCommunityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          otherCommunityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1756,7 +1759,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1842,7 +1845,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1871,7 +1874,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
@@ -1946,7 +1949,7 @@ describe("HapiCore Reporter", () => {
 
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const [reporterAccount] = await program.pda.findReporterAddress(

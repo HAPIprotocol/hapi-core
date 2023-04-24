@@ -27,14 +27,16 @@ describe("HapiCore Community", () => {
   });
 
   describe("initialize_community", () => {
+    const communityId = new BN(4);
+
     it("fail - invalid token account", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const args = [
-        new BN(1),
+        communityId,
         communityBump,
         new BN(3),
         3,
@@ -65,11 +67,11 @@ describe("HapiCore Community", () => {
     it("fail - invalid mint account", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const args = [
-        new BN(1),
+        communityId,
         communityBump,
         new BN(3),
         3,
@@ -100,14 +102,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid community", async () => {
-      const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          new BN(2)
-        );
-
       const args = [
-        new BN(1),
-        communityBump,
+        new BN(123),
+        new BN(123),
         new BN(3),
         3,
         new BN(1_000),
@@ -138,11 +135,11 @@ describe("HapiCore Community", () => {
     it("success", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const args = [
-        new BN(1),
+        communityId,
         communityBump,
         new BN(3),
         3,
@@ -177,7 +174,7 @@ describe("HapiCore Community", () => {
       expect(communityData.cases.toNumber()).toEqual(0);
       expect(communityData.stakeMint).toEqual(stakeToken.mintAccount);
       expect(communityData.bump).toEqual(communityBump);
-      expect(communityData.communityId.toNumber()).toEqual(1);
+      expect(communityData.communityId.eq(communityId)).toBeTruthy();
 
       const communityInfo = await provider.connection.getAccountInfoAndContext(
         communityAccount
@@ -189,11 +186,11 @@ describe("HapiCore Community", () => {
     it("fail - already exists", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(1)
+          communityId
         );
 
       const args = [
-        new BN(1),
+        communityId,
         communityBump,
         new BN(3),
         3,
@@ -225,6 +222,8 @@ describe("HapiCore Community", () => {
   });
 
   describe("update_community", () => {
+    const communityId = new BN(5);
+
     it("fail - community doesn't exist", async () => {
       const args = [
         new BN(5),
@@ -255,11 +254,11 @@ describe("HapiCore Community", () => {
     it("fail - community not initialized", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          communityId
         );
 
       const args = [
-        new BN(5),
+        communityId,
         6,
         new BN(11_000),
         new BN(12_000),
@@ -281,14 +280,14 @@ describe("HapiCore Community", () => {
     });
 
     it("success", async () => {
-      {
-        const [communityAccount, communityBump] =
-          await program.pda.findCommunityAddress(
-            new BN(2)
-          );
+      const [communityAccount, communityBump] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
 
+      {
         const args = [
-          new BN(2),
+          communityId,
           communityBump,
           new BN(3),
           3,
@@ -317,11 +316,6 @@ describe("HapiCore Community", () => {
       }
 
       {
-        const [communityAccount, communityBump] =
-          await program.pda.findCommunityAddress(
-            new BN(2)
-          );
-
         const args = [
           new BN(5),
           6,
@@ -348,7 +342,7 @@ describe("HapiCore Community", () => {
         expect(communityData.authority).toEqual(authority.publicKey);
         expect(communityData.cases.toNumber()).toEqual(0);
         expect(communityData.bump).toEqual(communityBump);
-        expect(communityData.communityId.toNumber()).toEqual(2);
+        expect(communityData.communityId.eq(communityId)).toBeTruthy()
 
         expect(communityData.stakeUnlockEpochs.toNumber()).toEqual(5);
         expect(communityData.confirmationThreshold).toEqual(6);
@@ -363,7 +357,7 @@ describe("HapiCore Community", () => {
     it("fail - invalid authority", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(2)
+          communityId
         );
 
       const args = [
@@ -391,6 +385,8 @@ describe("HapiCore Community", () => {
   });
 
   describe("set_community_authority", () => {
+    const communityId = new BN(6);
+
     it("fail - community doesn't exist", async () => {
       const someKey = pubkeyFromHex(
         "e1230a131f3747484f98d10b8d2a8759dcf597db3cf87c9b53e7862e756f0663"
@@ -412,7 +408,7 @@ describe("HapiCore Community", () => {
     it("fail - community not initialized", async () => {
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(3)
+          communityId
         );
 
       await expectThrowError(
@@ -431,12 +427,12 @@ describe("HapiCore Community", () => {
     it("success", async () => {
       const [communityAccount, communityBump] =
         await program.pda.findCommunityAddress(
-          new BN(3)
+          communityId
         );
 
       {
         const args = [
-          new BN(3),
+          communityId,
           communityBump,
           new BN(3),
           3,
@@ -486,7 +482,7 @@ describe("HapiCore Community", () => {
     it("fail - invalid authority", async () => {
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(3)
+          communityId
         );
 
 
@@ -506,7 +502,7 @@ describe("HapiCore Community", () => {
     it("fail - can't set the same authority", async () => {
       const [communityAccount, _] =
         await program.pda.findCommunityAddress(
-          new BN(3)
+          communityId
         );
 
 
