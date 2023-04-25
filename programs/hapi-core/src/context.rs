@@ -287,7 +287,7 @@ pub struct MigrateNetwork<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(role: ReporterRole, name: [u8; 32], bump: u8)]
+#[instruction(role: ReporterRole, bump: u8)]
 pub struct CreateReporter<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -361,6 +361,7 @@ pub struct InitializeReporterReward<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(bump: u8)]
 pub struct MigrateReporterReward<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -394,18 +395,24 @@ pub struct MigrateReporterReward<'info> {
     #[account(
         mut,
         owner = id(),
+    )]
+    pub old_reporter_reward: AccountInfo<'info>,
+
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
         seeds = [b"reporter_reward".as_ref(), network.key().as_ref(), reporter.key().as_ref()],
         bump,
+        space = ReporterReward::LEN + ACCOUNT_RESERVE_SPACE
     )]
-    pub reporter_reward: AccountInfo<'info>,
-
-    pub rent: Sysvar<'info, Rent>,
+    pub reporter_reward: Account<'info, ReporterReward>,
 
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-#[instruction(role: ReporterRole, name: [u8; 32])]
+#[instruction(role: ReporterRole)]
 pub struct UpdateReporter<'info> {
     pub authority: Signer<'info>,
 
@@ -428,6 +435,7 @@ pub struct UpdateReporter<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(bump: u8)]
 pub struct MigrateReporter<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -445,9 +453,20 @@ pub struct MigrateReporter<'info> {
             mut,
             owner = id()
         )]
-    pub reporter: AccountInfo<'info>,
+    pub old_reporter: AccountInfo<'info>,
 
-    pub rent: Sysvar<'info, Rent>,
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), pubkey.key().as_ref()],
+        bump,
+        space = Reporter::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    /// CHECK: this account is not dangerous
+    pub pubkey: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -574,6 +593,7 @@ pub struct UpdateCase<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(case_id: u64, bump: u8)]
 pub struct MigrateCase<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -586,25 +606,22 @@ pub struct MigrateCase<'info> {
     )]
     pub community: Account<'info, Community>,
 
-    #[account(
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
-        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
-        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
-        bump = reporter.bump,
-    )]
-    pub reporter: Account<'info, Reporter>,
-
     /// CHECK: this account is not dangerous
     #[account(
-                mut,
-                owner = id()
-            )]
-    pub case: AccountInfo<'info>,
+        mut,
+        owner = id()
+    )]
+    pub old_case: AccountInfo<'info>,
 
-    pub rent: Sysvar<'info, Rent>,
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"case".as_ref(), community.key().as_ref(), &case_id.to_le_bytes()],
+        bump,
+        space = Case::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub case: Account<'info, Case>,
 
     pub system_program: Program<'info, System>,
 }
@@ -764,6 +781,7 @@ pub struct UpdateAddress<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(addr: [u8; 64], bump: u8)]
 pub struct MigrateAddress<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -782,37 +800,27 @@ pub struct MigrateAddress<'info> {
     )]
     pub network: Box<Account<'info, Network>>,
 
-    #[account(
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.role == ReporterRole::Authority
-            || (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
-        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
-        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
-        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
-        bump = reporter.bump,
-    )]
-    pub reporter: Account<'info, Reporter>,
-
-    #[account(
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
-        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
-        bump = case.bump,
-    )]
-    pub case: Account<'info, Case>,
-
     /// CHECK: this account is not dangerous
     #[account(
         mut,
         owner = id()
     )]
-    pub address: AccountInfo<'info>,
+    pub old_address: AccountInfo<'info>,
 
-    pub rent: Sysvar<'info, Rent>,
+    #[account(
+        init,
+        owner = id(),
+        payer = authority,
+        seeds = [
+            b"address".as_ref(),
+            network.key().as_ref(),
+            addr[0..32].as_ref(),
+            addr[32..64].as_ref(),
+        ],
+        bump,
+        space = Address::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub address: Account<'info, Address>,
 
     pub system_program: Program<'info, System>,
 }
@@ -1108,6 +1116,7 @@ pub struct UpdateAsset<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(mint: [u8; 64], asset_id: [u8; 32], bump: u8)]
 pub struct MigrateAsset<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -1126,37 +1135,27 @@ pub struct MigrateAsset<'info> {
     )]
     pub network: Box<Account<'info, Network>>,
 
-    #[account(
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = reporter.role == ReporterRole::Authority
-            || (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
-        constraint = reporter.pubkey == authority.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
-        constraint = !reporter.is_frozen @ ErrorCode::FrozenReporter,
-        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
-        bump = reporter.bump,
-    )]
-    pub reporter: Account<'info, Reporter>,
-
-    #[account(
-        owner = id(),
-        has_one = community @ ErrorCode::CommunityMismatch,
-        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
-        seeds = [b"case".as_ref(), community.key().as_ref(), &case.id.to_le_bytes()],
-        bump = case.bump,
-    )]
-    pub case: Account<'info, Case>,
-
     /// CHECK: this account is not dangerous
     #[account(
         mut,
         owner = id()
     )]
-    pub asset: AccountInfo<'info>,
+    pub old_asset: AccountInfo<'info>,
 
-    pub rent: Sysvar<'info, Rent>,
+    #[account(
+        init,
+        payer = authority,
+        seeds = [
+            b"asset".as_ref(),
+            network.key().as_ref(),
+            mint[0..32].as_ref(),
+            mint[32..64].as_ref(),
+            asset_id.as_ref(),
+        ],
+        bump,
+        space = Asset::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub asset: Box<Account<'info, Asset>>,
 
     pub system_program: Program<'info, System>,
 }

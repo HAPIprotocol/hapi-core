@@ -19,7 +19,7 @@ use state::{
     network::Network,
     reporter::{Reporter, ReporterReward},
 };
-use utils::{close, migrate};
+use utils::close;
 
 pub use state::{
     address::{Address, Category},
@@ -229,7 +229,10 @@ pub mod hapi_core {
             &id(),
         );
 
-        if ctx.accounts.old_network.key() != pda || network_data.bump != old_bump {
+        if ctx.accounts.old_network.key() != pda
+            || network_data.bump != old_bump
+            || network_data.name != name
+        {
             return print_error(ErrorCode::UnexpectedAccount);
         }
 
@@ -301,56 +304,63 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_reporter(ctx: Context<MigrateReporter>) -> Result<()> {
-        let mut reporter =
-            Reporter::from_deprecated(&mut ctx.accounts.reporter.try_borrow_data()?.as_ref())?;
+    pub fn migrate_reporter(ctx: Context<MigrateReporter>, bump: u8) -> Result<()> {
+        let reporter_data =
+            Reporter::from_deprecated(&mut ctx.accounts.old_reporter.try_borrow_data()?.as_ref())?;
 
-        let (pda, bump) = Pubkey::find_program_address(
+        let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"reporter".as_ref(),
-                ctx.accounts.community.key().as_ref(),
-                reporter.pubkey.as_ref(),
+                reporter_data.community.as_ref(),
+                reporter_data.pubkey.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.reporter.key() != pda || reporter.bump != bump {
+        if ctx.accounts.old_reporter.key() != pda || reporter_data.bump != old_bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if reporter.community != ctx.accounts.community.key() {
-            return print_error(ErrorCode::CommunityMismatch);
-        }
 
-        // Updating community
+        // Initializing new account
+        let reporter = &mut ctx.accounts.reporter;
+        reporter.set_inner(reporter_data);
         reporter.community = ctx.accounts.community.key();
+        reporter.bump = bump;
 
-        migrate(
-            reporter,
-            &ctx.accounts.reporter,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Reporter::LEN,
+        // Closing old reporter account
+        close(
+            ctx.accounts.old_reporter.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 
-    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>) -> Result<()> {
-        let reporter_reward = ReporterReward::from_deprecated(
-            &mut ctx.accounts.reporter_reward.try_borrow_data()?.as_ref(),
+    pub fn migrate_reporter_reward(ctx: Context<MigrateReporterReward>, bump: u8) -> Result<()> {
+        let reporter_reward_data = ReporterReward::from_deprecated(
+            &mut ctx.accounts.old_reporter_reward.try_borrow_data()?.as_ref(),
         )?;
 
-        if reporter_reward.reporter != ctx.accounts.reporter.key() {
-            return print_error(ErrorCode::InvalidReporter);
-        }
-        if reporter_reward.network != ctx.accounts.network.key() {
-            return print_error(ErrorCode::NetworkMismatch);
+        let (pda, old_bump) = Pubkey::find_program_address(
+            &[
+                b"reporter_reward".as_ref(),
+                reporter_reward_data.network.as_ref(),
+                reporter_reward_data.reporter.as_ref(),
+            ],
+            &id(),
+        );
+
+        if ctx.accounts.old_reporter_reward.key() != pda || reporter_reward_data.bump != old_bump {
+            return print_error(ErrorCode::UnexpectedAccount);
         }
 
-        migrate(
-            reporter_reward,
-            &ctx.accounts.reporter_reward,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            ReporterReward::LEN,
+        // Initializing new account
+        let reporter_reward = &mut ctx.accounts.reporter_reward;
+        reporter_reward.set_inner(reporter_reward_data);
+        reporter_reward.bump = bump;
+
+        // Closing old reporter reward account
+        close(
+            ctx.accounts.old_reporter_reward.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 
@@ -391,43 +401,36 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_case(ctx: Context<MigrateCase>) -> Result<()> {
-        let mut case = Case::from_deprecated(&mut ctx.accounts.case.try_borrow_data()?.as_ref())?;
+    pub fn migrate_case(ctx: Context<MigrateCase>, case_id: u64, bump: u8) -> Result<()> {
+        let case_data =
+            Case::from_deprecated(&mut ctx.accounts.old_case.try_borrow_data()?.as_ref())?;
 
-        let (pda, bump) = Pubkey::find_program_address(
+        let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"case".as_ref(),
-                ctx.accounts.community.key().as_ref(),
-                &case.id.to_le_bytes(),
+                case_data.community.as_ref(),
+                &case_data.id.to_le_bytes(),
             ],
             &id(),
         );
 
-        if ctx.accounts.case.key() != pda || case.bump != bump {
+        if ctx.accounts.old_case.key() != pda
+            || case_data.bump != old_bump
+            || case_data.id != case_id
+        {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if case.community != ctx.accounts.community.key() {
-            return print_error(ErrorCode::CommunityMismatch);
-        }
 
-        {
-            let reporter = &ctx.accounts.reporter;
-            if !(reporter.role == ReporterRole::Publisher && case.reporter == reporter.key())
-                && reporter.role != ReporterRole::Authority
-            {
-                return print_error(ErrorCode::Unauthorized);
-            }
-        }
-
-        // Updating community
+        // Initializing new account
+        let case = &mut ctx.accounts.case;
+        case.set_inner(case_data);
         case.community = ctx.accounts.community.key();
+        case.bump = bump;
 
-        migrate(
-            case,
-            &ctx.accounts.case,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Case::LEN,
+        // Closing old case account
+        close(
+            ctx.accounts.old_case.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 
@@ -527,39 +530,37 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_address(ctx: Context<MigrateAddress>) -> Result<()> {
-        let mut address =
-            Address::from_deprecated(&mut ctx.accounts.address.try_borrow_data()?.as_ref())?;
+    pub fn migrate_address(ctx: Context<MigrateAddress>, addr: [u8; 64], bump: u8) -> Result<()> {
+        let address_data =
+            Address::from_deprecated(&mut ctx.accounts.old_address.try_borrow_data()?.as_ref())?;
 
-        let (pda, bump) = Pubkey::find_program_address(
+        let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"address".as_ref(),
-                ctx.accounts.network.key().as_ref(),
-                address.address[0..32].as_ref(),
-                address.address[32..64].as_ref(),
+                address_data.network.as_ref(),
+                addr[0..32].as_ref(),
+                addr[32..64].as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.address.key() != pda || address.bump != bump {
+        if ctx.accounts.old_address.key() != pda
+            || address_data.bump != old_bump
+            || address_data.address != addr
+        {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if address.case_id != ctx.accounts.case.id {
-            return print_error(ErrorCode::CaseMismatch);
-        }
-        if address.network != ctx.accounts.network.key() {
-            return print_error(ErrorCode::NetworkMismatch);
-        }
 
-        // Updating community
+        // Initializing new account
+        let address = &mut ctx.accounts.address;
+        address.set_inner(address_data);
         address.community = ctx.accounts.community.key();
+        address.bump = bump;
 
-        migrate(
-            address,
-            &ctx.accounts.address,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Address::LEN,
+        // Closing old address account
+        close(
+            ctx.accounts.old_address.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 
@@ -669,40 +670,43 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_asset(ctx: Context<MigrateAsset>) -> Result<()> {
-        let mut asset =
-            Asset::from_deprecated(&mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
+    pub fn migrate_asset(
+        ctx: Context<MigrateAsset>,
+        mint: [u8; 64],
+        asset_id: [u8; 32],
+        bump: u8,
+    ) -> Result<()> {
+        let asset_data =
+            Asset::from_deprecated(&mut ctx.accounts.old_asset.try_borrow_data()?.as_ref())?;
 
-        let (pda, bump) = Pubkey::find_program_address(
+        let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"asset".as_ref(),
-                ctx.accounts.network.key().as_ref(),
-                asset.mint[0..32].as_ref(),
-                asset.mint[32..64].as_ref(),
-                asset.asset_id.as_ref(),
+                asset_data.network.key().as_ref(),
+                asset_data.mint[0..32].as_ref(),
+                asset_data.mint[32..64].as_ref(),
+                asset_data.asset_id.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.asset.key() == pda && asset.bump == bump {
+        if ctx.accounts.old_asset.key() == pda && asset_data.bump == old_bump
+            || asset_data.asset_id != asset_id
+            || asset_data.mint != mint
+        {
             return print_error(ErrorCode::UnexpectedAccount);
         }
-        if asset.case_id != ctx.accounts.case.id {
-            return print_error(ErrorCode::CaseMismatch);
-        }
-        if asset.network != ctx.accounts.network.key() {
-            return print_error(ErrorCode::NetworkMismatch);
-        }
 
-        // Updating community
+        // Initializing new account
+        let asset = &mut ctx.accounts.asset;
+        asset.set_inner(asset_data);
         asset.community = ctx.accounts.community.key();
+        asset.bump = bump;
 
-        migrate(
-            asset,
-            &ctx.accounts.asset,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Asset::LEN,
+        // Closing old asset account
+        close(
+            ctx.accounts.old_asset.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 

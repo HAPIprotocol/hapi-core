@@ -27,9 +27,8 @@ use {
         },
     },
     spl_associated_token_account::{
-        get_associated_token_address,
-        instruction::create_associated_token_account,
-        solana_program::{system_program, sysvar::rent},
+        get_associated_token_address, instruction::create_associated_token_account,
+        solana_program::system_program,
     },
     std::{rc::Rc, str::FromStr},
 };
@@ -87,11 +86,6 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    fn get_community(&self, id: u64) -> (Pubkey, u8) {
-        let seeds: [&[u8]; 2] = [b"community".as_ref(), &id.to_le_bytes()];
-        Pubkey::find_program_address(&seeds, &self.cli.id())
-    }
-
     fn get_community_id(&self, pk: &Pubkey) -> Option<u64> {
         let pk = pk.to_string();
         self.communities
@@ -100,8 +94,56 @@ impl HapiCli {
             .map(|cfg| cfg.id)
     }
 
+    fn get_community(&self, id: u64) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 2] = [b"community".as_ref(), &id.to_le_bytes()];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
     fn get_network(&self, community: &Pubkey, name: [u8; 32]) -> (Pubkey, u8) {
         let seeds: [&[u8]; 3] = [b"network".as_ref(), community.as_ref(), &name];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_reporter(&self, community: &Pubkey, pubkey: &Pubkey) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 3] = [b"reporter".as_ref(), community.as_ref(), pubkey.as_ref()];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_reporter_reward(&self, network: &Pubkey, reporter: &Pubkey) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 3] = [
+            b"reporter_reward".as_ref(),
+            network.as_ref(),
+            reporter.as_ref(),
+        ];
+
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_case(&self, community: &Pubkey, case_id: u64) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 3] = [b"case".as_ref(), community.as_ref(), &case_id.to_le_bytes()];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_address(&self, network: &Pubkey, addr: [u8; 64]) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 4] = [
+            b"address".as_ref(),
+            network.as_ref(),
+            addr[0..32].as_ref(),
+            addr[32..64].as_ref(),
+        ];
+
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_asset(&self, network: &Pubkey, mint: [u8; 64], asset_id: [u8; 32]) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 5] = [
+            b"asset".as_ref(),
+            network.as_ref(),
+            mint[0..32].as_ref(),
+            mint[32..64].as_ref(),
+            asset_id.as_ref(),
+        ];
+
         Pubkey::find_program_address(&seeds, &self.cli.id())
     }
 
@@ -159,7 +201,7 @@ impl HapiCli {
 
         println!(
             "{}",
-            format!("All communities migrated: {} migration\n", migrations).green()
+            format!("All communities migrated: {} migrations\n", migrations).green()
         );
         Ok(())
     }
@@ -218,7 +260,7 @@ impl HapiCli {
 
         println!(
             "{}",
-            format!("All networks migrated: {} migration\n", migrations).green()
+            format!("All networks migrated: {} migrations\n", migrations).green()
         );
         Ok(())
     }
@@ -228,10 +270,11 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
         let mut migrations = 0;
 
-        for (pk, reporter) in reporters {
-            if let Some(community_id) = self.get_community_id(&reporter.community) {
-                println!("Migrating reporter: {}", pk);
+        for (pk, data) in reporters {
+            if let Some(community_id) = self.get_community_id(&data.community) {
                 let (community, _) = self.get_community(community_id);
+                let (reporter, bump) = self.get_reporter(&community, &data.pubkey);
+                println!("Migrating reporter: {}, new reporter pda: {}", pk, reporter);
 
                 let signature = self
                     .cli
@@ -239,11 +282,12 @@ impl HapiCli {
                     .accounts(accounts::MigrateReporter {
                         authority: self.cli.payer(),
                         community,
-                        reporter: pk,
-                        rent: rent::ID,
+                        old_reporter: pk,
+                        pubkey: data.pubkey,
+                        reporter,
                         system_program: system_program::ID,
                     })
-                    .args(instruction::MigrateReporter)
+                    .args(instruction::MigrateReporter { bump })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
@@ -251,7 +295,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " reporters migrated\n".green());
+        println!(
+            "{}",
+            format!("All reporters migrated: {} migrations\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -261,11 +308,16 @@ impl HapiCli {
         )?;
         let mut migrations = 0;
 
-        for (pk, reward) in reporter_rewards {
-            if let Ok(reporter) = self.cli.account::<Reporter>(reward.reporter) {
+        for (pk, data) in reporter_rewards {
+            if let Ok(reporter) = self.cli.account::<Reporter>(data.reporter) {
                 if let Some(community_id) = self.get_community_id(&reporter.community) {
-                    println!("Migrating reporter reward: {}", pk);
                     let (community, _) = self.get_community(community_id);
+                    let (reporter_reward, bump) =
+                        self.get_reporter_reward(&data.network, &data.reporter);
+                    println!(
+                        "Migrating reporter reward: {}, new reporter reward pda: {}",
+                        pk, reporter_reward
+                    );
 
                     let signature = self
                         .cli
@@ -273,13 +325,13 @@ impl HapiCli {
                         .accounts(accounts::MigrateReporterReward {
                             authority: self.cli.payer(),
                             community,
-                            network: reward.network,
-                            reporter: reward.reporter,
-                            reporter_reward: pk,
-                            rent: rent::ID,
+                            network: data.network,
+                            reporter: data.reporter,
+                            old_reporter_reward: pk,
+                            reporter_reward,
                             system_program: system_program::ID,
                         })
-                        .args(instruction::MigrateReporterReward)
+                        .args(instruction::MigrateReporterReward { bump })
                         .send()?;
 
                     println!("Migration success, signature {}", signature);
@@ -288,7 +340,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " reporter rewards migrated\n".green());
+        println!(
+            "{}",
+            format!("All reporter rewards migrated: {} migrations\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -296,10 +351,11 @@ impl HapiCli {
         let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
         let mut migrations = 0;
 
-        for (pk, case) in cases {
-            if let Some(community_id) = self.get_community_id(&case.community) {
-                println!("Migrating case: {}", pk);
+        for (pk, data) in cases {
+            if let Some(community_id) = self.get_community_id(&data.community) {
                 let (community, _) = self.get_community(community_id);
+                let (case, bump) = self.get_case(&community, data.id);
+                println!("Migrating case: {}, new case pda: {}", pk, case);
 
                 let signature = self
                     .cli
@@ -307,12 +363,14 @@ impl HapiCli {
                     .accounts(accounts::MigrateCase {
                         authority: self.cli.payer(),
                         community,
-                        reporter: case.reporter,
-                        case: pk,
-                        rent: rent::ID,
+                        old_case: pk,
+                        case,
                         system_program: system_program::ID,
                     })
-                    .args(instruction::MigrateCase)
+                    .args(instruction::MigrateCase {
+                        bump,
+                        case_id: data.id,
+                    })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
@@ -320,7 +378,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " cases migrated\n".green());
+        println!(
+            "{}",
+            format!("All cases migrated: {} migrations\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -329,19 +390,11 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
         let mut migrations = 0;
 
-        for (pk, address) in addresses {
-            if let Some(community_id) = self.get_community_id(&address.community) {
-                println!("Migrating address: {}", pk);
+        for (pk, data) in addresses {
+            if let Some(community_id) = self.get_community_id(&data.community) {
                 let (community, _) = self.get_community(community_id);
-
-                let (case, _) = Pubkey::find_program_address(
-                    &[
-                        b"case".as_ref(),
-                        address.community.as_ref(),
-                        &address.case_id.to_le_bytes(),
-                    ],
-                    &self.cli.id(),
-                );
+                let (address, bump) = self.get_address(&data.network, data.address);
+                println!("Migrating address: {}, new address pda: {}", pk, address);
 
                 let signature = self
                     .cli
@@ -349,14 +402,15 @@ impl HapiCli {
                     .accounts(accounts::MigrateAddress {
                         authority: self.cli.payer(),
                         community,
-                        network: address.network,
-                        reporter: address.reporter,
-                        case,
-                        address: pk,
-                        rent: rent::ID,
+                        network: data.network,
+                        old_address: pk,
+                        address,
                         system_program: system_program::ID,
                     })
-                    .args(instruction::MigrateAddress)
+                    .args(instruction::MigrateAddress {
+                        bump,
+                        addr: data.address,
+                    })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
@@ -364,7 +418,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " addresses migrated\n".green());
+        println!(
+            "{}",
+            format!("All addresses migrated: {} migartions\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -374,19 +431,11 @@ impl HapiCli {
 
         let mut migrations = 0;
 
-        for (pk, asset) in assets {
-            if let Some(community_id) = self.get_community_id(&asset.community) {
-                println!("Migrating address: {}", pk);
+        for (pk, data) in assets {
+            if let Some(community_id) = self.get_community_id(&data.community) {
                 let (community, _) = self.get_community(community_id);
-
-                let (case, _) = Pubkey::find_program_address(
-                    &[
-                        b"case".as_ref(),
-                        asset.community.as_ref(),
-                        &asset.case_id.to_le_bytes(),
-                    ],
-                    &self.cli.id(),
-                );
+                let (asset, bump) = self.get_asset(&data.network, data.mint, data.asset_id);
+                println!("Migrating asset: {}, new asset pda: {}", pk, asset);
 
                 let signature = self
                     .cli
@@ -394,14 +443,16 @@ impl HapiCli {
                     .accounts(accounts::MigrateAsset {
                         authority: self.cli.payer(),
                         community,
-                        network: asset.network,
-                        reporter: asset.reporter,
-                        case,
-                        asset: pk,
-                        rent: rent::ID,
+                        network: data.network,
+                        old_asset: pk,
+                        asset,
                         system_program: system_program::ID,
                     })
-                    .args(instruction::MigrateAsset)
+                    .args(instruction::MigrateAsset {
+                        bump,
+                        mint: data.mint,
+                        asset_id: data.asset_id,
+                    })
                     .send()?;
 
                 println!("Migration success, signature {}", signature);
@@ -409,7 +460,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " assets migrated\n".green());
+        println!(
+            "{}",
+            format!("All assets migrated: {} migrations\n", migrations).green()
+        );
         Ok(())
     }
 }
