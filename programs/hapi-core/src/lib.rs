@@ -100,17 +100,18 @@ pub mod hapi_core {
             return print_error(ErrorCode::AuthorityMismatch);
         }
 
-        let community = &mut ctx.accounts.community;
-        community.set_inner(community_data);
-        community.community_id = community_id;
-        community.bump = bump;
-
         let seeds = &[
             b"community_stash".as_ref(),
             ctx.accounts.old_community.to_account_info().key.as_ref(),
             &[token_signer_bump],
         ];
         let signer = &[&seeds[..]];
+
+        // Initializing new account
+        let community = &mut ctx.accounts.community;
+        community.set_inner(community_data);
+        community.community_id = community_id;
+        community.bump = bump;
 
         // Transfer all tokens to new ATA
         token::transfer(
@@ -238,6 +239,7 @@ pub mod hapi_core {
             &[reward_signer_bump],
         ];
 
+        // Initializing new account
         let network = &mut ctx.accounts.network;
         network.set_inner(network_data);
         network.community = ctx.accounts.community.key();

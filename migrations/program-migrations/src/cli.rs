@@ -1,4 +1,4 @@
-use crate::configuration::HapiCfg;
+use crate::configuration::{CommunityCfg, HapiCfg};
 
 use {
     anchor_client::{
@@ -53,7 +53,7 @@ pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
 
 pub struct HapiCli {
     cli: Program,
-    communities: Vec<String>,
+    communities: Vec<CommunityCfg>,
 }
 
 impl HapiCli {
@@ -87,9 +87,17 @@ impl HapiCli {
         Ok(accounts)
     }
 
-    fn get_community(&self, id: usize) -> (Pubkey, u8) {
+    fn get_community(&self, id: u64) -> (Pubkey, u8) {
         let seeds: [&[u8]; 2] = [b"community".as_ref(), &id.to_le_bytes()];
         Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
+    fn get_community_id(&self, pk: &Pubkey) -> Option<u64> {
+        let pk = pk.to_string();
+        self.communities
+            .iter()
+            .find(|cfg| cfg.pubkey == pk)
+            .map(|cfg| cfg.id)
     }
 
     fn get_network(&self, community: &Pubkey, name: [u8; 32]) -> (Pubkey, u8) {
@@ -103,7 +111,7 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, data) in communities {
-            if let Ok(community_id) = self.communities.binary_search(&pk.to_string()) {
+            if let Some(community_id) = self.get_community_id(&pk) {
                 let (community, bump) = self.get_community(community_id);
                 println!(
                     "Migrating community: {}, new community pda: {}",
@@ -149,7 +157,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " communities migrated\n".green());
+        println!(
+            "{}",
+            format!("All communities migrated: {} migration\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -159,10 +170,10 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, data) in networks {
-            if let Ok(community_id) = self.communities.binary_search(&data.community.to_string()) {
+            if let Some(community_id) = self.get_community_id(&data.community) {
                 let (community, _) = self.get_community(community_id);
                 let (network, bump) = self.get_network(&community, data.name);
-                println!("Migrating network: {}", pk);
+                println!("Migrating network: {}, new network pda: {}", pk, network);
 
                 self.cli
                     .request()
@@ -174,7 +185,8 @@ impl HapiCli {
                     ))
                     .send()?;
 
-                let treasury_token_account = get_associated_token_address(&pk, &data.reward_mint);
+                let treasury_token_account =
+                    get_associated_token_address(&network, &data.reward_mint);
 
                 println!("Network treasury ATA: {}", treasury_token_account);
 
@@ -204,7 +216,10 @@ impl HapiCli {
             }
         }
 
-        println!("{}{}", migrations, " networks migrated\n".green());
+        println!(
+            "{}",
+            format!("All networks migrated: {} migration\n", migrations).green()
+        );
         Ok(())
     }
 
@@ -214,10 +229,7 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, reporter) in reporters {
-            if let Ok(community_id) = self
-                .communities
-                .binary_search(&reporter.community.to_string())
-            {
+            if let Some(community_id) = self.get_community_id(&reporter.community) {
                 println!("Migrating reporter: {}", pk);
                 let (community, _) = self.get_community(community_id);
 
@@ -251,10 +263,7 @@ impl HapiCli {
 
         for (pk, reward) in reporter_rewards {
             if let Ok(reporter) = self.cli.account::<Reporter>(reward.reporter) {
-                if let Ok(community_id) = self
-                    .communities
-                    .binary_search(&reporter.community.to_string())
-                {
+                if let Some(community_id) = self.get_community_id(&reporter.community) {
                     println!("Migrating reporter reward: {}", pk);
                     let (community, _) = self.get_community(community_id);
 
@@ -288,7 +297,7 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, case) in cases {
-            if let Ok(community_id) = self.communities.binary_search(&case.community.to_string()) {
+            if let Some(community_id) = self.get_community_id(&case.community) {
                 println!("Migrating case: {}", pk);
                 let (community, _) = self.get_community(community_id);
 
@@ -321,10 +330,7 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, address) in addresses {
-            if let Ok(community_id) = self
-                .communities
-                .binary_search(&address.community.to_string())
-            {
+            if let Some(community_id) = self.get_community_id(&address.community) {
                 println!("Migrating address: {}", pk);
                 let (community, _) = self.get_community(community_id);
 
@@ -369,7 +375,7 @@ impl HapiCli {
         let mut migrations = 0;
 
         for (pk, asset) in assets {
-            if let Ok(community_id) = self.communities.binary_search(&asset.community.to_string()) {
+            if let Some(community_id) = self.get_community_id(&asset.community) {
                 println!("Migrating address: {}", pk);
                 let (community, _) = self.get_community(community_id);
 

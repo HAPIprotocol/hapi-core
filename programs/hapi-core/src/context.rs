@@ -262,7 +262,7 @@ pub struct MigrateNetwork<'info> {
     /// CHECK: this account is not dangerous
     #[account(
         mut,
-        seeds = [b"network_reward".as_ref(), network.key().as_ref()],
+        seeds = [b"network_reward".as_ref(), old_network.key().as_ref()],
         bump = reward_signer_bump,
     )]
     pub reward_signer: AccountInfo<'info>,

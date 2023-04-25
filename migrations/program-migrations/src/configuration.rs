@@ -17,13 +17,19 @@ pub enum MigrateAccount {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
+pub struct CommunityCfg {
+    pub id: u64,
+    pub pubkey: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct HapiCfg {
     pub keypair_path: String,
     #[serde(default)]
     pub program_id: String,
     #[serde(default = "localhost_node")]
     pub environment: String,
-    pub communities: Vec<String>,
+    pub communities: Vec<CommunityCfg>,
     #[serde(default = "migrate_all")]
     pub migrate_accounts: Vec<MigrateAccount>,
 }
