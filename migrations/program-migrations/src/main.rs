@@ -7,7 +7,7 @@ use configuration::{HapiCfg, MigrateAccount};
 use anyhow::Result;
 use colored::*;
 
-fn migrate(hapi_cli: &HapiCli, cfg: HapiCfg) -> Result<()> {
+fn migrate(hapi_cli: &mut HapiCli, cfg: HapiCfg) -> Result<()> {
     for acc in &cfg.migrate_accounts {
         match acc {
             MigrateAccount::All => {
@@ -52,7 +52,7 @@ fn main() {
     let hapi_cli = HapiCli::new(&cfg);
 
     let exit_code = match hapi_cli {
-        Ok(cli) => match migrate(&cli, cfg) {
+        Ok(mut cli) => match migrate(&mut cli, cfg) {
             Ok(()) => {
                 println!("{}", "Migration successfully completed".green());
                 0
