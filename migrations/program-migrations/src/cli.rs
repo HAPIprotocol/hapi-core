@@ -92,6 +92,11 @@ impl HapiCli {
         Pubkey::find_program_address(&seeds, &self.cli.id())
     }
 
+    fn get_network(&self, community: &Pubkey, name: [u8; 32]) -> (Pubkey, u8) {
+        let seeds: [&[u8]; 3] = [b"network".as_ref(), community.as_ref(), &name];
+        Pubkey::find_program_address(&seeds, &self.cli.id())
+    }
+
     pub fn migrate_communities(&self) -> Result<()> {
         let communities = self
             .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
@@ -129,7 +134,6 @@ impl HapiCli {
                         token_signer: data.token_signer,
                         old_token_account: data.token_account,
                         token_account,
-                        rent: rent::ID,
                         token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
@@ -154,27 +158,23 @@ impl HapiCli {
             self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
         let mut migrations = 0;
 
-        for (pk, network) in networks {
-            if let Ok(community_id) = self
-                .communities
-                .binary_search(&network.community.to_string())
-            {
-                println!("Migrating network: {}", pk);
-
+        for (pk, data) in networks {
+            if let Ok(community_id) = self.communities.binary_search(&data.community.to_string()) {
                 let (community, _) = self.get_community(community_id);
+                let (network, bump) = self.get_network(&community, data.name);
+                println!("Migrating network: {}", pk);
 
                 self.cli
                     .request()
                     .instruction(create_associated_token_account(
                         &self.cli.payer(),
-                        &pk,
-                        &network.reward_mint,
+                        &network,
+                        &data.reward_mint,
                         &spl_token::ID,
                     ))
                     .send()?;
 
-                let treasury_token_account =
-                    get_associated_token_address(&pk, &network.reward_mint);
+                let treasury_token_account = get_associated_token_address(&pk, &data.reward_mint);
 
                 println!("Network treasury ATA: {}", treasury_token_account);
 
@@ -184,16 +184,18 @@ impl HapiCli {
                     .accounts(accounts::MigrateNetwork {
                         authority: self.cli.payer(),
                         community,
-                        network: pk,
-                        reward_signer: network.reward_signer,
-                        reward_mint: network.reward_mint,
+                        old_network: pk,
+                        network,
+                        reward_signer: data.reward_signer,
+                        reward_mint: data.reward_mint,
                         treasury_token_account,
-                        rent: rent::ID,
                         token_program: spl_token::ID,
                         system_program: system_program::ID,
                     })
                     .args(instruction::MigrateNetwork {
-                        reward_signer_bump: network.reward_signer_bump,
+                        bump,
+                        name: data.name,
+                        reward_signer_bump: data.reward_signer_bump,
                     })
                     .send()?;
 

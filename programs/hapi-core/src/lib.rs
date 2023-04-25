@@ -141,9 +141,7 @@ pub mod hapi_core {
         close(
             ctx.accounts.old_community.to_account_info(),
             ctx.accounts.authority.to_account_info(),
-        )?;
-
-        Ok(())
+        )
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> Result<()> {
@@ -212,31 +210,38 @@ pub mod hapi_core {
         Ok(())
     }
 
-    pub fn migrate_network(ctx: Context<MigrateNetwork>, reward_signer_bump: u8) -> Result<()> {
-        let mut network =
-            Network::from_deprecated(&mut ctx.accounts.network.try_borrow_data()?.as_ref())?;
+    pub fn migrate_network(
+        ctx: Context<MigrateNetwork>,
+        name: [u8; 32],
+        bump: u8,
+        reward_signer_bump: u8,
+    ) -> Result<()> {
+        let network_data =
+            Network::from_deprecated(&mut ctx.accounts.old_network.try_borrow_data()?.as_ref())?;
 
-        let (pda, bump) = Pubkey::find_program_address(
+        let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"network".as_ref(),
                 ctx.accounts.community.key().as_ref(),
-                network.name.as_ref(),
+                network_data.name.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.network.key() != pda || network.bump != bump {
+        if ctx.accounts.network.key() != pda || network_data.bump != old_bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
 
         let seeds = &[
             b"network_reward".as_ref(),
-            ctx.accounts.network.to_account_info().key.as_ref(),
+            ctx.accounts.old_network.to_account_info().key.as_ref(),
             &[reward_signer_bump],
         ];
 
-        // Updating community
+        let network = &mut ctx.accounts.network;
+        network.set_inner(network_data);
         network.community = ctx.accounts.community.key();
+        network.bump = bump;
 
         // Set reward mint authority to network
         token::set_authority(
@@ -249,15 +254,13 @@ pub mod hapi_core {
                 &[&seeds[..]],
             ),
             AuthorityType::MintTokens,
-            Some(ctx.accounts.network.key()),
+            Some(network.key()),
         )?;
 
-        migrate(
-            network,
-            &ctx.accounts.network,
-            &ctx.accounts.authority,
-            &ctx.accounts.rent,
-            Network::LEN,
+        // Closing old network account
+        close(
+            ctx.accounts.old_network.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         )
     }
 

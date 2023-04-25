@@ -120,8 +120,6 @@ pub struct MigrateCommunity<'info> {
     )]
     pub token_signer: AccountInfo<'info>,
 
-    pub rent: Sysvar<'info, Rent>,
-
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,
 
@@ -228,7 +226,9 @@ pub struct UpdateNetwork<'info> {
 
 #[derive(Accounts)]
 #[instruction(
-    reward_signer_bump: u8
+    name: [u8; 32],
+    bump: u8,
+    reward_signer_bump: u8,
 )]
 pub struct MigrateNetwork<'info> {
     #[account(mut)]
@@ -242,12 +242,22 @@ pub struct MigrateNetwork<'info> {
     )]
     pub community: Account<'info, Community>,
 
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"network".as_ref(), community.key().as_ref(), &name],
+        bump,
+        space = Network::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub network: Account<'info, Network>,
+
     /// CHECK: this account is not dangerous
     #[account(
             mut,
             owner = id()
         )]
-    pub network: AccountInfo<'info>,
+    pub old_network: AccountInfo<'info>,
 
     /// CHECK: this account is not dangerous
     #[account(
@@ -269,8 +279,6 @@ pub struct MigrateNetwork<'info> {
         owner = Token::id(),
     )]
     pub treasury_token_account: Account<'info, TokenAccount>,
-
-    pub rent: Sysvar<'info, Rent>,
 
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,

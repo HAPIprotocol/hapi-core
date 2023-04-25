@@ -1,7 +1,5 @@
 use crate::error::{print_error, ErrorCode};
-use anchor_lang::{
-    __private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*, solana_program::entrypoint::ProgramResult,
-};
+use anchor_lang::{__private::CLOSED_ACCOUNT_DISCRIMINATOR, prelude::*};
 use std::{
     io::{Cursor, Write},
     ops::DerefMut,
@@ -66,7 +64,7 @@ pub fn migrate<'info, Acc: AccountSerialize>(
     Ok(())
 }
 
-pub fn close<'info>(account: AccountInfo<'info>, destination: AccountInfo<'info>) -> ProgramResult {
+pub fn close<'info>(account: AccountInfo<'info>, destination: AccountInfo<'info>) -> Result<()> {
     let dest_starting_lamports = destination.lamports();
 
     **destination.lamports.borrow_mut() = dest_starting_lamports
