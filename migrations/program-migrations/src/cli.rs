@@ -88,7 +88,7 @@ impl HapiCli {
     }
 
     fn get_community(&self, id: usize) -> (Pubkey, u8) {
-        let seeds: [&[u8]; 2] = [b"community", &id.to_le_bytes()];
+        let seeds: [&[u8]; 2] = [b"community".as_ref(), &id.to_le_bytes()];
         Pubkey::find_program_address(&seeds, &self.cli.id())
     }
 

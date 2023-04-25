@@ -126,12 +126,6 @@ pub mod hapi_core {
             ctx.accounts.old_token_account.amount,
         )?;
 
-        // Closing old community account
-        close(
-            ctx.accounts.old_community.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
-        )?;
-
         // Close old token account
         token::close_account(CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
@@ -141,7 +135,15 @@ pub mod hapi_core {
                 authority: ctx.accounts.token_signer.to_account_info(),
             },
             signer,
-        ))
+        ))?;
+
+        // Closing old community account
+        close(
+            ctx.accounts.old_community.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
+        )?;
+
+        Ok(())
     }
 
     pub fn set_community_authority(ctx: Context<SetCommunityAuthority>) -> Result<()> {
@@ -295,7 +297,7 @@ pub mod hapi_core {
     }
 
     pub fn migrate_reporter(ctx: Context<MigrateReporter>) -> Result<()> {
-        let reporter =
+        let mut reporter =
             Reporter::from_deprecated(&mut ctx.accounts.reporter.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
@@ -313,6 +315,9 @@ pub mod hapi_core {
         if reporter.community != ctx.accounts.community.key() {
             return print_error(ErrorCode::CommunityMismatch);
         }
+
+        // Updating community
+        reporter.community = ctx.accounts.community.key();
 
         migrate(
             reporter,
@@ -382,7 +387,7 @@ pub mod hapi_core {
     }
 
     pub fn migrate_case(ctx: Context<MigrateCase>) -> Result<()> {
-        let case = Case::from_deprecated(&mut ctx.accounts.case.try_borrow_data()?.as_ref())?;
+        let mut case = Case::from_deprecated(&mut ctx.accounts.case.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
@@ -408,6 +413,9 @@ pub mod hapi_core {
                 return print_error(ErrorCode::Unauthorized);
             }
         }
+
+        // Updating community
+        case.community = ctx.accounts.community.key();
 
         migrate(
             case,
@@ -515,7 +523,7 @@ pub mod hapi_core {
     }
 
     pub fn migrate_address(ctx: Context<MigrateAddress>) -> Result<()> {
-        let address =
+        let mut address =
             Address::from_deprecated(&mut ctx.accounts.address.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
@@ -537,6 +545,9 @@ pub mod hapi_core {
         if address.network != ctx.accounts.network.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
+
+        // Updating community
+        address.community = ctx.accounts.community.key();
 
         migrate(
             address,
@@ -654,7 +665,8 @@ pub mod hapi_core {
     }
 
     pub fn migrate_asset(ctx: Context<MigrateAsset>) -> Result<()> {
-        let asset = Asset::from_deprecated(&mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
+        let mut asset =
+            Asset::from_deprecated(&mut ctx.accounts.asset.try_borrow_data()?.as_ref())?;
 
         let (pda, bump) = Pubkey::find_program_address(
             &[
@@ -676,6 +688,9 @@ pub mod hapi_core {
         if asset.network != ctx.accounts.network.key() {
             return print_error(ErrorCode::NetworkMismatch);
         }
+
+        // Updating community
+        asset.community = ctx.accounts.community.key();
 
         migrate(
             asset,

@@ -115,7 +115,7 @@ pub struct MigrateCommunity<'info> {
     /// CHECK: this account is not dangerous
     #[account(
         mut,
-        seeds = [b"community_stash".as_ref(), community.key().as_ref()],
+        seeds = [b"community_stash".as_ref(), old_community.key().as_ref()],
         bump = token_signer_bump
     )]
     pub token_signer: AccountInfo<'info>,
