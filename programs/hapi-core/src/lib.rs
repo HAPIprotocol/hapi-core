@@ -223,13 +223,13 @@ pub mod hapi_core {
         let (pda, old_bump) = Pubkey::find_program_address(
             &[
                 b"network".as_ref(),
-                ctx.accounts.community.key().as_ref(),
+                network_data.community.as_ref(),
                 network_data.name.as_ref(),
             ],
             &id(),
         );
 
-        if ctx.accounts.network.key() != pda || network_data.bump != old_bump {
+        if ctx.accounts.old_network.key() != pda || network_data.bump != old_bump {
             return print_error(ErrorCode::UnexpectedAccount);
         }
 
