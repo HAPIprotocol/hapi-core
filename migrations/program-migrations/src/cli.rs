@@ -61,10 +61,36 @@ pub struct MigrationList {
     assets: HashMap<Pubkey, Pubkey>,
 }
 
+impl MigrationList {
+    fn print(accs: &HashMap<Pubkey, Pubkey>) {
+        for (old, new) in accs {
+            println!("{} -> {}", old, new);
+        }
+        println!("");
+    }
+
+    pub fn print_migrations(&self) {
+        println!("{}", "Migrated communities:".yellow());
+        MigrationList::print(&self.communities);
+        println!("{}", "Migrated networks:".yellow());
+        MigrationList::print(&self.networks);
+        println!("{}", "Migrated reporters:".yellow());
+        MigrationList::print(&self.reporters);
+        println!("{}", "Migrated rewards:".yellow());
+        MigrationList::print(&self.rewards);
+        println!("{}", "Migrated cases:".yellow());
+        MigrationList::print(&self.cases);
+        println!("{}", "Migrated addresses:".yellow());
+        MigrationList::print(&self.addresses);
+        println!("{}", "Migrated assets:".yellow());
+        MigrationList::print(&self.assets);
+    }
+}
+
 pub struct HapiCli {
     cli: Program,
     communities: Vec<CommunityCfg>,
-    migration_list: MigrationList,
+    pub migration_list: MigrationList,
 }
 
 impl HapiCli {
@@ -329,7 +355,7 @@ impl HapiCli {
 
         for (pk, data) in reporter_rewards {
             // Reporter reward can migrate only if reporter has been migrated
-            if let Some(reporter) = self.migration_list.communities.get(&data.reporter) {
+            if let Some(reporter) = self.migration_list.reporters.get(&data.reporter) {
                 let reporter_data = self.cli.account::<Reporter>(*reporter)?;
 
                 let network = self

@@ -55,6 +55,7 @@ fn main() {
         Ok(mut cli) => match migrate(&mut cli, cfg) {
             Ok(()) => {
                 println!("{}", "Migration successfully completed".green());
+                cli.migration_list.print_migrations();
                 0
             }
             Err(err) => {
