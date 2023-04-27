@@ -44,6 +44,6 @@ pub struct Community {
 }
 
 impl Community {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 8 + 1 + 8 + 32 + 8 + 8 + 8 + 8 + 8);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 8 + 1 + 8 + 1 + 8 + 32 + 8 + 8 + 8 + 8 + 8);
     pub const VERSION: u16 = 1;
 }

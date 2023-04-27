@@ -1,5 +1,6 @@
 mod cli;
 mod configuration;
+mod migration_list;
 
 use cli::HapiCli;
 use configuration::{HapiCfg, MigrateAccount};

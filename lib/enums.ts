@@ -102,7 +102,7 @@ export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   assetV0: 216,
   case: 148,
   caseV0: 120,
-  community: 163,
+  community: 172,
   communityV0: 192,
   network: 180,
   networkV0: 176,

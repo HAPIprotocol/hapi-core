@@ -1,4 +1,7 @@
-use crate::configuration::{CommunityCfg, HapiCfg};
+use crate::{
+    configuration::{CommunityCfg, HapiCfg, MigrateAccount},
+    migration_list::MigrationList,
+};
 
 use {
     anchor_client::{
@@ -30,7 +33,7 @@ use {
         get_associated_token_address, instruction::create_associated_token_account,
         solana_program::system_program,
     },
-    std::{collections::HashMap, rc::Rc, str::FromStr},
+    std::{rc::Rc, str::FromStr},
 };
 
 /// Returns rpc client
@@ -50,43 +53,6 @@ pub fn get_program(cfg: &HapiCfg) -> Result<Program> {
     Ok(client.program(program_id))
 }
 
-#[derive(Default)]
-pub struct MigrationList {
-    communities: HashMap<Pubkey, Pubkey>,
-    networks: HashMap<Pubkey, Pubkey>,
-    reporters: HashMap<Pubkey, Pubkey>,
-    cases: HashMap<Pubkey, Pubkey>,
-    rewards: HashMap<Pubkey, Pubkey>,
-    addresses: HashMap<Pubkey, Pubkey>,
-    assets: HashMap<Pubkey, Pubkey>,
-}
-
-impl MigrationList {
-    fn print(accs: &HashMap<Pubkey, Pubkey>) {
-        for (old, new) in accs {
-            println!("{} -> {}", old, new);
-        }
-        println!("");
-    }
-
-    pub fn print_migrations(&self) {
-        println!("{}", "Migrated communities:".yellow());
-        MigrationList::print(&self.communities);
-        println!("{}", "Migrated networks:".yellow());
-        MigrationList::print(&self.networks);
-        println!("{}", "Migrated reporters:".yellow());
-        MigrationList::print(&self.reporters);
-        println!("{}", "Migrated rewards:".yellow());
-        MigrationList::print(&self.rewards);
-        println!("{}", "Migrated cases:".yellow());
-        MigrationList::print(&self.cases);
-        println!("{}", "Migrated addresses:".yellow());
-        MigrationList::print(&self.addresses);
-        println!("{}", "Migrated assets:".yellow());
-        MigrationList::print(&self.assets);
-    }
-}
-
 pub struct HapiCli {
     cli: Program,
     communities: Vec<CommunityCfg>,
@@ -98,7 +64,7 @@ impl HapiCli {
         Ok(Self {
             cli: get_program(cfg)?,
             communities: cfg.communities.clone(),
-            migration_list: MigrationList::default(),
+            migration_list: MigrationList::new()?,
         })
     }
 
@@ -192,6 +158,10 @@ impl HapiCli {
 
         for (pk, data) in communities {
             if let Some(community_id) = self.get_community_id(&pk) {
+                if self.migration_list.communities.get(&pk).is_some() {
+                    continue;
+                }
+
                 let (community, bump) = self.get_community(community_id);
                 println!(
                     "Migrating community: {}, new community pda: {}",
@@ -232,8 +202,9 @@ impl HapiCli {
                     })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.communities.insert(pk, community);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Community, pk, community)?;
             }
         }
 
@@ -254,6 +225,10 @@ impl HapiCli {
 
         for (pk, data) in networks {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
+                if self.migration_list.networks.get(&pk).is_some() {
+                    continue;
+                }
+
                 let (network, bump) = self.get_network(community, data.name);
                 println!("Migrating network: {}, new network pda: {}", pk, network);
 
@@ -293,8 +268,9 @@ impl HapiCli {
                     })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.networks.insert(pk, network);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Network, pk, network)?;
             }
         }
 
@@ -315,6 +291,9 @@ impl HapiCli {
 
         for (pk, data) in reporters {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
+                if self.migration_list.reporters.get(&pk).is_some() {
+                    continue;
+                }
                 let (reporter, bump) = self.get_reporter(community, &data.pubkey);
                 println!("Migrating reporter: {}, new reporter pda: {}", pk, reporter);
 
@@ -332,8 +311,9 @@ impl HapiCli {
                     .args(instruction::MigrateReporter { bump })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.reporters.insert(pk, reporter);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Reporter, pk, reporter)?;
             }
         }
 
@@ -355,6 +335,11 @@ impl HapiCli {
 
         for (pk, data) in reporter_rewards {
             // Reporter reward can migrate only if reporter has been migrated
+
+            if self.migration_list.rewards.get(&pk).is_some() {
+                continue;
+            }
+
             if let Some(reporter) = self.migration_list.reporters.get(&data.reporter) {
                 let reporter_data = self.cli.account::<Reporter>(*reporter)?;
 
@@ -364,8 +349,7 @@ impl HapiCli {
                     .get(&data.network)
                     .ok_or(Error::msg("Network migration required"))?;
 
-                let (reporter_reward, bump) =
-                    self.get_reporter_reward(&data.network, &data.reporter);
+                let (reporter_reward, bump) = self.get_reporter_reward(&network, &reporter);
                 println!(
                     "Migrating reporter reward: {}, new reporter reward pda: {}",
                     pk, reporter_reward
@@ -386,8 +370,12 @@ impl HapiCli {
                     .args(instruction::MigrateReporterReward { bump })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.rewards.insert(pk, reporter_reward);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list.add_account(
+                    MigrateAccount::ReporterReward,
+                    pk,
+                    reporter_reward,
+                )?;
             }
         }
 
@@ -407,6 +395,10 @@ impl HapiCli {
 
         for (pk, data) in cases {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
+                if self.migration_list.cases.get(&pk).is_some() {
+                    continue;
+                }
+
                 let (case, bump) = self.get_case(community, data.id);
                 println!("Migrating case: {}, new case pda: {}", pk, case);
 
@@ -426,8 +418,9 @@ impl HapiCli {
                     })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.cases.insert(pk, case);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Case, pk, case)?;
             }
         }
 
@@ -448,6 +441,10 @@ impl HapiCli {
 
         for (pk, data) in addresses {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
+                if self.migration_list.addresses.get(&pk).is_some() {
+                    continue;
+                }
+
                 let network = self
                     .migration_list
                     .networks
@@ -475,8 +472,9 @@ impl HapiCli {
                     })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.addresses.insert(pk, address);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Address, pk, address)?;
             }
         }
 
@@ -497,6 +495,10 @@ impl HapiCli {
 
         for (pk, data) in assets {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
+                if self.migration_list.assets.get(&pk).is_some() {
+                    continue;
+                }
+
                 let network = self
                     .migration_list
                     .networks
@@ -524,8 +526,9 @@ impl HapiCli {
                     })
                     .send()?;
 
-                println!("Migration success, signature {}", signature);
-                self.migration_list.assets.insert(pk, asset);
+                println!("Migration success, signature {}\n", signature);
+                self.migration_list
+                    .add_account(MigrateAccount::Asset, pk, asset)?;
             }
         }
 
