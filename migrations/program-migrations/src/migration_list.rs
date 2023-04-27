@@ -1,5 +1,5 @@
 use {
-    anyhow::{bail, Result},
+    anyhow::Result,
     colored::*,
     serde_derive::{Deserialize, Serialize},
     serde_with::serde_as,
@@ -9,10 +9,10 @@ use {
 
 use crate::configuration::MigrateAccount;
 
-const INPUT_PATH: &str = "";
+const INPUT_PATH: &str = "migration_list.json";
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Default, Deserialize, Debug)]
 pub struct MigrationList {
     #[serde_as(as = "Vec<(_, _)>")]
     pub communities: HashMap<Pubkey, Pubkey>,
@@ -32,9 +32,13 @@ pub struct MigrationList {
 
 impl MigrationList {
     pub fn new() -> Result<Self> {
-        Ok(serde_json::from_str::<MigrationList>(&fs::read_to_string(
-            INPUT_PATH,
-        )?)?)
+        let migration_list = if let Ok(raw_str) = fs::read_to_string(INPUT_PATH) {
+            serde_json::from_str::<MigrationList>(&raw_str).unwrap_or(MigrationList::default())
+        } else {
+            MigrationList::default()
+        };
+
+        Ok(migration_list)
     }
 
     fn get_list(&mut self, acc: MigrateAccount) -> &mut HashMap<Pubkey, Pubkey> {
@@ -57,11 +61,6 @@ impl MigrationList {
         list.insert(old, new);
 
         Ok(fs::write(INPUT_PATH, serde_json::to_string(&self)?)?)
-    }
-
-    pub fn get_account(&mut self, acc: MigrateAccount, pk: &Pubkey) -> Option<&Pubkey> {
-        let list = self.get_list(acc);
-        list.get(pk)
     }
 
     pub fn print_migrations(&self) {

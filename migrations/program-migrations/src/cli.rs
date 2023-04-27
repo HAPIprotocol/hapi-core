@@ -30,7 +30,7 @@ use {
         },
     },
     spl_associated_token_account::{
-        get_associated_token_address, instruction::create_associated_token_account,
+        get_associated_token_address, instruction::create_associated_token_account_idempotent,
         solana_program::system_program,
     },
     std::{rc::Rc, str::FromStr},
@@ -170,7 +170,7 @@ impl HapiCli {
 
                 self.cli
                     .request()
-                    .instruction(create_associated_token_account(
+                    .instruction(create_associated_token_account_idempotent(
                         &self.cli.payer(),
                         &community,
                         &data.stake_mint,
@@ -234,7 +234,7 @@ impl HapiCli {
 
                 self.cli
                     .request()
-                    .instruction(create_associated_token_account(
+                    .instruction(create_associated_token_account_idempotent(
                         &self.cli.payer(),
                         &network,
                         &data.reward_mint,
@@ -332,6 +332,7 @@ impl HapiCli {
         let reporter_rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
             ReporterReward::discriminator(),
         )?;
+
 
         for (pk, data) in reporter_rewards {
             // Reporter reward can migrate only if reporter has been migrated
