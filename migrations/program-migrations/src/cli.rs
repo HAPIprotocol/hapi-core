@@ -333,7 +333,6 @@ impl HapiCli {
             ReporterReward::discriminator(),
         )?;
 
-
         for (pk, data) in reporter_rewards {
             // Reporter reward can migrate only if reporter has been migrated
 
@@ -400,6 +399,12 @@ impl HapiCli {
                     continue;
                 }
 
+                let reporter = self
+                    .migration_list
+                    .reporters
+                    .get(&data.reporter)
+                    .ok_or(Error::msg("Reporter migration required"))?;
+
                 let (case, bump) = self.get_case(community, data.id);
                 println!("Migrating case: {}, new case pda: {}", pk, case);
 
@@ -409,6 +414,7 @@ impl HapiCli {
                     .accounts(accounts::MigrateCase {
                         authority: self.cli.payer(),
                         community: *community,
+                        reporter: *reporter,
                         old_case: pk,
                         case,
                         system_program: system_program::ID,
@@ -452,6 +458,12 @@ impl HapiCli {
                     .get(&data.network)
                     .ok_or(Error::msg("Network migration required"))?;
 
+                let reporter = self
+                    .migration_list
+                    .reporters
+                    .get(&data.reporter)
+                    .ok_or(Error::msg("Reporter migration required"))?;
+
                 let (address, bump) = self.get_address(network, data.address);
 
                 println!("Migrating address: {}, new address pda: {}", pk, address);
@@ -463,6 +475,7 @@ impl HapiCli {
                         authority: self.cli.payer(),
                         community: *community,
                         network: *network,
+                        reporter: *reporter,
                         old_address: pk,
                         address,
                         system_program: system_program::ID,
@@ -506,6 +519,12 @@ impl HapiCli {
                     .get(&data.network)
                     .ok_or(Error::msg("Network migration required"))?;
 
+                let reporter = self
+                    .migration_list
+                    .reporters
+                    .get(&data.reporter)
+                    .ok_or(Error::msg("Reporter migration required"))?;
+
                 let (asset, bump) = self.get_asset(network, data.mint, data.asset_id);
                 println!("Migrating asset: {}, new asset pda: {}", pk, asset);
 
@@ -516,6 +535,7 @@ impl HapiCli {
                         authority: self.cli.payer(),
                         community: *community,
                         network: *network,
+                        reporter: *reporter,
                         old_asset: pk,
                         asset,
                         system_program: system_program::ID,

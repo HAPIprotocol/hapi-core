@@ -355,6 +355,8 @@ pub mod hapi_core {
         // Initializing new account
         let reporter_reward = &mut ctx.accounts.reporter_reward;
         reporter_reward.set_inner(reporter_reward_data);
+        reporter_reward.network = ctx.accounts.network.key();
+        reporter_reward.reporter = ctx.accounts.reporter.key();
         reporter_reward.bump = bump;
 
         // Closing old reporter reward account
@@ -425,6 +427,7 @@ pub mod hapi_core {
         let case = &mut ctx.accounts.case;
         case.set_inner(case_data);
         case.community = ctx.accounts.community.key();
+        case.reporter = ctx.accounts.reporter.key();
         case.bump = bump;
 
         // Closing old case account
@@ -555,6 +558,8 @@ pub mod hapi_core {
         let address = &mut ctx.accounts.address;
         address.set_inner(address_data);
         address.community = ctx.accounts.community.key();
+        address.network = ctx.accounts.network.key();
+        address.reporter = ctx.accounts.reporter.key();
         address.bump = bump;
 
         // Closing old address account
@@ -701,6 +706,8 @@ pub mod hapi_core {
         let asset = &mut ctx.accounts.asset;
         asset.set_inner(asset_data);
         asset.community = ctx.accounts.community.key();
+        asset.network = ctx.accounts.network.key();
+        asset.reporter = ctx.accounts.reporter.key();
         asset.bump = bump;
 
         // Closing old asset account

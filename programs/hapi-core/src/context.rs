@@ -368,6 +368,7 @@ pub struct MigrateReporterReward<'info> {
 
     #[account(
         owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
         seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
         bump = community.bump,
     )]
@@ -601,10 +602,21 @@ pub struct MigrateCase<'info> {
     #[account(
         mut,
         owner = id(),
+        has_one = authority @ ErrorCode::AuthorityMismatch,
         seeds = [b"community".as_ref(), &community.community_id.to_le_bytes()],
         bump = community.bump,
     )]
     pub community: Account<'info, Community>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Publisher || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
 
     /// CHECK: this account is not dangerous
     #[account(
@@ -799,6 +811,17 @@ pub struct MigrateAddress<'info> {
         bump = network.bump,
     )]
     pub network: Box<Account<'info, Network>>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Tracer
+            || reporter.role == ReporterRole::Publisher
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
 
     /// CHECK: this account is not dangerous
     #[account(
@@ -1134,6 +1157,17 @@ pub struct MigrateAsset<'info> {
         bump = network.bump,
     )]
     pub network: Box<Account<'info, Network>>,
+
+    #[account(
+        owner = id(),
+        has_one = community @ ErrorCode::CommunityMismatch,
+        constraint = reporter.role == ReporterRole::Tracer
+            || reporter.role == ReporterRole::Publisher
+            || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        seeds = [b"reporter".as_ref(), community.key().as_ref(), reporter.pubkey.as_ref()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
 
     /// CHECK: this account is not dangerous
     #[account(
