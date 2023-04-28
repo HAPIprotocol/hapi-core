@@ -71,7 +71,6 @@ impl HapiCli {
     fn get_program_accounts_with_discriminator<T: AccountDeserialize>(
         &self,
         discriminator: [u8; 8],
-        size: usize,
     ) -> Result<Vec<(Pubkey, T)>> {
         let mut accounts = vec![];
 
@@ -82,7 +81,8 @@ impl HapiCli {
             .into_iter();
 
         for (key, account) in results {
-            if account.data.len() == size && account.data[..8] == discriminator {
+            if account.data.len() == std::mem::size_of::<T>() && account.data[..8] == discriminator
+            {
                 if let Ok(acc) = T::try_deserialize_unchecked(&mut (&account.data as &[u8])) {
                     accounts.push((key, acc));
                 }
@@ -154,10 +154,8 @@ impl HapiCli {
     }
 
     pub fn migrate_communities(&mut self) -> Result<()> {
-        let communities = self.get_program_accounts_with_discriminator::<CommunityV0>(
-            Community::discriminator(),
-            192,
-        )?;
+        let communities = self
+            .get_program_accounts_with_discriminator::<CommunityV0>(Community::discriminator())?;
 
         for (pk, data) in communities {
             if let Some(community_id) = self.get_community_id(&pk) {
@@ -223,8 +221,8 @@ impl HapiCli {
     }
 
     pub fn migrate_networks(&mut self) -> Result<()> {
-        let networks = self
-            .get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator(), 176)?;
+        let networks =
+            self.get_program_accounts_with_discriminator::<NetworkV0>(Network::discriminator())?;
 
         for (pk, data) in networks {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
@@ -289,10 +287,8 @@ impl HapiCli {
     }
 
     pub fn migrate_reporters(&mut self) -> Result<()> {
-        let reporters = self.get_program_accounts_with_discriminator::<ReporterV0>(
-            Reporter::discriminator(),
-            128,
-        )?;
+        let reporters =
+            self.get_program_accounts_with_discriminator::<ReporterV0>(Reporter::discriminator())?;
 
         for (pk, data) in reporters {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
@@ -336,7 +332,6 @@ impl HapiCli {
     pub fn migrate_reporter_rewards(&mut self) -> Result<()> {
         let reporter_rewards = self.get_program_accounts_with_discriminator::<ReporterRewardV0>(
             ReporterReward::discriminator(),
-            112,
         )?;
 
         for (pk, data) in reporter_rewards {
@@ -397,8 +392,7 @@ impl HapiCli {
     }
 
     pub fn migrate_cases(&mut self) -> Result<()> {
-        let cases =
-            self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator(), 120)?;
+        let cases = self.get_program_accounts_with_discriminator::<CaseV0>(Case::discriminator())?;
 
         for (pk, data) in cases {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
@@ -450,8 +444,8 @@ impl HapiCli {
     }
 
     pub fn migrate_addresses(&mut self) -> Result<()> {
-        let addresses = self
-            .get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator(), 184)?;
+        let addresses =
+            self.get_program_accounts_with_discriminator::<AddressV0>(Address::discriminator())?;
 
         for (pk, data) in addresses {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
@@ -512,7 +506,7 @@ impl HapiCli {
 
     pub fn migrate_assets(&mut self) -> Result<()> {
         let assets =
-            self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator(), 216)?;
+            self.get_program_accounts_with_discriminator::<AssetV0>(Asset::discriminator())?;
 
         for (pk, data) in assets {
             if let Some(community) = self.migration_list.communities.get(&data.community) {
