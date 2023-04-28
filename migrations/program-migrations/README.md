@@ -26,7 +26,9 @@ program_id: ""                    # The public key of the account containing a p
 environment: ""                   # Solana environment cluster (must be one of [localnet, 
                                   # testnet, mainnet, devnet] or be an http or https url, default - localnet)
 keypair_path: ""                  # Reporter keypair path
-communities: [""]                 # HAPI CORE communities public keys 
+communities:                      # HAPI CORE communities public keys 
+    - id: 1                       # New community id
+      pubkey: ""                  # Community pubkey
 
 migrate_accounts: []              # Define what accounts should be migrated (optional, default - All)
                                   # Variants:
