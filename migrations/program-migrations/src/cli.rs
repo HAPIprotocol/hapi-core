@@ -355,7 +355,7 @@ impl HapiCli {
                     .get(&data.network)
                     .ok_or(Error::msg("Network migration required"))?;
 
-                let (reporter_reward, bump) = self.get_reporter_reward(&network, &reporter);
+                let (reporter_reward, bump) = self.get_reporter_reward(network, reporter);
                 println!(
                     "Migrating reporter reward: {}, new reporter reward pda: {}",
                     pk, reporter_reward

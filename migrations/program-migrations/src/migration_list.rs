@@ -3,13 +3,17 @@ use {
     colored::*,
     serde_derive::{Deserialize, Serialize},
     serde_with::serde_as,
-    std::fs,
+    std::{env, fs},
     {anchor_client::solana_sdk::pubkey::Pubkey, std::collections::HashMap},
 };
 
 use crate::configuration::MigrateAccount;
 
-const INPUT_PATH: &str = "migration_list.json";
+const DEFAULT_INPUT_PATH: &str = "migration_list.json";
+
+lazy_static::lazy_static! {
+    static ref INPUT_PATH: String = env::var("ORACLE_CACHE_LIFESPAN").unwrap_or(DEFAULT_INPUT_PATH.into());
+}
 
 #[serde_as]
 #[derive(Serialize, Default, Deserialize, Debug)]
@@ -32,7 +36,7 @@ pub struct MigrationList {
 
 impl MigrationList {
     pub fn new() -> Result<Self> {
-        let migration_list = if let Ok(raw_str) = fs::read_to_string(INPUT_PATH) {
+        let migration_list = if let Ok(raw_str) = fs::read_to_string(INPUT_PATH.to_owned()) {
             serde_json::from_str::<MigrationList>(&raw_str).unwrap_or(MigrationList::default())
         } else {
             MigrationList::default()
@@ -60,7 +64,10 @@ impl MigrationList {
         let list = self.get_list(acc);
         list.insert(old, new);
 
-        Ok(fs::write(INPUT_PATH, serde_json::to_string(&self)?)?)
+        Ok(fs::write(
+            INPUT_PATH.to_owned(),
+            serde_json::to_string(&self)?,
+        )?)
     }
 
     pub fn print_migrations(&self) {
@@ -85,5 +92,5 @@ fn print_accs(accs: &HashMap<Pubkey, Pubkey>) {
     for (old, new) in accs {
         println!("{} -> {}", old, new);
     }
-    println!("");
+    println!();
 }
