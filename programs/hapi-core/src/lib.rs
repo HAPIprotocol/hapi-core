@@ -47,7 +47,7 @@ pub mod hapi_core {
         let community = &mut ctx.accounts.community;
 
         community.authority = *ctx.accounts.authority.key;
-        community.community_id = community_id;
+        community.id = community_id;
         community.bump = bump;
         community.cases = 0;
         community.stake_unlock_epochs = stake_unlock_epochs;
@@ -110,7 +110,7 @@ pub mod hapi_core {
         // Initializing new account
         let community = &mut ctx.accounts.community;
         community.set_inner(community_data);
-        community.community_id = community_id;
+        community.id = community_id;
         community.bump = bump;
 
         // Transfer all tokens to new ATA
@@ -784,7 +784,7 @@ pub mod hapi_core {
 
         let seeds = &[
             b"community".as_ref(),
-            &community.community_id.to_le_bytes(),
+            &community.id.to_le_bytes(),
             &[community.bump],
         ];
 

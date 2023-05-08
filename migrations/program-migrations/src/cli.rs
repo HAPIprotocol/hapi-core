@@ -64,7 +64,7 @@ impl HapiCli {
         Ok(Self {
             cli: get_program(cfg)?,
             communities: cfg.communities.clone(),
-            migration_list: MigrationList::new()?,
+            migration_list: MigrationList::new(cfg.input_path.clone())?,
         })
     }
 

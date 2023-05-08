@@ -40,6 +40,7 @@ migrate_accounts: []              # Define what accounts should be migrated (opt
                                   #   - "Address"
                                   #   - "Asset"
                                   # example: ["Community", "Reporter"] 
+input_path: ""                    # Path to the file to store the migration list
 ```
 
 ### Run

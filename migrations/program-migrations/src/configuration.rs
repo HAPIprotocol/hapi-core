@@ -32,6 +32,8 @@ pub struct HapiCfg {
     pub communities: Vec<CommunityCfg>,
     #[serde(default = "migrate_all")]
     pub migrate_accounts: Vec<MigrateAccount>,
+    #[serde(default = "default_input_path")]
+    pub input_path: String,
 }
 
 impl HapiCfg {
@@ -48,6 +50,10 @@ impl HapiCfg {
 
 fn localhost_node() -> String {
     "localnet".into()
+}
+
+fn default_input_path() -> String {
+    "migration_list.json".into()
 }
 
 fn migrate_all() -> Vec<MigrateAccount> {

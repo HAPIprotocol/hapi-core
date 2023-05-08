@@ -2613,7 +2613,6 @@ dependencies = [
  "colored",
  "config",
  "hapi-core",
- "lazy_static",
  "serde",
  "serde_derive",
  "serde_json",

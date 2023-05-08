@@ -18,6 +18,4 @@ anyhow = "1"
 
 colored = "2"
 
-lazy_static = "1"
-
 hapi-core = {version = "^0.2", path = "../../programs/hapi-core", features = ["no-entrypoint"]}

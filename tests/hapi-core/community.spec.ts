@@ -174,7 +174,7 @@ describe("HapiCore Community", () => {
       expect(communityData.cases.toNumber()).toEqual(0);
       expect(communityData.stakeMint).toEqual(stakeToken.mintAccount);
       expect(communityData.bump).toEqual(communityBump);
-      expect(communityData.communityId.eq(communityId)).toBeTruthy();
+      expect(communityData.id.eq(communityId)).toBeTruthy();
 
       const communityInfo = await provider.connection.getAccountInfoAndContext(
         communityAccount
@@ -342,7 +342,7 @@ describe("HapiCore Community", () => {
         expect(communityData.authority).toEqual(authority.publicKey);
         expect(communityData.cases.toNumber()).toEqual(0);
         expect(communityData.bump).toEqual(communityBump);
-        expect(communityData.communityId.eq(communityId)).toBeTruthy()
+        expect(communityData.id.eq(communityId)).toBeTruthy()
 
         expect(communityData.stakeUnlockEpochs.toNumber()).toEqual(5);
         expect(communityData.confirmationThreshold).toEqual(6);

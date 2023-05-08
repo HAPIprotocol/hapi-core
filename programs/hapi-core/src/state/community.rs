@@ -10,7 +10,7 @@ pub struct Community {
     pub authority: Pubkey,
 
     /// Community ID
-    pub community_id: u64,
+    pub id: u64,
 
     /// Seed bump for PDA
     pub bump: u8,
