@@ -1,7 +1,11 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
 pub struct Network {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this network belongs to
     pub community: Pubkey,
 
@@ -17,12 +21,6 @@ pub struct Network {
     /// Reward token mint account
     pub reward_mint: Pubkey,
 
-    /// Reward signer PDA
-    pub reward_signer: Pubkey,
-
-    /// Seed bump for reward signer PDA
-    pub reward_signer_bump: u8,
-
     /// Reward amount for tracers that report addresses to this network
     pub address_tracer_reward: u64,
 
@@ -37,6 +35,11 @@ pub struct Network {
 
     /// Replication price amount
     pub replication_price: u64,
+}
+
+impl Network {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 1 + 32 + 1 + 32 + 8 + 8 + 8 + 8 + 8);
+    pub const VERSION: u16 = 1;
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

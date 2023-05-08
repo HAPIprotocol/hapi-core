@@ -96,11 +96,19 @@ export const NetworkSchemaVariants = Object.keys(NetworkSchema) as Readonly<
 >;
 
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
-  address: 192,
-  asset: 224,
-  case: 120,
-  community: 232,
-  network: 184,
-  reporter: 128,
-  reporterReward: 112,
+  address: 222,
+  addressV0: 184,
+  asset: 254,
+  assetV0: 216,
+  case: 148,
+  caseV0: 120,
+  community: 172,
+  communityV0: 192,
+  network: 180,
+  networkV0: 176,
+  reporter: 158,
+  reporterV0: 128,
+  reporterReward: 139,
+  reporterRewardV0: 112,
+
 };

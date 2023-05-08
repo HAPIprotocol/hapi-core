@@ -1,8 +1,12 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
 #[derive(Default)]
 pub struct Reporter {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this reporter belongs to
     pub community: Pubkey,
 
@@ -31,9 +35,17 @@ pub struct Reporter {
     pub unlock_epoch: u64,
 }
 
-#[account(zero_copy)]
+impl Reporter {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 1 + 1 + 1 + 1 + 32 + 32 + 8 + 8);
+    pub const VERSION: u16 = 1;
+}
+
+#[account]
 #[derive(Default, Debug)]
 pub struct ReporterReward {
+    /// Account version
+    pub version: u16,
+
     /// Reporter account to keep reward counter for
     pub reporter: Pubkey,
 
@@ -54,6 +66,11 @@ pub struct ReporterReward {
 
     /// Number of unclaimed asset confirmation rewards
     pub asset_confirmation_counter: u64,
+}
+
+impl ReporterReward {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 32 + 1 + 8 + 8 + 8 + 8);
+    pub const VERSION: u16 = 1;
 }
 
 #[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

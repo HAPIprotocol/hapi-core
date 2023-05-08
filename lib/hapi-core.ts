@@ -64,9 +64,20 @@ export function initHapiCore(
 
   // const coder = new Coder(IDL);
 
+  // TODO: deprecated
   async function findCommunityTokenSignerAddress(community: web3.PublicKey) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("community_stash"), community.toBytes()],
+      programId
+    );
+  }
+
+  async function findCommunityAddress(id: BN) {
+    return web3.PublicKey.findProgramAddressSync(
+      [
+        bufferFromString("community"),
+        new Uint8Array(id.toArray("le", 8)),
+      ],
       programId
     );
   }
@@ -82,6 +93,7 @@ export function initHapiCore(
     );
   }
 
+  // TODO: deprecated
   async function findNetworkRewardSignerAddress(network: web3.PublicKey) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("network_reward"), network.toBytes()],
@@ -157,6 +169,7 @@ export function initHapiCore(
     },
     idl: IDL,
     pda: {
+      findCommunityAddress,
       findNetworkAddress,
       findNetworkRewardSignerAddress,
       findReporterAddress,

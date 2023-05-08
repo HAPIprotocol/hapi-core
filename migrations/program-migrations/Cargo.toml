@@ -1,0 +1,21 @@
+[package]
+name = "program-migrations"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anchor-client = "0.26.0"
+spl-token = "3.5"
+spl-associated-token-account = "1.1.0"
+
+serde = "1"
+serde_json = "1"
+serde_derive = "1"
+serde_with = "1"
+
+config = "0.13.3"
+anyhow = "1"
+
+colored = "2"
+
+hapi-core = {version = "^0.2", path = "../../programs/hapi-core", features = ["no-entrypoint"]}

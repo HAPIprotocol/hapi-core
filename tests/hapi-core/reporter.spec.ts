@@ -26,11 +26,11 @@ describe("HapiCore Reporter", () => {
 
   const nobody = web3.Keypair.generate();
 
-  const community = web3.Keypair.generate();
-  const otherCommunity = web3.Keypair.generate();
-
   let stakeToken: TestToken;
   let rewardToken: TestToken;
+
+  const communityId = new BN(10);
+  const otherCommunityId = new BN(11);
 
   let currentEpoch: number;
 
@@ -138,7 +138,7 @@ describe("HapiCore Reporter", () => {
     wait.push(stakeToken.transfer(null, nobody.publicKey, 1_000_000));
 
     rewardToken = new TestToken(provider);
-    await rewardToken.mint(0);
+    await rewardToken.mint(1_000_000_000);
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -146,31 +146,13 @@ describe("HapiCore Reporter", () => {
         toPubkey: nobody.publicKey,
         lamports: 10_000_000,
       }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.alice.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.bob.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.carol.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.dave.keypair.publicKey,
-        lamports: 10_000_000,
-      }),
-      web3.SystemProgram.transfer({
-        fromPubkey: authority.publicKey,
-        toPubkey: REPORTERS.erin.keypair.publicKey,
-        lamports: 10_000_000,
-      })
+      ...Object.keys(REPORTERS).map((key) =>
+        web3.SystemProgram.transfer({
+          fromPubkey: authority.publicKey,
+          toPubkey: REPORTERS[key].keypair.publicKey,
+          lamports: 10_000_000,
+        })
+      )
     );
 
     wait.push(provider.sendAndConfirm(tx));
@@ -185,32 +167,36 @@ describe("HapiCore Reporter", () => {
       );
 
       wait.push(
-        rewardToken.getTokenAccount(REPORTERS[reporter].keypair.publicKey)
+        rewardToken.transfer(
+          null,
+          REPORTERS[reporter].keypair.publicKey,
+          1_000_000
+        )
       );
     }
 
-    const [tokenSignerAccount, tokenSignerBump] =
-      await program.pda.findCommunityTokenSignerAddress(community.publicKey);
-
-    const communityTokenAccount = await stakeToken.createAccount(
-      tokenSignerAccount
-    );
-
-    const communityTreasuryTokenAccount = await stakeToken.createAccount(tokenSignerAccount);
-
-    const [otherTokenSignerAccount, otherStashBump] =
-      await program.pda.findCommunityTokenSignerAddress(
-        otherCommunity.publicKey
+    const [communityAccount, communityBump] =
+      await program.pda.findCommunityAddress(
+        communityId
       );
 
-    const otherTokenAccount = await stakeToken.createAccount(
-      otherTokenSignerAccount
+    const [otherCommunityAccount, otherCommunityBump] =
+      await program.pda.findCommunityAddress(
+        otherCommunityId
+      );
+
+    const communityTokenAccount = await stakeToken.getTokenAccount(
+      communityAccount, true
     );
 
-    const otherTreasuryTokenAccount = await stakeToken.createAccount(otherTokenSignerAccount);
+    const otherTokenAccount = await stakeToken.getTokenAccount(
+      otherCommunityAccount, true
+    );
 
     wait.push(
       program.rpc.initializeCommunity(
+        communityId,
+        communityBump,
         new BN(0), // unlocks in current epoch
         1,
         new BN(20_000_000),
@@ -218,21 +204,19 @@ describe("HapiCore Reporter", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        tokenSignerBump,
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             stakeMint: stakeToken.mintAccount,
-            tokenSigner: tokenSignerAccount,
             tokenAccount: communityTokenAccount,
-            treasuryTokenAccount: communityTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [community],
         }
       ),
       program.rpc.initializeCommunity(
+        otherCommunityId,
+        otherCommunityBump,
         new BN(10), // unlocks in the future
         2,
         new BN(1_000),
@@ -240,18 +224,14 @@ describe("HapiCore Reporter", () => {
         new BN(3_000),
         new BN(4_000),
         new BN(5_000),
-        otherStashBump,
         {
           accounts: {
             authority: authority.publicKey,
-            community: otherCommunity.publicKey,
+            community: otherCommunityAccount,
             stakeMint: stakeToken.mintAccount,
-            tokenSigner: otherTokenSignerAccount,
             tokenAccount: otherTokenAccount,
-            treasuryTokenAccount: otherTreasuryTokenAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [otherCommunity],
         }
       )
     );
@@ -262,12 +242,13 @@ describe("HapiCore Reporter", () => {
       const network = NETWORKS[key];
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
-      const [rewardSignerAccount, rewardSignerBump] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
+      );
 
       wait.push(
         program.rpc.createNetwork(
@@ -278,15 +259,14 @@ describe("HapiCore Reporter", () => {
           network.assetTracerReward,
           network.assetConfirmationReward,
           bump,
-          rewardSignerBump,
           network.reportPrice,
           {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               rewardMint: rewardToken.mintAccount,
-              rewardSigner: rewardSignerAccount,
+              treasuryTokenAccount,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -304,8 +284,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -316,7 +301,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.createReporter(reporterRole, name.toJSON().data, bump, {
             accounts: {
               authority: nobody.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               pubkey: reporter.keypair.publicKey,
               systemProgram: web3.SystemProgram.programId,
@@ -332,8 +317,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -346,7 +336,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -376,8 +366,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [otherCommunityAccount, _] =
+        await program.pda.findCommunityAddress(
+          otherCommunityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        otherCommunity.publicKey,
+        otherCommunityAccount,
         reporter.keypair.publicKey
       );
 
@@ -390,7 +385,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: otherCommunity.publicKey,
+            community: otherCommunityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -420,8 +415,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -434,7 +434,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -464,8 +464,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -478,7 +483,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -508,8 +513,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -522,7 +532,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -552,8 +562,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -566,7 +581,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
             pubkey: reporter.keypair.publicKey,
             systemProgram: web3.SystemProgram.programId,
@@ -596,8 +611,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -608,7 +628,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.createReporter(reporterRole, name.toJSON().data, bump, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               pubkey: reporter.keypair.publicKey,
               systemProgram: web3.SystemProgram.programId,
@@ -629,8 +649,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString(reporter.name, 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -641,7 +666,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.updateReporter(reporterRole, name.toJSON().data, {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
             },
           }),
@@ -654,8 +679,13 @@ describe("HapiCore Reporter", () => {
 
       const name = bufferFromString("ecila", 32);
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -667,7 +697,7 @@ describe("HapiCore Reporter", () => {
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             reporter: reporterAccount,
           },
         }
@@ -689,15 +719,20 @@ describe("HapiCore Reporter", () => {
     it("success - alice", async () => {
       const reporter = REPORTERS.alice;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const network = NETWORKS.ethereum;
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -710,7 +745,7 @@ describe("HapiCore Reporter", () => {
       const tx = await program.rpc.initializeReporterReward(bump, {
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -740,15 +775,20 @@ describe("HapiCore Reporter", () => {
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const network = NETWORKS.ethereum;
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -761,7 +801,7 @@ describe("HapiCore Reporter", () => {
       const tx = await program.rpc.initializeReporterReward(bump, {
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -791,15 +831,20 @@ describe("HapiCore Reporter", () => {
     it("success - dave", async () => {
       const reporter = REPORTERS.dave;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const network = NETWORKS.ethereum;
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -812,7 +857,7 @@ describe("HapiCore Reporter", () => {
       const tx = await program.rpc.initializeReporterReward(bump, {
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -845,17 +890,22 @@ describe("HapiCore Reporter", () => {
     it("fail - alice doesn't have enough tokens for a stake", async () => {
       const reporter = REPORTERS.alice;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       await expectThrowError(
@@ -863,11 +913,11 @@ describe("HapiCore Reporter", () => {
           program.rpc.activateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: tokenAccount,
-              communityTokenAccount: communityInfo.tokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
@@ -879,27 +929,32 @@ describe("HapiCore Reporter", () => {
     it("success - alice, community 2", async () => {
       const reporter = REPORTERS.alice;
 
+      const [otherCommunityAccount, _] =
+        await program.pda.findCommunityAddress(
+          otherCommunityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        otherCommunity.publicKey,
+        otherCommunityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        otherCommunity.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        otherCommunityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: otherCommunity.publicKey,
+          community: otherCommunityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -925,27 +980,32 @@ describe("HapiCore Reporter", () => {
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -971,27 +1031,32 @@ describe("HapiCore Reporter", () => {
     it("success - carol", async () => {
       const reporter = REPORTERS.carol;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -1017,27 +1082,32 @@ describe("HapiCore Reporter", () => {
     it("success - dave", async () => {
       const reporter = REPORTERS.dave;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -1063,27 +1133,32 @@ describe("HapiCore Reporter", () => {
     it("success - erin", async () => {
       const reporter = REPORTERS.erin;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       const tx = await program.rpc.activateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -1109,17 +1184,22 @@ describe("HapiCore Reporter", () => {
     it("fail - bob is already activated", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       await expectThrowError(
@@ -1127,11 +1207,11 @@ describe("HapiCore Reporter", () => {
           program.rpc.activateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: tokenAccount,
-              communityTokenAccount: communityInfo.tokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
@@ -1147,15 +1227,21 @@ describe("HapiCore Reporter", () => {
         const cs = CASES[key];
 
         const reporter = REPORTERS[cs.reporter].keypair;
+
         const caseName = bufferFromString(cs.name, 32);
 
+        const [communityAccount, _] =
+          await program.pda.findCommunityAddress(
+            communityId
+          );
+
         const [caseAccount, bump] = await program.pda.findCaseAddress(
-          community.publicKey,
+          communityAccount,
           cs.caseId
         );
 
         const [reporterAccount] = await program.pda.findReporterAddress(
-          community.publicKey,
+          communityAccount,
           reporter.publicKey
         );
 
@@ -1163,7 +1249,7 @@ describe("HapiCore Reporter", () => {
           accounts: {
             reporter: reporterAccount,
             sender: reporter.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             case: caseAccount,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -1177,8 +1263,13 @@ describe("HapiCore Reporter", () => {
 
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -1188,22 +1279,20 @@ describe("HapiCore Reporter", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const treasuryTokenAccount = await rewardToken.getTokenAccount(
+        networkAccount, true
       );
 
-      const communityTreasuryTokenAccount = await stakeToken.createAccount(communityInfo.tokenSigner);
-
-      const reporterPaymentTokenAccount = await stakeToken.getTokenAccount(
+      const reporterPaymentTokenAccount = await rewardToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
@@ -1216,12 +1305,12 @@ describe("HapiCore Reporter", () => {
           accounts: {
             sender: reporter.keypair.publicKey,
             address: addressAccount,
-            community: community.publicKey,
+            community: communityAccount,
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
             reporterPaymentTokenAccount,
-            treasuryTokenAccount: communityTreasuryTokenAccount,
+            treasuryTokenAccount,
             tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
@@ -1235,8 +1324,13 @@ describe("HapiCore Reporter", () => {
 
       const reporter = REPORTERS.dave.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -1246,7 +1340,7 @@ describe("HapiCore Reporter", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1265,7 +1359,7 @@ describe("HapiCore Reporter", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
@@ -1273,7 +1367,7 @@ describe("HapiCore Reporter", () => {
         accounts: {
           sender: reporter.publicKey,
           address: addressAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1289,8 +1383,13 @@ describe("HapiCore Reporter", () => {
     it("success - bob's claim", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -1301,7 +1400,7 @@ describe("HapiCore Reporter", () => {
       const network = NETWORKS.ethereum;
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -1311,9 +1410,6 @@ describe("HapiCore Reporter", () => {
           reporterAccount
         );
 
-      const [rewardSignerAccount] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
       const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterTokenAccount)
@@ -1321,16 +1417,19 @@ describe("HapiCore Reporter", () => {
         10
       );
 
+      const supplyBefore = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+
       const tx = await program.rpc.claimReporterReward({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
           reporterTokenAccount,
           rewardMint: rewardToken.mintAccount,
-          rewardSigner: rewardSignerAccount,
           tokenProgram: rewardToken.programId,
         },
         signers: [reporter.keypair],
@@ -1349,11 +1448,12 @@ describe("HapiCore Reporter", () => {
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
       ).toEqual(network.addressTracerReward.toNumber());
 
-      const supply = await provider.connection.getTokenSupply(
+      const supplyAfter = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual(
-        network.addressTracerReward.toString()
+
+      expect(new BN(supplyAfter.value.amount)).toEqual(
+        new BN(supplyBefore.value.amount).add(network.addressTracerReward)
       );
 
       {
@@ -1368,8 +1468,13 @@ describe("HapiCore Reporter", () => {
     it("success - dave's claim", async () => {
       const reporter = REPORTERS.dave;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -1380,7 +1485,7 @@ describe("HapiCore Reporter", () => {
       const network = NETWORKS.ethereum;
 
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
@@ -1390,9 +1495,6 @@ describe("HapiCore Reporter", () => {
           reporterAccount
         );
 
-      const [rewardSignerAccount] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
-
       const reporterBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(reporterTokenAccount)
@@ -1400,16 +1502,19 @@ describe("HapiCore Reporter", () => {
         10
       );
 
+      const supplyBefore = await provider.connection.getTokenSupply(
+        rewardToken.mintAccount
+      );
+
       const tx = await program.rpc.claimReporterReward({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
           reporterTokenAccount,
           rewardMint: rewardToken.mintAccount,
-          rewardSigner: rewardSignerAccount,
           tokenProgram: rewardToken.programId,
         },
         signers: [reporter.keypair],
@@ -1428,13 +1533,12 @@ describe("HapiCore Reporter", () => {
         reporterBalanceAfter.sub(reporterBalanceBefore).toNumber()
       ).toEqual(network.addressConfirmationReward.toNumber());
 
-      const supply = await provider.connection.getTokenSupply(
+      const supplyAfter = await provider.connection.getTokenSupply(
         rewardToken.mintAccount
       );
-      expect(supply.value.amount).toEqual(
-        network.addressTracerReward
-          .add(network.addressConfirmationReward)
-          .toString()
+
+      expect(new BN(supplyAfter.value.amount).toNumber()).toEqual(
+        new BN(supplyBefore.value.amount).add(network.addressConfirmationReward).toNumber()
       );
 
       {
@@ -1451,8 +1555,13 @@ describe("HapiCore Reporter", () => {
     it("fail - alice is not activated in community 1", async () => {
       const reporter = REPORTERS.alice;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -1461,7 +1570,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.deactivateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
             },
             signers: [reporter.keypair],
@@ -1473,15 +1582,20 @@ describe("HapiCore Reporter", () => {
     it("success - alice in community 2", async () => {
       const reporter = REPORTERS.alice;
 
+      const [otherCommunityAccount, _] =
+        await program.pda.findCommunityAddress(
+          otherCommunityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        otherCommunity.publicKey,
+        otherCommunityAccount,
         reporter.keypair.publicKey
       );
 
       const tx = await program.rpc.deactivateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: otherCommunity.publicKey,
+          community: otherCommunityAccount,
           reporter: reporterAccount,
         },
         signers: [reporter.keypair],
@@ -1502,15 +1616,20 @@ describe("HapiCore Reporter", () => {
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const tx = await program.rpc.deactivateReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
         },
         signers: [reporter.keypair],
@@ -1531,8 +1650,13 @@ describe("HapiCore Reporter", () => {
     it("fail - bob is already deactivated", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -1541,7 +1665,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.deactivateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
             },
             signers: [reporter.keypair],
@@ -1555,17 +1679,22 @@ describe("HapiCore Reporter", () => {
     it("fail - alice is not deactivated", async () => {
       const reporter = REPORTERS.alice;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       await expectThrowError(
@@ -1573,12 +1702,11 @@ describe("HapiCore Reporter", () => {
           program.rpc.releaseReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: tokenAccount,
-              communityTokenSigner: communityInfo.tokenSigner,
-              communityTokenAccount: communityInfo.tokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
@@ -1590,17 +1718,22 @@ describe("HapiCore Reporter", () => {
     it("fail - alice is not ready to be released in community 2", async () => {
       const reporter = REPORTERS.alice;
 
+      const [otherCommunityAccount, _] =
+        await program.pda.findCommunityAddress(
+          otherCommunityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        otherCommunity.publicKey,
+        otherCommunityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        otherCommunity.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        otherCommunityAccount, true
       );
 
       await expectThrowError(
@@ -1608,12 +1741,11 @@ describe("HapiCore Reporter", () => {
           program.rpc.releaseReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: otherCommunity.publicKey,
+              community: otherCommunityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: tokenAccount,
-              communityTokenSigner: communityInfo.tokenSigner,
-              communityTokenAccount: communityInfo.tokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
@@ -1625,22 +1757,27 @@ describe("HapiCore Reporter", () => {
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
-      const tokenAccount = await stakeToken.getTokenAccount(
+      const reporterTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
-      const communityInfo = await program.account.community.fetch(
-        community.publicKey
+      const communityTokenAccount = await stakeToken.getTokenAccount(
+        communityAccount, true
       );
 
       const reporterBalanceBefore = new BN(
         (
-          await provider.connection.getTokenAccountBalance(tokenAccount)
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
         ).value.amount,
         10
       );
@@ -1648,7 +1785,7 @@ describe("HapiCore Reporter", () => {
       const communityBalanceBefore = new BN(
         (
           await provider.connection.getTokenAccountBalance(
-            communityInfo.tokenAccount
+            communityTokenAccount
           )
         ).value.amount,
         10
@@ -1657,12 +1794,11 @@ describe("HapiCore Reporter", () => {
       const tx = await program.rpc.releaseReporter({
         accounts: {
           sender: reporter.keypair.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
           stakeMint: stakeToken.mintAccount,
-          reporterTokenAccount: tokenAccount,
-          communityTokenSigner: communityInfo.tokenSigner,
-          communityTokenAccount: communityInfo.tokenAccount,
+          reporterTokenAccount,
+          communityTokenAccount,
           tokenProgram: stakeToken.programId,
         },
         signers: [reporter.keypair],
@@ -1679,7 +1815,7 @@ describe("HapiCore Reporter", () => {
 
       const reporterBalanceAfter = new BN(
         (
-          await provider.connection.getTokenAccountBalance(tokenAccount)
+          await provider.connection.getTokenAccountBalance(reporterTokenAccount)
         ).value.amount,
         10
       );
@@ -1687,7 +1823,7 @@ describe("HapiCore Reporter", () => {
       const communityBalanceAfter = new BN(
         (
           await provider.connection.getTokenAccountBalance(
-            communityInfo.tokenAccount
+            communityTokenAccount
           )
         ).value.amount,
         10
@@ -1707,8 +1843,13 @@ describe("HapiCore Reporter", () => {
     it("fail - bob is inactive", async () => {
       const reporter = REPORTERS.bob;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -1717,7 +1858,7 @@ describe("HapiCore Reporter", () => {
           program.rpc.deactivateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
             },
             signers: [reporter.keypair],
@@ -1731,15 +1872,20 @@ describe("HapiCore Reporter", () => {
     it("success", async () => {
       const reporter = REPORTERS.carol;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const tx = await program.rpc.freezeReporter({
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
         },
       });
@@ -1759,7 +1905,7 @@ describe("HapiCore Reporter", () => {
         const caseName = bufferFromString("Case 1", 32);
 
         const [caseAccount, bump] = await program.pda.findCaseAddress(
-          community.publicKey,
+          communityAccount,
           caseId
         );
 
@@ -1769,7 +1915,7 @@ describe("HapiCore Reporter", () => {
               accounts: {
                 reporter: reporterAccount,
                 sender: reporter.keypair.publicKey,
-                community: community.publicKey,
+                community: communityAccount,
                 case: caseAccount,
                 systemProgram: web3.SystemProgram.programId,
               },
@@ -1786,7 +1932,7 @@ describe("HapiCore Reporter", () => {
             program.rpc.deactivateReporter({
               accounts: {
                 sender: reporter.keypair.publicKey,
-                community: community.publicKey,
+                community: communityAccount,
                 reporter: reporterAccount,
               },
               signers: [reporter.keypair],
@@ -1801,15 +1947,20 @@ describe("HapiCore Reporter", () => {
     it("success", async () => {
       const reporter = REPORTERS.carol;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
       const tx = await program.rpc.unfreezeReporter({
         accounts: {
           authority: authority.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           reporter: reporterAccount,
         },
       });
