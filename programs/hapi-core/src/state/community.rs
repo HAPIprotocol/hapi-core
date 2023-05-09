@@ -1,9 +1,19 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
 pub struct Community {
+    /// Account version
+    pub version: u16,
+
     /// Community authority wallet
     pub authority: Pubkey,
+
+    /// Community ID
+    pub id: u64,
+
+    /// Seed bump for PDA
+    pub bump: u8,
 
     /// Community case counter
     pub cases: u64,
@@ -17,15 +27,6 @@ pub struct Community {
     /// Stake token mint account
     pub stake_mint: Pubkey,
 
-    /// Token signer PDA
-    pub token_signer: Pubkey,
-
-    /// Seed bump for token signer PDA
-    pub token_signer_bump: u8,
-
-    /// Stake holding token account
-    pub token_account: Pubkey,
-
     /// Amount of stake required from a reporter of validator type
     pub validator_stake: u64,
 
@@ -37,4 +38,12 @@ pub struct Community {
 
     /// Amount of stake required from a reporter of authority type
     pub authority_stake: u64,
+
+    /// Amount of stake required from a reporter of appraiser type
+    pub appraiser_stake: u64,
+}
+
+impl Community {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 8 + 1 + 8 + 1 + 8 + 32 + 8 + 8 + 8 + 8 + 8);
+    pub const VERSION: u16 = 1;
 }

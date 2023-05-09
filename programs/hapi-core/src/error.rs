@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[error]
+#[error_code]
 pub enum ErrorCode {
     #[msg("Unexpected account has been used")]
     UnexpectedAccount,
@@ -34,11 +34,21 @@ pub enum ErrorCode {
     NetworkMismatch,
     #[msg("Case mismatched")]
     CaseMismatch,
+    #[msg("Same address case")]
+    SameCase,
     #[msg("There is no reward to claim")]
     NoReward,
+    #[msg("Account has illegal owner")]
+    IllegalOwner,
+    #[msg("User account has high risk")]
+    HighAccountRisk,
+    #[msg("Unexpected account length")]
+    UnexpectedLength,
+    #[msg("Invalid account version")]
+    InvalidAccountVersion,
 }
 
-pub fn print_error(error: ErrorCode) -> ProgramResult {
+pub fn print_error(error: ErrorCode) -> Result<()> {
     msg!("Error: {}", error);
     Err(error.into())
 }

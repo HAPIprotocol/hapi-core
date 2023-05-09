@@ -18,6 +18,7 @@ export const ReporterRole = {
   Tracer: { tracer: {} },
   Publisher: { publisher: {} },
   Authority: { authority: {} },
+  Appraiser: { appraiser: {} },
 } as const;
 
 export type ReporterRoleKeys = keyof typeof ReporterRole;
@@ -57,8 +58,7 @@ export const Category = {
   WalletService: { walletService: {} },
   MerchantService: { merchantService: {} },
   MiningPool: { miningPool: {} },
-  LowRiskExchange: { lowRiskExchange: {} },
-  MediumRiskExchange: { mediumRiskExchange: {} },
+  Exchange: { exchange: {} },
   DeFi: { deFi: {} },
   OTCBroker: { oTCBroker: {} },
   ATM: { aTM: {} },
@@ -74,6 +74,7 @@ export const Category = {
   Sanctions: { sanctions: {} },
   ChildAbuse: { childAbuse: {} },
   HighRiskJurisdiction: { highRiskJurisdiction: {} },
+  Hacker: { hacker: {} },
 };
 
 export type CategoryKeys = keyof typeof Category;
@@ -82,12 +83,34 @@ export const CategoryVariants = Object.keys(Category) as Readonly<
   CategoryKeys[]
 >;
 
+export const NetworkSchema = {
+  Plain: { plain: {} },
+  Solana: { solana: {} },
+  Ethereum: { ethereum: {} },
+  Bitcoin: { bitcoin: {} },
+  Near: { near: {} },
+};
+
+export type NetworkSchemaKeys = keyof typeof NetworkSchema;
+
+export const NetworkSchemaVariants = Object.keys(NetworkSchema) as Readonly<
+  NetworkSchemaKeys[]
+>;
+
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
-  address: 152,
-  asset: 184,
-  case: 120,
-  community: 192,
-  network: 176,
-  reporter: 128,
-  reporterReward: 112,
+  address: 222,
+  addressV0: 184,
+  asset: 254,
+  assetV0: 216,
+  case: 148,
+  caseV0: 120,
+  community: 172,
+  communityV0: 192,
+  network: 180,
+  networkV0: 176,
+  reporter: 158,
+  reporterV0: 128,
+  reporterReward: 139,
+  reporterRewardV0: 112,
+
 };

@@ -1,9 +1,12 @@
-use anchor_lang::prelude::*;
-
 use super::address::Category;
+use crate::utils::DISCRIMINATOR_LENGTH;
+use anchor_lang::prelude::*;
 
 #[account]
 pub struct Asset {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this address belongs to
     pub community: Pubkey,
 
@@ -11,7 +14,7 @@ pub struct Asset {
     pub network: Pubkey,
 
     /// Asset mint account
-    pub mint: Pubkey,
+    pub mint: [u8; 64],
 
     /// Asset ID
     pub asset_id: [u8; 32],
@@ -33,4 +36,14 @@ pub struct Asset {
 
     /// Confirmation count for this address
     pub confirmations: u8,
+
+    /// Accumulated payment amount for report
+    pub replication_bounty: u64,
+}
+
+impl Asset {
+    pub const LEN: usize =
+        DISCRIMINATOR_LENGTH + (2 + 32 + 32 + 64 + 32 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
+
+    pub const VERSION: u16 = 1;
 }

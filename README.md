@@ -1,12 +1,10 @@
 # HAPI Core
 
-HAPI Core contract built on Anchor for Solana.
-
-Note: This repository is a work in progress.
+HAPI Core contract built on Anchor for Solana. If you want to know more about HAPI Protocol, please visit the [official site](https://hapi.one/) and our [gitbook](https://hapi-one.gitbook.io/hapi-protocol). If you want to propose any changes to this smart contract, please visit our [governance forum](https://gov.hapi.one/). Suggestions for the client library enhancements are welcome.
 
 ## Dependencies
 
-To install everything you need to work with this project, you'll need to install dependencies as described in [Anchor](https://project-serum.github.io/anchor/getting-started/installation.html) documentation.
+To install everything you need to work with this project, you'll need to install dependencies as described in [Anchor](https://www.anchor-lang.com/docs/installation) documentation.
 
 ## Program
 
@@ -84,10 +82,34 @@ const HAPI_PROGRAM_ID = new PublicKey(
 // Setup the client
 const hapiCore = initHapiCore(HAPI_PROGRAM_ID, provider);
 
-// Use client to fetch community account data
-const community = hapiCore.account.community.fetch(
-  new PublicKey("31gQ11Qsd7dPcnkdCJ2ZGnY2ijRXsvFCPWagpcFxYwem")
+// HAPI community account is a well-known public key
+const communityAccount = new PublicKey(
+  "31gQ11Qsd7dPcnkdCJ2ZGnY2ijRXsvFCPWagpcFxYwem"
 );
 
-console.log(community);
+// Use client to fetch community account data
+const communityData = await hapiCore.account.community.fetch(communityAccount);
+console.log(communityData);
+
+// Find a PDA for a particular network
+const [networkAccount] = await program.pda.findNetworkAddress(
+  communityAccount,
+  "solana"
+);
+
+// Encode address buffer
+const addressEncoded = hapiCore.util.encodeAddress(
+  "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+  "Solana"
+);
+
+// Find a PDA for an address, which we want to check
+const [addressAccount] = await program.pda.findAddressAddress(
+  networkAccount,
+  addressEncoded
+);
+
+// Fetch address risk scoring data
+const addressData = await hapiCore.account.address.fetch(addressAccount);
+console.log(addressData);
 ```

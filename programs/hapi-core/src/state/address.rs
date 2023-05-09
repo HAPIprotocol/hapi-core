@@ -1,7 +1,11 @@
+use crate::utils::DISCRIMINATOR_LENGTH;
 use anchor_lang::prelude::*;
 
 #[account]
 pub struct Address {
+    /// Account version
+    pub version: u16,
+
     /// Community account, which this address belongs to
     pub community: Pubkey,
 
@@ -9,7 +13,7 @@ pub struct Address {
     pub network: Pubkey,
 
     /// Actual address public key
-    pub address: Pubkey,
+    pub address: [u8; 64],
 
     /// Seed bump for PDA
     pub bump: u8,
@@ -28,9 +32,17 @@ pub struct Address {
 
     /// Confirmation count for this address
     pub confirmations: u8,
+
+    /// Accumulated payment amount for report
+    pub replication_bounty: u64,
 }
 
-#[derive(Clone, AnchorDeserialize, AnchorSerialize)]
+impl Address {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 32 + 32 + 64 + 1 + 8 + 32 + 1 + 1 + 1 + 8);
+    pub const VERSION: u16 = 1;
+}
+
+#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum Category {
     // Tier 0
     /// None
@@ -46,12 +58,9 @@ pub enum Category {
     /// Mining pool
     MiningPool,
 
-    /// Exchange (Low Risk) - Exchange with high KYC standards
-    LowRiskExchange,
-
     // Tier 2 - Medium risk
-    /// Exchange (Medium Risk)
-    MediumRiskExchange,
+    /// Exchange
+    Exchange,
 
     /// DeFi application
     DeFi,
@@ -96,6 +105,9 @@ pub enum Category {
 
     /// Child abuse and porn materials
     ChildAbuse,
+
+    /// The address belongs to a hacker or a group of hackers
+    Hacker,
 
     /// Address belongs to a person or an organization from a high risk jurisdiction
     HighRiskJurisdiction,

@@ -1,7 +1,12 @@
 [package]
 name = "hapi-core"
-version = "0.1.0"
-description = "Created with Anchor"
+version = "0.2.0"
+description = "Core contract of HAPI Protocol"
+homepage = "https://hapi.one"
+repository = "https://github.com/HAPIprotocol/hapi-core"
+documentation = "https://hapi-one.gitbook.io/"
+license-file = "../../LICENSE"
+readme = "../../README.md"
 edition = "2018"
 
 [lib]
@@ -15,6 +20,6 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.20.0"
-anchor-spl = "0.20.0"
+anchor-lang = "0.26.0"
+anchor-spl = "0.26.0"
 spl-token = { version = "3.2.0", features = ["no-entrypoint"] }

@@ -1,6 +1,25 @@
 import { web3, utils, BN } from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
 import { encode as eip55encode } from "eip55";
+
+export function addrToSeeds(buffer: Buffer | Uint8Array) {
+  const addr = padBuffer(buffer, 64);
+  return [addr.subarray(0, 32), addr.subarray(32, 64)];
+}
+
+export function padBuffer(buffer: Buffer | Uint8Array, targetSize: number) {
+  if (!(buffer instanceof Buffer)) {
+    buffer = Buffer.from(buffer);
+  }
+
+  if (buffer.byteLength > targetSize) {
+    throw new RangeError(`Buffer is larger than target size: ${targetSize}`);
+  }
+
+  return Buffer.concat(
+    [buffer, Buffer.alloc(targetSize - buffer.byteLength)],
+    targetSize
+  );
+}
 
 export function bufferFromString(str: string, bufferSize?: number) {
   const utf = utils.bytes.utf8.encode(str);
@@ -13,10 +32,7 @@ export function bufferFromString(str: string, bufferSize?: number) {
     throw RangeError("Buffer size too small to fit the string");
   }
 
-  return Buffer.concat(
-    [Buffer.from(utf), Buffer.alloc(bufferSize - utf.byteLength)],
-    bufferSize
-  );
+  return padBuffer(utf, bufferSize);
 }
 
 export function stringFromArray(array: number[]) {
@@ -62,6 +78,6 @@ export function pubkeyToEthereumAddress(pubkey: web3.PublicKey): string {
   return eip55encode(utils.bytes.hex.encode(bytes));
 }
 
-export function u64FromBn(anchorBn: BN) {
-  return new u64(anchorBn.toArrayLike(Buffer, "le", 8));
+export function toNativeBn(anchorBn: BN) {
+  return new BN(anchorBn.toArrayLike(Buffer, "le", 8));
 }

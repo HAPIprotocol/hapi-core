@@ -1,7 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { web3, BN } from "@project-serum/anchor";
 
-import { TestToken, u64 } from "../util/token";
+import { TestToken } from "../util/token";
 import { expectThrowError, listenSolanaLogs } from "../util/console";
 import {
   ACCOUNT_SIZE,
@@ -9,23 +9,25 @@ import {
   CaseStatus,
   Category,
   initHapiCore,
+  NetworkSchema,
+  NetworkSchemaKeys,
+  padBuffer,
   ReporterRole,
-  u64FromBn,
 } from "../../lib";
-import { pubkeyFromHex } from "../util/crypto";
 import { programError } from "../util/error";
 import { metadata } from "../../target/idl/hapi_core.json";
 
 describe("HapiCore Address", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
 
-  const provider = anchor.Provider.env();
+  const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const authority = provider.wallet;
 
   const nobody = web3.Keypair.generate();
-  const community = web3.Keypair.generate();
+
+  const communityId = new BN(1);
 
   let stakeToken: TestToken;
 
@@ -53,34 +55,45 @@ describe("HapiCore Address", () => {
       keypair: web3.Keypair.generate(),
       role: "Validator",
     },
+    erin: {
+      name: "erin",
+      keypair: web3.Keypair.generate(),
+      role: "Appraiser",
+    },
   };
 
   const NETWORKS: Record<
     string,
     {
       name: string;
+      schema: NetworkSchemaKeys;
       rewardToken: TestToken;
-      addressTracerReward: u64;
-      addressConfirmationReward: u64;
-      assetTracerReward: u64;
-      assetConfirmationReward: u64;
+      addressTracerReward: BN;
+      addressConfirmationReward: BN;
+      assetTracerReward: BN;
+      assetConfirmationReward: BN;
+      reportPrice: BN
     }
   > = {
     ethereum: {
       name: "ethereum",
+      schema: "Ethereum",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_000),
-      addressConfirmationReward: new u64(2_000),
-      assetTracerReward: new u64(3_000),
-      assetConfirmationReward: new u64(4_000),
+      addressTracerReward: new BN(1_000),
+      addressConfirmationReward: new BN(2_000),
+      assetTracerReward: new BN(3_000),
+      assetConfirmationReward: new BN(4_000),
+      reportPrice: new BN(1_000),
     },
     solana: {
       name: "solana",
+      schema: "Solana",
       rewardToken: new TestToken(provider),
-      addressTracerReward: new u64(1_001),
-      addressConfirmationReward: new u64(2_001),
-      assetTracerReward: new u64(3_001),
-      assetConfirmationReward: new u64(4_001),
+      addressTracerReward: new BN(1_001),
+      addressConfirmationReward: new BN(2_001),
+      assetTracerReward: new BN(3_001),
+      assetConfirmationReward: new BN(4_001),
+      reportPrice: new BN(1_001),
     },
   };
 
@@ -105,12 +118,18 @@ describe("HapiCore Address", () => {
       name: "suspicious nft txes",
       reporter: "carol",
     },
+    newCase: {
+      network: "ethereum",
+      caseId: new BN(3),
+      name: "new case",
+      reporter: "alice",
+    },
   };
 
   const ADDRESSES: Record<
     string,
     {
-      pubkey: web3.PublicKey;
+      pubkey: Buffer;
       network: keyof typeof NETWORKS;
       category: keyof typeof Category;
       reporter: keyof typeof REPORTERS;
@@ -119,8 +138,9 @@ describe("HapiCore Address", () => {
     }
   > = {
     blackhole1: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "ethereum",
       category: "None",
@@ -129,8 +149,9 @@ describe("HapiCore Address", () => {
       risk: 0,
     },
     blackhole2: {
-      pubkey: pubkeyFromHex(
-        "0000000000000000000000000000000000000000000000000000000000000001"
+      pubkey: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
       ),
       network: "solana",
       category: "None",
@@ -139,8 +160,9 @@ describe("HapiCore Address", () => {
       risk: 0,
     },
     nftMerchant: {
-      pubkey: pubkeyFromHex(
-        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
+      pubkey: Buffer.from(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
+        "hex"
       ),
       network: "ethereum",
       reporter: "bob",
@@ -154,8 +176,8 @@ describe("HapiCore Address", () => {
     const wait: Promise<unknown>[] = [];
 
     stakeToken = new TestToken(provider);
-    await stakeToken.mint(new u64(1_000_000_000));
-    wait.push(stakeToken.transfer(null, nobody.publicKey, new u64(1_000_000)));
+    await stakeToken.mint(1_000_000_000);
+    wait.push(stakeToken.transfer(null, nobody.publicKey, 1_000_000));
 
     const tx = new web3.Transaction().add(
       web3.SystemProgram.transfer({
@@ -172,44 +194,46 @@ describe("HapiCore Address", () => {
       )
     );
 
-    wait.push(provider.send(tx));
+    wait.push(provider.sendAndConfirm(tx));
 
     for (const reporter of Object.keys(REPORTERS)) {
       wait.push(
         stakeToken.transfer(
           null,
           REPORTERS[reporter].keypair.publicKey,
-          new u64(1_000_000)
+          1_000_000
         )
       );
     }
 
-    const [tokenSignerAccount, tokenSignerBump] =
-      await program.pda.findCommunityTokenSignerAddress(community.publicKey);
+    const [communityAccount, communityBump] =
+      await program.pda.findCommunityAddress(
+        communityId
+      );
 
-    const communityTokenAccount = await stakeToken.createAccount(
-      tokenSignerAccount
+    const communityTokenAccount = await stakeToken.getTokenAccount(
+      communityAccount, true
     );
 
     wait.push(
       program.rpc.initializeCommunity(
-        new u64(10),
+        communityId,
+        communityBump,
+        new BN(10),
         2,
-        new u64(1_000),
-        new u64(2_000),
-        new u64(3_000),
-        new u64(4_000),
-        tokenSignerBump,
+        new BN(1_000),
+        new BN(2_000),
+        new BN(3_000),
+        new BN(4_000),
+        new BN(5_000),
         {
           accounts: {
             authority: authority.publicKey,
-            community: community.publicKey,
+            community: communityAccount,
             stakeMint: stakeToken.mintAccount,
             tokenAccount: communityTokenAccount,
-            tokenSigner: tokenSignerAccount,
             systemProgram: web3.SystemProgram.programId,
           },
-          signers: [community],
         }
       )
     );
@@ -220,7 +244,7 @@ describe("HapiCore Address", () => {
       const reporter = REPORTERS[key];
 
       const [reporterAccount, bump] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.keypair.publicKey
       );
 
@@ -232,7 +256,7 @@ describe("HapiCore Address", () => {
           {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               pubkey: reporter.keypair.publicKey,
               systemProgram: web3.SystemProgram.programId,
@@ -245,32 +269,44 @@ describe("HapiCore Address", () => {
     for (const key of Object.keys(NETWORKS)) {
       const network = NETWORKS[key];
 
-      await network.rewardToken.mint();
+      await network.rewardToken.mint(1_000_000_000);
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         network.name
       );
 
-      const [rewardSignerAccount, rewardSignerBump] =
-        await program.pda.findNetworkRewardSignerAddress(networkAccount);
+      const treasuryTokenAccount = await network.rewardToken.getTokenAccount(
+        networkAccount, true
+      );
+
+      for (const reporter of Object.keys(REPORTERS)) {
+        wait.push(
+          network.rewardToken.transfer(
+            null,
+            REPORTERS[reporter].keypair.publicKey,
+            1_000_000
+          )
+        );
+      }
 
       wait.push(
         program.rpc.createNetwork(
           bufferFromString(network.name, 32).toJSON().data,
+          NetworkSchema[network.schema],
           network.addressTracerReward,
           network.addressConfirmationReward,
           network.assetTracerReward,
           network.assetConfirmationReward,
           bump,
-          rewardSignerBump,
+          network.reportPrice,
           {
             accounts: {
               authority: authority.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               rewardMint: network.rewardToken.mintAccount,
-              rewardSigner: rewardSignerAccount,
+              treasuryTokenAccount,
               tokenProgram: network.rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -281,13 +317,14 @@ describe("HapiCore Address", () => {
 
     await Promise.all(wait);
 
+
     for (const key of Object.keys(REPORTERS)) {
       const reporter = REPORTERS[key];
 
       wait.push(
         (async () => {
           const [reporterAccount] = await program.pda.findReporterAddress(
-            community.publicKey,
+            communityAccount,
             reporter.keypair.publicKey
           );
 
@@ -298,11 +335,11 @@ describe("HapiCore Address", () => {
           await program.rpc.activateReporter({
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               reporter: reporterAccount,
               stakeMint: stakeToken.mintAccount,
-              reporterTokenAccount: reporterTokenAccount,
-              communityTokenAccount: communityTokenAccount,
+              reporterTokenAccount,
+              communityTokenAccount,
               tokenProgram: stakeToken.programId,
             },
             signers: [reporter.keypair],
@@ -320,12 +357,12 @@ describe("HapiCore Address", () => {
       const caseName = bufferFromString(cs.name, 32);
 
       const [caseAccount, bump] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         cs.caseId
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -333,7 +370,7 @@ describe("HapiCore Address", () => {
         accounts: {
           reporter: reporterAccount,
           sender: reporter.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           case: caseAccount,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -349,12 +386,12 @@ describe("HapiCore Address", () => {
       const caseName = bufferFromString(cs.name, 32);
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         cs.caseId
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -362,7 +399,7 @@ describe("HapiCore Address", () => {
         accounts: {
           reporter: reporterAccount,
           sender: reporter.publicKey,
-          community: community.publicKey,
+          community: communityAccount,
           case: caseAccount,
         },
         signers: [reporter],
@@ -376,8 +413,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -387,19 +429,25 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
       );
 
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             100,
             bump,
@@ -407,10 +455,13 @@ describe("HapiCore Address", () => {
               accounts: {
                 sender: reporter.publicKey,
                 address: addressAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -421,12 +472,18 @@ describe("HapiCore Address", () => {
     });
 
     it("fail - case closed", async () => {
+
       const addr = ADDRESSES.nftMerchant;
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -436,19 +493,25 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
       );
 
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             addr.risk,
             bump,
@@ -456,10 +519,13 @@ describe("HapiCore Address", () => {
               accounts: {
                 sender: reporter.publicKey,
                 address: addressAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -474,8 +540,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -485,17 +556,37 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
@@ -503,10 +594,13 @@ describe("HapiCore Address", () => {
           accounts: {
             sender: reporter.publicKey,
             address: addressAccount,
-            community: community.publicKey,
+            community: communityAccount,
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter],
@@ -518,6 +612,23 @@ describe("HapiCore Address", () => {
       const fetchedAddressAccount = await program.account.address.fetch(
         addressAccount
       );
+
+      const reporterBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -525,16 +636,30 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.category).toEqual(Category[addr.category]);
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.community).toEqual(communityAccount);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
+        padBuffer(addr.pubkey, 64)
+      );
+      expect(
+        program.util.decodeAddress(fetchedAddressAccount.address, "Ethereum")
+      ).toEqual("0x0000000000000000000000000000000000000000");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(reportPrice);
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
       expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(reportPrice);
+
+      expect(
+        treasuryBalanceAfter.toNumber()
+      ).toEqual(treasuryBalanceBefore.toNumber() + reportPrice);
 
       expect(true).toBeTruthy();
     });
@@ -544,8 +669,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -555,17 +685,37 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
       const tx = await program.rpc.createAddress(
-        addr.pubkey,
+        [...addr.pubkey],
         Category[addr.category],
         addr.risk,
         bump,
@@ -573,10 +723,13 @@ describe("HapiCore Address", () => {
           accounts: {
             sender: reporter.publicKey,
             address: addressAccount,
-            community: community.publicKey,
+            community: communityAccount,
             network: networkAccount,
             reporter: reporterAccount,
             case: caseAccount,
+            reporterPaymentTokenAccount,
+            treasuryTokenAccount,
+            tokenProgram: stakeToken.programId,
             systemProgram: web3.SystemProgram.programId,
           },
           signers: [reporter],
@@ -588,6 +741,23 @@ describe("HapiCore Address", () => {
       const fetchedAddressAccount = await program.account.address.fetch(
         addressAccount
       );
+
+      const reporterBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.bump).toEqual(bump);
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
@@ -595,16 +765,30 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.category).toEqual(Category[addr.category]);
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(addr.risk);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.community).toEqual(communityAccount);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
+        padBuffer(addr.pubkey, 64)
+      );
+      expect(
+        program.util.decodeAddress(fetchedAddressAccount.address, "Solana")
+      ).toEqual("11111111111111111111111111111112");
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(reportPrice);
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         addressAccount
       );
       expect(addressInfo.value.owner).toEqual(program.programId);
       expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(reportPrice);
+
+      expect(
+        treasuryBalanceAfter.toNumber()
+      ).toEqual(treasuryBalanceBefore.toNumber() + reportPrice);
 
       expect(true).toBeTruthy();
     });
@@ -614,8 +798,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -625,19 +814,25 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
       );
 
       await expectThrowError(
         () =>
           program.rpc.createAddress(
-            addr.pubkey,
+            [...addr.pubkey],
             Category[addr.category],
             addr.risk,
             bump,
@@ -645,10 +840,13 @@ describe("HapiCore Address", () => {
               accounts: {
                 sender: reporter.publicKey,
                 address: addressAccount,
-                community: community.publicKey,
+                community: communityAccount,
                 network: networkAccount,
                 reporter: reporterAccount,
                 case: caseAccount,
+                reporterPaymentTokenAccount,
+                treasuryTokenAccount,
+                tokenProgram: stakeToken.programId,
                 systemProgram: web3.SystemProgram.programId,
               },
               signers: [reporter],
@@ -665,8 +863,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS.dave.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -676,13 +879,19 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
       );
 
       await expectThrowError(
@@ -691,10 +900,13 @@ describe("HapiCore Address", () => {
             accounts: {
               sender: reporter.publicKey,
               address: addressAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter],
           }),
@@ -707,8 +919,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS.bob.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -718,13 +935,19 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
       );
 
       await expectThrowError(
@@ -733,10 +956,69 @@ describe("HapiCore Address", () => {
             accounts: {
               sender: reporter.publicKey,
               address: addressAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - appraiser can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.erin.keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        addr.caseId
+      );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.updateAddress(Category[addr.category], addr.risk, {
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: communityAccount,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              reporterPaymentTokenAccount,
+              treasuryTokenAccount,
+              tokenProgram: stakeToken.programId,
             },
             signers: [reporter],
           }),
@@ -749,8 +1031,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -760,23 +1047,52 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
+
+      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+
+      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
+        reporter.publicKey
+      );
+
+      const reporterBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceBefore = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const fetchedAddressAccountBefore = await program.account.address.fetch(
+        addressAccount
+      );
+
+      const replicationBountyBefore = fetchedAddressAccountBefore.replicationBounty.toNumber();
 
       const tx = await program.rpc.updateAddress(Category.Gambling, 8, {
         accounts: {
           sender: reporter.publicKey,
           address: addressAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
+          reporterPaymentTokenAccount,
+          treasuryTokenAccount,
+          tokenProgram: stakeToken.programId,
         },
         signers: [reporter],
       });
@@ -786,16 +1102,44 @@ describe("HapiCore Address", () => {
       const fetchedAddressAccount = await program.account.address.fetch(
         addressAccount
       );
+
+      const reporterBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(reporterPaymentTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      const treasuryBalanceAfter = new BN(
+        (
+          await provider.connection.getTokenAccountBalance(treasuryTokenAccount)
+        ).value.amount,
+        10
+      );
+
+      let reportPrice = NETWORKS[addr.network].reportPrice.toNumber();
+
       expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
         addr.caseId.toNumber()
       );
       expect(fetchedAddressAccount.category).toEqual(Category.Gambling);
       expect(fetchedAddressAccount.confirmations).toEqual(0);
       expect(fetchedAddressAccount.risk).toEqual(8);
-      expect(fetchedAddressAccount.community).toEqual(community.publicKey);
-      expect(fetchedAddressAccount.address).toEqual(addr.pubkey);
+      expect(fetchedAddressAccount.community).toEqual(communityAccount);
+      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
+        padBuffer(addr.pubkey, 64)
+      );
       expect(fetchedAddressAccount.network).toEqual(networkAccount);
       expect(fetchedAddressAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedAddressAccount.replicationBounty.toNumber()).toEqual(replicationBountyBefore + reportPrice);
+
+      expect(
+        reporterBalanceBefore.sub(reporterBalanceAfter).toNumber()
+      ).toEqual(reportPrice);
+
+      expect(
+        treasuryBalanceAfter.toNumber()
+      ).toEqual(treasuryBalanceBefore.toNumber() + reportPrice);
     });
   });
 
@@ -804,14 +1148,19 @@ describe("HapiCore Address", () => {
       for (const reporterKey of Object.keys(REPORTERS)) {
         const reporter = REPORTERS[reporterKey];
 
+        const [communityAccount, _] =
+          await program.pda.findCommunityAddress(
+            communityId
+          );
+
         const [reporterAccount] = await program.pda.findReporterAddress(
-          community.publicKey,
+          communityAccount,
           reporter.keypair.publicKey
         );
 
         for (const networkKey of Object.keys(NETWORKS)) {
           const [networkAccount] = await program.pda.findNetworkAddress(
-            community.publicKey,
+            communityAccount,
             NETWORKS[networkKey].name
           );
 
@@ -824,7 +1173,7 @@ describe("HapiCore Address", () => {
           await program.rpc.initializeReporterReward(bump, {
             accounts: {
               sender: reporter.keypair.publicKey,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               reporterReward: reporterRewardAccount,
@@ -841,8 +1190,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -852,7 +1206,7 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -871,7 +1225,7 @@ describe("HapiCore Address", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
@@ -881,7 +1235,7 @@ describe("HapiCore Address", () => {
             accounts: {
               sender: reporter.publicKey,
               address: addressAccount,
-              community: community.publicKey,
+              community: communityAccount,
               network: networkAccount,
               reporter: reporterAccount,
               reporterReward: reporterRewardAccount,
@@ -901,8 +1255,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS.bob.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -912,7 +1271,7 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -931,7 +1290,7 @@ describe("HapiCore Address", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
@@ -939,7 +1298,7 @@ describe("HapiCore Address", () => {
         accounts: {
           sender: reporter.publicKey,
           address: addressAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -963,8 +1322,10 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.category).toEqual(Category.Gambling);
         expect(fetchedAccount.confirmations).toEqual(1);
         expect(fetchedAccount.risk).toEqual(8);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(
+          padBuffer(addr.pubkey, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -972,11 +1333,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+          fetchedAccount.addressConfirmationCounter.eq(new BN(1))
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+          fetchedAccount.addressTracerCounter.isZero()
         ).toBeTruthy();
       }
 
@@ -984,11 +1346,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           addressReporterRewardAccount
         );
+
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+          fetchedAccount.addressConfirmationCounter.isZero()
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+          fetchedAccount.addressTracerCounter.isZero()
         ).toBeTruthy();
       }
     });
@@ -998,8 +1361,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS.dave.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -1009,7 +1377,7 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1028,7 +1396,7 @@ describe("HapiCore Address", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
@@ -1036,7 +1404,7 @@ describe("HapiCore Address", () => {
         accounts: {
           sender: reporter.publicKey,
           address: addressAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1058,8 +1426,10 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.category).toEqual(Category.Gambling);
         expect(fetchedAccount.confirmations).toEqual(2);
         expect(fetchedAccount.risk).toEqual(8);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(
+          padBuffer(addr.pubkey, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1067,11 +1437,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+          fetchedAccount.addressConfirmationCounter.eq(new BN(1))
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+          fetchedAccount.addressTracerCounter.isZero()
         ).toBeTruthy();
       }
 
@@ -1080,10 +1451,10 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+          fetchedAccount.addressConfirmationCounter.isZero()
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
+          fetchedAccount.addressTracerCounter.eq(new BN(1))
         ).toBeTruthy();
       }
     });
@@ -1093,8 +1464,13 @@ describe("HapiCore Address", () => {
 
       const reporter = REPORTERS.carol.keypair;
 
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
       const [networkAccount] = await program.pda.findNetworkAddress(
-        community.publicKey,
+        communityAccount,
         addr.network
       );
 
@@ -1104,7 +1480,7 @@ describe("HapiCore Address", () => {
       );
 
       const [reporterAccount] = await program.pda.findReporterAddress(
-        community.publicKey,
+        communityAccount,
         reporter.publicKey
       );
 
@@ -1123,7 +1499,7 @@ describe("HapiCore Address", () => {
         );
 
       const [caseAccount] = await program.pda.findCaseAddress(
-        community.publicKey,
+        communityAccount,
         addr.caseId
       );
 
@@ -1131,7 +1507,7 @@ describe("HapiCore Address", () => {
         accounts: {
           sender: reporter.publicKey,
           address: addressAccount,
-          community: community.publicKey,
+          community: communityAccount,
           network: networkAccount,
           reporter: reporterAccount,
           reporterReward: reporterRewardAccount,
@@ -1153,8 +1529,10 @@ describe("HapiCore Address", () => {
         expect(fetchedAccount.category).toEqual(Category.Gambling);
         expect(fetchedAccount.confirmations).toEqual(3);
         expect(fetchedAccount.risk).toEqual(8);
-        expect(fetchedAccount.community).toEqual(community.publicKey);
-        expect(fetchedAccount.address).toEqual(addr.pubkey);
+        expect(fetchedAccount.community).toEqual(communityAccount);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(
+          padBuffer(addr.pubkey, 64)
+        );
         expect(fetchedAccount.network).toEqual(networkAccount);
       }
 
@@ -1162,11 +1540,12 @@ describe("HapiCore Address", () => {
         const fetchedAccount = await program.account.reporterReward.fetch(
           reporterRewardAccount
         );
+
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(1))
+          fetchedAccount.addressConfirmationCounter.eq(new BN(1))
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(0))
+          fetchedAccount.addressTracerCounter.isZero()
         ).toBeTruthy();
       }
 
@@ -1175,12 +1554,361 @@ describe("HapiCore Address", () => {
           addressReporterRewardAccount
         );
         expect(
-          u64FromBn(fetchedAccount.addressConfirmationCounter).eq(new u64(0))
+          fetchedAccount.addressConfirmationCounter.isZero()
         ).toBeTruthy();
         expect(
-          u64FromBn(fetchedAccount.addressTracerCounter).eq(new u64(1))
+          fetchedAccount.addressTracerCounter.eq(new BN(1))
         ).toBeTruthy();
       }
+    });
+
+    it("success - erin", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS.erin.keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [reporterRewardAccount] =
+        await program.pda.findReporterRewardAddress(
+          networkAccount,
+          reporterAccount
+        );
+
+      const addressInfo = await program.account.address.fetch(addressAccount);
+
+      const [addressReporterRewardAccount] =
+        await program.pda.findReporterRewardAddress(
+          networkAccount,
+          addressInfo.reporter
+        );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        addr.caseId
+      );
+
+      const tx = await program.rpc.confirmAddress({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: communityAccount,
+          network: networkAccount,
+          reporter: reporterAccount,
+          reporterReward: reporterRewardAccount,
+          addressReporterReward: addressReporterRewardAccount,
+          case: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      {
+        const fetchedAccount = await program.account.address.fetch(
+          addressAccount
+        );
+        expect(fetchedAccount.caseId.toNumber()).toEqual(
+          addr.caseId.toNumber()
+        );
+        expect(fetchedAccount.category).toEqual(Category.Gambling);
+        expect(fetchedAccount.confirmations).toEqual(4);
+        expect(fetchedAccount.risk).toEqual(8);
+        expect(fetchedAccount.community).toEqual(communityAccount);
+        expect(Buffer.from(fetchedAccount.address)).toEqual(
+          padBuffer(addr.pubkey, 64)
+        );
+        expect(fetchedAccount.network).toEqual(networkAccount);
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          reporterRewardAccount
+        );
+
+        expect(
+          fetchedAccount.addressConfirmationCounter.eq(new BN(1))
+        ).toBeTruthy();
+        expect(
+          fetchedAccount.addressTracerCounter.isZero()
+        ).toBeTruthy();
+      }
+
+      {
+        const fetchedAccount = await program.account.reporterReward.fetch(
+          addressReporterRewardAccount
+        );
+        expect(
+          fetchedAccount.addressConfirmationCounter.isZero()
+        ).toBeTruthy();
+        expect(
+          fetchedAccount.addressTracerCounter.eq(new BN(1))
+        ).toBeTruthy();
+      }
+    });
+  });
+
+  describe("change_address_case", () => {
+    it("fail - validator can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS.dave.keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.changeAddressCase({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: communityAccount,
+              network: networkAccount,
+              reporter: reporterAccount,
+              newCase: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - tracer can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS.bob.keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.changeAddressCase({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: communityAccount,
+              network: networkAccount,
+              reporter: reporterAccount,
+              newCase: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - appraser can't update an address", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS.erin.keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        cs.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.changeAddressCase({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: communityAccount,
+              network: networkAccount,
+              reporter: reporterAccount,
+              newCase: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - same case can not be provided", async () => {
+      const addr = ADDRESSES.blackhole1;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        addr.caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.rpc.changeAddressCase({
+            accounts: {
+              sender: reporter.publicKey,
+              address: addressAccount,
+              community: communityAccount,
+              network: networkAccount,
+              reporter: reporterAccount,
+              newCase: caseAccount,
+            },
+            signers: [reporter],
+          }),
+        programError("SameCase")
+      );
+    });
+
+    it("success", async () => {
+      const addr = ADDRESSES.blackhole1;
+      const cs = CASES.newCase;
+
+      const reporter = REPORTERS[addr.reporter].keypair;
+
+      const [communityAccount, _] =
+        await program.pda.findCommunityAddress(
+          communityId
+        );
+
+      const [networkAccount] = await program.pda.findNetworkAddress(
+        communityAccount,
+        addr.network
+      );
+
+      const [addressAccount] = await program.pda.findAddressAddress(
+        networkAccount,
+        addr.pubkey
+      );
+
+      const [reporterAccount] = await program.pda.findReporterAddress(
+        communityAccount,
+        reporter.publicKey
+      );
+
+      const [caseAccount] = await program.pda.findCaseAddress(
+        communityAccount,
+        cs.caseId
+      );
+
+      const tx = await program.rpc.changeAddressCase({
+        accounts: {
+          sender: reporter.publicKey,
+          address: addressAccount,
+          community: communityAccount,
+          network: networkAccount,
+          reporter: reporterAccount,
+          newCase: caseAccount,
+        },
+        signers: [reporter],
+      });
+
+      expect(tx).toBeTruthy();
+
+      const fetchedAddressAccount = await program.account.address.fetch(
+        addressAccount
+      );
+      expect(fetchedAddressAccount.caseId.toNumber()).toEqual(
+        cs.caseId.toNumber()
+      );
     });
   });
 });
