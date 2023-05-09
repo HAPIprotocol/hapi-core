@@ -30,14 +30,9 @@ impl Case {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum CaseStatus {
     Closed = 0,
+    #[default]
     Open = 1,
-}
-
-impl Default for CaseStatus {
-    fn default() -> Self {
-        CaseStatus::Open
-    }
 }

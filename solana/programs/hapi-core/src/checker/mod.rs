@@ -49,7 +49,7 @@ impl HapiChecker {
     }
 
     pub fn ignore_category(&mut self, category: Category) -> &mut Self {
-        if self.ignored_categories.iter().position(|c| c == &category) == None {
+        if !self.ignored_categories.iter().any(|c| c == &category) {
             self.ignored_categories.push(category);
         }
         self

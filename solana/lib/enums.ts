@@ -1,4 +1,4 @@
-import { IDL } from "../target/types/hapi_core";
+import { IDL } from "./idl/hapi_core";
 
 // HapiCore Instructions
 export const HapiCoreInstructionVariants = IDL.instructions.map(

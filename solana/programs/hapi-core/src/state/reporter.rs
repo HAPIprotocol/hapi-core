@@ -73,9 +73,10 @@ impl ReporterReward {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterStatus {
     /// Reporter is not active, but can activate after staking
+    #[default]
     Inactive,
 
     /// Reporter is active and can report
@@ -85,15 +86,10 @@ pub enum ReporterStatus {
     Unstaking,
 }
 
-impl Default for ReporterStatus {
-    fn default() -> Self {
-        ReporterStatus::Inactive
-    }
-}
-
-#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterRole {
     /// Validator - can validate addresses
+    #[default]
     Validator = 0,
 
     /// Tracer - can report and validate addresses
@@ -107,10 +103,4 @@ pub enum ReporterRole {
 
     /// Appraiser - can update replication price
     Appraiser = 4,
-}
-
-impl Default for ReporterRole {
-    fn default() -> Self {
-        ReporterRole::Validator
-    }
 }

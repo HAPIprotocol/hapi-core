@@ -1,7 +1,7 @@
 import { Program, web3, BN, Provider, utils } from "@project-serum/anchor";
 import { encode as eip55encode } from "eip55";
 
-import { IDL } from "../target/types/hapi_core";
+import { IDL } from "./idl/hapi_core";
 import { NetworkSchemaKeys, padBuffer, pubkeyFromBase58 } from ".";
 import { bufferFromString, addrToSeeds } from "./buffer";
 

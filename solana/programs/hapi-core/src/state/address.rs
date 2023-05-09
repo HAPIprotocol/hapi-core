@@ -42,10 +42,11 @@ impl Address {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum Category {
     // Tier 0
     /// None
+    #[default]
     None = 0,
 
     // Tier 1 - Low risk
@@ -111,10 +112,4 @@ pub enum Category {
 
     /// Address belongs to a person or an organization from a high risk jurisdiction
     HighRiskJurisdiction,
-}
-
-impl Default for Category {
-    fn default() -> Self {
-        Category::None
-    }
 }

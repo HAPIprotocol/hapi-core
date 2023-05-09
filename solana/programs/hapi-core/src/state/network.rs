@@ -42,17 +42,12 @@ impl Network {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum NetworkSchema {
+    #[default]
     Plain,
     Solana,
     Ethereum,
     Bitcoin,
     Near,
-}
-
-impl Default for NetworkSchema {
-    fn default() -> Self {
-        NetworkSchema::Plain
-    }
 }
