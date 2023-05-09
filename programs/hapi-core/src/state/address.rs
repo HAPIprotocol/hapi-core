@@ -105,6 +105,9 @@ pub enum Category {
 
     /// Child abuse and porn materials
     ChildAbuse,
+
+    /// The address belongs to a hacker or a group of hackers
+    Hacker,
 }
 
 impl Default for Category {

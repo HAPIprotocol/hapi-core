@@ -73,6 +73,7 @@ export const Category = {
   TerroristFinancing: { terroristFinancing: {} },
   Sanctions: { sanctions: {} },
   ChildAbuse: { childAbuse: {} },
+  Hacker: { hacker: {} },
 };
 
 export type CategoryKeys = keyof typeof Category;
