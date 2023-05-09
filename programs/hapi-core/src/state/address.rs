@@ -108,6 +108,9 @@ pub enum Category {
 
     /// The address belongs to a hacker or a group of hackers
     Hacker,
+
+    /// Address belongs to a person or an organization from a high risk jurisdiction
+    HighRiskJurisdiction,
 }
 
 impl Default for Category {
