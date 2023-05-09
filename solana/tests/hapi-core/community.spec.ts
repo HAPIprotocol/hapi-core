@@ -31,9 +31,7 @@ describe("HapiCore Community", () => {
 
     it("fail - invalid token account", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       const args = [
         communityId,
@@ -66,9 +64,7 @@ describe("HapiCore Community", () => {
 
     it("fail - invalid mint account", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       const args = [
         communityId,
@@ -134,9 +130,7 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       const args = [
         communityId,
@@ -151,7 +145,8 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.getTokenAccount(
-        communityAccount, true
+        communityAccount,
+        true
       );
 
       const tx = await program.rpc.initializeCommunity(...args, {
@@ -185,9 +180,7 @@ describe("HapiCore Community", () => {
 
     it("fail - already exists", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       const args = [
         communityId,
@@ -202,7 +195,8 @@ describe("HapiCore Community", () => {
       ];
 
       const tokenAccount = await stakeToken.getTokenAccount(
-        communityAccount, true
+        communityAccount,
+        true
       );
 
       await expectThrowError(
@@ -252,10 +246,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - community not initialized", async () => {
-      const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       const args = [
         communityId,
@@ -281,9 +274,7 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       {
         const args = [
@@ -299,7 +290,8 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.getTokenAccount(
-          communityAccount, true
+          communityAccount,
+          true
         );
 
         const tx = await program.rpc.initializeCommunity(...args, {
@@ -342,7 +334,7 @@ describe("HapiCore Community", () => {
         expect(communityData.authority).toEqual(authority.publicKey);
         expect(communityData.cases.toNumber()).toEqual(0);
         expect(communityData.bump).toEqual(communityBump);
-        expect(communityData.id.eq(communityId)).toBeTruthy()
+        expect(communityData.id.eq(communityId)).toBeTruthy();
 
         expect(communityData.stakeUnlockEpochs.toNumber()).toEqual(5);
         expect(communityData.confirmationThreshold).toEqual(6);
@@ -355,10 +347,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid authority", async () => {
-      const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       const args = [
         new BN(5),
@@ -406,10 +397,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - community not initialized", async () => {
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       await expectThrowError(
         () =>
@@ -426,9 +416,7 @@ describe("HapiCore Community", () => {
 
     it("success", async () => {
       const [communityAccount, communityBump] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+        await program.pda.findCommunityAddress(communityId);
 
       {
         const args = [
@@ -444,7 +432,8 @@ describe("HapiCore Community", () => {
         ];
 
         const tokenAccount = await stakeToken.getTokenAccount(
-          communityAccount, true
+          communityAccount,
+          true
         );
 
         const tx = await program.rpc.initializeCommunity(...args, {
@@ -480,11 +469,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - invalid authority", async () => {
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
-
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       await expectThrowError(
         () =>
@@ -500,11 +487,9 @@ describe("HapiCore Community", () => {
     });
 
     it("fail - can't set the same authority", async () => {
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
-
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       await expectThrowError(
         () =>

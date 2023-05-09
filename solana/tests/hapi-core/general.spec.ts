@@ -55,7 +55,7 @@ describe("HapiCore General", () => {
       addressConfirmationReward: BN;
       assetTracerReward: BN;
       assetConfirmationReward: BN;
-      reportPrice: BN
+      reportPrice: BN;
     }
   > = {
     ethereum: {
@@ -216,11 +216,9 @@ describe("HapiCore General", () => {
 
       await stakeToken.transfer(null, pubkey, 1_000_000);
     }
-
   });
 
   it("Community is initialized", async () => {
-
     const validatorStake = new BN(1_000);
     const tracerStake = new BN(2_000);
     const fullStake = new BN(3_000);
@@ -228,12 +226,11 @@ describe("HapiCore General", () => {
     const appraiserStake = new BN(5_000);
 
     const [communityAccount, communityBump] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+      await program.pda.findCommunityAddress(communityId);
 
     const tokenAccount = await stakeToken.getTokenAccount(
-      communityAccount, true
+      communityAccount,
+      true
     );
 
     const tx = await program.rpc.initializeCommunity(
@@ -275,10 +272,9 @@ describe("HapiCore General", () => {
 
     const name = bufferFromString(network.name, 32);
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [networkAccount, bump] = await program.pda.findNetworkAddress(
       communityAccount,
@@ -286,7 +282,8 @@ describe("HapiCore General", () => {
     );
 
     const treasuryTokenAccount = await network.rewardToken.getTokenAccount(
-      networkAccount, true
+      networkAccount,
+      true
     );
 
     const args = [
@@ -297,7 +294,7 @@ describe("HapiCore General", () => {
       network.assetTracerReward,
       network.assetConfirmationReward,
       bump,
-      network.reportPrice
+      network.reportPrice,
     ];
 
     const tx = await program.rpc.createNetwork(...args, {
@@ -308,7 +305,7 @@ describe("HapiCore General", () => {
         rewardMint: network.rewardToken.mintAccount,
         tokenProgram: network.rewardToken.programId,
         systemProgram: web3.SystemProgram.programId,
-        treasuryTokenAccount
+        treasuryTokenAccount,
       },
     });
 
@@ -320,10 +317,9 @@ describe("HapiCore General", () => {
 
     const name = bufferFromString(reporter.name, 32);
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [reporterAccount, bump] = await program.pda.findReporterAddress(
       communityAccount,
@@ -357,10 +353,9 @@ describe("HapiCore General", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
         communityAccount,
@@ -382,11 +377,13 @@ describe("HapiCore General", () => {
         addr.caseId
       );
 
-      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+      const treasuryTokenAccount = await NETWORKS[
+        addr.network
+      ].rewardToken.getTokenAccount(networkAccount, true);
 
-      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
-        reporter.publicKey
-      );
+      const reporterPaymentTokenAccount = await NETWORKS[
+        addr.network
+      ].rewardToken.getTokenAccount(reporter.publicKey);
 
       await expectThrowError(
         () =>
@@ -419,10 +416,9 @@ describe("HapiCore General", () => {
   it.each(Object.keys(REPORTERS))("Reporter %s is activated", async (key) => {
     const reporter = REPORTERS[key];
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [reporterAccount] = await program.pda.findReporterAddress(
       communityAccount,
@@ -434,7 +430,8 @@ describe("HapiCore General", () => {
     );
 
     const communityTokenAccount = await stakeToken.getTokenAccount(
-      communityAccount, true
+      communityAccount,
+      true
     );
 
     const tx = await program.rpc.activateReporter({
@@ -484,10 +481,9 @@ describe("HapiCore General", () => {
 
       const caseName = bufferFromString(cs.name, 32);
 
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       const [caseAccount, bump] = await program.pda.findCaseAddress(
         communityAccount,
@@ -538,10 +534,9 @@ describe("HapiCore General", () => {
 
       const reporter = REPORTERS[addr.reporter].keypair;
 
-      const [communityAccount, _] =
-        await program.pda.findCommunityAddress(
-          communityId
-        );
+      const [communityAccount] = await program.pda.findCommunityAddress(
+        communityId
+      );
 
       const [networkAccount] = await program.pda.findNetworkAddress(
         communityAccount,
@@ -563,11 +558,13 @@ describe("HapiCore General", () => {
         addr.caseId
       );
 
-      const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+      const treasuryTokenAccount = await NETWORKS[
+        addr.network
+      ].rewardToken.getTokenAccount(networkAccount, true);
 
-      const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
-        reporter.publicKey
-      );
+      const reporterPaymentTokenAccount = await NETWORKS[
+        addr.network
+      ].rewardToken.getTokenAccount(reporter.publicKey);
 
       const tx = await program.rpc.createAddress(
         [...addr.pubkey],
@@ -623,10 +620,9 @@ describe("HapiCore General", () => {
 
     const reporter = REPORTERS[asset.reporter].keypair;
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [networkAccount] = await program.pda.findNetworkAddress(
       communityAccount,
@@ -649,12 +645,13 @@ describe("HapiCore General", () => {
       asset.caseId
     );
 
-    const treasuryTokenAccount = await NETWORKS[asset.network].rewardToken.getTokenAccount(networkAccount, true);
+    const treasuryTokenAccount = await NETWORKS[
+      asset.network
+    ].rewardToken.getTokenAccount(networkAccount, true);
 
-    const reporterPaymentTokenAccount = await NETWORKS[asset.network].rewardToken.getTokenAccount(
-      reporter.publicKey
-    );
-
+    const reporterPaymentTokenAccount = await NETWORKS[
+      asset.network
+    ].rewardToken.getTokenAccount(reporter.publicKey);
 
     const tx = await program.rpc.createAsset(
       [...asset.mint],
@@ -707,10 +704,9 @@ describe("HapiCore General", () => {
   it.each(Object.keys(REPORTERS))("Reporter %s is deactivated", async (key) => {
     const reporter = REPORTERS[key];
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [reporterAccount] = await program.pda.findReporterAddress(
       communityAccount,
@@ -751,10 +747,9 @@ describe("HapiCore General", () => {
 
     const reporter = REPORTERS[addr.reporter].keypair;
 
-    const [communityAccount, _] =
-      await program.pda.findCommunityAddress(
-        communityId
-      );
+    const [communityAccount] = await program.pda.findCommunityAddress(
+      communityId
+    );
 
     const [networkAccount] = await program.pda.findNetworkAddress(
       communityAccount,
@@ -776,11 +771,13 @@ describe("HapiCore General", () => {
       addr.caseId
     );
 
-    const treasuryTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(networkAccount, true);
+    const treasuryTokenAccount = await NETWORKS[
+      addr.network
+    ].rewardToken.getTokenAccount(networkAccount, true);
 
-    const reporterPaymentTokenAccount = await NETWORKS[addr.network].rewardToken.getTokenAccount(
-      reporter.publicKey
-    );
+    const reporterPaymentTokenAccount = await NETWORKS[
+      addr.network
+    ].rewardToken.getTokenAccount(reporter.publicKey);
 
     await expectThrowError(
       () =>

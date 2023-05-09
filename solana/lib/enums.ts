@@ -112,5 +112,4 @@ export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   reporterV0: 128,
   reporterReward: 139,
   reporterRewardV0: 112,
-
 };

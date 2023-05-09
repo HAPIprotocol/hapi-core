@@ -74,10 +74,7 @@ export function initHapiCore(
 
   async function findCommunityAddress(id: BN) {
     return web3.PublicKey.findProgramAddressSync(
-      [
-        bufferFromString("community"),
-        new Uint8Array(id.toArray("le", 8)),
-      ],
+      [bufferFromString("community"), new Uint8Array(id.toArray("le", 8))],
       programId
     );
   }
