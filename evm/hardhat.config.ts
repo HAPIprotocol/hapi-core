@@ -4,6 +4,11 @@ import "@openzeppelin/hardhat-upgrades";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.18",
+  gasReporter: {
+    currency: 'ETH',
+    showTimeSpent: true,
+    enabled: true,
+  },
 };
 
 task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
