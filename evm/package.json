@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "hardhat compile",
+    "deploy": "hardhat deploy",
+    "upgrade": "hardhat upgrade",
     "test": "hardhat test"
   },
   "author": "",
