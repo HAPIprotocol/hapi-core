@@ -34,16 +34,20 @@ contract HapiCore is OwnableUpgradeable {
     /// @param authority New authority address
     event AuthorityChanged(address authority);
 
-    /// Sets the authority address
-    /// @param newAuthority New authority address
+    /** 
+     * Sets the authority address
+     * @param newAuthority New authority address
+     */
     function setAuthority(address newAuthority) public onlyOwnerOrAuthority {
         _authority = newAuthority;
 
         emit AuthorityChanged(newAuthority);
     }
 
-    /// Returns the authority address
-    /// @return Authority address
+    /**
+     * Returns the authority address
+     * @return Authority address
+     */
     function authority() public view virtual returns (address) {
         return _authority;
     }
@@ -71,6 +75,14 @@ contract HapiCore is OwnableUpgradeable {
     }
     StakeConfiguration private _stake_configuration;
 
+    /**
+     * @param token Stake token contract address
+     * @param unlock_duration Duration of reporter suspension before the stake can be withdrawn
+     * @param validator_stake Stake amount for Validator reporter
+     * @param tracer_stake Stake amount for Tracer reporter
+     * @param publisher_stake Stake amount for Publisher reporter
+     * @param authority_stake Stake amount for Authority reporter
+     */
     event StakeConfigurationChanged(
         address token,
         uint unlock_duration,
@@ -134,6 +146,11 @@ contract HapiCore is OwnableUpgradeable {
     }
     RewardConfiguration private _reward_configuration;
 
+    /**
+     * @param token Reward token contract address
+     * @param address_confirmation_reward Reward amount for Validator reporter
+     * @param tracer_reward Reward amount for Tracer reporter
+     */
     event RewardConfigurationChanged(
         address token,
         uint256 address_confirmation_reward,
