@@ -3,29 +3,170 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+/**
+ * @title HAPI Core
+ * @author HAPI Protocol development team
+ * 
+ * Core contract for the HAPI protocol
+*/
 contract HapiCore is OwnableUpgradeable {
-    address private _authority;
-
+    /// A modifier that allows only the owner or authority to perform a restricted action
     modifier onlyOwnerOrAuthority() {
         require(owner() == _msgSender() || _authority == _msgSender(), "Caller is not the owner or authority");
         _;
     }
 
+    modifier onlyAuthority() {
+        require(_authority == _msgSender(), "Caller is not the authority");
+        _;
+    }
+
+    /// Initializes the contract
     function initialize() public initializer {
         __Ownable_init();
 
         _authority = _msgSender();
     }
 
+    /// Address of the authority that can perform restricted actions (not to be confused with the owner, which should only be used for deployment and upgrades)
+    address private _authority;
+
+    /// @param authority New authority address
     event AuthorityChanged(address authority);
 
+    /// Sets the authority address
+    /// @param newAuthority New authority address
     function setAuthority(address newAuthority) public onlyOwnerOrAuthority {
         _authority = newAuthority;
 
         emit AuthorityChanged(newAuthority);
     }
 
+    /// Returns the authority address
+    /// @return Authority address
     function authority() public view virtual returns (address) {
         return _authority;
+    }
+
+    /// Stake configuration
+    struct StakeConfiguration {
+        /// Stake token contract address
+        address token;
+
+        /// Duration of reporter suspension before the stake can be withdrawn
+        /// @dev The value is in seconds that must pass after the reporter have requested account deactivation
+        uint unlock_duration;
+
+        /// Stake amount for Validator reporter
+        uint256 validator_stake;
+
+        /// Stake amount for Tracer reporter
+        uint256 tracer_stake;
+
+        /// Stake amount for Publisher reporter
+        uint256 publisher_stake;
+
+        /// Stake amount for Authority reporter
+        uint256 authority_stake;
+    }
+    StakeConfiguration private _stake_configuration;
+
+    event StakeConfigurationChanged(
+        address token,
+        uint unlock_duration,
+        uint256 validator_stake,
+        uint256 tracer_stake,
+        uint256 publisher_stake,
+        uint256 authority_stake
+    );
+
+    /**
+     * Update stake configuration
+     * @param token Stake token contract address
+     * @param unlock_duration Duration of reporter suspension before the stake can be withdrawn
+     * @param validator_stake Stake amount for Validator reporter
+     * @param tracer_stake Stake amount for Tracer reporter
+     * @param publisher_stake Stake amount for Publisher reporter
+     * @param authority_stake Stake amount for Authority reporter
+     */
+    function updateStakeConfiguration(
+        address token,
+        uint unlock_duration,
+        uint256 validator_stake,
+        uint256 tracer_stake,
+        uint256 publisher_stake,
+        uint256 authority_stake
+    ) public onlyAuthority {
+        _stake_configuration.token = token;
+        _stake_configuration.unlock_duration = unlock_duration;
+        _stake_configuration.validator_stake = validator_stake;
+        _stake_configuration.tracer_stake = tracer_stake;
+        _stake_configuration.publisher_stake = publisher_stake;
+        _stake_configuration.authority_stake = authority_stake;
+
+        emit StakeConfigurationChanged(
+            token,
+            unlock_duration,
+            validator_stake,
+            tracer_stake,
+            publisher_stake,
+            authority_stake
+        );
+    }
+
+    /**
+     * Returns current stake configuration
+     * @return Stake configuration
+     */
+    function stakeConfiguration() public view virtual returns (StakeConfiguration memory) {
+        return _stake_configuration;
+    }
+
+    /// Reward configuration
+    struct RewardConfiguration {
+        address token;
+
+        /// Reward amount for Validator reporter
+        uint256 address_confirmation_reward;
+
+        /// Reward amount for Tracer reporter
+        uint256 tracer_reward;
+    }
+    RewardConfiguration private _reward_configuration;
+
+    event RewardConfigurationChanged(
+        address token,
+        uint256 address_confirmation_reward,
+        uint256 tracer_reward
+    );
+
+    /**
+     * Update reward configuration
+     * @param token Reward token contract address
+     * @param address_confirmation_reward Reward amount for Validator reporter
+     * @param tracer_reward Reward amount for Tracer reporter
+     */
+    function updateRewardConfiguration(
+        address token,
+        uint256 address_confirmation_reward,
+        uint256 tracer_reward
+    ) public onlyAuthority {
+        _reward_configuration.token = token;
+        _reward_configuration.address_confirmation_reward = address_confirmation_reward;
+        _reward_configuration.tracer_reward = tracer_reward;
+
+        emit RewardConfigurationChanged(
+            token,
+            address_confirmation_reward,
+            tracer_reward
+        );
+    }
+
+    /**
+     * Returns current reward configuration
+     * @return Reward configuration
+     */
+    function rewardConfiguration() public view virtual returns (RewardConfiguration memory) {
+        return _reward_configuration;
     }
 }
