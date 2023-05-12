@@ -251,7 +251,7 @@ contract HapiCore is OwnableUpgradeable {
      * @param reporter Reporter address
      * @param role Reporter role
      */
-    event ReporterCreated(uint128 id, address reporter, ReporterRole role);
+    event ReporterCreated(uint128 indexed id, address reporter, ReporterRole role);
 
     /**
      * Creates a new reporter
@@ -290,7 +290,7 @@ contract HapiCore is OwnableUpgradeable {
      * @param account Reporter address
      * @param role Reporter role
      */
-    event ReporterUpdated(uint128 id, address account, ReporterRole role);
+    event ReporterUpdated(uint128 indexed id, address account, ReporterRole role);
 
     /**
      * Updates an existing reporter
@@ -360,7 +360,7 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * @param id Reporter UUID
      */
-    event ReporterActivated(uint128 id);
+    event ReporterActivated(uint128 indexed id);
 
     /**
      * Activates a reporter
@@ -395,5 +395,26 @@ contract HapiCore is OwnableUpgradeable {
         reporter.stake = amount;
 
         emit ReporterActivated(id);
+    }
+
+    event ReporterDeactivated(uint128 indexed id);
+
+    /**
+     * Deactivate reporter for unstaking after the unlock period
+     * 
+     * @param id Reporter UUID
+     */
+    function deactivateReporter(
+        uint128 id
+    ) external {
+        Reporter storage reporter = _reporters[id];
+
+        require(reporter.account == _msgSender(), "Caller is not the target reporter");
+        require(reporter.status == ReporterStatus.Active, "Reporter is not active");
+
+        reporter.status = ReporterStatus.Unstaking;
+        reporter.unlock_timestamp = block.timestamp + _stake_configuration.unlock_duration;
+
+        emit ReporterDeactivated(id);
     }
 }
