@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -492,6 +492,90 @@ describe("HapiCore", function () {
 
       await expect(
         hapiCore.connect(nobody).activateReporter(reporterAccount.id)
+      ).to.be.revertedWith("Caller is not the target reporter");
+    });
+
+    it("Should deactivate a reporter", async function () {
+      const { hapiCore, reporter, token } = await loadFixture(fixtureWithToken);
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await hapiCore.connect(reporter).activateReporter(reporterAccount.id);
+
+      expect(await hapiCore.getReporter(reporterAccount.id)).to.deep.equal([
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.name,
+        reporterAccount.url,
+        reporterAccount.role,
+        ReporterStatus.Active,
+        PUBLISHER_STAKE,
+        0,
+      ]);
+
+      expect(
+        await hapiCore.connect(reporter).deactivateReporter(reporterAccount.id)
+      )
+        .to.emit(hapiCore, "ReporterDeactivated")
+        .withArgs(reporterAccount.id);
+
+      expect(await hapiCore.getReporter(reporterAccount.id)).to.deep.equal([
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.name,
+        reporterAccount.url,
+        reporterAccount.role,
+        ReporterStatus.Unstaking,
+        PUBLISHER_STAKE,
+        UNLOCK_DURATION + (await time.latest()),
+      ]);
+    });
+
+    it("Should not be able to deactivate someone else's reporter account", async function () {
+      const { hapiCore, reporter, nobody, token } = await loadFixture(
+        fixtureWithToken
+      );
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await hapiCore.connect(reporter).activateReporter(reporterAccount.id);
+
+      await token.connect(nobody).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await expect(
+        hapiCore.connect(nobody).deactivateReporter(reporterAccount.id)
       ).to.be.revertedWith("Caller is not the target reporter");
     });
   });
