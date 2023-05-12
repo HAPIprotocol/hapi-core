@@ -615,5 +615,94 @@ describe("HapiCore", function () {
         hapiCore.connect(nobody).deactivateReporter(reporterAccount.id)
       ).to.be.revertedWith("Caller is not the target reporter");
     });
+
+    it("Should be able to unstake tokens after unlock duration", async function () {
+      const { hapiCore, reporter, token } = await loadFixture(fixtureWithToken);
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      const balanceBefore = await token.balanceOf(reporter.address);
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await hapiCore.connect(reporter).activateReporter(reporterAccount.id);
+
+      await hapiCore.connect(reporter).deactivateReporter(reporterAccount.id);
+
+      await time.increase(UNLOCK_DURATION + 1);
+
+      expect(await hapiCore.connect(reporter).unstake(reporterAccount.id))
+        .to.emit(hapiCore, "ReporterUnstaked")
+        .withArgs(reporterAccount.id);
+
+      expect(await hapiCore.getReporter(reporterAccount.id)).to.deep.equal([
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.name,
+        reporterAccount.url,
+        reporterAccount.role,
+        ReporterStatus.Inactive,
+        0,
+        0,
+      ]);
+
+      const balanceAfter = await token.balanceOf(reporter.address);
+
+      expect(balanceAfter).to.equal(balanceBefore);
+    });
+
+    it("Should not be able to unstake other's reporter account", async function () {
+      const { hapiCore, reporter, nobody, token } = await loadFixture(
+        fixtureWithToken
+      );
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      const balanceBefore = await token.balanceOf(reporter.address);
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await hapiCore.connect(reporter).activateReporter(reporterAccount.id);
+
+      await hapiCore.connect(reporter).deactivateReporter(reporterAccount.id);
+
+      await time.increase(UNLOCK_DURATION + 1);
+
+      await expect(
+        hapiCore.connect(nobody).unstake(reporterAccount.id)
+      ).to.be.revertedWith("Caller is not the target reporter");
+
+      const balanceAfter = await token.balanceOf(reporter.address);
+
+      expect(balanceBefore.sub(balanceAfter)).to.equal(PUBLISHER_STAKE);
+    });
   });
 });
