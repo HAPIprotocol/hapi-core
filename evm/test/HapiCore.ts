@@ -1,10 +1,10 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { v4 as uuid } from "uuid";
 
 import { setupContract } from "./setup";
 import { ReporterRole, ReporterStatus, randomId } from "./util";
+import { IERC20 } from "../typechain-types";
 
 describe("HapiCore", function () {
   async function basicFixture() {
@@ -13,6 +13,33 @@ describe("HapiCore", function () {
     const [owner, authority, nobody] = await ethers.getSigners();
 
     return { ...setup, owner, authority, nobody };
+  }
+
+  const UNLOCK_DURATION = 3600;
+  const VALIDATOR_STAKE = 101;
+  const TRACER_STAKE = 102;
+  const PUBLISHER_STAKE = 103;
+  const AUTHORITY_STAKE = 104;
+
+  async function fixtureWithToken() {
+    let setup = await setupContract();
+
+    const [owner, reporter, nobody] = await ethers.getSigners();
+
+    const token = (await ethers.deployContract("Token")) as IERC20;
+    await token.transfer(reporter.address, 10000);
+    await token.transfer(nobody.address, 10000);
+
+    await setup.hapiCore.updateStakeConfiguration(
+      token.address,
+      UNLOCK_DURATION,
+      VALIDATOR_STAKE,
+      TRACER_STAKE,
+      PUBLISHER_STAKE,
+      AUTHORITY_STAKE
+    );
+
+    return { ...setup, token, owner, nobody, reporter };
   }
 
   describe("Deployment", function () {
@@ -265,6 +292,121 @@ describe("HapiCore", function () {
             reporter.url
           )
       ).to.be.revertedWith("Caller is not the authority");
+    });
+  });
+
+  describe("Reporter Staking", function () {
+    it("Should stake for a reporter", async function () {
+      const { hapiCore, reporter, token } = await loadFixture(fixtureWithToken);
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      const balanceBefore = await token.balanceOf(reporter.address);
+
+      // Shouldn't be able to stake if not approved
+      await expect(
+        hapiCore.connect(reporter).activateReporter(reporterAccount.id)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      expect(
+        await hapiCore.connect(reporter).activateReporter(reporterAccount.id)
+      )
+        .to.emit(hapiCore, "ReporterActivated")
+        .withArgs(reporterAccount.id);
+
+      expect(await hapiCore.getReporter(reporterAccount.id)).to.deep.equal([
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.name,
+        reporterAccount.url,
+        reporterAccount.role,
+        ReporterStatus.Active,
+        PUBLISHER_STAKE,
+        0,
+      ]);
+
+      const balanceAfter = await token.balanceOf(reporter.address);
+
+      expect(balanceBefore.sub(balanceAfter)).to.equal(PUBLISHER_STAKE);
+    });
+
+    it("Should not stake for a reporter if not enough balance", async function () {
+      const { hapiCore, reporter, nobody, token } = await loadFixture(
+        fixtureWithToken
+      );
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      // Give away tokens to someone else
+      await token.connect(reporter).transfer(nobody.address, 10000);
+
+      await expect(
+        hapiCore.connect(reporter).activateReporter(reporterAccount.id)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+
+      await token.connect(reporter).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await expect(
+        hapiCore.connect(reporter).activateReporter(reporterAccount.id)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
+    it("Should not be able to activate someone else's reporter account", async function () {
+      const { hapiCore, reporter, nobody, token } = await loadFixture(
+        fixtureWithToken
+      );
+
+      const reporterAccount = {
+        account: reporter.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporterAccount.id,
+        reporterAccount.account,
+        reporterAccount.role,
+        reporterAccount.name,
+        reporterAccount.url
+      );
+
+      await token.connect(nobody).approve(hapiCore.address, PUBLISHER_STAKE);
+
+      await expect(
+        hapiCore.connect(nobody).activateReporter(reporterAccount.id)
+      ).to.be.revertedWith("Caller is not the target reporter");
     });
   });
 });
