@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title HAPI Core
@@ -323,5 +324,45 @@ contract HapiCore is OwnableUpgradeable {
         uint128 id
     ) public view virtual returns (Reporter memory) {
         return _reporters[id];
+    }
+
+    /**
+     * @param id Reporter UUID
+     */
+    event ReporterActivated(uint128 id);
+
+    /**
+     * Activates a reporter
+     *
+     * @param id Reporter UUID
+     */
+    function activateReporter(
+        uint128 id
+    ) external {
+        Reporter storage reporter = _reporters[id];
+
+        require(reporter.account == _msgSender(), "Caller is not the target reporter");
+        require(reporter.status == ReporterStatus.Inactive, "Reporter is not inactive");
+
+        uint256 amount = 0;
+
+        if (reporter.role == ReporterRole.Validator) {
+            amount = _stake_configuration.validator_stake;
+        } else if (reporter.role == ReporterRole.Publisher) {
+            amount = _stake_configuration.publisher_stake;
+        } else if (reporter.role == ReporterRole.Tracer) {
+            amount = _stake_configuration.tracer_stake;
+        } else if (reporter.role == ReporterRole.Authority) {
+            amount = _stake_configuration.authority_stake;
+        }
+
+        require(amount > 0, "Reporter role is not configured");
+
+        require(IERC20(_stake_configuration.token).transferFrom(msg.sender, address(this), amount));
+
+        reporter.status = ReporterStatus.Active;
+        reporter.stake = amount;
+
+        emit ReporterActivated(id);
     }
 }
