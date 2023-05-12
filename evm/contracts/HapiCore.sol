@@ -424,4 +424,30 @@ contract HapiCore is OwnableUpgradeable {
 
         emit ReporterDeactivated(id);
     }
+
+    /**
+     * @param id Reporter UUID
+     */
+    event ReporterStakeWithdrawn(uint128 indexed id);
+
+    /**
+     * Unstake tokens by the reporter after the unlock period
+     * 
+     * @param id Reporter UUID
+     */
+    function unstake(
+        uint128 id
+    ) external {
+        Reporter storage reporter = _reporters[id];
+
+        require(reporter.account == _msgSender(), "Caller is not the target reporter");
+        require(reporter.status == ReporterStatus.Unstaking, "Reporter is not unstaking");
+        require(reporter.unlock_timestamp <= block.timestamp, "Reporter is not unlocked yet");
+
+        require(IERC20(_stake_configuration.token).transfer(msg.sender, reporter.stake));
+
+        reporter.status = ReporterStatus.Inactive;
+        reporter.stake = 0;
+        reporter.unlock_timestamp = 0;
+    }
 }
