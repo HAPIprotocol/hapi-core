@@ -244,6 +244,7 @@ contract HapiCore is OwnableUpgradeable {
 
     /// A map from reporter UUID to reporter account
     mapping(uint128 => Reporter) private _reporters;
+    uint128[] private _reporter_ids;
 
     /**
      * @param id Reporter UUID
@@ -278,6 +279,8 @@ contract HapiCore is OwnableUpgradeable {
             stake: 0,
             unlock_timestamp: 0
         });
+
+        _reporter_ids.push(id);
 
         emit ReporterCreated(id, account, role);
     }
@@ -324,6 +327,34 @@ contract HapiCore is OwnableUpgradeable {
         uint128 id
     ) public view virtual returns (Reporter memory) {
         return _reporters[id];
+    }
+
+    /**
+     * Retrieves reporter data
+     *
+     * @param take Number of reporters to retrieve
+     * @param skip Number of reporters to skip
+     */
+    function getReporters(uint take, uint skip) public view virtual returns (Reporter[] memory) {
+        uint length = _reporter_ids.length;
+
+        if (skip >= length) {
+            return new Reporter[](0);
+        }
+
+        uint size = take;
+
+        if (size > length - skip) {
+            size = length - skip;
+        }
+
+        Reporter[] memory reporters = new Reporter[](size);
+
+        for (uint i = 0; i < size; i++) {
+            reporters[i] = _reporters[_reporter_ids[skip + i]];
+        }
+
+        return reporters;
     }
 
     /**

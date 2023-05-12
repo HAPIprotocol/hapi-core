@@ -293,6 +293,92 @@ describe("HapiCore", function () {
           )
       ).to.be.revertedWith("Caller is not the authority");
     });
+
+    it("Should list reporters", async function () {
+      const { hapiCore, nobody, authority } = await loadFixture(basicFixture);
+
+      const reporter1 = {
+        account: nobody.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      const reporter2 = {
+        account: authority.address,
+        id: randomId(),
+        role: ReporterRole.Authority,
+        name: "authority",
+        url: "https://authority.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporter1.id,
+        reporter1.account,
+        reporter1.role,
+        reporter1.name,
+        reporter1.url
+      );
+      await hapiCore.createReporter(
+        reporter2.id,
+        reporter2.account,
+        reporter2.role,
+        reporter2.name,
+        reporter2.url
+      );
+
+      expect(await hapiCore.getReporters(1, 0)).to.deep.equal([
+        [
+          reporter1.id,
+          reporter1.account,
+          reporter1.name,
+          reporter1.url,
+          reporter1.role,
+          ReporterStatus.Inactive,
+          0,
+          0,
+        ],
+      ]);
+
+      expect(await hapiCore.getReporters(1, 1)).to.deep.equal([
+        [
+          reporter2.id,
+          reporter2.account,
+          reporter2.name,
+          reporter2.url,
+          reporter2.role,
+          ReporterStatus.Inactive,
+          0,
+          0,
+        ],
+      ]);
+
+      expect(await hapiCore.getReporters(2, 0)).to.deep.equal([
+        [
+          reporter1.id,
+          reporter1.account,
+          reporter1.name,
+          reporter1.url,
+          reporter1.role,
+          ReporterStatus.Inactive,
+          0,
+          0,
+        ],
+        [
+          reporter2.id,
+          reporter2.account,
+          reporter2.name,
+          reporter2.url,
+          reporter2.role,
+          ReporterStatus.Inactive,
+          0,
+          0,
+        ],
+      ]);
+
+      expect(await hapiCore.getReporters(100, 5)).to.deep.equal([]);
+    });
   });
 
   describe("Reporter Staking", function () {
