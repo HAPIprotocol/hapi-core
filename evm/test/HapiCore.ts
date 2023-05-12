@@ -379,6 +379,43 @@ describe("HapiCore", function () {
 
       expect(await hapiCore.getReporters(100, 5)).to.deep.equal([]);
     });
+
+    it("Should retrieve reporter count", async function () {
+      const { hapiCore, nobody, authority } = await loadFixture(basicFixture);
+
+      const reporter1 = {
+        account: nobody.address,
+        id: randomId(),
+        role: ReporterRole.Publisher,
+        name: "publisher",
+        url: "https://publisher.blockchain",
+      };
+
+      const reporter2 = {
+        account: authority.address,
+        id: randomId(),
+        role: ReporterRole.Authority,
+        name: "authority",
+        url: "https://authority.blockchain",
+      };
+
+      await hapiCore.createReporter(
+        reporter1.id,
+        reporter1.account,
+        reporter1.role,
+        reporter1.name,
+        reporter1.url
+      );
+      await hapiCore.createReporter(
+        reporter2.id,
+        reporter2.account,
+        reporter2.role,
+        reporter2.name,
+        reporter2.url
+      );
+
+      expect(await hapiCore.getReporterCount()).to.equal(2);
+    });
   });
 
   describe("Reporter Staking", function () {

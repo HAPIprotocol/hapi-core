@@ -358,6 +358,13 @@ contract HapiCore is OwnableUpgradeable {
     }
 
     /**
+     * Retrieves reporter count
+     */
+    function getReporterCount() public view virtual returns (uint) {
+        return _reporter_ids.length;
+    }
+
+    /**
      * @param id Reporter UUID
      */
     event ReporterActivated(uint128 indexed id);
