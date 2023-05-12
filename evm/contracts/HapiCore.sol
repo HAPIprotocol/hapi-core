@@ -6,13 +6,16 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 /**
  * @title HAPI Core
  * @author HAPI Protocol development team
- * 
+ *
  * Core contract for the HAPI protocol
-*/
+ */
 contract HapiCore is OwnableUpgradeable {
     /// A modifier that allows only the owner or authority to perform a restricted action
     modifier onlyOwnerOrAuthority() {
-        require(owner() == _msgSender() || _authority == _msgSender(), "Caller is not the owner or authority");
+        require(
+            owner() == _msgSender() || _authority == _msgSender(),
+            "Caller is not the owner or authority"
+        );
         _;
     }
 
@@ -34,7 +37,7 @@ contract HapiCore is OwnableUpgradeable {
     /// @param authority New authority address
     event AuthorityChanged(address authority);
 
-    /** 
+    /**
      * Sets the authority address
      * @param newAuthority New authority address
      */
@@ -56,20 +59,15 @@ contract HapiCore is OwnableUpgradeable {
     struct StakeConfiguration {
         /// Stake token contract address
         address token;
-
         /// Duration of reporter suspension before the stake can be withdrawn
         /// @dev The value is in seconds that must pass after the reporter have requested account deactivation
         uint unlock_duration;
-
         /// Stake amount for Validator reporter
         uint256 validator_stake;
-
         /// Stake amount for Tracer reporter
         uint256 tracer_stake;
-
         /// Stake amount for Publisher reporter
         uint256 publisher_stake;
-
         /// Stake amount for Authority reporter
         uint256 authority_stake;
     }
@@ -130,17 +128,20 @@ contract HapiCore is OwnableUpgradeable {
      * Returns current stake configuration
      * @return Stake configuration
      */
-    function stakeConfiguration() public view virtual returns (StakeConfiguration memory) {
+    function stakeConfiguration()
+        public
+        view
+        virtual
+        returns (StakeConfiguration memory)
+    {
         return _stake_configuration;
     }
 
     /// Reward configuration
     struct RewardConfiguration {
         address token;
-
         /// Reward amount for Validator reporter
         uint256 address_confirmation_reward;
-
         /// Reward amount for Tracer reporter
         uint256 tracer_reward;
     }
@@ -169,7 +170,8 @@ contract HapiCore is OwnableUpgradeable {
         uint256 tracer_reward
     ) public onlyAuthority {
         _reward_configuration.token = token;
-        _reward_configuration.address_confirmation_reward = address_confirmation_reward;
+        _reward_configuration
+            .address_confirmation_reward = address_confirmation_reward;
         _reward_configuration.tracer_reward = tracer_reward;
 
         emit RewardConfigurationChanged(
@@ -183,7 +185,143 @@ contract HapiCore is OwnableUpgradeable {
      * Returns current reward configuration
      * @return Reward configuration
      */
-    function rewardConfiguration() public view virtual returns (RewardConfiguration memory) {
+    function rewardConfiguration()
+        public
+        view
+        virtual
+        returns (RewardConfiguration memory)
+    {
         return _reward_configuration;
+    }
+
+    /// Reporter role
+    enum ReporterRole {
+        /// Validator reporter
+        /// @dev This reporter can only confirm addresses/assets submitted by other reporters
+        Validator,
+        /// Tracer reporter
+        /// @dev This reporter can only add address/asset data to existing cases
+        Tracer,
+        /// Publisher reporter
+        /// @dev This is the most common type of reporter
+        Publisher,
+        /// Authority reporter
+        /// @dev This reporter is needed to implement governance decisions on submitted data correction
+        Authority
+    }
+
+    /// Reporter status
+    enum ReporterStatus {
+        /// Inactive reporter
+        /// @dev Inactive reporter can't submit data and must put a stake to activate
+        Inactive,
+        /// Active reporter
+        Active,
+        /// Reporter is in the process of unstaking
+        /// @dev Reporter can't submit data and must wait for the unstaking process to withdraw the stake
+        Unstaking
+    }
+
+    struct Reporter {
+        /// Reporter global UUID
+        uint128 id;
+        /// Reporter address
+        address account;
+        /// Reporter display name
+        string name;
+        /// Reporter public page link
+        string url;
+        /// Reporter role
+        ReporterRole role;
+        /// Reporter status
+        ReporterStatus status;
+        /// Reporter stake
+        uint256 stake;
+        /// Reporter stake unlock timestamp
+        uint unlock_timestamp;
+    }
+
+    /// A map from reporter UUID to reporter account
+    mapping(uint128 => Reporter) private _reporters;
+
+    /**
+     * @param id Reporter UUID
+     * @param reporter Reporter address
+     * @param role Reporter role
+     */
+    event ReporterCreated(uint128 id, address reporter, ReporterRole role);
+
+    /**
+     * Creates a new reporter
+     *
+     * @param id Reporter UUID
+     * @param account Reporter address
+     * @param role Reporter role
+     * @param name Reporter display name
+     * @param url Reporter public page link
+     */
+    function createReporter(
+        uint128 id,
+        address account,
+        ReporterRole role,
+        string memory name,
+        string memory url
+    ) public onlyAuthority {
+        _reporters[id] = Reporter({
+            id: id,
+            account: account,
+            name: name,
+            url: url,
+            role: role,
+            status: ReporterStatus.Inactive,
+            stake: 0,
+            unlock_timestamp: 0
+        });
+
+        emit ReporterCreated(id, account, role);
+    }
+
+    /**
+     * @param id Reporter UUID
+     * @param account Reporter address
+     * @param role Reporter role
+     */
+    event ReporterUpdated(uint128 id, address account, ReporterRole role);
+
+    /**
+     * Updates an existing reporter
+     *
+     * @param id Reporter UUID
+     * @param account Reporter address
+     * @param role Reporter role
+     * @param name Reporter display name
+     * @param url Reporter public page link
+     */
+    function updateReporter(
+        uint128 id,
+        address account,
+        ReporterRole role,
+        string memory name,
+        string memory url
+    ) public onlyAuthority {
+        Reporter storage reporter = _reporters[id];
+
+        reporter.role = role;
+        reporter.account = account;
+        reporter.name = name;
+        reporter.url = url;
+
+        emit ReporterUpdated(id, account, role);
+    }
+
+    /**
+     * Retrieves reporter data
+     *
+     * @param id Reporter UUID
+     */
+    function getReporter(
+        uint128 id
+    ) public view virtual returns (Reporter memory) {
+        return _reporters[id];
     }
 }
