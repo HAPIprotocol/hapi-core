@@ -668,7 +668,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hapi_core"
+name = "hapi_core_solana"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

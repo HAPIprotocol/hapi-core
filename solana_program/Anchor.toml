@@ -8,9 +8,6 @@ hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 [programs.devnet]
 hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 
-[registry]
-url = "https://api.apr.dev"
-
 [provider]
 cluster = "Localnet"
 wallet = "/home/olha/.config/solana/id.json"
