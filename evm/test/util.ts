@@ -17,3 +17,8 @@ export enum ReporterStatus {
   Active = 1,
   Unstaking = 2,
 }
+
+export enum CaseStatus {
+  Closed = 0,
+  Open = 1,
+}

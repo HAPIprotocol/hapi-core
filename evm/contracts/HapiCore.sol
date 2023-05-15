@@ -25,6 +25,15 @@ contract HapiCore is OwnableUpgradeable {
         _;
     }
 
+    modifier onlyPublisherOrAuthorityReporter() {
+        ReporterRole role = getMyRole();
+        require(
+            role == ReporterRole.Publisher || role == ReporterRole.Authority,
+            "Caller is not a reporter with the required role"
+        );
+        _;
+    }
+
     /// Initializes the contract
     function initialize() public initializer {
         __Ownable_init();
@@ -244,6 +253,7 @@ contract HapiCore is OwnableUpgradeable {
 
     /// A map from reporter UUID to reporter account
     mapping(uint128 => Reporter) private _reporters;
+    mapping(address => uint128) private _reporter_ids_by_account;
     uint128[] private _reporter_ids;
 
     /**
@@ -251,7 +261,11 @@ contract HapiCore is OwnableUpgradeable {
      * @param reporter Reporter address
      * @param role Reporter role
      */
-    event ReporterCreated(uint128 indexed id, address reporter, ReporterRole role);
+    event ReporterCreated(
+        uint128 indexed id,
+        address reporter,
+        ReporterRole role
+    );
 
     /**
      * Creates a new reporter
@@ -280,6 +294,7 @@ contract HapiCore is OwnableUpgradeable {
             unlock_timestamp: 0
         });
 
+        _reporter_ids_by_account[account] = id;
         _reporter_ids.push(id);
 
         emit ReporterCreated(id, account, role);
@@ -290,7 +305,11 @@ contract HapiCore is OwnableUpgradeable {
      * @param account Reporter address
      * @param role Reporter role
      */
-    event ReporterUpdated(uint128 indexed id, address account, ReporterRole role);
+    event ReporterUpdated(
+        uint128 indexed id,
+        address account,
+        ReporterRole role
+    );
 
     /**
      * Updates an existing reporter
@@ -310,12 +329,34 @@ contract HapiCore is OwnableUpgradeable {
     ) public onlyAuthority {
         Reporter storage reporter = _reporters[id];
 
+        delete _reporter_ids_by_account[reporter.account];
+
         reporter.role = role;
         reporter.account = account;
         reporter.name = name;
         reporter.url = url;
 
+        _reporter_ids_by_account[account] = id;
+
         emit ReporterUpdated(id, account, role);
+    }
+
+    /**
+     * Retrieves caller's reporter ID
+     */
+    function getMyReporterId() private view returns (uint128) {
+        return _reporter_ids_by_account[_msgSender()];
+    }
+
+    /**
+     * Retrieves caller's reporter role
+     */
+    function getMyRole() private view returns (ReporterRole) {
+        uint128 id = getMyReporterId();
+
+        require(id > 0, "Caller is not a reporter");
+
+        return _reporters[id].role;
     }
 
     /**
@@ -335,7 +376,10 @@ contract HapiCore is OwnableUpgradeable {
      * @param take Number of reporters to retrieve
      * @param skip Number of reporters to skip
      */
-    function getReporters(uint take, uint skip) public view virtual returns (Reporter[] memory) {
+    function getReporters(
+        uint take,
+        uint skip
+    ) public view virtual returns (Reporter[] memory) {
         uint length = _reporter_ids.length;
 
         if (skip >= length) {
@@ -374,13 +418,17 @@ contract HapiCore is OwnableUpgradeable {
      *
      * @param id Reporter UUID
      */
-    function activateReporter(
-        uint128 id
-    ) external {
+    function activateReporter(uint128 id) external {
         Reporter storage reporter = _reporters[id];
 
-        require(reporter.account == _msgSender(), "Caller is not the target reporter");
-        require(reporter.status == ReporterStatus.Inactive, "Reporter is not inactive");
+        require(
+            reporter.account == _msgSender(),
+            "Caller is not the target reporter"
+        );
+        require(
+            reporter.status == ReporterStatus.Inactive,
+            "Reporter is not inactive"
+        );
 
         uint256 amount = 0;
 
@@ -396,7 +444,13 @@ contract HapiCore is OwnableUpgradeable {
 
         require(amount > 0, "Reporter role is not configured");
 
-        require(IERC20(_stake_configuration.token).transferFrom(msg.sender, address(this), amount));
+        require(
+            IERC20(_stake_configuration.token).transferFrom(
+                msg.sender,
+                address(this),
+                amount
+            )
+        );
 
         reporter.status = ReporterStatus.Active;
         reporter.stake = amount;
@@ -408,19 +462,25 @@ contract HapiCore is OwnableUpgradeable {
 
     /**
      * Deactivate reporter for unstaking after the unlock period
-     * 
+     *
      * @param id Reporter UUID
      */
-    function deactivateReporter(
-        uint128 id
-    ) external {
+    function deactivateReporter(uint128 id) external {
         Reporter storage reporter = _reporters[id];
 
-        require(reporter.account == _msgSender(), "Caller is not the target reporter");
-        require(reporter.status == ReporterStatus.Active, "Reporter is not active");
+        require(
+            reporter.account == _msgSender(),
+            "Caller is not the target reporter"
+        );
+        require(
+            reporter.status == ReporterStatus.Active,
+            "Reporter is not active"
+        );
 
         reporter.status = ReporterStatus.Unstaking;
-        reporter.unlock_timestamp = block.timestamp + _stake_configuration.unlock_duration;
+        reporter.unlock_timestamp =
+            block.timestamp +
+            _stake_configuration.unlock_duration;
 
         emit ReporterDeactivated(id);
     }
@@ -432,22 +492,170 @@ contract HapiCore is OwnableUpgradeable {
 
     /**
      * Unstake tokens by the reporter after the unlock period
-     * 
+     *
      * @param id Reporter UUID
      */
-    function unstake(
-        uint128 id
-    ) external {
+    function unstake(uint128 id) external {
         Reporter storage reporter = _reporters[id];
 
-        require(reporter.account == _msgSender(), "Caller is not the target reporter");
-        require(reporter.status == ReporterStatus.Unstaking, "Reporter is not unstaking");
-        require(reporter.unlock_timestamp <= block.timestamp, "Reporter is not unlocked yet");
+        require(
+            reporter.account == _msgSender(),
+            "Caller is not the target reporter"
+        );
+        require(
+            reporter.status == ReporterStatus.Unstaking,
+            "Reporter is not unstaking"
+        );
+        require(
+            reporter.unlock_timestamp <= block.timestamp,
+            "Reporter is not unlocked yet"
+        );
 
-        require(IERC20(_stake_configuration.token).transfer(msg.sender, reporter.stake));
+        require(
+            IERC20(_stake_configuration.token).transfer(
+                msg.sender,
+                reporter.stake
+            )
+        );
 
         reporter.status = ReporterStatus.Inactive;
         reporter.stake = 0;
         reporter.unlock_timestamp = 0;
+    }
+
+    enum CaseStatus {
+        /// Case is closed for new data
+        Closed,
+        /// Case is open for new data
+        Open
+    }
+
+    struct Case {
+        uint128 id;
+        string name;
+        uint128 reporter_id;
+        CaseStatus status;
+        string url;
+    }
+
+    /// A map from case UUID to case record
+    mapping(uint128 => Case) private _cases;
+    uint128[] private _case_ids;
+
+    event CaseCreated(uint128 indexed id);
+
+    /**
+     * Creates a new case
+     *
+     * @param id Case UUID
+     * @param reporter_id Reporter UUID
+     * @param name Case name
+     * @param url Case public page link
+     */
+    function createCase(
+        uint128 id,
+        uint128 reporter_id,
+        string memory name,
+        string memory url
+    ) public onlyPublisherOrAuthorityReporter {
+        require(
+            reporter_id == getMyReporterId(),
+            "Reporter ID must match the caller's reporter ID"
+        );
+
+        _cases[id] = Case({
+            id: id,
+            name: name,
+            reporter_id: reporter_id,
+            status: CaseStatus.Open,
+            url: url
+        });
+
+        _case_ids.push(id);
+
+        emit CaseCreated(id);
+    }
+
+    /**
+     * @param id Case UUID
+     */
+    event CaseUpdated(uint128 indexed id);
+
+    /**
+     * Updates an existing case
+     *
+     * @param id Case UUID
+     * @param name Case name
+     * @param url Case public page link
+     * @param status Case status
+     */
+    function updateCase(
+        uint128 id,
+        string memory name,
+        string memory url,
+        CaseStatus status
+    ) public onlyPublisherOrAuthorityReporter {
+        Case storage case_record = _cases[id];
+
+        require(case_record.id > 0, "Case does not exist");
+
+        require(
+            case_record.reporter_id == getMyReporterId() ||
+                getMyRole() == ReporterRole.Authority,
+            "Must be the case reporter or authority"
+        );
+
+        case_record.name = name;
+        case_record.url = url;
+        case_record.status = status;
+
+        emit CaseUpdated(id);
+    }
+
+    /**
+     * Retrieves case data
+     *
+     * @param id Case UUID
+     */
+    function getCase(uint128 id) public view virtual returns (Case memory) {
+        return _cases[id];
+    }
+
+    /**
+     * Retrieves case data
+     *
+     * @param take Number of cases to retrieve
+     * @param skip Number of cases to skip
+     */
+    function getCases(
+        uint take,
+        uint skip
+    ) public view virtual returns (Case[] memory) {
+        uint length = _case_ids.length;
+
+        if (skip >= length) {
+            return new Case[](0);
+        }
+
+        uint size = take;
+
+        if (size > length - skip) {
+            size = length - skip;
+        }
+
+        Case[] memory cases = new Case[](size);
+
+        for (uint i = 0; i < size; i++) {
+            cases[i] = _cases[_case_ids[skip + i]];
+        }
+
+        return cases;
+    }
+
+    /**
+     * Retrieves case count
+     */
+    function getCaseCount() public view virtual returns (uint) {
+        return _case_ids.length;
     }
 }
