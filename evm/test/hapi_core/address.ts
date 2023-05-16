@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { fixtureWithReporters } from "../setup";
 import { Category, randomId } from "../util";
 
-describe("HapiCore: Address management", function () {
+describe("HapiCore: Address", function () {
   it("Should be able to create an address", async function () {
     const { hapiCore, wallets, reporters } = await loadFixture(
       fixtureWithReporters

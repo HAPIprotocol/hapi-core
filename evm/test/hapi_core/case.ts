@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { fixtureWithReporters } from "../setup";
 import { CaseStatus, randomId } from "../util";
 
-describe("HapiCore: Case management", function () {
+describe("HapiCore: Case", function () {
   it("Reporter should be able to create a new case", async function () {
     const { hapiCore, wallets, reporters } = await loadFixture(
       fixtureWithReporters

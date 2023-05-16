@@ -379,7 +379,10 @@ contract HapiCore is OwnableUpgradeable {
         uint128 id = getMyReporterId();
 
         require(id > 0, "Caller is not a reporter");
-        require(_reporters[id].status == ReporterStatus.Active, "Reporter is not active");
+        require(
+            _reporters[id].status == ReporterStatus.Active,
+            "Reporter is not active"
+        );
 
         return _reporters[id].role;
     }
@@ -391,16 +394,14 @@ contract HapiCore is OwnableUpgradeable {
      *
      * @dev Panics if the reporter does not exist
      */
-    function getReporter(
-        uint128 id
-    ) public view returns (Reporter memory) {
+    function getReporter(uint128 id) public view returns (Reporter memory) {
         require(_reporters[id].id > 0, "Reporter does not exist");
 
         return _reporters[id];
     }
 
     /**
-     * Retrieves reporter data
+     * Retrieves paged reporter list
      *
      * @param take Number of reporters to retrieve
      * @param skip Number of reporters to skip
@@ -678,7 +679,7 @@ contract HapiCore is OwnableUpgradeable {
     }
 
     /**
-     * Retrieves case data
+     * Retrieves paged case list
      *
      * @param take Number of cases to retrieve
      * @param skip Number of cases to skip
@@ -886,7 +887,7 @@ contract HapiCore is OwnableUpgradeable {
     }
 
     /**
-     * Retrieves address data
+     * Retrieves paged address list
      *
      * @param take Number of addresses to retrieve
      * @param skip Number of addresses to skip
@@ -914,5 +915,215 @@ contract HapiCore is OwnableUpgradeable {
         }
 
         return addresses;
+    }
+
+    struct Asset {
+        /// Asset contract address
+        address addr;
+        /// Asset ID (ERC-721 compatible)
+        uint256 asset_id;
+        /// The UUID of address' case
+        uint128 case_id;
+        /// The UUID of the reporter that submitted the address
+        uint128 reporter_id;
+        /// The number of confirmations for the address
+        uint confirmations;
+        /// Risk score for the address (0..10)
+        uint8 risk;
+        /// Category of activity associated with the address
+        Category category;
+    }
+
+    struct AssetKey {
+        address addr;
+        uint256 asset_id;
+    }
+
+    /// A map from address and asset ID to asset record
+    mapping(address => mapping(uint256 => Asset)) private _assets;
+
+    /// A list of all assets
+    AssetKey[] private _asset_addrs;
+
+    /**
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     */
+    event AssetCreated(
+        address indexed addr,
+        uint256 asset_id,
+        uint8 risk,
+        Category category
+    );
+
+    /**
+     * Creates a new asset
+     *
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     * @param case_id Case UUID
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     *
+     * @dev Panics if the case does not exist
+     * @dev Panics if the address already exists
+     * @dev Panics if the risk is not between 0 and 10
+     * @dev Panics if the caller is not a reporter with the required role
+     */
+    function createAsset(
+        address addr,
+        uint256 asset_id,
+        uint128 case_id,
+        uint8 risk,
+        Category category
+    ) public {
+        require(_cases[case_id].id > 0, "Case does not exist");
+        require(
+            _assets[addr][asset_id].addr == address(0),
+            "Asset already exists"
+        );
+        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher ||
+                role == ReporterRole.Authority ||
+                role == ReporterRole.Tracer,
+            "Caller is not a reporter with the required role"
+        );
+
+        _assets[addr][asset_id] = Asset({
+            addr: addr,
+            asset_id: asset_id,
+            case_id: case_id,
+            reporter_id: reporter_id,
+            confirmations: 0,
+            risk: risk,
+            category: category
+        });
+
+        _asset_addrs.push(AssetKey({addr: addr, asset_id: asset_id}));
+
+        emit AssetCreated(addr, asset_id, risk, category);
+    }
+
+    /**
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     */
+    event AssetUpdated(
+        address indexed addr,
+        uint256 asset_id,
+        uint8 risk,
+        Category category
+    );
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     * @param case_id Case UUID
+     *
+     * @dev Panics if the address does not exist
+     * @dev Panics if the risk is not between 0 and 10
+     * @dev Panics if the case does not exist
+     * @dev Panics if the caller is not the address reporter or authority
+     * @dev Panics if the caller is a tracer and tries to change the case
+     */
+    function updateAsset(
+        address addr,
+        uint256 asset_id,
+        uint8 risk,
+        Category category,
+        uint128 case_id
+    ) public {
+        require(
+            _assets[addr][asset_id].addr != address(0),
+            "Address does not exist"
+        );
+        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+        require(_cases[case_id].id > 0, "Case does not exist");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            _assets[addr][asset_id].reporter_id == reporter_id ||
+                role == ReporterRole.Authority,
+            "Caller is not the address reporter or authority"
+        );
+
+        if (_assets[addr][asset_id].case_id != case_id) {
+            require(role != ReporterRole.Tracer, "Tracer can't change case");
+            _assets[addr][asset_id].case_id = case_id;
+        }
+
+        _assets[addr][asset_id].risk = risk;
+        _assets[addr][asset_id].category = category;
+
+        emit AssetUpdated(addr, asset_id, risk, category);
+    }
+
+    /**
+     * Retrieves asset data
+     *
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     *
+     * @dev Returns an empty record for addresses that don't exist
+     */
+    function getAsset(
+        address addr,
+        uint256 asset_id
+    ) public view virtual returns (Asset memory) {
+        return _assets[addr][asset_id];
+    }
+
+    /**
+     * Retrieves asset count
+     */
+    function getAssetCount() public view virtual returns (uint) {
+        return _asset_addrs.length;
+    }
+
+    /**
+     * Retrieves paged asset list
+     *
+     * @param take Number of addresses to retrieve
+     * @param skip Number of addresses to skip
+     */
+    function getAssets(
+        uint take,
+        uint skip
+    ) public view virtual returns (Asset[] memory) {
+        uint length = _asset_addrs.length;
+
+        if (skip >= length) {
+            return new Asset[](0);
+        }
+
+        uint size = take;
+
+        if (size > length - skip) {
+            size = length - skip;
+        }
+
+        Asset[] memory assets = new Asset[](size);
+
+        for (uint i = 0; i < size; i++) {
+            AssetKey memory key = _asset_addrs[skip + i];
+            assets[i] = _assets[key.addr][key.asset_id];
+        }
+
+        return assets;
     }
 }
