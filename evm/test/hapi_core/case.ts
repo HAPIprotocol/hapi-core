@@ -5,7 +5,7 @@ import { fixtureWithReporters } from "../setup";
 import { CaseStatus, randomId } from "../util";
 
 describe("HapiCore: Case management", function () {
-  it("Should create a case", async function () {
+  it("Reporter should be able to create a new case", async function () {
     const { hapiCore, wallets, reporters } = await loadFixture(
       fixtureWithReporters
     );
@@ -25,7 +25,7 @@ describe("HapiCore: Case management", function () {
     await expect(
       await hapiCore
         .connect(wallets.publisher)
-        .createCase(case1.id, reporters.publisher.id, case1.name, case1.url)
+        .createCase(case1.id, case1.name, case1.url)
     )
       .to.emit(hapiCore, "CaseCreated")
       .withArgs(case1.id);
@@ -41,7 +41,7 @@ describe("HapiCore: Case management", function () {
     await expect(
       await hapiCore
         .connect(wallets.authority)
-        .createCase(case2.id, reporters.authority.id, case2.name, case2.url)
+        .createCase(case2.id, case2.name, case2.url)
     )
       .to.emit(hapiCore, "CaseCreated")
       .withArgs(case2.id);
@@ -67,9 +67,7 @@ describe("HapiCore: Case management", function () {
   });
 
   it("Should not allow to create case if the reporter is not publisher or authority", async function () {
-    const { hapiCore, wallets, reporters } = await loadFixture(
-      fixtureWithReporters
-    );
+    const { hapiCore, wallets } = await loadFixture(fixtureWithReporters);
 
     const case1 = {
       id: randomId(),
@@ -80,29 +78,23 @@ describe("HapiCore: Case management", function () {
     await expect(
       hapiCore
         .connect(wallets.validator)
-        .createCase(case1.id, reporters.validator.id, case1.name, case1.url)
+        .createCase(case1.id, case1.name, case1.url)
     ).to.be.revertedWith("Caller is not a reporter with the required role");
-  });
-
-  it("Should not be able to create a case for other reporter's id", async function () {
-    const { hapiCore, wallets, reporters } = await loadFixture(
-      fixtureWithReporters
-    );
-
-    const case1 = {
-      id: randomId(),
-      name: "big hack 2023",
-      url: "https://big.hack",
-    };
 
     await expect(
       hapiCore
-        .connect(wallets.publisher)
-        .createCase(case1.id, reporters.validator.id, case1.name, case1.url)
-    ).to.be.revertedWith("Reporter ID must match the caller's reporter ID");
+        .connect(wallets.tracer)
+        .createCase(case1.id, case1.name, case1.url)
+    ).to.be.revertedWith("Caller is not a reporter with the required role");
+
+    await expect(
+      hapiCore
+        .connect(wallets.nobody)
+        .createCase(case1.id, case1.name, case1.url)
+    ).to.be.revertedWith("Caller is not a reporter");
   });
 
-  it("Should update own case", async function () {
+  it("Reporter should be able to update own case", async function () {
     const { hapiCore, wallets, reporters } = await loadFixture(
       fixtureWithReporters
     );
@@ -115,7 +107,7 @@ describe("HapiCore: Case management", function () {
 
     await hapiCore
       .connect(wallets.publisher)
-      .createCase(case1.id, reporters.publisher.id, case1.name, case1.url);
+      .createCase(case1.id, case1.name, case1.url);
 
     await expect(
       await hapiCore
@@ -140,9 +132,7 @@ describe("HapiCore: Case management", function () {
   });
 
   it("Should not be able to update other's case", async function () {
-    const { hapiCore, wallets, reporters } = await loadFixture(
-      fixtureWithReporters
-    );
+    const { hapiCore, wallets } = await loadFixture(fixtureWithReporters);
 
     const case1 = {
       id: randomId(),
@@ -152,7 +142,7 @@ describe("HapiCore: Case management", function () {
 
     await hapiCore
       .connect(wallets.authority)
-      .createCase(case1.id, reporters.authority.id, case1.name, case1.url);
+      .createCase(case1.id, case1.name, case1.url);
 
     await expect(
       hapiCore
@@ -179,7 +169,7 @@ describe("HapiCore: Case management", function () {
 
     await hapiCore
       .connect(wallets.publisher)
-      .createCase(case1.id, reporters.publisher.id, case1.name, case1.url);
+      .createCase(case1.id, case1.name, case1.url);
 
     await expect(
       await hapiCore
@@ -201,5 +191,13 @@ describe("HapiCore: Case management", function () {
       CaseStatus.Closed,
       "https://big.hack/2",
     ]);
+  });
+
+  it("Should panic if case not found", async function () {
+    const { hapiCore } = await loadFixture(fixtureWithReporters);
+
+    await expect(hapiCore.getCase(randomId())).to.be.revertedWith(
+      "Case does not exist"
+    );
   });
 });

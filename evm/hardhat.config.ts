@@ -3,9 +3,17 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.18",
+  solidity: {
+    version: "0.8.18",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
   gasReporter: {
-    currency: 'ETH',
+    currency: "ETH",
     showTimeSpent: true,
     enabled: true,
   },

@@ -137,6 +137,7 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Returns current stake configuration
      * @return Stake configuration
+     * @dev Panics if configuration not set
      */
     function stakeConfiguration()
         public
@@ -144,6 +145,11 @@ contract HapiCore is OwnableUpgradeable {
         virtual
         returns (StakeConfiguration memory)
     {
+        require(
+            _stake_configuration.token != address(0),
+            "Stake configuration is not set"
+        );
+
         return _stake_configuration;
     }
 
@@ -275,6 +281,9 @@ contract HapiCore is OwnableUpgradeable {
      * @param role Reporter role
      * @param name Reporter display name
      * @param url Reporter public page link
+     *
+     * @dev Only the authority can create reporters
+     * @dev Panics if reporter with the same ID already exists
      */
     function createReporter(
         uint128 id,
@@ -283,6 +292,11 @@ contract HapiCore is OwnableUpgradeable {
         string memory name,
         string memory url
     ) public onlyAuthority {
+        require(
+            _reporters[id].id == 0,
+            "Reporter with the same ID already exists"
+        );
+
         _reporters[id] = Reporter({
             id: id,
             account: account,
@@ -319,6 +333,9 @@ contract HapiCore is OwnableUpgradeable {
      * @param role Reporter role
      * @param name Reporter display name
      * @param url Reporter public page link
+     *
+     * @dev Only the authority can update reporters
+     * @dev Panics if the reporter does not exist
      */
     function updateReporter(
         uint128 id,
@@ -327,6 +344,11 @@ contract HapiCore is OwnableUpgradeable {
         string memory name,
         string memory url
     ) public onlyAuthority {
+        require(
+            _reporters[id].id > 0,
+            "Reporter with the same ID does not exist"
+        );
+
         Reporter storage reporter = _reporters[id];
 
         delete _reporter_ids_by_account[reporter.account];
@@ -350,11 +372,14 @@ contract HapiCore is OwnableUpgradeable {
 
     /**
      * Retrieves caller's reporter role
+     *
+     * @dev Panics if the caller is not a reporter
      */
     function getMyRole() private view returns (ReporterRole) {
         uint128 id = getMyReporterId();
 
         require(id > 0, "Caller is not a reporter");
+        require(_reporters[id].status == ReporterStatus.Active, "Reporter is not active");
 
         return _reporters[id].role;
     }
@@ -363,10 +388,14 @@ contract HapiCore is OwnableUpgradeable {
      * Retrieves reporter data
      *
      * @param id Reporter UUID
+     *
+     * @dev Panics if the reporter does not exist
      */
     function getReporter(
         uint128 id
-    ) public view virtual returns (Reporter memory) {
+    ) public view returns (Reporter memory) {
+        require(_reporters[id].id > 0, "Reporter does not exist");
+
         return _reporters[id];
     }
 
@@ -379,7 +408,7 @@ contract HapiCore is OwnableUpgradeable {
     function getReporters(
         uint take,
         uint skip
-    ) public view virtual returns (Reporter[] memory) {
+    ) public view returns (Reporter[] memory) {
         uint length = _reporter_ids.length;
 
         if (skip >= length) {
@@ -416,15 +445,18 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Activates a reporter
      *
-     * @param id Reporter UUID
+     * @dev Panics if the caller is not a reporter
+     * @dev Panics if the reporter is not inactive
+     * @dev Panics if the reporter role stake is not configured
+     * @dev Panics if the caller does not have enough tokens or haven't set up allowance to stake
      */
-    function activateReporter(uint128 id) external {
+    function activateReporter() external {
+        uint128 id = getMyReporterId();
+
+        require(id > 0, "Caller is not a reporter");
+
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.account == _msgSender(),
-            "Caller is not the target reporter"
-        );
         require(
             reporter.status == ReporterStatus.Inactive,
             "Reporter is not inactive"
@@ -442,7 +474,7 @@ contract HapiCore is OwnableUpgradeable {
             amount = _stake_configuration.authority_stake;
         }
 
-        require(amount > 0, "Reporter role is not configured");
+        require(amount > 0, "Reporter role stake is not configured");
 
         require(
             IERC20(_stake_configuration.token).transferFrom(
@@ -463,15 +495,16 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Deactivate reporter for unstaking after the unlock period
      *
-     * @param id Reporter UUID
+     * @dev Panics if the caller is not a reporter
+     * @dev Panics if the reporter is not active
      */
-    function deactivateReporter(uint128 id) external {
+    function deactivateReporter() external {
+        uint128 id = getMyReporterId();
+
+        require(id > 0, "Caller is not a reporter");
+
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.account == _msgSender(),
-            "Caller is not the target reporter"
-        );
         require(
             reporter.status == ReporterStatus.Active,
             "Reporter is not active"
@@ -493,15 +526,17 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Unstake tokens by the reporter after the unlock period
      *
-     * @param id Reporter UUID
+     * @dev Panics if the caller is not a reporter
+     * @dev Panics if the reporter is not unstaking
+     * @dev Panics if the reporter is not unlocked yet
      */
-    function unstake(uint128 id) external {
+    function unstake() external {
+        uint128 id = getMyReporterId();
+
+        require(id > 0, "Caller is not a reporter");
+
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.account == _msgSender(),
-            "Caller is not the target reporter"
-        );
         require(
             reporter.status == ReporterStatus.Unstaking,
             "Reporter is not unstaking"
@@ -511,6 +546,8 @@ contract HapiCore is OwnableUpgradeable {
             "Reporter is not unlocked yet"
         );
 
+        // NOTE: Situation where there's not enough tokens to withdraw should be impossible,
+        // as the pool is only formed from the tokens staked by the reporters
         require(
             IERC20(_stake_configuration.token).transfer(
                 msg.sender,
@@ -531,37 +568,48 @@ contract HapiCore is OwnableUpgradeable {
     }
 
     struct Case {
+        /// Case UUID
         uint128 id;
+        /// Case name
         string name;
+        /// The UUID of the reporter that created the case
         uint128 reporter_id;
+        /// Case status
         CaseStatus status;
+        /// Case public page link
         string url;
     }
 
     /// A map from case UUID to case record
     mapping(uint128 => Case) private _cases;
+
+    /// A list of all case ids
     uint128[] private _case_ids;
 
+    /**
+     * @param id Case UUID
+     */
     event CaseCreated(uint128 indexed id);
 
     /**
      * Creates a new case
      *
      * @param id Case UUID
-     * @param reporter_id Reporter UUID
      * @param name Case name
      * @param url Case public page link
+     *
+     * @dev Panics if the caller is not a reporter
+     * @dev Panics if the case with the same ID already exists
      */
     function createCase(
         uint128 id,
-        uint128 reporter_id,
         string memory name,
         string memory url
     ) public onlyPublisherOrAuthorityReporter {
-        require(
-            reporter_id == getMyReporterId(),
-            "Reporter ID must match the caller's reporter ID"
-        );
+        uint128 reporter_id = getMyReporterId();
+
+        require(reporter_id > 0, "Caller is not a reporter");
+        require(_cases[id].id == 0, "Case with the same ID already exists");
 
         _cases[id] = Case({
             id: id,
@@ -588,6 +636,10 @@ contract HapiCore is OwnableUpgradeable {
      * @param name Case name
      * @param url Case public page link
      * @param status Case status
+     *
+     * @dev Panics if the caller is not a reporter
+     * @dev Panics if the case does not exist
+     * @dev Panics if the caller is not the case reporter or authority
      */
     function updateCase(
         uint128 id,
@@ -616,8 +668,12 @@ contract HapiCore is OwnableUpgradeable {
      * Retrieves case data
      *
      * @param id Case UUID
+     *
+     * @dev Panics if the case does not exist
      */
     function getCase(uint128 id) public view virtual returns (Case memory) {
+        require(_cases[id].id > 0, "Case does not exist");
+
         return _cases[id];
     }
 
@@ -657,5 +713,206 @@ contract HapiCore is OwnableUpgradeable {
      */
     function getCaseCount() public view virtual returns (uint) {
         return _case_ids.length;
+    }
+
+    enum Category {
+        None,
+        WalletService,
+        MerchantService,
+        MiningPool,
+        Exchange,
+        DeFi,
+        OTCBroker,
+        ATM,
+        Gambling,
+        IllicitOrganization,
+        Mixer,
+        DarknetService,
+        Scam,
+        Ransomware,
+        Theft,
+        Counterfeit,
+        TerroristFinancing,
+        Sanctions,
+        ChildAbuse,
+        Hacker,
+        HighRiskJurisdiction
+    }
+
+    struct Address {
+        /// The address
+        address addr;
+        /// The UUID of address' case
+        uint128 case_id;
+        /// The UUID of the reporter that submitted the address
+        uint128 reporter_id;
+        /// The number of confirmations for the address
+        uint confirmations;
+        /// Risk score for the address (0..10)
+        uint8 risk;
+        /// Category of activity associated with the address
+        Category category;
+    }
+
+    /// A map from address to address record
+    mapping(address => Address) private _addresses;
+
+    /// A list of all addresses
+    address[] private _address_addrs;
+
+    /**
+     * @param addr Address
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     */
+    event AddressCreated(address indexed addr, uint8 risk, Category category);
+
+    /**
+     * Creates a new address
+     *
+     * @param addr Address
+     * @param case_id Case UUID
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     *
+     * @dev Panics if the case does not exist
+     * @dev Panics if the address already exists
+     * @dev Panics if the risk is not between 0 and 10
+     * @dev Panics if the caller is not a reporter with the required role
+     */
+    function createAddress(
+        address addr,
+        uint128 case_id,
+        uint8 risk,
+        Category category
+    ) public {
+        require(_cases[case_id].id > 0, "Case does not exist");
+        require(_addresses[addr].addr == address(0), "Address already exists");
+        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher ||
+                role == ReporterRole.Authority ||
+                role == ReporterRole.Tracer,
+            "Caller is not a reporter with the required role"
+        );
+
+        _addresses[addr] = Address({
+            addr: addr,
+            case_id: case_id,
+            reporter_id: reporter_id,
+            confirmations: 0,
+            risk: risk,
+            category: category
+        });
+
+        _address_addrs.push(addr);
+
+        emit AddressCreated(addr, risk, category);
+    }
+
+    /**
+     * @param addr Address
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     */
+    event AddressUpdated(address indexed addr, uint8 risk, Category category);
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Address
+     * @param risk Risk score for the address (0..10)
+     * @param category Category of activity associated with the address
+     * @param case_id Case UUID
+     *
+     * @dev Panics if the address does not exist
+     * @dev Panics if the risk is not between 0 and 10
+     * @dev Panics if the case does not exist
+     * @dev Panics if the caller is not the address reporter or authority
+     * @dev Panics if the caller is a tracer and tries to change the case
+     */
+    function updateAddress(
+        address addr,
+        uint8 risk,
+        Category category,
+        uint128 case_id
+    ) public {
+        require(_addresses[addr].addr != address(0), "Address does not exist");
+        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+        require(_cases[case_id].id > 0, "Case does not exist");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            _addresses[addr].reporter_id == reporter_id ||
+                role == ReporterRole.Authority,
+            "Caller is not the address reporter or authority"
+        );
+
+        if (_addresses[addr].case_id != case_id) {
+            require(role != ReporterRole.Tracer, "Tracer can't change case");
+            _addresses[addr].case_id = case_id;
+        }
+
+        _addresses[addr].risk = risk;
+        _addresses[addr].category = category;
+
+        emit AddressUpdated(addr, risk, category);
+    }
+
+    /**
+     * Retrieves address data
+     *
+     * @param addr Address
+     *
+     * @dev Returns an empty record for addresses that don't exist
+     */
+    function getAddress(
+        address addr
+    ) public view virtual returns (Address memory) {
+        return _addresses[addr];
+    }
+
+    /**
+     * Retrieves address count
+     */
+    function getAddressCount() public view virtual returns (uint) {
+        return _address_addrs.length;
+    }
+
+    /**
+     * Retrieves address data
+     *
+     * @param take Number of addresses to retrieve
+     * @param skip Number of addresses to skip
+     */
+    function getAddresses(
+        uint take,
+        uint skip
+    ) public view virtual returns (Address[] memory) {
+        uint length = _address_addrs.length;
+
+        if (skip >= length) {
+            return new Address[](0);
+        }
+
+        uint size = take;
+
+        if (size > length - skip) {
+            size = length - skip;
+        }
+
+        Address[] memory addresses = new Address[](size);
+
+        for (uint i = 0; i < size; i++) {
+            addresses[i] = _addresses[_address_addrs[skip + i]];
+        }
+
+        return addresses;
     }
 }
