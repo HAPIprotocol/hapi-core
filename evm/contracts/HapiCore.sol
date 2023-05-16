@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title HAPI Core
+ * @title HAPI Core EVM
  * @author HAPI Protocol development team
  *
  * Core contract for the HAPI protocol
