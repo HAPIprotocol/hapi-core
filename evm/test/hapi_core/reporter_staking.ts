@@ -30,18 +30,14 @@ describe("HapiCore: Reporter staking", function () {
 
     // Shouldn't be able to stake if not approved
     await expect(
-      hapiCore.connect(wallets.publisher).activateReporter(reporterAccount.id)
+      hapiCore.connect(wallets.publisher).activateReporter()
     ).to.be.revertedWith("ERC20: insufficient allowance");
 
     await token
       .connect(wallets.publisher)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
-    expect(
-      await hapiCore
-        .connect(wallets.publisher)
-        .activateReporter(reporterAccount.id)
-    )
+    expect(await hapiCore.connect(wallets.publisher).activateReporter())
       .to.emit(hapiCore, "ReporterActivated")
       .withArgs(reporterAccount.id);
 
@@ -91,7 +87,7 @@ describe("HapiCore: Reporter staking", function () {
       );
 
     await expect(
-      hapiCore.connect(wallets.publisher).activateReporter(reporterAccount.id)
+      hapiCore.connect(wallets.publisher).activateReporter()
     ).to.be.revertedWith("ERC20: insufficient allowance");
 
     await token
@@ -99,7 +95,7 @@ describe("HapiCore: Reporter staking", function () {
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
     await expect(
-      hapiCore.connect(wallets.publisher).activateReporter(reporterAccount.id)
+      hapiCore.connect(wallets.publisher).activateReporter()
     ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
   });
 
@@ -129,8 +125,8 @@ describe("HapiCore: Reporter staking", function () {
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
     await expect(
-      hapiCore.connect(wallets.nobody).activateReporter(reporterAccount.id)
-    ).to.be.revertedWith("Caller is not the target reporter");
+      hapiCore.connect(wallets.nobody).activateReporter()
+    ).to.be.revertedWith('Caller is not a reporter');
   });
 
   it("Should deactivate a reporter", async function () {
@@ -158,9 +154,7 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.publisher)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .activateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).activateReporter();
 
     expect(await hapiCore.getReporter(reporterAccount.id)).to.deep.equal([
       reporterAccount.id,
@@ -173,11 +167,7 @@ describe("HapiCore: Reporter staking", function () {
       0,
     ]);
 
-    expect(
-      await hapiCore
-        .connect(wallets.publisher)
-        .deactivateReporter(reporterAccount.id)
-    )
+    expect(await hapiCore.connect(wallets.publisher).deactivateReporter())
       .to.emit(hapiCore, "ReporterDeactivated")
       .withArgs(reporterAccount.id);
 
@@ -218,17 +208,15 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.publisher)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .activateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).activateReporter();
 
     await token
       .connect(wallets.nobody)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
     await expect(
-      hapiCore.connect(wallets.nobody).deactivateReporter(reporterAccount.id)
-    ).to.be.revertedWith("Caller is not the target reporter");
+      hapiCore.connect(wallets.nobody).deactivateReporter()
+    ).to.be.revertedWith('Caller is not a reporter');
   });
 
   it("Should be able to unstake tokens after unlock duration", async function () {
@@ -258,19 +246,13 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.publisher)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .activateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).activateReporter();
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .deactivateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).deactivateReporter();
 
     await time.increase(cfg.UNLOCK_DURATION + 1);
 
-    expect(
-      await hapiCore.connect(wallets.publisher).unstake(reporterAccount.id)
-    )
+    expect(await hapiCore.connect(wallets.publisher).unstake())
       .to.emit(hapiCore, "ReporterUnstaked")
       .withArgs(reporterAccount.id);
 
@@ -317,19 +299,15 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.publisher)
       .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .activateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).activateReporter();
 
-    await hapiCore
-      .connect(wallets.publisher)
-      .deactivateReporter(reporterAccount.id);
+    await hapiCore.connect(wallets.publisher).deactivateReporter();
 
     await time.increase(cfg.UNLOCK_DURATION + 1);
 
-    await expect(
-      hapiCore.connect(wallets.nobody).unstake(reporterAccount.id)
-    ).to.be.revertedWith("Caller is not the target reporter");
+    await expect(hapiCore.connect(wallets.nobody).unstake()).to.be.revertedWith(
+      "Caller is not a reporter"
+    );
 
     const balanceAfter = await token.balanceOf(wallets.publisher.address);
 
