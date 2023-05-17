@@ -1,7 +1,7 @@
 use {
     anchor_lang::prelude::*,
-    anchor_spl::token::{self, SetAuthority},
-    spl_token::instruction::AuthorityType,
+    // anchor_spl::token::{self, SetAuthority},
+    // spl_token::instruction::AuthorityType,
 };
 
 mod context;
@@ -27,18 +27,18 @@ pub mod hapi_core {
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
-        // Pass authority to network PDA
-        token::set_authority(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                SetAuthority {
-                    current_authority: ctx.accounts.authority.to_account_info(),
-                    account_or_mint: ctx.accounts.reward_mint.to_account_info(),
-                },
-            ),
-            AuthorityType::MintTokens,
-            Some(network.key()),
-        )?;
+        // // Pass authority to network PDA
+        // token::set_authority(
+        //     CpiContext::new(
+        //         ctx.accounts.token_program.to_account_info(),
+        //         SetAuthority {
+        //             current_authority: ctx.accounts.authority.to_account_info(),
+        //             account_or_mint: ctx.accounts.reward_mint.to_account_info(),
+        //         },
+        //     ),
+        //     AuthorityType::MintTokens,
+        //     Some(network.key()),
+        // )?;
 
         network.bump = bump;
         network.name = name;

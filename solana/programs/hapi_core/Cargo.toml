@@ -18,4 +18,6 @@ default = []
 [dependencies]
 anchor-lang = "0.27.0"
 anchor-spl = "0.27.0"
-spl-token = "3.5"
+winnow = "0.4.1"
+# spl-token = "3.5"
+    
