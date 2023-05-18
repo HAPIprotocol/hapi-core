@@ -7,7 +7,6 @@ import {
   ACCOUNT_SIZE,
   bufferFromString,
   initHapiCore,
-  NetworkSchema,
 } from "./lib";
 import { programError } from "./util/error";
 import { metadata } from "../target/idl/hapi_core_solana.json";
@@ -21,7 +20,7 @@ describe("HapiCore Network", () => {
   const authority = web3.Keypair.generate();
   const another_authority = web3.Keypair.generate();
 
-  const networkName = "near";
+  const networkName = "Near";
 
   let stakeToken: TestToken;
   let rewardToken: TestToken;
@@ -47,7 +46,6 @@ describe("HapiCore Network", () => {
 
   describe("create_network", () => {
     const name = bufferFromString(networkName, 32);
-    const schema = NetworkSchema.Near;
 
     const stakeConfiguration = {
       unlockDuration: new BN(1_000),
@@ -76,7 +74,6 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        schema,
         stakeConfiguration,
         rewardConfiguration,
         bump,
@@ -113,7 +110,6 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        schema,
         stakeConfiguration,
         rewardConfiguration,
         bump,
@@ -151,7 +147,6 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        schema,
         stakeConfiguration,
         rewardConfiguration,
         bump,
@@ -177,18 +172,17 @@ describe("HapiCore Network", () => {
       expect(Buffer.from(fetchedNetworkAccount.name)).toEqual(name);
       expect(fetchedNetworkAccount.authority).toEqual(authority.publicKey);
       expect(fetchedNetworkAccount.bump).toEqual(bump);
-      expect(fetchedNetworkAccount.schema).toEqual(NetworkSchema.Near);
       expect(fetchedNetworkAccount.stakeMint).toEqual(stakeToken.mintAccount);
-      expect(fetchedNetworkAccount.stakeInfo.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.validatorStake.eq(stakeConfiguration.validatorStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.validatorStake.eq(stakeConfiguration.validatorStake)).toBeTruthy();
       expect(fetchedNetworkAccount.rewardMint).toEqual(rewardToken.mintAccount);
-      expect(fetchedNetworkAccount.rewardInfo.addressConfirmationReward.eq(rewardConfiguration.addressConfirmationReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.addressTracerReward.eq(rewardConfiguration.addressTracerReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.assetConfirmationReward.eq(rewardConfiguration.assetConfirmationReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.assetTracerReward.eq(rewardConfiguration.assetTracerReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.addressConfirmationReward.eq(rewardConfiguration.addressConfirmationReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.addressTracerReward.eq(rewardConfiguration.addressTracerReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.assetConfirmationReward.eq(rewardConfiguration.assetConfirmationReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.assetTracerReward.eq(rewardConfiguration.assetTracerReward)).toBeTruthy();
 
       const networkInfo = await provider.connection.getAccountInfoAndContext(
         networkAccount
@@ -210,7 +204,6 @@ describe("HapiCore Network", () => {
 
       const args = [
         name.toJSON().data,
-        schema,
         stakeConfiguration,
         rewardConfiguration,
         bump,
@@ -298,15 +291,15 @@ describe("HapiCore Network", () => {
         networkAccount
       );
 
-      expect(fetchedNetworkAccount.stakeInfo.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();
-      expect(fetchedNetworkAccount.stakeInfo.validatorStake.eq(stakeConfiguration.validatorStake)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.addressConfirmationReward.eq(rewardConfiguration.addressConfirmationReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.addressTracerReward.eq(rewardConfiguration.addressTracerReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.assetConfirmationReward.eq(rewardConfiguration.assetConfirmationReward)).toBeTruthy();
-      expect(fetchedNetworkAccount.rewardInfo.assetTracerReward.eq(rewardConfiguration.assetTracerReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.validatorStake.eq(stakeConfiguration.validatorStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.addressConfirmationReward.eq(rewardConfiguration.addressConfirmationReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.addressTracerReward.eq(rewardConfiguration.addressTracerReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.assetConfirmationReward.eq(rewardConfiguration.assetConfirmationReward)).toBeTruthy();
+      expect(fetchedNetworkAccount.rewardConfiguration.assetTracerReward.eq(rewardConfiguration.assetTracerReward)).toBeTruthy();
     });
   });
 
@@ -319,7 +312,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.setNetworkAuthority({
+          program.rpc.setAuthority({
             accounts: {
               authority: another_authority.publicKey,
               newAuthority: another_authority.publicKey,
@@ -338,7 +331,7 @@ describe("HapiCore Network", () => {
 
       await expectThrowError(
         () =>
-          program.rpc.setNetworkAuthority({
+          program.rpc.setAuthority({
             accounts: {
               authority: authority.publicKey,
               newAuthority: authority.publicKey,
@@ -356,7 +349,7 @@ describe("HapiCore Network", () => {
         networkName
       );
 
-      const tx = await program.rpc.setNetworkAuthority({
+      const tx = await program.rpc.setAuthority({
         accounts: {
           authority: authority.publicKey,
           newAuthority: another_authority.publicKey,

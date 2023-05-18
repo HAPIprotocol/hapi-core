@@ -15,20 +15,17 @@ pub struct Network {
     /// Network name (i.e. ethereum, solana, near)
     pub name: [u8; 32],
 
-    /// Network address schema
-    pub schema: NetworkSchema,
-
     /// Stake token mint account
     pub stake_mint: Pubkey,
 
     /// Stake configuration info
-    pub stake_info: StakeConfiguration,
+    pub stake_configuration: StakeConfiguration,
 
     /// Reward token mint account
     pub reward_mint: Pubkey,
 
     /// Reward configuration info
-    pub reward_info: RewardConfiguration,
+    pub reward_configuration: RewardConfiguration,
 }
 
 impl Network {
@@ -67,14 +64,4 @@ pub struct RewardConfiguration {
 
     /// Reward amount for tracers and validators that confirm assets on this network
     pub asset_confirmation_reward: u64,
-}
-
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
-pub enum NetworkSchema {
-    #[default]
-    Plain,
-    Solana,
-    Ethereum,
-    Bitcoin,
-    Near,
 }

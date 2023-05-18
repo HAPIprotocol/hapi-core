@@ -1,54 +1,23 @@
 import { Program, web3, BN, Provider, utils } from "@coral-xyz/anchor";
-import { encode as eip55encode } from "eip55";
 
 import { IDL } from "../../target/types/hapi_core_solana";
-import { NetworkSchemaKeys, padBuffer, pubkeyFromBase58 } from ".";
+import { padBuffer, pubkeyFromBase58 } from ".";
 import { bufferFromString, addrToSeeds } from "./buffer";
 
 export function encodeAddress(
-  address: string,
-  schema: NetworkSchemaKeys
+  address: string
 ): Buffer {
-  let buffer: Buffer = Buffer.from(address);
-
-  switch (schema) {
-    case "Ethereum": {
-      if (address.match(/^0x/)) {
-        address = address.substring(2);
-      }
-      buffer = Buffer.from(address, "hex");
-      break;
-    }
-    case "Solana": {
-      buffer = pubkeyFromBase58(address).toBuffer();
-      break;
-    }
-  }
-
-  return padBuffer(buffer, 64);
+  return padBuffer(Buffer.from(address), 64);
 }
 
 export function decodeAddress(
   address: Buffer | Uint8Array | number[],
-  schema: NetworkSchemaKeys
 ): string {
   if (!(address instanceof Buffer)) {
     address = Buffer.from(address);
   }
-  switch (schema) {
-    case "Ethereum": {
-      return eip55encode(
-        utils.bytes.hex.encode((address as Buffer).slice(0, 20))
-      );
-    }
-    case "Solana": {
-      return new web3.PublicKey(address.slice(0, 32)).toBase58();
-    }
-    default: {
-      // Filtering out zero bytes
-      return address.filter((b) => b).toString();
-    }
-  }
+
+  return address.filter((b) => b).toString();
 }
 
 export function initHapiCore(

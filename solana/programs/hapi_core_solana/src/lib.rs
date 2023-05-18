@@ -16,7 +16,6 @@ pub mod hapi_core_solana {
     pub fn create_network(
         ctx: Context<CreateNetwork>,
         name: [u8; 32],
-        schema: NetworkSchema,
         stake_info: StakeConfiguration,
         reward_info: RewardConfiguration,
         bump: u8,
@@ -26,11 +25,10 @@ pub mod hapi_core_solana {
         network.bump = bump;
         network.name = name;
         network.authority = ctx.accounts.authority.key();
-        network.schema = schema;
         network.reward_mint = ctx.accounts.reward_mint.key();
-        network.reward_info = reward_info;
+        network.reward_configuration = reward_info;
         network.stake_mint = ctx.accounts.stake_mint.key();
-        network.stake_info = stake_info;
+        network.stake_configuration = stake_info;
         network.version = Network::VERSION;
 
         Ok(())
@@ -38,18 +36,18 @@ pub mod hapi_core_solana {
 
     pub fn update_configuration(
         ctx: Context<UpdateConfiguration>,
-        stake_info: StakeConfiguration,
-        reward_info: RewardConfiguration,
+        stake_configuration: StakeConfiguration,
+        reward_configuration: RewardConfiguration,
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
-        network.reward_info = reward_info;
-        network.stake_info = stake_info;
+        network.reward_configuration = reward_configuration;
+        network.stake_configuration = stake_configuration;
 
         Ok(())
     }
 
-    pub fn set_network_authority(ctx: Context<SetNetworkAuthority>) -> Result<()> {
+    pub fn set_authority(ctx: Context<SetAuthority>) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
         network.authority = ctx.accounts.new_authority.key();

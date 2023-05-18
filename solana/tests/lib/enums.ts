@@ -83,20 +83,6 @@ export const CategoryVariants = Object.keys(Category) as Readonly<
   CategoryKeys[]
 >;
 
-export const NetworkSchema = {
-  Plain: { plain: {} },
-  Solana: { solana: {} },
-  Ethereum: { ethereum: {} },
-  Bitcoin: { bitcoin: {} },
-  Near: { near: {} },
-};
-
-export type NetworkSchemaKeys = keyof typeof NetworkSchema;
-
-export const NetworkSchemaVariants = Object.keys(NetworkSchema) as Readonly<
-  NetworkSchemaKeys[]
->;
-
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   network: 220,
 };

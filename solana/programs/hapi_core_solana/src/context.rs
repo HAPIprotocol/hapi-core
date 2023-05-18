@@ -67,7 +67,7 @@ pub struct UpdateConfiguration<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SetNetworkAuthority<'info> {
+pub struct SetAuthority<'info> {
     pub authority: Signer<'info>,
 
     #[account(
