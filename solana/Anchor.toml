@@ -6,10 +6,10 @@ skip-lint = false
 url = "https://api.apr.dev"
 
 [programs.localnet]
-hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
+hapi_core_solana = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 
 [programs.devnet]
-hapi_core = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
+hapi_core_solana = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 
 [provider]
 cluster = "Localnet"

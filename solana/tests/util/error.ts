@@ -1,4 +1,4 @@
-import { errors } from "../../target/idl/hapi_core.json";
+import { errors } from "../../target/idl/hapi_core_solana.json";
 
 export function errorRegexp(code: number, instruction = 0) {
   return new RegExp(

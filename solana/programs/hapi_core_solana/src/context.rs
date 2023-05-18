@@ -42,7 +42,7 @@ pub struct CreateNetwork<'info> {
 
     #[account(
         constraint = stake_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = stake_token_account.owner == network.key() @ ProgramError::IllegalOwner,
+        constraint = stake_token_account.owner == network.key() @ ErrorCode::IllegalOwner,
         owner = Token::id(),
     )]
     pub stake_token_account: Account<'info, TokenAccount>,

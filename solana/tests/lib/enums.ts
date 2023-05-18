@@ -1,4 +1,4 @@
-import { IDL } from "./idl/hapi_core";
+import { IDL } from "../../target/types/hapi_core_solana";
 
 // HapiCore Instructions
 export const HapiCoreInstructionVariants = IDL.instructions.map(
@@ -98,18 +98,5 @@ export const NetworkSchemaVariants = Object.keys(NetworkSchema) as Readonly<
 >;
 
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
-  // address: 222,
-  // addressV0: 184,
-  // asset: 254,
-  // assetV0: 216,
-  // case: 148,
-  // caseV0: 120,
-  // community: 172,
-  // communityV0: 192,
-  network: 180,
-  // networkV0: 176,
-  // reporter: 158,
-  // reporterV0: 128,
-  // reporterReward: 139,
-  // reporterRewardV0: 112,
+  network: 220,
 };

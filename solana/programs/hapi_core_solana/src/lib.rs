@@ -1,8 +1,4 @@
-use {
-    anchor_lang::prelude::*,
-    // anchor_spl::token::{self, SetAuthority},
-    // spl_token::instruction::AuthorityType,
-};
+use anchor_lang::prelude::*;
 
 mod context;
 mod error;
@@ -14,7 +10,7 @@ use state::network::*;
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
 #[program]
-pub mod hapi_core {
+pub mod hapi_core_solana {
     use super::*;
 
     pub fn create_network(
@@ -27,6 +23,7 @@ pub mod hapi_core {
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
+        // TODO: should we set mint authority to network?
         // // Pass authority to network PDA
         // token::set_authority(
         //     CpiContext::new(
