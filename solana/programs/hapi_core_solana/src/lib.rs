@@ -23,20 +23,6 @@ pub mod hapi_core_solana {
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
-        // TODO: should we set mint authority to network?
-        // // Pass authority to network PDA
-        // token::set_authority(
-        //     CpiContext::new(
-        //         ctx.accounts.token_program.to_account_info(),
-        //         SetAuthority {
-        //             current_authority: ctx.accounts.authority.to_account_info(),
-        //             account_or_mint: ctx.accounts.reward_mint.to_account_info(),
-        //         },
-        //     ),
-        //     AuthorityType::MintTokens,
-        //     Some(network.key()),
-        // )?;
-
         network.bump = bump;
         network.name = name;
         network.authority = ctx.accounts.authority.key();
