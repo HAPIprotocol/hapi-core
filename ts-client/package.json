@@ -1,0 +1,22 @@
+{
+  "name": "hapi-core",
+  "version": "0.1.0",
+  "description": "HAPI Core Typescript/Javascript client",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "HAPI Protocol <devs@hapi.one>",
+  "license": "ISC",
+  "dependencies": {
+    "@ethersproject/providers": "^5.7.2",
+    "@ethersproject/wallet": "^5.7.0",
+    "hapi-core-evm": "file:../evm",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.0",
+    "@types/uuid": "^9.0.1",
+    "ethers": "^6.3.0"
+  }
+}
