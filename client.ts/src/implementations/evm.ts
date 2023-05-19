@@ -1,4 +1,4 @@
-import type { Provider } from "@ethersproject/providers";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 import type { Signer } from "@ethersproject/abstract-signer";
 
 import * as typechain from "hapi-core-evm/typechain-types";
@@ -12,22 +12,40 @@ import {
   CaseStatus,
   Category,
   HapiCore,
+  HapiCoreAddresses,
+  HapiCoreNetwork,
   Reporter,
   ReporterRole,
-  ReporterStatus,
   Result,
   RewardConfiguration,
   StakeConfiguration,
   Uuid,
 } from "../interface";
 
+export interface EvmConnectionOptions {
+  network: HapiCoreNetwork.Ethereum | HapiCoreNetwork.BSC;
+  provider: Provider | EvmProviderOptions;
+  address?: Addr;
+  signer?: Signer;
+}
+
+export interface EvmProviderOptions {
+  providerUrl: string;
+}
+
 export class HapiCoreEvm implements HapiCore {
   private contract: typechain.HapiCore;
 
-  constructor(address: Addr, signerOrProvider: Signer | Provider) {
+  constructor(options: EvmConnectionOptions) {
+    if (options.provider.constructor.name !== "Provider") {
+      options.provider = new JsonRpcProvider(
+        (options.provider as EvmProviderOptions).providerUrl
+      );
+    }
+
     this.contract = typechain.HapiCore__factory.connect(
-      address,
-      signerOrProvider
+      options.address || HapiCoreAddresses[options.network],
+      options.signer || (options.provider as Provider)
     );
   }
 

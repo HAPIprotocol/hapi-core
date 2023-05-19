@@ -1,10 +1,12 @@
 import {
+  Addr,
   Address,
   Asset,
   Case,
   CaseStatus,
   Category,
   HapiCore,
+  HapiCoreNetwork,
   Reporter,
   ReporterRole,
   Result,
@@ -12,11 +14,18 @@ import {
   StakeConfiguration,
 } from "../interface";
 
+export interface SolanaConnectionOptions {
+  network: HapiCoreNetwork.Solana;
+  address: Addr;
+  provider: unknown;
+  signer?: unknown;
+}
+
 export class HapiCoreSolana implements HapiCore {
   private contract: any;
 
-  constructor(address: string, network: string, provider: any) {
-    this.contract = address;
+  constructor(options: SolanaConnectionOptions) {
+    this.contract = options.address;
   }
 
   async setAuthority(address: string): Promise<Result> {
