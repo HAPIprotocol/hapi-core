@@ -9,7 +9,7 @@
     "upgrade": "hardhat upgrade",
     "test": "hardhat test"
   },
-  "author": "",
+  "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
   "devDependencies": {
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",

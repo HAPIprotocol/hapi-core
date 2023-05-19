@@ -12,6 +12,14 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  networks: {
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+    },
+    ropsten: {
+      url: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
+    }
+  },
   gasReporter: {
     currency: "ETH",
     showTimeSpent: true,
