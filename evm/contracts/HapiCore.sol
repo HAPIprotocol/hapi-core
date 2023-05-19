@@ -200,6 +200,7 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Returns current reward configuration
      * @return Reward configuration
+     * @dev Panics if configuration not set
      */
     function rewardConfiguration()
         public
@@ -207,6 +208,11 @@ contract HapiCore is OwnableUpgradeable {
         virtual
         returns (RewardConfiguration memory)
     {
+        require(
+            _reward_configuration.token != address(0),
+            "Reward configuration is not set"
+        );
+
         return _reward_configuration;
     }
 

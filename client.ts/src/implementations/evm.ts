@@ -1,4 +1,5 @@
 import { JsonRpcProvider, Provider } from "@ethersproject/providers";
+import { Wallet } from "@ethersproject/wallet";
 import type { Signer } from "@ethersproject/abstract-signer";
 
 import * as typechain from "hapi-core-evm/typechain-types";
@@ -21,12 +22,15 @@ import {
   StakeConfiguration,
   Uuid,
 } from "../interface";
+import { bigIntToUuid, uuidToBigNumberish } from "../util";
+import { BigNumber } from "@ethersproject/bignumber";
 
 export interface EvmConnectionOptions {
   network: HapiCoreNetwork.Ethereum | HapiCoreNetwork.BSC;
   provider: Provider | EvmProviderOptions;
   address?: Addr;
   signer?: Signer;
+  signerPrivateKey?: string;
 }
 
 export interface EvmProviderOptions {
@@ -40,6 +44,13 @@ export class HapiCoreEvm implements HapiCore {
     if (options.provider.constructor.name !== "Provider") {
       options.provider = new JsonRpcProvider(
         (options.provider as EvmProviderOptions).providerUrl
+      );
+    }
+
+    if (options.signerPrivateKey && !options.signer) {
+      options.signer = new Wallet(
+        options.signerPrivateKey,
+        options.provider as Provider
       );
     }
 
@@ -120,19 +131,20 @@ export class HapiCoreEvm implements HapiCore {
     url: string
   ): Promise<Result> {
     const tx = await this.contract.createReporter(
-      id,
-      role.toString(),
+      uuidToBigNumberish(id),
       account,
+      role.toString(),
       name,
       url
     );
+
     return { transactionHash: tx.hash };
   }
 
   async getReporter(id: Uuid): Promise<Reporter> {
-    const reporter = await this.contract.getReporter(id);
+    const reporter = await this.contract.getReporter(uuidToBigNumberish(id));
     return {
-      id: reporter.id.toString(),
+      id: bigIntToUuid(reporter.id),
       account: reporter.account,
       role: reporter.role,
       status: reporter.status,
@@ -151,7 +163,7 @@ export class HapiCoreEvm implements HapiCore {
     url: string
   ): Promise<Result> {
     const tx = await this.contract.updateReporter(
-      id,
+      uuidToBigNumberish(id),
       role.toString(),
       account,
       name,
@@ -176,14 +188,18 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async createCase(id: string, name: string, url: string): Promise<Result> {
-    const tx = await this.contract.createCase(id, name, url);
+    const tx = await this.contract.createCase(
+      uuidToBigNumberish(id),
+      name,
+      url
+    );
     return { transactionHash: tx.hash };
   }
 
   async getCase(id: Uuid): Promise<Case> {
-    const c = await this.contract.getCase(id);
+    const c = await this.contract.getCase(uuidToBigNumberish(id));
     return {
-      id: c.id.toString(),
+      id: bigIntToUuid(c.id),
       name: c.name,
       url: c.url,
       status: c.status,
@@ -196,7 +212,12 @@ export class HapiCoreEvm implements HapiCore {
     url: string,
     status: CaseStatus
   ): Promise<Result> {
-    const tx = await this.contract.updateCase(id, name, url, status.toString());
+    const tx = await this.contract.updateCase(
+      uuidToBigNumberish(id),
+      name,
+      url,
+      status.toString()
+    );
     return { transactionHash: tx.hash };
   }
 
@@ -208,7 +229,7 @@ export class HapiCoreEvm implements HapiCore {
   ): Promise<Result> {
     const tx = await this.contract.createAddress(
       address,
-      caseId,
+      uuidToBigNumberish(caseId),
       risk,
       category.toString()
     );
@@ -219,7 +240,7 @@ export class HapiCoreEvm implements HapiCore {
     const a = await this.contract.getAddress(address);
     return {
       address: a.addr.toString(),
-      caseId: a.case_id.toString(),
+      caseId: bigIntToUuid(a.case_id),
       reporterId: a.reporter_id.toString(),
       risk: a.risk,
       category: a.category,
@@ -234,7 +255,7 @@ export class HapiCoreEvm implements HapiCore {
   ): Promise<Result> {
     const tx = await this.contract.updateAddress(
       address,
-      caseId,
+      uuidToBigNumberish(caseId),
       risk,
       category.toString()
     );
@@ -251,7 +272,7 @@ export class HapiCoreEvm implements HapiCore {
     const tx = await this.contract.createAsset(
       address,
       assetId,
-      caseId,
+      uuidToBigNumberish(caseId),
       risk,
       category.toString()
     );
@@ -263,7 +284,7 @@ export class HapiCoreEvm implements HapiCore {
     return {
       address: a.addr.toString(),
       assetId: a.asset_id.toString(),
-      caseId: a.case_id.toString(),
+      caseId: bigIntToUuid(a.case_id),
       reporterId: a.reporter_id.toString(),
       risk: a.risk,
       category: a.category,

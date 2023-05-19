@@ -42,16 +42,27 @@ export enum ReporterRole {
   Authority = 3,
 }
 
+export const ReporterRoleNames = [
+  "Validator",
+  "Tracer",
+  "Publisher",
+  "Authority",
+];
+
 export enum ReporterStatus {
   Inactive = 0,
   Active = 1,
   Unstaking = 2,
 }
 
+export const ReporterStatusNames = ["Inactive", "Active", "Unstaking"];
+
 export enum CaseStatus {
   Closed = 0,
   Open = 1,
 }
+
+export const CaseStatusNames = ["Closed", "Open"];
 
 export enum Category {
   None = 0,
@@ -76,6 +87,30 @@ export enum Category {
   Hacker = 19,
   HighRiskJurisdiction = 20,
 }
+
+export const CategoryNames = [
+  "None",
+  "WalletService",
+  "MerchantService",
+  "MiningPool",
+  "Exchange",
+  "DeFi",
+  "OTCBroker",
+  "ATM",
+  "Gambling",
+  "IllicitOrganization",
+  "Mixer",
+  "DarknetService",
+  "Scam",
+  "Ransomware",
+  "Theft",
+  "Counterfeit",
+  "TerroristFinancing",
+  "Sanctions",
+  "ChildAbuse",
+  "Hacker",
+  "HighRiskJurisdiction",
+];
 
 export interface Result {
   transactionHash: string;
