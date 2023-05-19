@@ -10,6 +10,7 @@ import {
 } from "./lib";
 import { programError } from "./util/error";
 import { metadata } from "../target/idl/hapi_core_solana.json";
+import { log } from "console";
 
 describe("HapiCore Network", () => {
   const program = initHapiCore(new web3.PublicKey(metadata.address));
@@ -17,7 +18,7 @@ describe("HapiCore Network", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const authority = web3.Keypair.generate();
+  const authority = provider.wallet;//web3.Keypair.generate();
   const another_authority = web3.Keypair.generate();
 
   const networkName = "Near";
@@ -26,6 +27,7 @@ describe("HapiCore Network", () => {
   let rewardToken: TestToken;
 
   beforeAll(async () => {
+
     stakeToken = new TestToken(provider);
     await stakeToken.mint(1_000_000_000);
 
@@ -62,6 +64,11 @@ describe("HapiCore Network", () => {
       assetConfirmationReward: new BN(4_000),
     };
 
+    const programDataAddress = web3.PublicKey.findProgramAddressSync(
+      [program.programId.toBytes()],
+      new anchor.web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
+    )[0];
+
     it("fail - invalid token owner", async () => {
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
@@ -88,10 +95,11 @@ describe("HapiCore Network", () => {
               rewardMint: rewardToken.mintAccount,
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
+              programAccount: program.programId,
+              programData: programDataAddress,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [authority]
           }),
         programError("IllegalOwner")
       );
@@ -124,10 +132,11 @@ describe("HapiCore Network", () => {
               rewardMint: rewardToken.mintAccount,
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
+              programAccount: program.programId,
+              programData: programDataAddress,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [authority]
           }),
         programError("InvalidToken")
       );
@@ -159,10 +168,11 @@ describe("HapiCore Network", () => {
           rewardMint: rewardToken.mintAccount,
           stakeMint: stakeToken.mintAccount,
           stakeTokenAccount,
+          programAccount: program.programId,
+          programData: programDataAddress,
           tokenProgram: rewardToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
-        signers: [authority]
       });
 
       const fetchedNetworkAccount = await program.account.network.fetch(
@@ -218,10 +228,11 @@ describe("HapiCore Network", () => {
               rewardMint: rewardToken.mintAccount,
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
+              programAccount: program.programId,
+              programData: programDataAddress,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
-            signers: [authority]
           }),
         /custom program error: 0x0/
       );
@@ -284,7 +295,7 @@ describe("HapiCore Network", () => {
           authority: authority.publicKey,
           network: networkAccount,
         },
-        signers: [authority]
+        // signers: [authority]
       });
 
       const fetchedNetworkAccount = await program.account.network.fetch(
@@ -337,7 +348,6 @@ describe("HapiCore Network", () => {
               newAuthority: authority.publicKey,
               network: networkAccount,
             },
-            signers: [authority]
           }),
         programError("AuthorityMismatch")
       );
@@ -355,7 +365,6 @@ describe("HapiCore Network", () => {
           newAuthority: another_authority.publicKey,
           network: networkAccount,
         },
-        signers: [authority]
       });
 
       const fetchedNetworkAccount = await program.account.network.fetch(

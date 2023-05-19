@@ -6,6 +6,7 @@ use {
 use crate::{
     error::ErrorCode,
     id,
+    program::HapiCoreSolana,
     state::{network::*, ACCOUNT_RESERVE_SPACE},
 };
 
@@ -49,6 +50,18 @@ pub struct CreateNetwork<'info> {
 
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,
+
+    #[account(
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
+        constraint = program_account.key() == id(),
+
+    )]
+    pub program_account: Program<'info, HapiCoreSolana>,
+
+    #[account(
+        constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
+    )]
+    pub program_data: Account<'info, ProgramData>,
 
     pub system_program: Program<'info, System>,
 }

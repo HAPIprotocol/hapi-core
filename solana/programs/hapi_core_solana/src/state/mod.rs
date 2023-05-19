@@ -1,4 +1,5 @@
 pub mod network;
+pub mod reporter;
 
 /// Anchor discriminator length
 pub const DISCRIMINATOR_LENGTH: usize = 8;
