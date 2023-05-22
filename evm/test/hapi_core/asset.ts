@@ -56,7 +56,7 @@ describe("HapiCore: Asset", function () {
 
     expect(await hapiCore.getAssetCount()).to.equal(1);
 
-    expect(await hapiCore.getAssets(10, 0)).to.deep.equal([
+    expect(await hapiCore.getAssets(0, 10)).to.deep.equal([
       [
         asset.addr,
         asset.assetId,

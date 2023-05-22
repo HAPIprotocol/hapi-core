@@ -52,7 +52,7 @@ describe("HapiCore: Address", function () {
 
     expect(await hapiCore.getAddressCount()).to.equal(1);
 
-    expect(await hapiCore.getAddresses(10, 0)).to.deep.equal([
+    expect(await hapiCore.getAddresses(0, 10)).to.deep.equal([
       [
         address.addr,
         address.caseId,

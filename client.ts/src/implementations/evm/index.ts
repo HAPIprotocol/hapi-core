@@ -21,9 +21,10 @@ import {
   RewardConfiguration,
   StakeConfiguration,
   Uuid,
-} from "../interface";
-import { bigIntToUuid, uuidToBigNumberish } from "../util";
-import { BigNumber } from "@ethersproject/bignumber";
+} from "../../interface";
+import { bigIntToUuid, uuidToBigNumberish } from "../../util";
+import { getTokenContract } from "./token";
+import { ReporterRoleToString } from "../../util";
 
 export interface EvmConnectionOptions {
   network: HapiCoreNetwork.Ethereum | HapiCoreNetwork.BSC;
@@ -39,6 +40,8 @@ export interface EvmProviderOptions {
 
 export class HapiCoreEvm implements HapiCore {
   private contract: typechain.HapiCore;
+  private provider: Provider;
+  private signer?: Signer;
 
   constructor(options: EvmConnectionOptions) {
     if (options.provider.constructor.name !== "Provider") {
@@ -54,6 +57,9 @@ export class HapiCoreEvm implements HapiCore {
       );
     }
 
+    this.provider = options.provider as Provider;
+    this.signer = options.signer as Signer;
+
     this.contract = typechain.HapiCore__factory.connect(
       options.address || HapiCoreAddresses[options.network],
       options.signer || (options.provider as Provider)
@@ -61,6 +67,10 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async setAuthority(address: Addr): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.setAuthority(address);
     return { transactionHash: tx.hash };
   }
@@ -77,6 +87,10 @@ export class HapiCoreEvm implements HapiCore {
     publisherStake: Amount,
     authorityStake: Amount
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateStakeConfiguration(
       token,
       unlockDuration,
@@ -105,6 +119,10 @@ export class HapiCoreEvm implements HapiCore {
     addressConfirmationReward: Amount,
     traceReward: Amount
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateRewardConfiguration(
       token,
       addressConfirmationReward,
@@ -130,6 +148,10 @@ export class HapiCoreEvm implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.createReporter(
       uuidToBigNumberish(id),
       account,
@@ -155,6 +177,25 @@ export class HapiCoreEvm implements HapiCore {
     };
   }
 
+  async getReporterCount(): Promise<number> {
+    const count = await this.contract.getReporterCount();
+    return count.toNumber();
+  }
+
+  async getReporters(skip: number, take: number): Promise<Reporter[]> {
+    const reporters = await this.contract.getReporters(skip, take);
+    return reporters.map((r) => ({
+      id: bigIntToUuid(r.id),
+      account: r.account,
+      role: r.role,
+      status: r.status,
+      name: r.name,
+      url: r.url,
+      stake: r.stake.toString(),
+      unlockTimestamp: r.unlock_timestamp.toNumber(),
+    }));
+  }
+
   async updateReporter(
     id: Uuid,
     role: ReporterRole,
@@ -162,6 +203,10 @@ export class HapiCoreEvm implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateReporter(
       uuidToBigNumberish(id),
       role.toString(),
@@ -173,21 +218,76 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async activateReporter(): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
+    const stakeConfiguration = await this.contract.stakeConfiguration();
+    console.log("Stake token:", stakeConfiguration.token);
+
+    const stakeToken = getTokenContract(stakeConfiguration.token, this.signer);
+    const balance = await stakeToken.balanceOf(await this.signer.getAddress());
+
+    console.log("Balance:", balance.toString());
+
+    const id = await this.contract.getMyReporterId();
+    console.log("Reporter ID:", id);
+
+    const reporter = await this.contract.getReporter(id);
+    console.log("Role:", ReporterRoleToString(reporter.role));
+
+    let stakeAmount;
+    switch (reporter.role) {
+      case ReporterRole.Validator:
+        stakeAmount = stakeConfiguration.validator_stake;
+        break;
+      case ReporterRole.Tracer:
+        stakeAmount = stakeConfiguration.tracer_stake;
+        break;
+      case ReporterRole.Publisher:
+        stakeAmount = stakeConfiguration.publisher_stake;
+        break;
+      case ReporterRole.Authority:
+        stakeAmount = stakeConfiguration.authority_stake;
+        break;
+      default:
+        throw new Error("Couldn't find stake amount for role");
+    }
+
+    console.log("Stake amount:", stakeAmount.toString());
+
+    await stakeToken.approve(
+      this.contract.address,
+      stakeConfiguration.authority_stake
+    );
+
     const tx = await this.contract.activateReporter();
     return { transactionHash: tx.hash };
   }
 
   async deactivateReporter(): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.deactivateReporter();
     return { transactionHash: tx.hash };
   }
 
   async unstakeReporter(): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.unstake();
     return { transactionHash: tx.hash };
   }
 
   async createCase(id: string, name: string, url: string): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.createCase(
       uuidToBigNumberish(id),
       name,
@@ -206,12 +306,31 @@ export class HapiCoreEvm implements HapiCore {
     };
   }
 
+  async getCaseCount(): Promise<number> {
+    const count = await this.contract.getCaseCount();
+    return count.toNumber();
+  }
+
+  async getCases(skip: number, take: number): Promise<Case[]> {
+    const cases = await this.contract.getCases(skip, take);
+    return cases.map((c) => ({
+      id: bigIntToUuid(c.id),
+      name: c.name,
+      url: c.url,
+      status: c.status,
+    }));
+  }
+
   async updateCase(
     id: Uuid,
     name: Addr,
     url: string,
     status: CaseStatus
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateCase(
       uuidToBigNumberish(id),
       name,
@@ -227,6 +346,10 @@ export class HapiCoreEvm implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.createAddress(
       address,
       uuidToBigNumberish(caseId),
@@ -241,10 +364,26 @@ export class HapiCoreEvm implements HapiCore {
     return {
       address: a.addr.toString(),
       caseId: bigIntToUuid(a.case_id),
-      reporterId: a.reporter_id.toString(),
+      reporterId: bigIntToUuid(a.reporter_id),
       risk: a.risk,
       category: a.category,
     };
+  }
+
+  async getAddressCount(): Promise<number> {
+    const count = await this.contract.getAddressCount();
+    return count.toNumber();
+  }
+
+  async getAddresses(skip: number, take: number): Promise<Address[]> {
+    const addresses = await this.contract.getAddresses(skip, take);
+    return addresses.map((a) => ({
+      address: a.addr.toString(),
+      caseId: bigIntToUuid(a.case_id),
+      reporterId: bigIntToUuid(a.reporter_id),
+      risk: a.risk,
+      category: a.category,
+    }));
   }
 
   async updateAddress(
@@ -253,6 +392,10 @@ export class HapiCoreEvm implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateAddress(
       address,
       uuidToBigNumberish(caseId),
@@ -269,6 +412,10 @@ export class HapiCoreEvm implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.createAsset(
       address,
       assetId,
@@ -291,6 +438,23 @@ export class HapiCoreEvm implements HapiCore {
     };
   }
 
+  async getAssetCount(): Promise<number> {
+    const count = await this.contract.getAssetCount();
+    return count.toNumber();
+  }
+
+  async getAssets(skip: number, take: number): Promise<Asset[]> {
+    const assets = await this.contract.getAssets(skip, take);
+    return assets.map((a) => ({
+      address: a.addr.toString(),
+      assetId: a.asset_id.toString(),
+      caseId: bigIntToUuid(a.case_id),
+      reporterId: bigIntToUuid(a.reporter_id),
+      risk: a.risk,
+      category: a.category,
+    }));
+  }
+
   async updateAsset(
     address: Addr,
     assetId: string,
@@ -298,6 +462,10 @@ export class HapiCoreEvm implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
     const tx = await this.contract.updateAsset(
       address,
       assetId,

@@ -48,7 +48,7 @@ describe("HapiCore: Case", function () {
 
     expect(await hapiCore.getCaseCount()).to.equal(2);
 
-    expect(await hapiCore.getCases(10, 0)).to.deep.equal([
+    expect(await hapiCore.getCases(0, 10)).to.deep.equal([
       [
         case1.id,
         case1.name,

@@ -23,7 +23,7 @@ export const HapiCoreNetworks = [
 export const HapiCoreAddresses: {
   [key in HapiCoreNetwork]: string;
 } = {
-  [HapiCoreNetwork.Ethereum]: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  [HapiCoreNetwork.Ethereum]: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
   [HapiCoreNetwork.BSC]: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
   [HapiCoreNetwork.Solana]: "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6",
   [HapiCoreNetwork.Bitcoin]: "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6",
@@ -212,6 +212,12 @@ export interface HapiCore {
   /// Returns the reporter
   getReporter(id: Uuid): Promise<Reporter>;
 
+  /// Returns the reporter count
+  getReporterCount(): Promise<number>;
+
+  /// Returns a paged reporter list
+  getReporters(skip: number, take: number): Promise<Reporter[]>;
+
   /// Update an existing reporter
   updateReporter(
     id: Uuid,
@@ -236,6 +242,12 @@ export interface HapiCore {
   /// Returns the case
   getCase(id: Uuid): Promise<Case>;
 
+  /// Returns the case count
+  getCaseCount(): Promise<number>;
+
+  /// Returns a paged case list
+  getCases(skip: number, take: number): Promise<Case[]>;
+
   /// Update an existing case
   updateCase(
     id: Uuid,
@@ -254,6 +266,12 @@ export interface HapiCore {
 
   /// Returns the address
   getAddress(address: Addr): Promise<Address>;
+
+  /// Returns the address count
+  getAddressCount(): Promise<number>;
+
+  /// Returns a paged address list
+  getAddresses(skip: number, take: number): Promise<Address[]>;
 
   /// Update an existing address
   updateAddress(
@@ -274,6 +292,12 @@ export interface HapiCore {
 
   /// Returns the asset
   getAsset(address: Addr, assetId: string): Promise<Asset>;
+
+  /// Returns the asset count
+  getAssetCount(): Promise<number>;
+
+  /// Returns a paged asset list
+  getAssets(skip: number, take: number): Promise<Asset[]>;
 
   /// Update an existing asset
   updateAsset(

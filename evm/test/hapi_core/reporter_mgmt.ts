@@ -181,7 +181,7 @@ describe("HapiCore: Reporter management", function () {
       reporter2.url
     );
 
-    expect(await hapiCore.getReporters(1, 0)).to.deep.equal([
+    expect(await hapiCore.getReporters(0, 1)).to.deep.equal([
       [
         reporter1.id,
         reporter1.account,
@@ -207,7 +207,7 @@ describe("HapiCore: Reporter management", function () {
       ],
     ]);
 
-    expect(await hapiCore.getReporters(2, 0)).to.deep.equal([
+    expect(await hapiCore.getReporters(0, 2)).to.deep.equal([
       [
         reporter1.id,
         reporter1.account,
@@ -230,7 +230,7 @@ describe("HapiCore: Reporter management", function () {
       ],
     ]);
 
-    expect(await hapiCore.getReporters(100, 5)).to.deep.equal([]);
+    expect(await hapiCore.getReporters(5, 100)).to.deep.equal([]);
   });
 
   it("Should retrieve reporter count", async function () {

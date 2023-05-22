@@ -372,7 +372,7 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Retrieves caller's reporter ID
      */
-    function getMyReporterId() private view returns (uint128) {
+    function getMyReporterId() public view returns (uint128) {
         return _reporter_ids_by_account[_msgSender()];
     }
 
@@ -381,7 +381,7 @@ contract HapiCore is OwnableUpgradeable {
      *
      * @dev Panics if the caller is not a reporter
      */
-    function getMyRole() private view returns (ReporterRole) {
+    function getMyRole() public view returns (ReporterRole) {
         uint128 id = getMyReporterId();
 
         require(id > 0, "Caller is not a reporter");
@@ -409,12 +409,12 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Retrieves paged reporter list
      *
-     * @param take Number of reporters to retrieve
      * @param skip Number of reporters to skip
+     * @param take Number of reporters to retrieve
      */
     function getReporters(
-        uint take,
-        uint skip
+        uint skip,
+        uint take
     ) public view returns (Reporter[] memory) {
         uint length = _reporter_ids.length;
 
@@ -687,12 +687,12 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Retrieves paged case list
      *
-     * @param take Number of cases to retrieve
      * @param skip Number of cases to skip
+     * @param take Number of cases to retrieve
      */
     function getCases(
-        uint take,
-        uint skip
+        uint skip,
+        uint take
     ) public view virtual returns (Case[] memory) {
         uint length = _case_ids.length;
 
@@ -794,6 +794,7 @@ contract HapiCore is OwnableUpgradeable {
         Category category
     ) public {
         require(_cases[case_id].id > 0, "Case does not exist");
+        require(_cases[case_id].status == CaseStatus.Open, "Case is closed");
         require(_addresses[addr].addr == address(0), "Address already exists");
         require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
 
@@ -895,12 +896,12 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Retrieves paged address list
      *
-     * @param take Number of addresses to retrieve
      * @param skip Number of addresses to skip
+     * @param take Number of addresses to retrieve
      */
     function getAddresses(
-        uint take,
-        uint skip
+        uint skip,
+        uint take
     ) public view virtual returns (Address[] memory) {
         uint length = _address_addrs.length;
 
@@ -986,6 +987,7 @@ contract HapiCore is OwnableUpgradeable {
         Category category
     ) public {
         require(_cases[case_id].id > 0, "Case does not exist");
+        require(_cases[case_id].status == CaseStatus.Open, "Case is closed");
         require(
             _assets[addr][asset_id].addr == address(0),
             "Asset already exists"
@@ -1104,12 +1106,12 @@ contract HapiCore is OwnableUpgradeable {
     /**
      * Retrieves paged asset list
      *
-     * @param take Number of addresses to retrieve
      * @param skip Number of addresses to skip
+     * @param take Number of addresses to retrieve
      */
     function getAssets(
-        uint take,
-        uint skip
+        uint skip,
+        uint take
     ) public view virtual returns (Asset[] memory) {
         uint length = _asset_addrs.length;
 

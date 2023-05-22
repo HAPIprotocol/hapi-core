@@ -125,6 +125,29 @@ yargs(hideBin(process.argv))
     cmdWrapper(getReporter)
   )
   .command(
+    "get-reporter-count",
+    "Get reporter count",
+    {},
+    cmdWrapper(getReporterCount)
+  )
+  .command(
+    "get-reporters",
+    "Get reporters",
+    {
+      skip: {
+        number: true,
+        description: "Skip",
+        default: 0,
+      },
+      take: {
+        number: true,
+        description: "Take",
+        default: 10,
+      },
+    },
+    cmdWrapper(getReporters)
+  )
+  .command(
     "create-reporter",
     "Create reporter",
     {
@@ -193,6 +216,24 @@ yargs(hideBin(process.argv))
     cmdWrapper(updateReporter)
   )
   .command(
+    "activate-reporter",
+    "Activate reporter",
+    {},
+    cmdWrapper(activateReporter)
+  )
+  .command(
+    "deactivate-reporter",
+    "Deactivate reporter",
+    {},
+    cmdWrapper(deactivateReporter)
+  )
+  .command(
+    "unstake-reporter",
+    "Unstake reporter",
+    {},
+    cmdWrapper(unstakeReporter)
+  )
+  .command(
     "get-case",
     "Get case",
     {
@@ -204,6 +245,24 @@ yargs(hideBin(process.argv))
       },
     },
     cmdWrapper(getCase)
+  )
+  .command("get-case-count", "Get case count", {}, cmdWrapper(getCaseCount))
+  .command(
+    "get-cases",
+    "Get cases",
+    {
+      skip: {
+        number: true,
+        description: "Skip",
+        default: 0,
+      },
+      take: {
+        number: true,
+        description: "Take",
+        default: 10,
+      },
+    },
+    cmdWrapper(getCases)
   )
   .command(
     "create-case",
@@ -268,6 +327,29 @@ yargs(hideBin(process.argv))
       },
     },
     cmdWrapper(getAddress)
+  )
+  .command(
+    "get-address-count",
+    "Get address count",
+    {},
+    cmdWrapper(getAddressCount)
+  )
+  .command(
+    "get-addresses",
+    "Get addresses",
+    {
+      skip: {
+        number: true,
+        description: "Skip",
+        default: 0,
+      },
+      take: {
+        number: true,
+        description: "Take",
+        default: 10,
+      },
+    },
+    cmdWrapper(getAddresses)
   )
   .command(
     "create-address",
@@ -345,6 +427,24 @@ yargs(hideBin(process.argv))
       },
     },
     cmdWrapper(getAsset)
+  )
+  .command("get-asset-count", "Get asset count", {}, cmdWrapper(getAssetCount))
+  .command(
+    "get-assets",
+    "Get assets",
+    {
+      skip: {
+        number: true,
+        description: "Skip",
+        default: 0,
+      },
+      take: {
+        number: true,
+        description: "Take",
+        default: 10,
+      },
+    },
+    cmdWrapper(getAssets)
   )
   .command(
     "create-asset",
@@ -435,7 +535,7 @@ yargs(hideBin(process.argv))
     description: "Signer's private key",
     type: "string",
   })
-  .demandCommand(1)
+  .demandCommand()
   .help()
   .parse();
 
@@ -463,12 +563,15 @@ function cmdWrapper(
       await fn(await setup(argv), argv);
     } catch (error) {
       if (argv.verbose) {
-        console.error(error);
+        console.error((error as any).error);
       } else {
         const abstractError = error as any;
         console.error(
           `Error: ${
-            abstractError.reason || abstractError.message || abstractError
+            (abstractError.error ? abstractError.error.reason : null) ||
+            abstractError.reason ||
+            abstractError.message ||
+            abstractError
           }`
         );
       }
@@ -539,6 +642,26 @@ async function getReporter(setup: Setup, argv: any) {
   });
 }
 
+async function getReporterCount(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getReporterCount());
+}
+
+async function getReporters(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  const reporters = await hapiCore.getReporters(argv.skip, argv.take);
+
+  console.log(
+    reporters.map((reporter) => ({
+      ...reporter,
+      role: ReporterRoleToString(reporter.role),
+      status: ReporterStatusToString(reporter.status),
+    }))
+  );
+}
+
 async function createReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
@@ -567,6 +690,24 @@ async function updateReporter(setup: Setup, argv: any) {
   );
 }
 
+async function activateReporter(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.activateReporter());
+}
+
+async function deactivateReporter(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.deactivateReporter());
+}
+
+async function unstakeReporter(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.unstakeReporter());
+}
+
 async function getCase(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
@@ -576,6 +717,25 @@ async function getCase(setup: Setup, argv: any) {
     ...case_,
     status: CaseStatusToString(case_.status),
   });
+}
+
+async function getCaseCount(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getCaseCount());
+}
+
+async function getCases(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  const cases = await hapiCore.getCases(argv.skip, argv.take);
+
+  console.log(
+    cases.map((case_) => ({
+      ...case_,
+      status: CaseStatusToString(case_.status),
+    }))
+  );
 }
 
 async function createCase(setup: Setup, argv: any) {
@@ -601,6 +761,18 @@ async function getAddress(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
   console.log(await hapiCore.getAddress(argv.address));
+}
+
+async function getAddressCount(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getAddressCount());
+}
+
+async function getAddresses(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getAddresses(argv.skip, argv.take));
 }
 
 async function createAddress(setup: Setup, argv: any) {
@@ -633,6 +805,18 @@ async function getAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
   console.log(await hapiCore.getAsset(argv.address, argv.id));
+}
+
+async function getAssetCount(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getAssetCount());
+}
+
+async function getAssets(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  console.log(await hapiCore.getAssets(argv.skip, argv.take));
 }
 
 async function createAsset(setup: Setup, argv: any) {

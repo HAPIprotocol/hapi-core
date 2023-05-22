@@ -16,8 +16,9 @@ describe("HapiCore: Configuration", function () {
   it("Should update stake configuration", async function () {
     const { hapiCore } = await loadFixture(basicFixture);
 
-    await expect(hapiCore.stakeConfiguration())
-      .to.be.revertedWith("Stake configuration is not set");
+    await expect(hapiCore.stakeConfiguration()).to.be.revertedWith(
+      "Stake configuration is not set"
+    );
 
     const stakeTokenAddress = "0xdEADBEeF00000000000000000000000000000000";
 
@@ -54,11 +55,9 @@ describe("HapiCore: Configuration", function () {
   it("Should update reward configuration", async function () {
     const { hapiCore } = await loadFixture(basicFixture);
 
-    expect(await hapiCore.rewardConfiguration()).to.deep.equal([
-      ethers.constants.AddressZero,
-      0,
-      0,
-    ]);
+    await expect(hapiCore.rewardConfiguration()).to.be.revertedWith(
+      "Reward configuration is not set"
+    );
 
     const rewardTokenAddress = "0xdEADBEeF00000000000000000000000000000000";
 

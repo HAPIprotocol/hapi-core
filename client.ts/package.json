@@ -10,14 +10,15 @@
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
   "dependencies": {
+    "@ethersproject/contracts": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@ethersproject/wallet": "^5.7.0",
-    "@types/yargs": "^17.0.24",
     "@types/node": "^20.2.0",
     "@types/uuid": "^9.0.1",
+    "@types/yargs": "^17.0.24",
+    "ethers": "^6.3.0",
     "hapi-core-evm": "file:../evm",
     "uuid": "^9.0.0",
-    "yargs": "^17.7.2",
-    "ethers": "^6.3.0"
+    "yargs": "^17.7.2"
   }
 }

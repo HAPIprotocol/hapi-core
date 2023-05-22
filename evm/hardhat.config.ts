@@ -18,7 +18,7 @@ const config: HardhatUserConfig = {
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
-    }
+    },
   },
   gasReporter: {
     currency: "ETH",
@@ -57,6 +57,29 @@ task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
     process.exit(1);
   }
 });
+
+task("deploy-test-token", "Deploys the HAPI Test Token contract").setAction(
+  async (_, hre) => {
+    try {
+      let network = await hre.ethers.provider.getNetwork();
+
+      console.log(`Deploying to '${network.name}' (${network.chainId})`);
+
+      const TestToken = await hre.ethers.getContractFactory("Token");
+
+      const contract = await TestToken.deploy();
+
+      await contract.deployed();
+
+      console.log(`HAPI Test Token deployed`, {
+        contract: contract.address,
+      });
+    } catch (error) {
+      console.error(`${error}`);
+      process.exit(1);
+    }
+  }
+);
 
 task("upgrade", "Upgrades the HAPI Core contract")
   .addParam("address", "Contract address")

@@ -77,6 +77,14 @@ export class HapiCoreNear implements HapiCore {
     throw new Error("Method not implemented.");
   }
 
+  async getReporterCount(): Promise<number> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getReporters(skip: number, take: number): Promise<Reporter[]> {
+    throw new Error("Method not implemented.");
+  }
+
   async updateReporter(
     id: string,
     role: ReporterRole,
@@ -107,6 +115,14 @@ export class HapiCoreNear implements HapiCore {
     throw new Error("Method not implemented.");
   }
 
+  async getCaseCount(): Promise<number> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getCases(skip: number, take: number): Promise<Case[]> {
+    throw new Error("Method not implemented.");
+  }
+
   async updateCase(
     id: string,
     name: string,
@@ -126,6 +142,14 @@ export class HapiCoreNear implements HapiCore {
   }
 
   async getAddress(address: string): Promise<Address> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAddressCount(): Promise<number> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAddresses(skip: number, take: number): Promise<Address[]> {
     throw new Error("Method not implemented.");
   }
 
@@ -149,6 +173,14 @@ export class HapiCoreNear implements HapiCore {
   }
 
   async getAsset(address: string, assetId: string): Promise<Asset> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAssetCount(): Promise<number> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getAssets(skip: number, take: number): Promise<Asset[]> {
     throw new Error("Method not implemented.");
   }
 
