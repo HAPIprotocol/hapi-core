@@ -16,8 +16,8 @@ const config: HardhatUserConfig = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
     },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${process.env.INFURA_KEY}`,
+    sepolia: {
+      url: `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`,
     },
   },
   gasReporter: {
@@ -29,11 +29,21 @@ const config: HardhatUserConfig = {
 
 task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
   try {
+    const pk = process.env.PRIVATE_KEY;
+
+    if (!pk) {
+      throw new Error("No private key provided (use PRIVATE_KEY env var)");
+    }
+
+    const wallet = new hre.ethers.Wallet(pk, hre.ethers.provider);
+
+    console.log(`Using wallet: ${wallet.address}`);
+
     let network = await hre.ethers.provider.getNetwork();
 
     console.log(`Deploying to '${network.name}' (${network.chainId})`);
 
-    const HapiCore = await hre.ethers.getContractFactory("HapiCore");
+    const HapiCore = await hre.ethers.getContractFactory("HapiCore", wallet);
 
     const contract = await hre.upgrades.deployProxy(HapiCore, [], {
       initializer: "initialize",
