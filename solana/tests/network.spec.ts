@@ -64,11 +64,6 @@ describe("HapiCore Network", () => {
       assetConfirmationReward: new BN(4_000),
     };
 
-    const programDataAddress = web3.PublicKey.findProgramAddressSync(
-      [program.programId.toBytes()],
-      new anchor.web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
-    )[0];
-
     it("fail - invalid token owner", async () => {
 
       const [networkAccount, bump] = await program.pda.findNetworkAddress(
@@ -96,7 +91,7 @@ describe("HapiCore Network", () => {
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
               programAccount: program.programId,
-              programData: programDataAddress,
+              programData: program.programId,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -133,7 +128,7 @@ describe("HapiCore Network", () => {
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
               programAccount: program.programId,
-              programData: programDataAddress,
+              programData: program.programId,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },
@@ -169,7 +164,7 @@ describe("HapiCore Network", () => {
           stakeMint: stakeToken.mintAccount,
           stakeTokenAccount,
           programAccount: program.programId,
-          programData: programDataAddress,
+          programData: program.programId,
           tokenProgram: rewardToken.programId,
           systemProgram: web3.SystemProgram.programId,
         },
@@ -229,7 +224,7 @@ describe("HapiCore Network", () => {
               stakeMint: stakeToken.mintAccount,
               stakeTokenAccount,
               programAccount: program.programId,
-              programData: programDataAddress,
+              programData: program.programId,
               tokenProgram: rewardToken.programId,
               systemProgram: web3.SystemProgram.programId,
             },

@@ -12,7 +12,7 @@ hapi_core_solana = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 hapi_core_solana = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

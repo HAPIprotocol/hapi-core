@@ -7,7 +7,7 @@ use crate::{
     error::ErrorCode,
     id,
     program::HapiCoreSolana,
-    state::{network::*, ACCOUNT_RESERVE_SPACE},
+    state::{network::*, reporter::*, ACCOUNT_RESERVE_SPACE},
 };
 
 #[derive(Accounts)]
@@ -52,16 +52,16 @@ pub struct CreateNetwork<'info> {
     pub token_program: Program<'info, Token>,
 
     #[account(
-        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
         constraint = program_account.key() == id(),
 
     )]
     pub program_account: Program<'info, HapiCoreSolana>,
 
     #[account(
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
         constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
     )]
-    pub program_data: Account<'info, ProgramData>,
+    pub program_data: Option<Account<'info, ProgramData>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -96,4 +96,57 @@ pub struct SetAuthority<'info> {
         constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
     )]
     pub new_authority: AccountInfo<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(
+    reporter_id: u64,
+    bump: u8,
+)]
+pub struct CreateReporter<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // TODO: avoid network
+    #[account(
+        mut,
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        init,
+        payer = authority,
+        owner = id(),
+        seeds = [b"reporter".as_ref(), &reporter_id.to_le_bytes()],
+        bump,
+        space = Reporter::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateReporter<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    // TODO: avoid network
+    #[account(
+        mut,
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        seeds = [b"reporter".as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
 }

@@ -5,7 +5,8 @@ mod error;
 mod state;
 
 use context::*;
-use state::network::*;
+use error::{print_error, ErrorCode};
+use state::{network::*, reporter::*};
 
 declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
 
@@ -21,6 +22,11 @@ pub mod hapi_core_solana {
         bump: u8,
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
+
+        #[cfg(not(feature = "testing"))]
+        if ctx.accounts.program_data.is_none() {
+            print_error(ErrorCode::AbsentProgramData)?;
+        }
 
         network.bump = bump;
         network.name = name;
@@ -51,6 +57,49 @@ pub mod hapi_core_solana {
         let network = &mut ctx.accounts.network;
 
         network.authority = ctx.accounts.new_authority.key();
+
+        Ok(())
+    }
+
+    pub fn create_reporter(
+        ctx: Context<CreateReporter>,
+        reporter_id: u64,
+        account: Pubkey,
+        name: [u8; 32],
+        role: ReporterRole,
+        url: String,
+        bump: u8,
+    ) -> Result<()> {
+        let reporter = &mut ctx.accounts.reporter;
+
+        reporter.bump = bump;
+        reporter.id = reporter_id;
+        reporter.account = account;
+        reporter.name = name;
+        reporter.role = role;
+        reporter.status = ReporterStatus::Inactive;
+        reporter.url = url;
+        reporter.stake = 0;
+        reporter.version = Reporter::VERSION;
+
+        Ok(())
+    }
+
+    pub fn update_reporter(
+        ctx: Context<UpdateReporter>,
+        id: u64,
+        account: Pubkey,
+        name: [u8; 32],
+        role: ReporterRole,
+        url: String,
+    ) -> Result<()> {
+        let reporter = &mut ctx.accounts.reporter;
+
+        reporter.id = id;
+        reporter.account = account;
+        reporter.name = name;
+        reporter.role = role;
+        reporter.url = url;
 
         Ok(())
     }
