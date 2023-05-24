@@ -14,7 +14,6 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-testing = []
 
 [dependencies]
 anchor-lang = "0.27.0"

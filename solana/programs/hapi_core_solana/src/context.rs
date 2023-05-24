@@ -48,20 +48,16 @@ pub struct CreateNetwork<'info> {
     )]
     pub stake_token_account: Account<'info, TokenAccount>,
 
-    #[account(address = Token::id())]
-    pub token_program: Program<'info, Token>,
-
     #[account(
-        constraint = program_account.key() == id(),
-
+        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
     )]
     pub program_account: Program<'info, HapiCoreSolana>,
 
     #[account(
-        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
         constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
     )]
-    pub program_data: Option<Account<'info, ProgramData>>,
+    pub program_data: Account<'info, ProgramData>,
 
     pub system_program: Program<'info, System>,
 }
@@ -107,15 +103,6 @@ pub struct CreateReporter<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    // TODO: avoid network
-    #[account(
-        mut,
-        has_one = authority @ ErrorCode::AuthorityMismatch,
-        seeds = [b"network".as_ref(), network.name.as_ref()],
-        bump = network.bump,
-    )]
-    pub network: Account<'info, Network>,
-
     #[account(
         init,
         payer = authority,
@@ -126,6 +113,17 @@ pub struct CreateReporter<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 
+    #[account(
+        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
+    )]
+    pub program_account: Program<'info, HapiCoreSolana>,
+
+    #[account(
+        constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
+    )]
+    pub program_data: Account<'info, ProgramData>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -134,19 +132,22 @@ pub struct UpdateReporter<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    // TODO: avoid network
     #[account(
         mut,
-        has_one = authority @ ErrorCode::AuthorityMismatch,
-        seeds = [b"network".as_ref(), network.name.as_ref()],
-        bump = network.bump,
-    )]
-    pub network: Account<'info, Network>,
-
-    #[account(
         owner = id(),
         seeds = [b"reporter".as_ref(), &reporter.id.to_le_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
+    )]
+    pub program_account: Program<'info, HapiCoreSolana>,
+
+    #[account(
+        constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
+    )]
+    pub program_data: Account<'info, ProgramData>,
 }

@@ -10,8 +10,8 @@ pub enum ErrorCode {
     IllegalOwner,
     #[msg("Invalid program data account")]
     InvalidProgramData,
-    #[msg("Program data account is absent")]
-    AbsentProgramData,
+    #[msg("Invalid program account")]
+    InvalidProgramAccount,
 }
 
 pub fn print_error(error: ErrorCode) -> Result<()> {

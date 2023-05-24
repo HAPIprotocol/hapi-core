@@ -8,7 +8,7 @@ use context::*;
 use error::{print_error, ErrorCode};
 use state::{network::*, reporter::*};
 
-declare_id!("hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6");
+declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
 #[program]
 pub mod hapi_core_solana {
@@ -22,11 +22,6 @@ pub mod hapi_core_solana {
         bump: u8,
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
-
-        #[cfg(not(feature = "testing"))]
-        if ctx.accounts.program_data.is_none() {
-            print_error(ErrorCode::AbsentProgramData)?;
-        }
 
         network.bump = bump;
         network.name = name;
@@ -87,7 +82,6 @@ pub mod hapi_core_solana {
 
     pub fn update_reporter(
         ctx: Context<UpdateReporter>,
-        id: u64,
         account: Pubkey,
         name: [u8; 32],
         role: ReporterRole,
@@ -95,7 +89,6 @@ pub mod hapi_core_solana {
     ) -> Result<()> {
         let reporter = &mut ctx.accounts.reporter;
 
-        reporter.id = id;
         reporter.account = account;
         reporter.name = name;
         reporter.role = role;

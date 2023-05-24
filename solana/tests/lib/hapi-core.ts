@@ -42,10 +42,10 @@ export function initHapiCore(
   }
 
   async function findReporterAddress(
-    pubkey: web3.PublicKey
+    reporterId: BN
   ) {
     return web3.PublicKey.findProgramAddressSync(
-      [bufferFromString("reporter"), pubkey.toBytes()],
+      [bufferFromString("reporter"), new Uint8Array(reporterId.toArray("le", 8))],
       programId
     );
   }
