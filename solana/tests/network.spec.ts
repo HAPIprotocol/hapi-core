@@ -322,7 +322,6 @@ describe("HapiCore Network", () => {
           authority: authority.publicKey,
           network: networkAccount,
         },
-        // signers: [authority]
       });
 
       const fetchedNetworkAccount = await program.account.network.fetch(
