@@ -13,8 +13,3 @@ pub enum ErrorCode {
     #[msg("Invalid program account")]
     InvalidProgramAccount,
 }
-
-pub fn print_error(error: ErrorCode) -> Result<()> {
-    msg!("Error: {}", error);
-    Err(error.into())
-}

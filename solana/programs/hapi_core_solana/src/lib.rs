@@ -5,7 +5,6 @@ mod error;
 mod state;
 
 use context::*;
-use error::{print_error, ErrorCode};
 use state::{network::*, reporter::*};
 
 declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
