@@ -8,4 +8,8 @@ pub enum ErrorCode {
     AuthorityMismatch,
     #[msg("Account has illegal owner")]
     IllegalOwner,
+    #[msg("Invalid program data account")]
+    InvalidProgramData,
+    #[msg("Invalid program account")]
+    InvalidProgramAccount,
 }
