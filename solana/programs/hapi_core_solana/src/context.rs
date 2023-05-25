@@ -104,25 +104,21 @@ pub struct CreateReporter<'info> {
     pub authority: Signer<'info>,
 
     #[account(
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
         init,
         payer = authority,
         owner = id(),
-        seeds = [b"reporter".as_ref(), &reporter_id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter_id.to_le_bytes()],
         bump,
         space = Reporter::LEN + ACCOUNT_RESERVE_SPACE
     )]
     pub reporter: Account<'info, Reporter>,
-
-    #[account(
-        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
-        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
-    )]
-    pub program_account: Program<'info, HapiCoreSolana>,
-
-    #[account(
-        constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
-    )]
-    pub program_data: Account<'info, ProgramData>,
 
     pub system_program: Program<'info, System>,
 }
@@ -133,21 +129,17 @@ pub struct UpdateReporter<'info> {
     pub authority: Signer<'info>,
 
     #[account(
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
         mut,
         owner = id(),
-        seeds = [b"reporter".as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
-
-    #[account(
-        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
-        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
-    )]
-    pub program_account: Program<'info, HapiCoreSolana>,
-
-    #[account(
-        constraint = program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
-    )]
-    pub program_data: Account<'info, ProgramData>,
 }
