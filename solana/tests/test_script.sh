@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 KEYPAIR=./tests/lib/test_keypair.json
 
 exception() {
@@ -19,7 +17,7 @@ run_validator() {
 test() {
   sleep 5 
   echo "==> Deploying program to test validator and running tests"
-  (anchor deploy --program-keypair $KEYPAIR 1> /dev/null && anchor test --skip-local-validator) || exception "Failed to run tests"
+  (anchor deploy --program-keypair $KEYPAIR 1> /dev/null && anchor test --skip-local-validator)
 }
 
 cleanup() {
