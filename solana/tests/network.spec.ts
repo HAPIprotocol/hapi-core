@@ -24,6 +24,11 @@ describe("HapiCore Network", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
+  const programDataAddress = web3.PublicKey.findProgramAddressSync(
+    [program.programId.toBytes()],
+    new anchor.web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
+  )[0];
+
   beforeAll(async () => {
 
     stakeToken = new TestToken(provider);
@@ -56,11 +61,6 @@ describe("HapiCore Network", () => {
       assetTracerReward: new BN(3_000),
       assetConfirmationReward: new BN(4_000),
     };
-
-    const programDataAddress = web3.PublicKey.findProgramAddressSync(
-      [program.programId.toBytes()],
-      new anchor.web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
-    )[0];
 
     it("fail - authority mismatch", async () => {
 
@@ -354,6 +354,8 @@ describe("HapiCore Network", () => {
               authority: another_authority.publicKey,
               newAuthority: another_authority.publicKey,
               network: networkAccount,
+              programAccount: program.programId,
+              programData: programDataAddress
             },
             signers: [another_authority]
           }),
@@ -373,13 +375,15 @@ describe("HapiCore Network", () => {
               authority: authority.publicKey,
               newAuthority: authority.publicKey,
               network: networkAccount,
+              programAccount: program.programId,
+              programData: programDataAddress
             },
           }),
         programError("AuthorityMismatch")
       );
     });
 
-    it("success", async () => {
+    it("success - program update authority signer", async () => {
 
       const [networkAccount, _] = await program.pda.findNetworkAddress(
         networkName
@@ -390,6 +394,8 @@ describe("HapiCore Network", () => {
           authority: authority.publicKey,
           newAuthority: another_authority.publicKey,
           network: networkAccount,
+          programAccount: program.programId,
+          programData: programDataAddress
         },
       });
 
@@ -398,6 +404,30 @@ describe("HapiCore Network", () => {
       );
 
       expect(fetchedNetworkAccount.authority).toEqual(another_authority.publicKey);
+    });
+
+    it("success - network authority signer", async () => {
+
+      const [networkAccount, _] = await program.pda.findNetworkAddress(
+        networkName
+      );
+
+      await program.rpc.setAuthority({
+        accounts: {
+          authority: another_authority.publicKey,
+          newAuthority: authority.publicKey,
+          network: networkAccount,
+          programAccount: program.programId,
+          programData: programDataAddress
+        },
+        signers: [another_authority]
+      });
+
+      const fetchedNetworkAccount = await program.account.network.fetch(
+        networkAccount
+      );
+
+      expect(fetchedNetworkAccount.authority).toEqual(authority.publicKey);
     });
   });
 

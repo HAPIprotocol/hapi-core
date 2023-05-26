@@ -77,11 +77,13 @@ pub struct UpdateConfiguration<'info> {
 
 #[derive(Accounts)]
 pub struct SetAuthority<'info> {
+    #[account(
+        constraint = network.authority == authority.key() ||  program_data.upgrade_authority_address == Some(authority.key()) @ ErrorCode::AuthorityMismatch,
+    )]
     pub authority: Signer<'info>,
 
     #[account(
         mut,
-        has_one = authority @ ErrorCode::AuthorityMismatch,
         seeds = [b"network".as_ref(), network.name.as_ref()],
         bump = network.bump,
     )]
@@ -92,6 +94,14 @@ pub struct SetAuthority<'info> {
         constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
     )]
     pub new_authority: AccountInfo<'info>,
+
+    #[account(
+        constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
+        constraint = program_account.programdata_address()? == Some(program_data.key()) @ ErrorCode::InvalidProgramData,
+    )]
+    pub program_account: Program<'info, HapiCoreSolana>,
+
+    pub program_data: Account<'info, ProgramData>,
 }
 
 #[derive(Accounts)]
