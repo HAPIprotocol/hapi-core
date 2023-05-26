@@ -153,3 +153,106 @@ pub struct UpdateReporter<'info> {
     )]
     pub reporter: Account<'info, Reporter>,
 }
+
+#[derive(Accounts)]
+pub struct ActivateReporter<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        mut,
+        owner = id(),
+        constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InvalidReporterStatus,
+        constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        mut,
+        constraint = network_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = network_stake_token_account.owner == network.key() @ ErrorCode::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub network_stake_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = reporter_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_stake_token_account.owner == signer.key() @ ErrorCode::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub reporter_stake_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct DeactivateReporter<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        mut,
+        owner = id(),
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+}
+
+#[derive(Accounts)]
+pub struct Unstake<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        mut,
+        owner = id(),
+        constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
+        constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.unlock_timestamp > Clock::get()?.unix_timestamp @ ErrorCode::ReleaseEpochInFuture,
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        constraint = network_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = network_stake_token_account.owner == network.key() @ ErrorCode::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub network_stake_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        constraint = reporter_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
+        constraint = reporter_stake_token_account.owner == signer.key() @ ErrorCode::IllegalOwner,
+        owner = Token::id(),
+    )]
+    pub reporter_stake_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = Token::id())]
+    pub token_program: Program<'info, Token>,
+}

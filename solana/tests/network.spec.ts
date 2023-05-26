@@ -53,6 +53,8 @@ describe("HapiCore Network", () => {
       tracerStake: new BN(3_000),
       publisherStake: new BN(4_000),
       authorityStake: new BN(5_000),
+      appraiserStake: new BN(6_000),
+
     };
 
     const rewardConfiguration = {
@@ -212,6 +214,7 @@ describe("HapiCore Network", () => {
       expect(fetchedNetworkAccount.bump).toEqual(bump);
       expect(fetchedNetworkAccount.stakeMint).toEqual(stakeToken.mintAccount);
       expect(fetchedNetworkAccount.stakeConfiguration.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.appraiserStake.eq(stakeConfiguration.appraiserStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();
@@ -273,6 +276,7 @@ describe("HapiCore Network", () => {
       tracerStake: new BN(4_000),
       publisherStake: new BN(5_000),
       authorityStake: new BN(6_000),
+      appraiserStake: new BN(7_000),
     };
 
     const rewardConfiguration = {
@@ -329,6 +333,7 @@ describe("HapiCore Network", () => {
       );
 
       expect(fetchedNetworkAccount.stakeConfiguration.authorityStake.eq(stakeConfiguration.authorityStake)).toBeTruthy();
+      expect(fetchedNetworkAccount.stakeConfiguration.appraiserStake.eq(stakeConfiguration.appraiserStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.publisherStake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.tracerStake.eq(stakeConfiguration.tracerStake)).toBeTruthy();
       expect(fetchedNetworkAccount.stakeConfiguration.unlockDuration.eq(stakeConfiguration.unlockDuration)).toBeTruthy();

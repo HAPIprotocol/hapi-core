@@ -1,5 +1,5 @@
 use super::DISCRIMINATOR_LENGTH;
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
 
 #[account]
 pub struct Reporter {
@@ -27,12 +27,15 @@ pub struct Reporter {
     /// Current deposited stake
     pub stake: u64,
 
+    /// Duration starting from the deactivation moment
+    pub unlock_timestamp: UnixTimestamp,
+
     /// A link to reporter’s public page
     pub url: String,
 }
 
 impl Reporter {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 1 + 1 + 8 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 1 + 1 + 8 + 8 + 128);
     pub const VERSION: u16 = 1;
 }
 

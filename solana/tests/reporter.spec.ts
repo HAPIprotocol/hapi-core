@@ -8,6 +8,7 @@ import {
     bufferFromString,
     ReporterRole,
     initHapiCore,
+    ReporterStatus
 } from "./lib";
 import { programError } from "./util/error";
 
@@ -54,6 +55,15 @@ describe("HapiCore Reporter", () => {
 
     const NETWORKS = ["ReporterTest", "ReporterTest2"];
 
+    const stakeConfiguration = {
+        unlockDuration: new BN(1_000),
+        validatorStake: new BN(2_000),
+        tracerStake: new BN(3_000),
+        publisherStake: new BN(4_000),
+        authorityStake: new BN(5_000),
+        appraiserStake: new BN(6_000),
+    };
+
     beforeAll(async () => {
 
         const wait: Promise<unknown>[] = [];
@@ -68,14 +78,6 @@ describe("HapiCore Reporter", () => {
             another_authority.publicKey,
             10_000_000
         ));
-
-        const stakeConfiguration = {
-            unlockDuration: new BN(1_000),
-            validatorStake: new BN(2_000),
-            tracerStake: new BN(3_000),
-            publisherStake: new BN(4_000),
-            authorityStake: new BN(5_000),
-        };
 
         const rewardConfiguration = {
             addressTracerReward: new BN(1_000),
@@ -162,7 +164,7 @@ describe("HapiCore Reporter", () => {
 
         });
 
-        it("success", async () => {
+        it("success - alice", async () => {
             const networkName = NETWORKS[0];
 
             const [networkAccount, _] = await program.pda.findNetworkAddress(
@@ -204,6 +206,9 @@ describe("HapiCore Reporter", () => {
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
             expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
+            expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
+            expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+            expect(fetchedReporterAccount.unlockTimestamp).toEqual(0);
             expect(fetchedReporterAccount.url).toEqual(reporter.url);
             expect(fetchedReporterAccount.bump).toEqual(bump);
 
@@ -213,6 +218,62 @@ describe("HapiCore Reporter", () => {
             expect(reporterInfo.value.owner).toEqual(program.programId);
             expect(reporterInfo.value.data.length).toEqual(ACCOUNT_SIZE.reporter);
         });
+
+        it("success - bob", async () => {
+            const networkName = NETWORKS[0];
+
+            const [networkAccount, _] = await program.pda.findNetworkAddress(
+                networkName
+            );
+
+            const reporter = REPORTERS.bob;
+            let name = bufferFromString(reporter.name, 32);
+
+            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const reporterRole = ReporterRole[reporter.role];
+
+            const args = [
+                reporter.id,
+                reporter.keypair.publicKey,
+                name.toJSON().data,
+                reporterRole,
+                reporter.url,
+                bump,
+            ];
+
+            await program.rpc.createReporter(...args, {
+                accounts: {
+                    authority: authority.publicKey,
+                    reporter: reporterAccount,
+                    network: networkAccount,
+                    systemProgram: web3.SystemProgram.programId,
+                },
+            });
+
+            const fetchedReporterAccount = await program.account.reporter.fetch(
+                reporterAccount
+            );
+
+            expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+            expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
+            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+            expect(fetchedReporterAccount.role).toEqual(reporterRole);
+            expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
+            expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
+            expect(fetchedReporterAccount.unlockTimestamp).toEqual(0);
+            expect(fetchedReporterAccount.url).toEqual(reporter.url);
+            expect(fetchedReporterAccount.bump).toEqual(bump);
+
+            const reporterInfo = await provider.connection.getAccountInfoAndContext(
+                reporterAccount
+            );
+            expect(reporterInfo.value.owner).toEqual(program.programId);
+            expect(reporterInfo.value.data.length).toEqual(ACCOUNT_SIZE.reporter);
+        });
+
 
         it("fail - reporter already exists", async () => {
             const networkName = NETWORKS[0];
@@ -296,7 +357,7 @@ describe("HapiCore Reporter", () => {
         });
 
         it("fail - reporter does not exists", async () => {
-            const reporter = REPORTERS.bob;
+            const reporter = REPORTERS.carol;
             let name = bufferFromString(reporter.name, 32);
 
             const networkName = NETWORKS[0];
@@ -409,6 +470,420 @@ describe("HapiCore Reporter", () => {
             expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.url).toEqual(reporter.url);
+        });
+    });
+
+    describe("activate_reporter", () => {
+
+        it("fail - network mismatch", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[1]
+            ))[0];
+
+            const reporterNetworkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                reporterNetworkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                /A seeds constraint was violated/
+            );
+
+        });
+
+        it("fail - invalid reporter", async () => {
+            const reporter = REPORTERS.alice;
+            const anotherReporter = REPORTERS.bob;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: anotherReporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [anotherReporter.keypair]
+                    }),
+                programError("InvalidReporter")
+            );
+
+        });
+
+        it("fail - invalid network ATA mint", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const invalidNetworkStakeTokenAccount = await rewardToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount: invalidNetworkStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("InvalidToken")
+            );
+        });
+
+        it("fail - invalid reporter ATA mint", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const invalidReporterStakeTokenAccount = await rewardToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount: invalidReporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("InvalidToken")
+            );
+
+        });
+
+        it("fail - invalid network ATA owner", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount: reporterStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("IllegalOwner")
+            );
+        });
+
+        it("fail - invalid reporter ATA owner", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount: networkStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("IllegalOwner")
+            );
+
+        });
+
+        it("fail - insufficient funds", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                /Error processing Instruction 0: custom program error: 0x1/
+            );
+
+        });
+
+        it("success", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await stakeToken.transfer(
+                null,
+                reporter.keypair.publicKey,
+                stakeConfiguration.publisherStake.toNumber()
+            );
+
+            await program.rpc.activateReporter({
+                accounts: {
+                    signer: reporter.keypair.publicKey,
+                    network: networkAccount,
+                    reporter: reporterAccount,
+                    networkStakeTokenAccount,
+                    reporterStakeTokenAccount,
+                    tokenProgram: stakeToken.programId
+                },
+                signers: [reporter.keypair]
+            });
+
+            const fetchedReporterAccount = await program.account.reporter.fetch(
+                reporterAccount
+            );
+
+            expect(fetchedReporterAccount.stake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
+            expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Active);
+
+        });
+
+        it("fail - reporter is already activated", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            const networkStakeTokenAccount = await stakeToken.getTokenAccount(
+                networkAccount,
+                true
+            );
+
+            const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
+                reporter.keypair.publicKey
+            );
+
+            await stakeToken.transfer(
+                null,
+                reporter.keypair.publicKey,
+                stakeConfiguration.publisherStake.toNumber()
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.activateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                            networkStakeTokenAccount,
+                            reporterStakeTokenAccount,
+                            tokenProgram: stakeToken.programId
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("InvalidReporterStatus")
+            );
+
+        });
+    });
+
+    describe("dectivate_reporter", () => {
+
+        it("fail - reporter is not activated", async () => {
+            const reporter = REPORTERS.bob;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            await expectThrowError(
+                () =>
+                    program.rpc.deactivateReporter({
+                        accounts: {
+                            signer: reporter.keypair.publicKey,
+                            network: networkAccount,
+                            reporter: reporterAccount,
+                        },
+                        signers: [reporter.keypair]
+                    }),
+                programError("InvalidReporterStatus")
+            );
+
+        });
+
+        it("success", async () => {
+            const reporter = REPORTERS.alice;
+
+            const networkAccount = (await program.pda.findNetworkAddress(
+                NETWORKS[0]
+            ))[0];
+
+            const [reporterAccount, _] = await program.pda.findReporterAddress(
+                networkAccount, reporter.id
+            );
+
+            await program.rpc.deactivateReporter({
+                accounts: {
+                    signer: reporter.keypair.publicKey,
+                    network: networkAccount,
+                    reporter: reporterAccount,
+                },
+                signers: [reporter.keypair]
+            });
+
+            const fetchedReporterAccount = await program.account.reporter.fetch(
+                reporterAccount
+            );
+
+            expect(fetchedReporterAccount.stake.eq(stakeConfiguration.publisherStake)).toBeTruthy();
+            expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Unstaking);
+            //TODO: check block timestamp
+            // expect(fetchedReporterAccount.unlockTimestamp).(0);
+
         });
     });
 });

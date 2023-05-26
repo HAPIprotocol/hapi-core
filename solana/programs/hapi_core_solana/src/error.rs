@@ -12,4 +12,14 @@ pub enum ErrorCode {
     InvalidProgramData,
     #[msg("Invalid program account")]
     InvalidProgramAccount,
+    #[msg("Invalid reporter account")]
+    InvalidReporter,
+    #[msg("Invalid reporter status")]
+    InvalidReporterStatus,
+    #[msg("Reporter account is not active")]
+    InactiveReporter,
+    #[msg("This reporter is frozen")]
+    FrozenReporter,
+    #[msg("Release epoch is in future")]
+    ReleaseEpochInFuture,
 }

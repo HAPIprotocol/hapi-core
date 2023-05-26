@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Transfer};
 
 mod context;
 mod error;
@@ -49,7 +50,6 @@ pub mod hapi_core_solana {
 
     pub fn set_authority(ctx: Context<SetAuthority>) -> Result<()> {
         let network = &mut ctx.accounts.network;
-
         network.authority = ctx.accounts.new_authority.key();
 
         Ok(())
@@ -92,6 +92,74 @@ pub mod hapi_core_solana {
         reporter.name = name;
         reporter.role = role;
         reporter.url = url;
+
+        Ok(())
+    }
+
+    pub fn activate_reporter(ctx: Context<ActivateReporter>) -> Result<()> {
+        let stake_configuration = &ctx.accounts.network.stake_configuration;
+        let reporter = &mut ctx.accounts.reporter;
+
+        let stake = match reporter.role {
+            ReporterRole::Validator => stake_configuration.validator_stake,
+            ReporterRole::Tracer => stake_configuration.tracer_stake,
+            ReporterRole::Publisher => stake_configuration.publisher_stake,
+            ReporterRole::Authority => stake_configuration.authority_stake,
+            ReporterRole::Appraiser => stake_configuration.appraiser_stake,
+        };
+
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.reporter_stake_token_account.to_account_info(),
+                    to: ctx.accounts.network_stake_token_account.to_account_info(),
+                    authority: ctx.accounts.signer.to_account_info(),
+                },
+            ),
+            stake,
+        )?;
+
+        reporter.status = ReporterStatus::Active;
+        reporter.stake = stake;
+
+        Ok(())
+    }
+
+    pub fn deactivate_reporter(ctx: Context<DeactivateReporter>) -> Result<()> {
+        let network = &ctx.accounts.network;
+        let reporter = &mut ctx.accounts.reporter;
+
+        reporter.status = ReporterStatus::Unstaking;
+        reporter.unlock_timestamp =
+            Clock::get()?.unix_timestamp + network.stake_configuration.unlock_duration as i64;
+
+        Ok(())
+    }
+
+    pub fn unstake(ctx: Context<Unstake>) -> Result<()> {
+        let reporter = &mut ctx.accounts.reporter;
+
+        let network = &ctx.accounts.network;
+
+        let seeds = &[b"network".as_ref(), network.name.as_ref(), &[network.bump]];
+
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.network_stake_token_account.to_account_info(),
+                    to: ctx.accounts.reporter_stake_token_account.to_account_info(),
+                    authority: network.to_account_info(),
+                },
+                &[&seeds[..]],
+            ),
+            reporter.stake,
+        )?;
+
+        reporter.status = ReporterStatus::Inactive;
+        reporter.unlock_timestamp = 0;
+        reporter.stake = 0;
 
         Ok(())
     }
