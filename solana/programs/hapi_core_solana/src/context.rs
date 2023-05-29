@@ -233,13 +233,14 @@ pub struct Unstake<'info> {
         owner = id(),
         constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
-        constraint = reporter.unlock_timestamp > Clock::get()?.unix_timestamp @ ErrorCode::ReleaseEpochInFuture,
+        constraint = reporter.unlock_timestamp <= Clock::get()?.unix_timestamp as u64 @ ErrorCode::ReleaseEpochInFuture,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
 
     #[account(
+        mut,
         constraint = network_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
         constraint = network_stake_token_account.owner == network.key() @ ErrorCode::IllegalOwner,
         owner = Token::id(),
@@ -247,6 +248,7 @@ pub struct Unstake<'info> {
     pub network_stake_token_account: Account<'info, TokenAccount>,
 
     #[account(
+        mut,
         constraint = reporter_stake_token_account.mint == network.stake_mint.key() @ ErrorCode::InvalidToken,
         constraint = reporter_stake_token_account.owner == signer.key() @ ErrorCode::IllegalOwner,
         owner = Token::id(),

@@ -132,7 +132,7 @@ pub mod hapi_core_solana {
 
         reporter.status = ReporterStatus::Unstaking;
         reporter.unlock_timestamp =
-            Clock::get()?.unix_timestamp + network.stake_configuration.unlock_duration as i64;
+            Clock::get()?.unix_timestamp as u64 + network.stake_configuration.unlock_duration;
 
         Ok(())
     }

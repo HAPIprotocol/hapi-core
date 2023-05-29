@@ -1,5 +1,5 @@
 use super::DISCRIMINATOR_LENGTH;
-use anchor_lang::{prelude::*, solana_program::clock::UnixTimestamp};
+use anchor_lang::prelude::*;
 
 #[account]
 pub struct Reporter {
@@ -28,7 +28,7 @@ pub struct Reporter {
     pub stake: u64,
 
     /// Duration starting from the deactivation moment
-    pub unlock_timestamp: UnixTimestamp,
+    pub unlock_timestamp: u64,
 
     /// A link to reporter’s public page
     pub url: String,

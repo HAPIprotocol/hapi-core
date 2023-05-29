@@ -1,4 +1,6 @@
 import { IDL } from "../../target/types/hapi_core_solana";
+import { BN } from "@coral-xyz/anchor";
+
 
 // HapiCore Instructions
 export const HapiCoreInstructionVariants = IDL.instructions.map(
@@ -11,6 +13,22 @@ export type HapiCoreInstruction = typeof HapiCoreInstructionVariants[number];
 export const HapiCoreAccountVariants = IDL.accounts.map((acc) => acc.name);
 
 export type HapiCoreAccount = typeof HapiCoreAccountVariants[number];
+
+export type stakeConfiguration = {
+  unlockDuration: BN;
+  validatorStake: BN;
+  tracerStake: BN;
+  publisherStake: BN;
+  authorityStake: BN;
+  appraiserStake: BN;
+};
+
+export type rewardConfiguration = {
+  addressTracerReward: BN;
+  addressConfirmationReward: BN;
+  assetTracerReward: BN;
+  assetConfirmationReward: BN;
+};
 
 // ReporterRole
 export const ReporterRole = {
