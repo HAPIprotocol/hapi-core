@@ -29,7 +29,7 @@ pub struct Network {
 }
 
 impl Network {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 1 + 32 + 40 + 32 + 32 + 8);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 32 + 32 + 40 + 32 + 32);
     pub const VERSION: u16 = 1;
 }
 
