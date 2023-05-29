@@ -71,11 +71,21 @@ task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
 task("deploy-test-token", "Deploys the HAPI Test Token contract").setAction(
   async (_, hre) => {
     try {
+      const pk = process.env.PRIVATE_KEY;
+
+      if (!pk) {
+        throw new Error("No private key provided (use PRIVATE_KEY env var)");
+      }
+
+      const wallet = new hre.ethers.Wallet(pk, hre.ethers.provider);
+
+      console.log(`Using wallet: ${wallet.address}`);
+
       let network = await hre.ethers.provider.getNetwork();
 
       console.log(`Deploying to '${network.name}' (${network.chainId})`);
 
-      const TestToken = await hre.ethers.getContractFactory("Token");
+      const TestToken = await hre.ethers.getContractFactory("Token", wallet);
 
       const contract = await TestToken.deploy();
 

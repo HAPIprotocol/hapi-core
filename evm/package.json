@@ -6,6 +6,7 @@
   "scripts": {
     "build": "hardhat compile",
     "deploy": "hardhat deploy",
+    "deploy-test-token": "hardhat deploy-test-token",
     "upgrade": "hardhat upgrade",
     "test": "hardhat test"
   },
