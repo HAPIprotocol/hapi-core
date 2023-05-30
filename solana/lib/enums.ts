@@ -1,4 +1,4 @@
-import { IDL } from "../../target/types/hapi_core_solana";
+import { IDL } from "../target/types/hapi_core_solana";
 import { BN } from "@coral-xyz/anchor";
 
 

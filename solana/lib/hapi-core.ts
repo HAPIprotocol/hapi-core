@@ -1,7 +1,6 @@
-import { Program, web3, BN, Provider, utils } from "@coral-xyz/anchor";
-
-import { IDL } from "../../target/types/hapi_core_solana";
-import { padBuffer, pubkeyFromBase58 } from ".";
+import { Program, web3, BN, Provider } from "@coral-xyz/anchor";
+import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
+import { padBuffer } from ".";
 import { bufferFromString, addrToSeeds } from "./buffer";
 
 export function encodeAddress(
@@ -20,55 +19,66 @@ export function decodeAddress(
   return address.filter((b) => b).toString();
 }
 
-export function initHapiCore(
-  hapiCoreProgramId: string | web3.PublicKey,
-  provider?: Provider
-) {
-  const programId =
-    typeof hapiCoreProgramId === "string"
-      ? new web3.PublicKey(hapiCoreProgramId)
-      : hapiCoreProgramId;
+export class HapiCoreProgram {
+  program: Program<HapiCoreSolana>;
+  programId: web3.PublicKey;
 
-  const program = new Program(IDL, programId, provider);
+  constructor (
+    hapiCoreProgramId: string | web3.PublicKey,
+    provider?: Provider) {
+    this.programId =
+      typeof hapiCoreProgramId === "string"
+        ? new web3.PublicKey(hapiCoreProgramId)
+        : hapiCoreProgramId;
 
-  async function findNetworkAddress(name: string) {
+    this.program = new Program(IDL, this.programId, provider);
+  }
+
+  public findProgramDataAddress() {
+    return web3.PublicKey.findProgramAddressSync(
+      [this.programId.toBytes()],
+      new web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
+    );
+  }
+
+  public findNetworkAddress(name: string) {
     return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("network"),
         bufferFromString(name, 32),
       ],
-      programId
+      this.programId
     );
   }
 
-  async function findReporterAddress(
+  public findReporterAddress(
     network: web3.PublicKey,
     reporterId: BN
   ) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("reporter"), network.toBytes(), new Uint8Array(reporterId.toArray("le", 8))],
-      programId
+      this.programId
     );
   }
 
-  async function findCaseAddress(caseId: BN) {
+  public findCaseAddress(caseId: BN) {
     return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("case"),
         new Uint8Array(caseId.toArray("le", 8)),
       ],
-      programId
+      this.programId
     );
   }
 
-  async function findAddressAddress(network: web3.PublicKey, address: Buffer) {
+  public findAddressAddress(network: web3.PublicKey, address: Buffer) {
     return web3.PublicKey.findProgramAddressSync(
       [bufferFromString("address"), network.toBytes(), ...addrToSeeds(address)],
-      programId
+      this.programId
     );
   }
 
-  async function findAssetAddress(
+  public findAssetAddress(
     network: web3.PublicKey,
     mint: Buffer,
     assetId: Buffer | Uint8Array
@@ -80,25 +90,7 @@ export function initHapiCore(
         ...addrToSeeds(mint),
         assetId,
       ],
-      programId
+      this.programId
     );
   }
-
-  return {
-    ...program,
-    programId,
-    // coder,
-    util: {
-      encodeAddress,
-      decodeAddress,
-    },
-    idl: IDL,
-    pda: {
-      findNetworkAddress,
-      findReporterAddress,
-      findCaseAddress,
-      findAddressAddress,
-      findAssetAddress,
-    },
-  };
 }
