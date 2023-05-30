@@ -35,15 +35,26 @@ pub mod hapi_core_solana {
         Ok(())
     }
 
-    pub fn update_configuration(
-        ctx: Context<UpdateConfiguration>,
+    pub fn update_stake_configuration(
+        ctx: Context<UpdateStakeConfiguration>,
         stake_configuration: StakeConfiguration,
+    ) -> Result<()> {
+        let network = &mut ctx.accounts.network;
+
+        network.stake_configuration = stake_configuration;
+        network.stake_mint = ctx.accounts.stake_mint.key();
+
+        Ok(())
+    }
+
+    pub fn update_reward_configuration(
+        ctx: Context<UpdateRewardConfiguration>,
         reward_configuration: RewardConfiguration,
     ) -> Result<()> {
         let network = &mut ctx.accounts.network;
 
         network.reward_configuration = reward_configuration;
-        network.stake_configuration = stake_configuration;
+        network.reward_mint = ctx.accounts.reward_mint.key();
 
         Ok(())
     }

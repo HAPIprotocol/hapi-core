@@ -22,4 +22,6 @@ pub enum ErrorCode {
     FrozenReporter,
     #[msg("Release epoch is in future")]
     ReleaseEpochInFuture,
+    #[msg("Mint has already been updated")]
+    UpdatedMint,
 }

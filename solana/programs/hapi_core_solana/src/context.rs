@@ -29,24 +29,19 @@ pub struct CreateNetwork<'info> {
     )]
     pub network: Account<'info, Network>,
 
+    /// CHECK: this account is not dangerous
     #[account(
-        mut,
-        owner = Token::id(),
-    )]
-    pub reward_mint: Account<'info, Mint>,
+        constraint = reward_mint.key() == Pubkey::default() || reward_mint.owner == &Token::id() @ ErrorCode::InvalidToken,
 
-    #[account(
-        mut,
-        owner = Token::id(),
     )]
-    pub stake_mint: Account<'info, Mint>,
+    pub reward_mint: AccountInfo<'info>,
 
+    /// CHECK: this account is not dangerous
     #[account(
-        constraint = stake_token_account.mint == stake_mint.key() @ ErrorCode::InvalidToken,
-        constraint = stake_token_account.owner == network.key() @ ErrorCode::IllegalOwner,
-        owner = Token::id(),
+        constraint = stake_mint.key() == Pubkey::default() || stake_mint.owner == &Token::id() @ ErrorCode::InvalidToken,
+
     )]
-    pub stake_token_account: Account<'info, TokenAccount>,
+    pub stake_mint: AccountInfo<'info>,
 
     #[account(
         constraint = program_account.key() == id() @ ErrorCode::InvalidProgramAccount,
@@ -63,7 +58,7 @@ pub struct CreateNetwork<'info> {
 }
 
 #[derive(Accounts)]
-pub struct UpdateConfiguration<'info> {
+pub struct UpdateStakeConfiguration<'info> {
     pub authority: Signer<'info>,
 
     #[account(
@@ -73,6 +68,31 @@ pub struct UpdateConfiguration<'info> {
         bump = network.bump,
     )]
     pub network: Account<'info, Network>,
+
+    #[account(
+        owner = Token::id(),
+        constraint = network.stake_mint == Pubkey::default() || network.stake_mint == stake_mint.key() @ErrorCode::UpdatedMint
+    )]
+    pub stake_mint: Account<'info, Mint>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateRewardConfiguration<'info> {
+    pub authority: Signer<'info>,
+
+    #[account(
+        mut,
+        has_one = authority @ ErrorCode::AuthorityMismatch,
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = Token::id(),
+        constraint = network.reward_mint == Pubkey::default() || network.reward_mint == reward_mint.key() @ErrorCode::UpdatedMint
+    )]
+    pub reward_mint: Account<'info, Mint>,
 }
 
 #[derive(Accounts)]
