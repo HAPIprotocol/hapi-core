@@ -10,6 +10,7 @@
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
   "dependencies": {
+    "@coral-xyz/anchor": "^0.27.0",
     "@ethersproject/contracts": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@ethersproject/wallet": "^5.7.0",
