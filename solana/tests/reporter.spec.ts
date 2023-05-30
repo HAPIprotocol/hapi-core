@@ -7,15 +7,15 @@ import {
     ACCOUNT_SIZE,
     bufferFromString,
     ReporterRole,
-    initHapiCore,
+    HapiCoreProgram,
     ReporterStatus,
     stakeConfiguration,
     rewardConfiguration
-} from "./lib";
+} from "../lib";
 import { programError } from "./util/error";
 
 describe("HapiCore Reporter", () => {
-    const program = initHapiCore(new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk"));
+    const program = new HapiCoreProgram(new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk"));
 
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
@@ -89,12 +89,7 @@ describe("HapiCore Reporter", () => {
         },
     };
 
-
-
-    const programDataAddress = web3.PublicKey.findProgramAddressSync(
-        [program.programId.toBytes()],
-        new anchor.web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
-    )[0];
+    const programDataAddress = program.findProgramDataAddress()[0];
 
     beforeAll(async () => {
 
@@ -114,13 +109,8 @@ describe("HapiCore Reporter", () => {
         for (const key of Object.keys(NETWORKS)) {
             const network = NETWORKS[key];
 
-            const [networkAccount, bump] = await program.pda.findNetworkAddress(
+            const [networkAccount, bump] = program.findNetworkAddress(
                 network.name
-            );
-
-            const stakeTokenAccount = await stakeToken.getTokenAccount(
-                networkAccount,
-                true
             );
 
             const args = [
@@ -130,13 +120,12 @@ describe("HapiCore Reporter", () => {
                 bump,
             ];
 
-            wait.push(program.rpc.createNetwork(...args, {
+            wait.push(program.program.rpc.createNetwork(...args, {
                 accounts: {
                     authority: authority.publicKey,
                     network: networkAccount,
                     rewardMint: rewardToken.mintAccount,
                     stakeMint: stakeToken.mintAccount,
-                    stakeTokenAccount,
                     programAccount: program.programId,
                     programData: programDataAddress,
                     systemProgram: web3.SystemProgram.programId,
@@ -153,14 +142,14 @@ describe("HapiCore Reporter", () => {
         it("fail - authority mismatch", async () => {
             const networkName = NETWORKS.main.name;
 
-            const [networkAccount, _] = await program.pda.findNetworkAddress(
+            const [networkAccount, _] = program.findNetworkAddress(
                 networkName
             );
 
             const reporter = REPORTERS.alice;
             let name = bufferFromString(reporter.name, 32);
 
-            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+            const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -177,7 +166,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.createReporter(...args, {
+                    program.program.rpc.createReporter(...args, {
                         accounts: {
                             authority: another_authority.publicKey,
                             network: networkAccount,
@@ -194,14 +183,14 @@ describe("HapiCore Reporter", () => {
         it("success - alice", async () => {
             const networkName = NETWORKS.main.name;
 
-            const [networkAccount, _] = await program.pda.findNetworkAddress(
+            const [networkAccount, _] = program.findNetworkAddress(
                 networkName
             );
 
             const reporter = REPORTERS.alice;
             let name = bufferFromString(reporter.name, 32);
 
-            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+            const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -216,7 +205,7 @@ describe("HapiCore Reporter", () => {
                 bump,
             ];
 
-            await program.rpc.createReporter(...args, {
+            await program.program.rpc.createReporter(...args, {
                 accounts: {
                     authority: authority.publicKey,
                     reporter: reporterAccount,
@@ -225,7 +214,7 @@ describe("HapiCore Reporter", () => {
                 },
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -249,14 +238,14 @@ describe("HapiCore Reporter", () => {
         it("success - bob", async () => {
             const networkName = NETWORKS.secondary.name;
 
-            const [networkAccount, _] = await program.pda.findNetworkAddress(
+            const [networkAccount, _] = program.findNetworkAddress(
                 networkName
             );
 
             const reporter = REPORTERS.bob;
             let name = bufferFromString(reporter.name, 32);
 
-            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+            const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -271,7 +260,7 @@ describe("HapiCore Reporter", () => {
                 bump,
             ];
 
-            await program.rpc.createReporter(...args, {
+            await program.program.rpc.createReporter(...args, {
                 accounts: {
                     authority: authority.publicKey,
                     reporter: reporterAccount,
@@ -280,7 +269,7 @@ describe("HapiCore Reporter", () => {
                 },
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -304,14 +293,14 @@ describe("HapiCore Reporter", () => {
         it("success - carol", async () => {
             const networkName = NETWORKS.main.name;
 
-            const [networkAccount, _] = await program.pda.findNetworkAddress(
+            const [networkAccount, _] = program.findNetworkAddress(
                 networkName
             );
 
             const reporter = REPORTERS.carol;
             let name = bufferFromString(reporter.name, 32);
 
-            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+            const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -326,7 +315,7 @@ describe("HapiCore Reporter", () => {
                 bump,
             ];
 
-            await program.rpc.createReporter(...args, {
+            await program.program.rpc.createReporter(...args, {
                 accounts: {
                     authority: authority.publicKey,
                     reporter: reporterAccount,
@@ -335,7 +324,7 @@ describe("HapiCore Reporter", () => {
                 },
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -359,14 +348,14 @@ describe("HapiCore Reporter", () => {
         it("fail - reporter already exists", async () => {
             const networkName = NETWORKS.main.name;
 
-            const [networkAccount, _] = await program.pda.findNetworkAddress(
+            const [networkAccount, _] = program.findNetworkAddress(
                 networkName
             );
 
             const reporter = REPORTERS.alice;
             let name = bufferFromString(reporter.name, 32);
 
-            const [reporterAccount, bump] = await program.pda.findReporterAddress(
+            const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -383,7 +372,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.createReporter(...args, {
+                    program.program.rpc.createReporter(...args, {
                         accounts: {
                             authority: authority.publicKey,
                             reporter: reporterAccount,
@@ -405,11 +394,11 @@ describe("HapiCore Reporter", () => {
 
             const networkName = NETWORKS.main.name;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 networkName
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -424,7 +413,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.updateReporter(...args, {
+                    program.program.rpc.updateReporter(...args, {
                         accounts: {
                             authority: another_authority.publicKey,
                             reporter: reporterAccount,
@@ -443,11 +432,11 @@ describe("HapiCore Reporter", () => {
 
             const networkName = NETWORKS.main.name;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 networkName
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -462,7 +451,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.updateReporter(...args, {
+                    program.program.rpc.updateReporter(...args, {
                         accounts: {
                             authority: authority.publicKey,
                             reporter: reporterAccount,
@@ -478,15 +467,15 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.alice;
             let name = bufferFromString(reporter.name, 32);
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.secondary.name
             ))[0];
 
-            const reporterNetworkAccount = (await program.pda.findNetworkAddress(
+            const reporterNetworkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 reporterNetworkAccount, reporter.id
             );
 
@@ -501,7 +490,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.updateReporter(...args, {
+                    program.program.rpc.updateReporter(...args, {
                         accounts: {
                             authority: authority.publicKey,
                             reporter: reporterAccount,
@@ -519,11 +508,11 @@ describe("HapiCore Reporter", () => {
 
             const networkName = NETWORKS.main.name;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 networkName
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -536,14 +525,14 @@ describe("HapiCore Reporter", () => {
                 reporter.url,
             ];
 
-            await program.rpc.updateReporter(...args, {
+            await program.program.rpc.updateReporter(...args, {
                 accounts: {
                     authority: authority.publicKey,
                     reporter: reporterAccount,
                     network: networkAccount,
                 },
             });
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -559,15 +548,15 @@ describe("HapiCore Reporter", () => {
         it("fail - network mismatch", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.secondary.name
             ))[0];
 
-            const reporterNetworkAccount = (await program.pda.findNetworkAddress(
+            const reporterNetworkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 reporterNetworkAccount, reporter.id
             );
 
@@ -582,7 +571,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -602,11 +591,11 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.alice;
             const anotherReporter = REPORTERS.bob;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -621,7 +610,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: anotherReporter.keypair.publicKey,
                             network: networkAccount,
@@ -640,11 +629,11 @@ describe("HapiCore Reporter", () => {
         it("fail - invalid network ATA mint", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -659,7 +648,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -677,11 +666,11 @@ describe("HapiCore Reporter", () => {
         it("fail - invalid reporter ATA mint", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -696,7 +685,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -715,11 +704,11 @@ describe("HapiCore Reporter", () => {
         it("fail - invalid network ATA owner", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -729,7 +718,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -747,11 +736,11 @@ describe("HapiCore Reporter", () => {
         it("fail - invalid reporter ATA owner", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -762,7 +751,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -781,11 +770,11 @@ describe("HapiCore Reporter", () => {
         it("fail - insufficient funds", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -800,7 +789,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -820,11 +809,11 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.alice;
             let network = NETWORKS.main;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 network.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -843,7 +832,7 @@ describe("HapiCore Reporter", () => {
                 network.stakeConfiguration.publisherStake.toNumber()
             );
 
-            await program.rpc.activateReporter({
+            await program.program.rpc.activateReporter({
                 accounts: {
                     signer: reporter.keypair.publicKey,
                     network: networkAccount,
@@ -855,7 +844,7 @@ describe("HapiCore Reporter", () => {
                 signers: [reporter.keypair]
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -868,11 +857,11 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.bob;
             let network = NETWORKS.secondary;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 network.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -891,7 +880,7 @@ describe("HapiCore Reporter", () => {
                 network.stakeConfiguration.publisherStake.toNumber()
             );
 
-            await program.rpc.activateReporter({
+            await program.program.rpc.activateReporter({
                 accounts: {
                     signer: reporter.keypair.publicKey,
                     network: networkAccount,
@@ -903,7 +892,7 @@ describe("HapiCore Reporter", () => {
                 signers: [reporter.keypair]
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -916,11 +905,11 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.alice;
             let network = NETWORKS.main;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 network.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -941,7 +930,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.activateReporter({
+                    program.program.rpc.activateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -963,17 +952,17 @@ describe("HapiCore Reporter", () => {
         it("fail - reporter is not activated", async () => {
             const reporter = REPORTERS.carol;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
             await expectThrowError(
                 () =>
-                    program.rpc.deactivateReporter({
+                    program.program.rpc.deactivateReporter({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -990,18 +979,18 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.alice;
             let network = NETWORKS.main;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 network.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
             let { slotIndex } = await provider.connection.getEpochInfo();
             const timestamp = await provider.connection.getBlockTime(slotIndex);
 
-            await program.rpc.deactivateReporter({
+            await program.program.rpc.deactivateReporter({
                 accounts: {
                     signer: reporter.keypair.publicKey,
                     network: networkAccount,
@@ -1010,7 +999,7 @@ describe("HapiCore Reporter", () => {
                 signers: [reporter.keypair]
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -1026,18 +1015,18 @@ describe("HapiCore Reporter", () => {
             const reporter = REPORTERS.bob;
             let network = NETWORKS.secondary;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 network.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
             let { slotIndex } = await provider.connection.getEpochInfo();
             const timestamp = await provider.connection.getBlockTime(slotIndex);
 
-            await program.rpc.deactivateReporter({
+            await program.program.rpc.deactivateReporter({
                 accounts: {
                     signer: reporter.keypair.publicKey,
                     network: networkAccount,
@@ -1046,7 +1035,7 @@ describe("HapiCore Reporter", () => {
                 signers: [reporter.keypair]
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
@@ -1064,11 +1053,11 @@ describe("HapiCore Reporter", () => {
         it("fail - reporter is not deacactivated", async () => {
             const reporter = REPORTERS.carol;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -1083,7 +1072,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.unstake({
+                    program.program.rpc.unstake({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -1103,11 +1092,11 @@ describe("HapiCore Reporter", () => {
         it("fail - release epoch in future", async () => {
             const reporter = REPORTERS.bob;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.secondary.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -1122,7 +1111,7 @@ describe("HapiCore Reporter", () => {
 
             await expectThrowError(
                 () =>
-                    program.rpc.unstake({
+                    program.program.rpc.unstake({
                         accounts: {
                             signer: reporter.keypair.publicKey,
                             network: networkAccount,
@@ -1142,11 +1131,11 @@ describe("HapiCore Reporter", () => {
         it("success", async () => {
             const reporter = REPORTERS.alice;
 
-            const networkAccount = (await program.pda.findNetworkAddress(
+            const networkAccount = (program.findNetworkAddress(
                 NETWORKS.main.name
             ))[0];
 
-            const [reporterAccount, _] = await program.pda.findReporterAddress(
+            const [reporterAccount, _] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
 
@@ -1158,7 +1147,7 @@ describe("HapiCore Reporter", () => {
             const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
                 reporter.keypair.publicKey
             );
-            await program.rpc.unstake({
+            await program.program.rpc.unstake({
                 accounts: {
                     signer: reporter.keypair.publicKey,
                     network: networkAccount,
@@ -1170,7 +1159,7 @@ describe("HapiCore Reporter", () => {
                 signers: [reporter.keypair]
             });
 
-            const fetchedReporterAccount = await program.account.reporter.fetch(
+            const fetchedReporterAccount = await program.program.account.reporter.fetch(
                 reporterAccount
             );
 
