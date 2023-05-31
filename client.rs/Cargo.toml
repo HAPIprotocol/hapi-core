@@ -9,6 +9,12 @@ name = "hapi_core"
 
 [dependencies]
 async-trait = "0.1.68"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+
+# EVM dependencies
 ethers = "2.0.6"
 ethers-providers = "2.0.6"
 ethers-signers = "2.0.6"
+ethers-contract = "2.0.6"
+anyhow = "1.0.71"

@@ -22,7 +22,7 @@ impl HapiCoreSolana {
 
 #[async_trait]
 impl HapiCore for HapiCoreSolana {
-    async fn set_authority(&self, _address: String) -> Result<Tx> {
+    async fn set_authority(&self, _address: &str) -> Result<Tx> {
         unimplemented!()
     }
     async fn get_authority(&self) -> Result<String> {
@@ -49,7 +49,7 @@ impl HapiCore for HapiCoreSolana {
     async fn update_reporter(&self, _input: UpdateReporterInput) -> Result<Tx> {
         unimplemented!()
     }
-    async fn get_reporter(&self, _id: String) -> Result<Reporter> {
+    async fn get_reporter(&self, _id: &str) -> Result<Reporter> {
         unimplemented!()
     }
     async fn get_reporter_count(&self) -> Result<u64> {
@@ -75,7 +75,7 @@ impl HapiCore for HapiCoreSolana {
     async fn update_case(&self, _input: UpdateCaseInput) -> Result<Tx> {
         unimplemented!()
     }
-    async fn get_case(&self, _id: String) -> Result<Case> {
+    async fn get_case(&self, _id: &str) -> Result<Case> {
         unimplemented!()
     }
     async fn get_case_count(&self) -> Result<u64> {
@@ -91,7 +91,7 @@ impl HapiCore for HapiCoreSolana {
     async fn update_address(&self, _input: UpdateAddressInput) -> Result<Tx> {
         unimplemented!()
     }
-    async fn get_address(&self, _addr: String) -> Result<Address> {
+    async fn get_address(&self, _addr: &str) -> Result<Address> {
         unimplemented!()
     }
     async fn get_address_count(&self) -> Result<u64> {
@@ -107,7 +107,7 @@ impl HapiCore for HapiCoreSolana {
     async fn update_asset(&self, _input: UpdateAssetInput) -> Result<Tx> {
         unimplemented!()
     }
-    async fn get_asset(&self, _address: String, _id: AssetId) -> Result<Asset> {
+    async fn get_asset(&self, _address: &str, _id: &AssetId) -> Result<Asset> {
         unimplemented!()
     }
     async fn get_asset_count(&self) -> Result<u64> {
