@@ -2,6 +2,8 @@ import { Program, web3, BN, Provider } from "@coral-xyz/anchor";
 import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
 import { bufferFromString, addrToSeeds, padBuffer, stakeConfiguration, rewardConfiguration, ReporterRole, ReporterRoleVariants } from ".";
 import { ReporterRoleKeys } from "@hapi.one/core-cli";
+import { Keypair } from "@solana/web3.js";
+import * as Token from "@solana/spl-token";
 
 export function encodeAddress(
   address: string
@@ -257,5 +259,153 @@ export class HapiCoreProgram {
       }).rpc();
 
     return transactionHash;
+  }
+
+  async updateReporter(
+    network_name: string,
+    id: string,
+    role?: string,
+    account?: string,
+    name?: string,
+    url?: string
+  ) {
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(
+      network, new BN(id))[0];
+    const reporterData = await this.program.account.reporter.fetch(reporter);
+
+
+    // TODO: will it work?
+    if (role && !ReporterRoleVariants.includes(role as ReporterRoleKeys)) {
+      throw new Error("Invalid reporter role");
+    }
+
+    const reporter_role = role ? ReporterRole[role] : reporterData.role;
+    const reporter_url = url ? url : reporterData.url;
+    const reporter_account = account ? new web3.PublicKey(account) : reporterData.account;
+    const reporter_name = name ? bufferFromString(name, 32).toJSON().data : reporterData.name;
+
+    const transactionHash = await this.program.methods.updateReporter(
+      reporter_account,
+      reporter_name,
+      reporter_role,
+      reporter_url
+    ).accounts({
+      authority: this.program.provider.publicKey,
+      reporter,
+      network,
+    }).rpc();
+
+    return transactionHash;
+  }
+
+  async activateReporter(
+    network_name: string,
+    id: string,
+    account?: Keypair,
+  ) {
+    // const network = this.findNetworkAddress(network_name)[0];
+    // const reporter = this.findReporterAddress(
+    //   network, new BN(id))[0];
+    // const networkData = await this.program.account.network.fetch(network);
+
+    // const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+    //   this.program.provider.connection,
+    //   this.program.provider.publicKey,
+    //   networkData.stakeMint,
+    //   network,
+    //   true
+    // )).address;
+
+    // const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+    //   this.program.provider.connection,
+    //   this.program.provider.publicKey,
+    //   networkData.stakeMint,
+    //   account.publicKey,
+    //   false
+    // )).address;
+
+    // const tx = this.program.methods.activateReporter(
+    // ).accounts({
+    //   signer: account ? account.publicKey : this.program.provider.publicKey,
+    //   network,
+    //   reporter,
+    //   networkStakeTokenAccount,
+    //   reporterStakeTokenAccount,
+    //   tokenProgram: Token.TOKEN_PROGRAM_ID
+    // });
+
+    // if (account) {
+    //   tx.signers([account]);
+    // }
+
+    // return await tx.rpc()
+  }
+
+  async deactivateReporter(
+    network_name: string,
+    id: string,
+    account?: Keypair,
+  ) {
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(
+      network, new BN(id))[0];
+
+    const tx = await this.program.methods.deactivateReporter(
+    ).accounts({
+      signer: account ? account.publicKey : this.program.provider.publicKey,
+      network,
+      reporter,
+    });
+
+    if (account) {
+      tx.signers([account]);
+    }
+
+    return await tx.rpc()
+  }
+
+
+  async unstake(
+    network_name: string,
+    id: string,
+    account?: Keypair,
+  ) {
+    // const network = this.findNetworkAddress(network_name)[0];
+    // const reporter = this.findReporterAddress(
+    //   network, new BN(id))[0];
+    // const networkData = await this.program.account.network.fetch(network);
+
+    // const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+    //   this.program.provider.connection,
+    //   this.program.provider.publicKey,
+    //   networkData.stakeMint,
+    //   network,
+    //   true
+    // )).address;
+
+    // const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+    //   this.program.provider.connection,
+    //   this.program.provider.publicKey,
+    //   networkData.stakeMint,
+    //   account.publicKey,
+    //   false
+    // )).address;
+
+    // const tx = this.program.methods.unstake(
+    // ).accounts({
+    //   signer: account ? account.publicKey : this.program.provider.publicKey,
+    //   network,
+    //   reporter,
+    //   networkStakeTokenAccount,
+    //   reporterStakeTokenAccount,
+    //   tokenProgram: Token.TOKEN_PROGRAM_ID
+    // });
+
+    // if (account) {
+    //   tx.signers([account]);
+    // }
+
+    // return await tx.rpc()
   }
 }

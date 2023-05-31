@@ -147,8 +147,6 @@ describe("HapiCore Reporter", () => {
             );
 
             const reporter = REPORTERS.alice;
-            let name = bufferFromString(reporter.name, 32);
-
             const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
@@ -158,7 +156,7 @@ describe("HapiCore Reporter", () => {
             const args = [
                 reporter.id,
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                networkName,
                 reporterRole,
                 reporter.url,
                 bump,
@@ -188,8 +186,6 @@ describe("HapiCore Reporter", () => {
             );
 
             const reporter = REPORTERS.alice;
-            let name = bufferFromString(reporter.name, 32);
-
             const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
@@ -199,7 +195,7 @@ describe("HapiCore Reporter", () => {
             const args = [
                 reporter.id,
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                networkName,
                 reporterRole,
                 reporter.url,
                 bump,
@@ -220,7 +216,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -243,8 +239,6 @@ describe("HapiCore Reporter", () => {
             );
 
             const reporter = REPORTERS.bob;
-            let name = bufferFromString(reporter.name, 32);
-
             const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
@@ -254,7 +248,7 @@ describe("HapiCore Reporter", () => {
             const args = [
                 reporter.id,
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                networkName,
                 reporterRole,
                 reporter.url,
                 bump,
@@ -275,7 +269,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -298,8 +292,6 @@ describe("HapiCore Reporter", () => {
             );
 
             const reporter = REPORTERS.carol;
-            let name = bufferFromString(reporter.name, 32);
-
             const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
@@ -309,7 +301,7 @@ describe("HapiCore Reporter", () => {
             const args = [
                 reporter.id,
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                networkName,
                 reporterRole,
                 reporter.url,
                 bump,
@@ -330,7 +322,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -353,8 +345,6 @@ describe("HapiCore Reporter", () => {
             );
 
             const reporter = REPORTERS.alice;
-            let name = bufferFromString(reporter.name, 32);
-
             const [reporterAccount, bump] = program.findReporterAddress(
                 networkAccount, reporter.id
             );
@@ -364,7 +354,7 @@ describe("HapiCore Reporter", () => {
             const args = [
                 reporter.id,
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                networkName,
                 reporterRole,
                 reporter.url,
                 bump,
@@ -390,8 +380,6 @@ describe("HapiCore Reporter", () => {
 
         it("fail - authority mismatch", async () => {
             const reporter = REPORTERS.alice;
-            let name = bufferFromString(reporter.name, 32);
-
             const networkName = NETWORKS.main.name;
 
             const networkAccount = (program.findNetworkAddress(
@@ -406,7 +394,7 @@ describe("HapiCore Reporter", () => {
 
             const args = [
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                reporter.name,
                 reporterRole,
                 reporter.url,
             ];
@@ -444,7 +432,7 @@ describe("HapiCore Reporter", () => {
 
             const args = [
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                reporter.name,
                 reporterRole,
                 reporter.url,
             ];
@@ -465,8 +453,6 @@ describe("HapiCore Reporter", () => {
 
         it("fail - network mismatch", async () => {
             const reporter = REPORTERS.alice;
-            let name = bufferFromString(reporter.name, 32);
-
             const networkAccount = (program.findNetworkAddress(
                 NETWORKS.secondary.name
             ))[0];
@@ -483,7 +469,7 @@ describe("HapiCore Reporter", () => {
 
             const args = [
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                reporter.name,
                 reporterRole,
                 reporter.url,
             ];
@@ -504,8 +490,6 @@ describe("HapiCore Reporter", () => {
 
         it("success", async () => {
             const reporter = REPORTERS.alice;
-            let name = bufferFromString("new_name", 32);
-
             const networkName = NETWORKS.main.name;
 
             const networkAccount = (program.findNetworkAddress(
@@ -520,7 +504,7 @@ describe("HapiCore Reporter", () => {
 
             const args = [
                 reporter.keypair.publicKey,
-                name.toJSON().data,
+                reporter.name,
                 reporterRole,
                 reporter.url,
             ];
@@ -537,7 +521,7 @@ describe("HapiCore Reporter", () => {
             );
 
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(name);
+            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(reporter.name);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.url).toEqual(reporter.url);
         });

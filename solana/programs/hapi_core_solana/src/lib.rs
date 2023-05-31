@@ -70,7 +70,7 @@ pub mod hapi_core_solana {
         ctx: Context<CreateReporter>,
         reporter_id: u64,
         account: Pubkey,
-        name: [u8; 32],
+        name: String,
         role: ReporterRole,
         url: String,
         bump: u8,
@@ -93,7 +93,7 @@ pub mod hapi_core_solana {
     pub fn update_reporter(
         ctx: Context<UpdateReporter>,
         account: Pubkey,
-        name: [u8; 32],
+        name: String,
         role: ReporterRole,
         url: String,
     ) -> Result<()> {

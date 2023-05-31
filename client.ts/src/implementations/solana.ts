@@ -1,4 +1,4 @@
-import { Provider } from "@coral-xyz/anchor";
+import { Provider, web3 } from "@coral-xyz/anchor";
 import { HapiCoreProgram } from "../../../solana/lib";
 
 import {
@@ -23,17 +23,22 @@ export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
   address?: Addr;
   provider: Provider;
-  // signer?: unknown;
+  signer?: web3.Keypair;
 }
 
 export class HapiCoreSolana implements HapiCore {
   private contract: HapiCoreProgram;
-  private network: string
+  private network: string;
+  private signer?: web3.Keypair;
 
   constructor (options: SolanaConnectionOptions) {
     this.contract = new HapiCoreProgram(
       options.address || HapiCoreAddresses[options.network],
       options.provider);
+
+    if (options.signer) {
+      this.signer = options.signer;
+    }
 
     this.network = options.network;
   }
@@ -100,7 +105,7 @@ export class HapiCoreSolana implements HapiCore {
   ): Promise<Result> {
     throw new Error("Method is not tested.");
 
-    const transactionHash = await this.contract.updateRewardConfiguration(this.network, addressConfirmationReward, addresstraceReward);
+    const transactionHash = await this.contract.updateRewardConfiguration(this.network, token, addressConfirmationReward, addresstraceReward);
 
     return { transactionHash };
   }
@@ -161,23 +166,41 @@ export class HapiCoreSolana implements HapiCore {
   async updateReporter(
     id: string,
     role: ReporterRole,
-    account: string,
-    name: string,
-    url: string
+    account?: string,
+    name?: string,
+    url?: string
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    throw new Error("Method is not tested.");
+
+    const transactionHash = await this.contract.updateReporter(this.network, id, ReporterRoleNames[role], account, name, url);
+
+    return { transactionHash };
+
   }
 
   async activateReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    throw new Error("Method is not tested.");
+
+    const transactionHash = await this.contract.activateReporter(this.network, id, this.signer);
+
+    return { transactionHash };
+
   }
 
   async deactivateReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    throw new Error("Method is not tested.");
+
+    const transactionHash = await this.contract.deactivateReporter(this.network, id, this.signer);
+
+    return { transactionHash };
   }
 
   async unstakeReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    throw new Error("Method is not tested.");
+
+    const transactionHash = await this.contract.unstake(this.network, id, this.signer);
+
+    return { transactionHash };
   }
 
   async createCase(id: string, name: string, url: string): Promise<Result> {

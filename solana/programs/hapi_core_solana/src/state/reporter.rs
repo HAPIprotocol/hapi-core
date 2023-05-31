@@ -16,7 +16,7 @@ pub struct Reporter {
     pub account: Pubkey,
 
     /// Short reporter description
-    pub name: [u8; 32],
+    pub name: String,
 
     /// Reporter's type
     pub role: ReporterRole,
@@ -35,7 +35,7 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 1 + 1 + 8 + 8 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 24 + 1 + 1 + 8 + 8 + 128);
     pub const VERSION: u16 = 1;
 }
 
