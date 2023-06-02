@@ -146,6 +146,20 @@ export class HapiCoreProgram {
     return data;
   }
 
+  public async getAllReporters(
+    network_name: string,
+  ) {
+    let res = [];
+    const network = this.findNetworkAddress(network_name)[0];
+    let data = await this.program.account.reporter.all();
+
+    data.map((acc) => {
+      if (acc.account.network == network)
+        res.push(acc)
+    })
+
+    return data;
+  }
 
   public async setAuthority(
     network_name: string,
@@ -304,42 +318,42 @@ export class HapiCoreProgram {
     id: string,
     account?: Keypair,
   ) {
-    // const network = this.findNetworkAddress(network_name)[0];
-    // const reporter = this.findReporterAddress(
-    //   network, new BN(id))[0];
-    // const networkData = await this.program.account.network.fetch(network);
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(
+      network, new BN(id))[0];
+    const networkData = await this.program.account.network.fetch(network);
 
-    // const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
-    //   this.program.provider.connection,
-    //   this.program.provider.publicKey,
-    //   networkData.stakeMint,
-    //   network,
-    //   true
-    // )).address;
+    const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+      this.program.provider.connection,
+      this.program.provider.publicKey,
+      networkData.stakeMint,
+      network,
+      true
+    )).address;
 
-    // const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
-    //   this.program.provider.connection,
-    //   this.program.provider.publicKey,
-    //   networkData.stakeMint,
-    //   account.publicKey,
-    //   false
-    // )).address;
+    const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+      this.program.provider.connection,
+      this.program.provider.publicKey,
+      networkData.stakeMint,
+      account.publicKey,
+      false
+    )).address;
 
-    // const tx = this.program.methods.activateReporter(
-    // ).accounts({
-    //   signer: account ? account.publicKey : this.program.provider.publicKey,
-    //   network,
-    //   reporter,
-    //   networkStakeTokenAccount,
-    //   reporterStakeTokenAccount,
-    //   tokenProgram: Token.TOKEN_PROGRAM_ID
-    // });
+    const tx = this.program.methods.activateReporter(
+    ).accounts({
+      signer: account ? account.publicKey : this.program.provider.publicKey,
+      network,
+      reporter,
+      networkStakeTokenAccount,
+      reporterStakeTokenAccount,
+      tokenProgram: Token.TOKEN_PROGRAM_ID
+    });
 
-    // if (account) {
-    //   tx.signers([account]);
-    // }
+    if (account) {
+      tx.signers([account]);
+    }
 
-    // return await tx.rpc()
+    return await tx.rpc()
   }
 
   async deactivateReporter(
@@ -371,41 +385,41 @@ export class HapiCoreProgram {
     id: string,
     account?: Keypair,
   ) {
-    // const network = this.findNetworkAddress(network_name)[0];
-    // const reporter = this.findReporterAddress(
-    //   network, new BN(id))[0];
-    // const networkData = await this.program.account.network.fetch(network);
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(
+      network, new BN(id))[0];
+    const networkData = await this.program.account.network.fetch(network);
 
-    // const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
-    //   this.program.provider.connection,
-    //   this.program.provider.publicKey,
-    //   networkData.stakeMint,
-    //   network,
-    //   true
-    // )).address;
+    const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+      this.program.provider.connection,
+      this.program.provider.publicKey,
+      networkData.stakeMint,
+      network,
+      true
+    )).address;
 
-    // const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
-    //   this.program.provider.connection,
-    //   this.program.provider.publicKey,
-    //   networkData.stakeMint,
-    //   account.publicKey,
-    //   false
-    // )).address;
+    const reporterStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
+      this.program.provider.connection,
+      this.program.provider.publicKey,
+      networkData.stakeMint,
+      account.publicKey,
+      false
+    )).address;
 
-    // const tx = this.program.methods.unstake(
-    // ).accounts({
-    //   signer: account ? account.publicKey : this.program.provider.publicKey,
-    //   network,
-    //   reporter,
-    //   networkStakeTokenAccount,
-    //   reporterStakeTokenAccount,
-    //   tokenProgram: Token.TOKEN_PROGRAM_ID
-    // });
+    const tx = this.program.methods.unstake(
+    ).accounts({
+      signer: account ? account.publicKey : this.program.provider.publicKey,
+      network,
+      reporter,
+      networkStakeTokenAccount,
+      reporterStakeTokenAccount,
+      tokenProgram: Token.TOKEN_PROGRAM_ID
+    });
 
-    // if (account) {
-    //   tx.signers([account]);
-    // }
+    if (account) {
+      tx.signers([account]);
+    }
 
-    // return await tx.rpc()
+    return await tx.rpc()
   }
 }

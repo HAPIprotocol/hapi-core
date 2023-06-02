@@ -138,7 +138,7 @@ export class HapiCoreSolana implements HapiCore {
 
   async getReporter(id: string): Promise<Reporter> {
     // throw new Error("Method is not tested.");
-    let data = await this.contract.getNetwotkData(this.network);
+    const data = await this.contract.getReporterData(this.network, id);
 
     // TODO: fix it
     return {
@@ -156,11 +156,32 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporterCount(): Promise<number> {
-    throw new Error("Method not implemented.");
+    // throw new Error("Method is not tested.");
+    const count = (await this.contract.getAllReporters(this.network)).length;
+
+    return count;
+
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
-    throw new Error("Method not implemented.");
+    // throw new Error("Method is not tested.");
+    const data = await this.contract.getAllReporters(this.network);
+    let reporters = [];
+
+    data.map((acc) => {
+      reporters.push({
+        id: acc.id.toString(),
+        account: acc.account.toString(),
+        role: ReporterRole[acc.role as ReporterRoleKeys],
+        status: acc.status,
+        name: acc.name,
+        url: acc.url,
+        stake: acc.stake.toString(),
+        unlockTimestamp: acc.unlockTimestamp.toNumber()
+      })
+    })
+
+    return reporters;
   }
 
   async updateReporter(
