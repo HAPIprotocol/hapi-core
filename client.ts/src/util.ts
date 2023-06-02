@@ -201,6 +201,19 @@ export function ReporterRoleToString(value: ReporterRole): string {
   }
 }
 
+export function ReporterStatusFromString(value: string): ReporterStatus {
+  switch (value) {
+    case "Inactive":
+      return ReporterStatus.Inactive;
+    case "Active":
+      return ReporterStatus.Active;
+    case "Unstaking":
+      return ReporterStatus.Unstaking;
+    default:
+      throw new Error(`Unsupported reporter status: ${value}`);
+  }
+}
+
 export function ReporterStatusToString(value: ReporterStatus): string {
   switch (value) {
     case ReporterStatus.Inactive:

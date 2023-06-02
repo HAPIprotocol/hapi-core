@@ -79,6 +79,7 @@ pub mod hapi_core_solana {
 
         reporter.bump = bump;
         reporter.id = reporter_id;
+        reporter.network = ctx.accounts.network.key();
         reporter.account = account;
         reporter.name = name;
         reporter.role = role;

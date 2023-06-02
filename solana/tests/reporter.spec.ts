@@ -10,9 +10,10 @@ import {
     HapiCoreProgram,
     ReporterStatus,
     stakeConfiguration,
-    rewardConfiguration
+    rewardConfiguration,
 } from "../lib";
 import { programError } from "./util/error";
+import { assert } from "console";
 
 describe("HapiCore Reporter", () => {
     const program = new HapiCoreProgram(new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk"));
@@ -138,7 +139,6 @@ describe("HapiCore Reporter", () => {
     });
 
     describe("create_reporter", () => {
-
         it("fail - authority mismatch", async () => {
             const networkName = NETWORKS.main.name;
 
@@ -215,6 +215,7 @@ describe("HapiCore Reporter", () => {
             );
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+            expect(fetchedReporterAccount.network).toEqual(networkAccount);
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
             expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
@@ -268,6 +269,7 @@ describe("HapiCore Reporter", () => {
             );
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+            expect(fetchedReporterAccount.network).toEqual(networkAccount);
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
             expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
@@ -321,6 +323,7 @@ describe("HapiCore Reporter", () => {
             );
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+            expect(fetchedReporterAccount.network).toEqual(networkAccount);
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
             expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);

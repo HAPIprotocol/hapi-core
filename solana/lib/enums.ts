@@ -103,5 +103,5 @@ export const CategoryVariants = Object.keys(Category) as Readonly<
 
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   network: 251,
-  reporter: 253,
+  reporter: 285,
 };
