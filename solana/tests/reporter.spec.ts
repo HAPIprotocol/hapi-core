@@ -216,7 +216,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
+            expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -269,7 +269,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
+            expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -322,7 +322,7 @@ describe("HapiCore Reporter", () => {
 
             expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(networkName);
+            expect(fetchedReporterAccount.name).toEqual(networkName);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
             expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);
@@ -521,7 +521,7 @@ describe("HapiCore Reporter", () => {
             );
 
             expect(fetchedReporterAccount.account).toEqual(reporter.keypair.publicKey);
-            expect(Buffer.from(fetchedReporterAccount.name)).toEqual(reporter.name);
+            expect(fetchedReporterAccount.name).toEqual(reporter.name);
             expect(fetchedReporterAccount.role).toEqual(reporterRole);
             expect(fetchedReporterAccount.url).toEqual(reporter.url);
         });
