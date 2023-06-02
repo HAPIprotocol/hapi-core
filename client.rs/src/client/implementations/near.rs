@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    hapi_core::{
+    client::{
         address::{Address, CreateAddressInput, UpdateAddressInput},
         asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
         case::{Case, CreateCaseInput, UpdateCaseInput},

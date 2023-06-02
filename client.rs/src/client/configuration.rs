@@ -14,5 +14,5 @@ pub struct StakeConfiguration {
 pub struct RewardConfiguration {
     pub token: String,
     pub address_confirmation_reward: Amount,
-    pub trace_reward: Amount,
+    pub tracer_reward: Amount,
 }

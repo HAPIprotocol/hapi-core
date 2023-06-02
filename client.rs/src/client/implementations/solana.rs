@@ -1,107 +1,32 @@
-use std::{str::FromStr, sync::Arc};
-
 use async_trait::async_trait;
-use ethers::{
-    prelude::{abigen, SignerMiddleware},
-    providers::{Http, Provider},
-    signers::LocalWallet,
-    types::Address as EthAddress,
-};
-use ethers_providers::Middleware;
-use ethers_signers::Signer;
 
 use crate::{
-    hapi_core::{
+    client::{
         address::{Address, CreateAddressInput, UpdateAddressInput},
         asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
         case::{Case, CreateCaseInput, UpdateCaseInput},
         configuration::{RewardConfiguration, StakeConfiguration},
         reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
-        result::{ClientError, Result, Tx},
+        result::{Result, Tx},
     },
     HapiCore,
 };
 
-pub struct HapiCoreEvmOptions {
-    pub provider_url: String,
-    pub contract_address: String,
-    pub private_key: Option<String>,
-}
+pub struct HapiCoreSolana {}
 
-abigen!(HAPI_CORE, "./src/hapi_core/implementations/abi.json");
-
-pub struct HapiCoreEvm {
-    provider: Provider<Http>,
-    signer: LocalWallet,
-    contract: HAPI_CORE<SignerMiddleware<Provider<Http>, LocalWallet>>,
-    client: Arc<SignerMiddleware<Provider<Http>, LocalWallet>>,
-}
-
-impl HapiCoreEvm {
-    pub fn new(options: HapiCoreEvmOptions) -> Result<Self> {
-        let provider = Provider::<Http>::try_from(options.provider_url.as_str())
-            .map_err(|e| ClientError::UrlParseError(e.to_string()))?;
-
-        let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
-            .map_err(|e| ClientError::Ethers(e.to_string()))?
-            .with_chain_id(31337_u64);
-
-        let client = SignerMiddleware::new(provider.clone(), signer.clone());
-
-        let client = Arc::new(client);
-
-        let contract_address: EthAddress = options.contract_address.parse().map_err(
-            |e: <EthAddress as std::str::FromStr>::Err| ClientError::EthAddressParse(e.to_string()),
-        )?;
-
-        let contract: HAPI_CORE<SignerMiddleware<Provider<Http>, LocalWallet>> =
-            HAPI_CORE::new(contract_address, client.clone());
-
-        Ok(Self {
-            provider,
-            signer,
-            contract,
-            client,
-        })
+impl HapiCoreSolana {
+    pub async fn new() -> Self {
+        Self {}
     }
 }
 
 #[async_trait]
-impl HapiCore for HapiCoreEvm {
-    async fn set_authority(&self, address: &str) -> Result<Tx> {
-        let authority: EthAddress =
-            address
-                .parse()
-                .map_err(|e: <EthAddress as std::str::FromStr>::Err| {
-                    ClientError::EthAddressParse(e.to_string())
-                })?;
-
-        let tx = self
-            .contract
-            .set_authority(authority)
-            .send()
-            .await
-            .map_err(|e| ClientError::Ethers(format!("set_authority failed: {e}")))?
-            .await?;
-
-        if let Some(receipt) = tx {
-            Ok(Tx {
-                hash: format!("{:?}", receipt.transaction_hash),
-            })
-        } else {
-            Err(ClientError::Ethers(
-                "set_authority failed: no receipt".to_string(),
-            ))
-        }
+impl HapiCore for HapiCoreSolana {
+    async fn set_authority(&self, _address: &str) -> Result<Tx> {
+        unimplemented!()
     }
-
     async fn get_authority(&self) -> Result<String> {
-        self.contract
-            .authority()
-            .call()
-            .await
-            .map_err(|e| ClientError::Ethers(format!("get_authority failed: {e}")))
-            .map(|a| format!("{a:?}"))
+        unimplemented!()
     }
 
     async fn update_stake_configuration(&self, _configuration: StakeConfiguration) -> Result<Tx> {

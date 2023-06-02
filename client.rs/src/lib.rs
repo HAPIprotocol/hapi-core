@@ -1,6 +1,6 @@
-pub mod hapi_core;
+pub mod client;
 
-pub use hapi_core::{
+pub use client::{
     implementations::{HapiCoreEvm, HapiCoreEvmOptions, HapiCoreNear, HapiCoreSolana},
     interface::HapiCore,
 };
