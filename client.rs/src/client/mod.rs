@@ -4,6 +4,7 @@ pub mod case;
 pub mod configuration;
 pub mod implementations;
 pub mod interface;
+pub mod network;
 pub mod reporter;
 pub mod result;
 

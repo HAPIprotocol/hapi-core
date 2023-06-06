@@ -26,7 +26,10 @@ pub struct HapiCoreEvmOptions {
     pub private_key: Option<String>,
 }
 
-abigen!(CONTRACT, "./src/client/implementations/abi.json");
+abigen!(
+    CONTRACT,
+    "../evm/artifacts/contracts/HapiCore.sol/HapiCore.json"
+);
 
 type Provider = EthersProvider<Http>;
 type Signer = SignerMiddleware<Provider, LocalWallet>;
