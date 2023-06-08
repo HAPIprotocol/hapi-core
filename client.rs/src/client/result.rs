@@ -10,6 +10,8 @@ pub enum ClientError {
     Ethers(String),
     #[error("Provider error: {0}")]
     Provider(#[from] ethers_providers::ProviderError),
+    #[error("Contract data parsing error: {0}")]
+    ContractData(String),
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;

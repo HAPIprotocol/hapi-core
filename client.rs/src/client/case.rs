@@ -1,6 +1,6 @@
 use super::Uuid;
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum CaseStatus {
     #[default]
     Closed = 0,
@@ -8,9 +8,10 @@ pub enum CaseStatus {
 }
 
 pub struct CreateCaseInput {}
+
 pub struct UpdateCaseInput {}
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Case {
     pub id: Uuid,
     pub name: String,

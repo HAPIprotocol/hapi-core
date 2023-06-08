@@ -376,11 +376,11 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-struct Context {
+struct CommandContext {
     pub hapi_core: Box<dyn HapiCore>,
 }
 
-impl TryFrom<&ArgMatches> for Context {
+impl TryFrom<&ArgMatches> for CommandContext {
     type Error = anyhow::Error;
 
     fn try_from(matches: &ArgMatches) -> Result<Self, Self::Error> {

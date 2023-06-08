@@ -55,13 +55,10 @@ impl HapiCoreEvm {
 
         let client = Arc::new(client);
 
-        let contract_address: EthAddress =
-            options
-                .contract_address
-                .parse()
-                .map_err(|e: <EthAddress as FromStr>::Err| {
-                    ClientError::EthAddressParse(e.to_string())
-                })?;
+        let contract_address: EthAddress = options
+            .contract_address
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`contract_address`: {e}")))?;
 
         let contract: CONTRACT<Signer> = CONTRACT::new(contract_address, client.clone());
 
@@ -97,15 +94,29 @@ impl From<contract::RewardConfiguration> for RewardConfiguration {
     }
 }
 
+impl TryFrom<contract::Reporter> for Reporter {
+    type Error = ClientError;
+
+    fn try_from(reporter: contract::Reporter) -> Result<Self> {
+        Ok(Reporter {
+            id: reporter.id,
+            account: reporter.account.to_string(),
+            name: reporter.name.to_string(),
+            url: reporter.url.to_string(),
+            role: reporter.role.try_into()?,
+            status: reporter.status.try_into()?,
+            stake: reporter.stake.into(),
+            unlock_timestamp: reporter.unlock_timestamp.as_u64(),
+        })
+    }
+}
+
 #[async_trait]
 impl HapiCore for HapiCoreEvm {
     async fn set_authority(&self, address: &str) -> Result<Tx> {
-        let authority: EthAddress =
-            address
-                .parse()
-                .map_err(|e: <EthAddress as std::str::FromStr>::Err| {
-                    ClientError::EthAddressParse(e.to_string())
-                })?;
+        let authority: EthAddress = address
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`address`: {e}")))?;
 
         self.contract
             .set_authority(authority)
@@ -137,13 +148,10 @@ impl HapiCore for HapiCoreEvm {
     }
 
     async fn update_stake_configuration(&self, configuration: StakeConfiguration) -> Result<Tx> {
-        let token =
-            configuration
-                .token
-                .parse()
-                .map_err(|e: <EthAddress as std::str::FromStr>::Err| {
-                    ClientError::EthAddressParse(e.to_string())
-                })?;
+        let token = configuration
+            .token
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`token`: {e}")))?;
 
         self.contract
             .update_stake_configuration(
@@ -181,13 +189,10 @@ impl HapiCore for HapiCoreEvm {
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
-        let token =
-            configuration
-                .token
-                .parse()
-                .map_err(|e: <EthAddress as std::str::FromStr>::Err| {
-                    ClientError::EthAddressParse(e.to_string())
-                })?;
+        let token = configuration
+            .token
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`token`: {e}")))?;
 
         self.contract
             .update_reward_configuration(
@@ -222,14 +227,69 @@ impl HapiCore for HapiCoreEvm {
             .map(|c| c.into())
     }
 
-    async fn create_reporter(&self, _input: CreateReporterInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_reporter(&self, input: CreateReporterInput) -> Result<Tx> {
+        let addr = input
+            .account
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`addr`: {e}")))?;
+
+        self.contract
+            .create_reporter(input.id, addr, input.role as u8, input.name, input.url)
+            .send()
+            .await
+            .map_err(|e| ClientError::Ethers(format!("create_reporter failed: {e}")))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "create_reporter failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
-    async fn update_reporter(&self, _input: UpdateReporterInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
+        let addr = input
+            .account
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`addr`: {e}")))?;
+
+        self.contract
+            .update_reporter(input.id, addr, input.role as u8, input.name, input.url)
+            .send()
+            .await
+            .map_err(|e| ClientError::Ethers(format!("update_reporter failed: {e}")))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "update_reporter failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
-    async fn get_reporter(&self, _id: &str) -> Result<Reporter> {
-        unimplemented!()
+
+    async fn get_reporter(&self, id: &str) -> Result<Reporter> {
+        let id = id
+            .parse()
+            .map_err(|e| ClientError::EthAddressParse(format!("`id`: {e}")))?;
+
+        self.contract
+            .get_reporter(id)
+            .call()
+            .await
+            .map_err(map_ethers_error)
+            .map(|c| c.try_into())?
     }
     async fn get_reporter_count(&self) -> Result<u64> {
         unimplemented!()
