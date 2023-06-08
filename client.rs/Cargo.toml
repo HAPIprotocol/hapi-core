@@ -1,7 +1,9 @@
 [package]
 name = "hapi-core-cli"
+authors = ["HAPI"]
 version = "0.1.0"
 edition = "2021"
+description = "Rust Client for HAPI Protocol contracts"
 
 [lib]
 crate-type = ["lib"]

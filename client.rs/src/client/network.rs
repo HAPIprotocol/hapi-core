@@ -23,3 +23,15 @@ impl FromStr for HapiCoreNetwork {
         }
     }
 }
+
+impl std::fmt::Debug for HapiCoreNetwork {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ethereum => write!(f, "ethereum"),
+            Self::Bsc => write!(f, "bsc"),
+            Self::Solana => write!(f, "solana"),
+            Self::Bitcoin => write!(f, "bitcoin"),
+            Self::Near => write!(f, "near"),
+        }
+    }
+}

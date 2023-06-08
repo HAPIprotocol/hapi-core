@@ -5,6 +5,7 @@ use ethers::{
     signers::LocalWallet,
     types::Address as EthAddress,
 };
+use ethers_contract::ContractError;
 use ethers_signers::Signer as EthersSigner;
 use std::{str::FromStr, sync::Arc};
 
@@ -211,12 +212,13 @@ impl HapiCore for HapiCoreEvm {
                 },
             )
     }
+
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
         self.contract
             .reward_configuration()
             .call()
             .await
-            .map_err(|e| ClientError::Ethers(format!("get_reward_configuration failed: {e}")))
+            .map_err(map_ethers_error)
             .map(|c| c.into())
     }
 
@@ -292,5 +294,16 @@ impl HapiCore for HapiCoreEvm {
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
         unimplemented!()
+    }
+}
+
+fn map_ethers_error<M: ethers_providers::Middleware>(e: ContractError<M>) -> ClientError {
+    match e {
+        ContractError::Revert(e) => ClientError::Ethers(format!(
+            "Contract call reverted with data: : {}",
+            String::from_utf8(e[64..].to_vec()).unwrap_or_else(|_| e.to_string())
+        )),
+
+        _ => ClientError::Ethers(format!("get_reward_configuration failed: {e}")),
     }
 }

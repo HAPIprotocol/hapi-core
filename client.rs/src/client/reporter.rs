@@ -1,6 +1,6 @@
 use super::{amount::Amount, Uuid};
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum ReporterRole {
     #[default]
     Validator = 0,
@@ -9,7 +9,7 @@ pub enum ReporterRole {
     Authority = 3,
 }
 
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum ReporterStatus {
     #[default]
     Inactive = 0,
@@ -20,7 +20,7 @@ pub enum ReporterStatus {
 pub struct CreateReporterInput {}
 pub struct UpdateReporterInput {}
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Reporter {
     pub id: Uuid,
     pub account: String,
