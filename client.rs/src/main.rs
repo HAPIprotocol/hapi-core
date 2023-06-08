@@ -52,10 +52,77 @@ async fn main() -> anyhow::Result<()> {
                 .about("Set authority address"),
         )
         .subcommand(Command::new("get-stake-configuration").about("Get stake configuration"))
-        .subcommand(Command::new("update-stake-configuration").about("Update stake configuration"))
+        .subcommand(
+            Command::new("update-stake-configuration")
+                .about("Update stake configuration")
+                .arg(
+                    Arg::new("token")
+                        .value_name("TOKEN")
+                        .index(1)
+                        .required(true)
+                        .help("Token address"),
+                )
+                .arg(
+                    Arg::new("unlock-duration")
+                        .value_name("UNLOCK_DURATION")
+                        .index(2)
+                        .required(true)
+                        .help("Unlock duration"),
+                )
+                .arg(
+                    Arg::new("validator-stake")
+                        .value_name("VALIDATOR_STAKE")
+                        .index(3)
+                        .required(true)
+                        .help("Validator stake"),
+                )
+                .arg(
+                    Arg::new("tracer-stake")
+                        .value_name("TRACER_STAKE")
+                        .index(4)
+                        .required(true)
+                        .help("Tracer stake"),
+                )
+                .arg(
+                    Arg::new("publisher-stake")
+                        .value_name("PUBLISHER_STAKE")
+                        .index(5)
+                        .required(true)
+                        .help("Publisher stake"),
+                )
+                .arg(
+                    Arg::new("authority-stake")
+                        .value_name("AUTHORITY_STAKE")
+                        .index(6)
+                        .required(true)
+                        .help("Authority stake"),
+                ),
+        )
         .subcommand(Command::new("get-reward-configuration").about("Get reward configuration"))
         .subcommand(
-            Command::new("update-reward-configuration").about("Update reward configuration"),
+            Command::new("update-reward-configuration")
+                .about("Update reward configuration")
+                .arg(
+                    Arg::new("token")
+                        .value_name("TOKEN")
+                        .index(1)
+                        .required(true)
+                        .help("Token address"),
+                )
+                .arg(
+                    Arg::new("address-confirmation-reward")
+                        .value_name("ADDRESS_CONFIRMATION_REWARD")
+                        .index(2)
+                        .required(true)
+                        .help("Address confirmation reward"),
+                )
+                .arg(
+                    Arg::new("tracer-reward")
+                        .value_name("TRACER_REWARD")
+                        .index(3)
+                        .required(true)
+                        .help("Tracer reward"),
+                ),
         )
         .subcommand(Command::new("create-reporter").about("Create reporter"))
         .subcommand(Command::new("update-reporter").about("Update reporter"))
