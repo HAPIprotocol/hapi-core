@@ -15,8 +15,8 @@ use crate::{
 pub struct HapiCoreNear {}
 
 impl HapiCoreNear {
-    pub async fn new() -> Self {
-        Self {}
+    pub fn new() -> Result<Self> {
+        Ok(Self {})
     }
 }
 

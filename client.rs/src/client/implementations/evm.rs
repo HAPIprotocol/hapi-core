@@ -75,14 +75,13 @@ impl HapiCoreEvm {
 
 impl From<contract::StakeConfiguration> for StakeConfiguration {
     fn from(config: contract::StakeConfiguration) -> Self {
-        // TODO: fix the difference between U256 and u64
         StakeConfiguration {
             token: config.token.to_string(),
             unlock_duration: config.unlock_duration.as_u64(),
-            validator_stake: config.validator_stake.as_u64(),
-            tracer_stake: config.tracer_stake.as_u64(),
-            publisher_stake: config.publisher_stake.as_u64(),
-            authority_stake: config.authority_stake.as_u64(),
+            validator_stake: config.validator_stake.into(),
+            tracer_stake: config.tracer_stake.into(),
+            publisher_stake: config.publisher_stake.into(),
+            authority_stake: config.authority_stake.into(),
         }
     }
 }
@@ -91,8 +90,8 @@ impl From<contract::RewardConfiguration> for RewardConfiguration {
     fn from(config: contract::RewardConfiguration) -> Self {
         RewardConfiguration {
             token: config.token.to_string(),
-            address_confirmation_reward: config.address_confirmation_reward.as_u64(),
-            tracer_reward: config.tracer_reward.as_u64(),
+            address_confirmation_reward: config.address_confirmation_reward.into(),
+            tracer_reward: config.tracer_reward.into(),
         }
     }
 }

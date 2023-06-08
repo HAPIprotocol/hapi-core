@@ -1,4 +1,5 @@
 pub mod address;
+pub mod amount;
 pub mod asset;
 pub mod case;
 pub mod configuration;
@@ -8,7 +9,6 @@ pub mod network;
 pub mod reporter;
 pub mod result;
 
-pub type Amount = u64;
 pub type Uuid = u128;
 
 #[derive(Default, Clone, PartialEq)]

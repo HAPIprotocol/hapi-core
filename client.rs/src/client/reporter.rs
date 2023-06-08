@@ -1,4 +1,4 @@
-use super::{Amount, Uuid};
+use super::{amount::Amount, Uuid};
 
 #[derive(Default, Clone, PartialEq)]
 pub enum ReporterRole {

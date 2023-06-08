@@ -8,14 +8,14 @@ crate-type = ["lib"]
 name = "hapi_core"
 
 [dependencies]
-async-trait = "0.1.68"
+async-trait = "0.1"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
-anyhow = "1.0.71"
-clap = "4.3.2"
+anyhow = { version = "1" }
+clap = { version = "4", features = ["env"] }
 
 # EVM dependencies
-ethers = "2.0.6"
-ethers-providers = "2.0.6"
-ethers-signers = "2.0.6"
-ethers-contract = "2.0.6"
+ethers = "2"
+ethers-providers = "2"
+ethers-signers = "2"
+ethers-contract = "2"
