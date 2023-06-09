@@ -1,12 +1,11 @@
 use async_trait::async_trait;
 use ethers::{
+    contract::ContractError,
     prelude::{abigen, SignerMiddleware},
     providers::{Http, Provider as EthersProvider},
-    signers::LocalWallet,
+    signers::{LocalWallet, Signer as EthersSigner},
     types::Address as EthAddress,
 };
-use ethers_contract::ContractError;
-use ethers_signers::Signer as EthersSigner;
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
@@ -143,7 +142,7 @@ impl HapiCore for HapiCoreEvm {
             .authority()
             .call()
             .await
-            .map_err(|e| ClientError::Ethers(format!("get_authority failed: {e}")))
+            .map_err(|e| map_ethers_error("get_authority", e))
             .map(|a| format!("{a:?}"))
     }
 
@@ -184,7 +183,7 @@ impl HapiCore for HapiCoreEvm {
             .stake_configuration()
             .call()
             .await
-            .map_err(|e| ClientError::Ethers(format!("get_stake_configuration failed: {e}")))
+            .map_err(|e| map_ethers_error("get_stake_configuration", e))
             .map(|c| c.into())
     }
 
@@ -223,7 +222,7 @@ impl HapiCore for HapiCoreEvm {
             .reward_configuration()
             .call()
             .await
-            .map_err(map_ethers_error)
+            .map_err(|e| map_ethers_error("get_reward_configuration", e))
             .map(|c| c.into())
     }
 
@@ -288,7 +287,7 @@ impl HapiCore for HapiCoreEvm {
             .get_reporter(id)
             .call()
             .await
-            .map_err(map_ethers_error)
+            .map_err(|e| map_ethers_error("get_reporter", e))
             .map(|c| c.try_into())?
     }
     async fn get_reporter_count(&self) -> Result<u64> {
@@ -357,13 +356,19 @@ impl HapiCore for HapiCoreEvm {
     }
 }
 
-fn map_ethers_error<M: ethers_providers::Middleware>(e: ContractError<M>) -> ClientError {
+fn map_ethers_error<M: ethers_providers::Middleware>(
+    caller: &str,
+    e: ContractError<M>,
+) -> ClientError {
     match e {
+        // TODO: get rid of black magic parsing
         ContractError::Revert(e) => ClientError::Ethers(format!(
-            "Contract call reverted with data: : {}",
-            String::from_utf8(e[64..].to_vec()).unwrap_or_else(|_| e.to_string())
+            "`{caller}` reverted with: {}",
+            String::from_utf8_lossy(&e[64..])
+                .chars()
+                .filter(|c| !c.is_control())
+                .collect::<String>()
         )),
-
-        _ => ClientError::Ethers(format!("get_reward_configuration failed: {e}")),
+        _ => ClientError::Ethers(format!("`{caller}` failed: {e}")),
     }
 }

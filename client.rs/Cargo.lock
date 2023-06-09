@@ -1360,6 +1360,7 @@ dependencies = [
  "ethers-contract",
  "ethers-providers",
  "ethers-signers",
+ "regex",
  "thiserror",
  "tokio",
 ]

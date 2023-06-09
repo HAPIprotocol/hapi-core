@@ -2,7 +2,11 @@ import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 
+const HARDHAT_NETWORK = process.env.HARDHAT_NETWORK || "hardhat";
+const HARDHAT_LOCALHOST_URL = process.env.HARDHAT_LOCALHOST_URL || "http://127.0.0.1:8545";
+
 const config: HardhatUserConfig = {
+  defaultNetwork: HARDHAT_NETWORK,
   solidity: {
     version: "0.8.18",
     settings: {
@@ -13,6 +17,9 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    localhost: {
+      url: HARDHAT_LOCALHOST_URL,
+    },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
     },
