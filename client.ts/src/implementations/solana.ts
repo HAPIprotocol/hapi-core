@@ -1,6 +1,7 @@
 import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
-import { HapiCoreProgram } from "../../../solana/lib";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+
+import { HapiCoreProgram } from "../../../solana/lib";
 
 import {
   Addr,
@@ -20,10 +21,7 @@ import {
   ReporterRoleNames,
 } from "../interface";
 
-import {
-  ReporterRoleFromString,
-  ReporterStatusFromString
-} from "../util";
+import { ReporterRoleFromString, ReporterStatusFromString } from "../util";
 
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
@@ -40,30 +38,34 @@ export class HapiCoreSolana implements HapiCore {
   private network: string;
   private provider: AnchorProvider;
 
-  constructor (options: SolanaConnectionOptions) {
-    let programProvider = options.provider.constructor.name === "Provider" ?
-      options.provider as AnchorProvider :
-      options.provider = AnchorProvider.local(
-        (options.provider as SolanaProviderOptions).providerUrl
-      );
+  constructor(options: SolanaConnectionOptions) {
+    let programProvider =
+      options.provider.constructor.name === "Provider"
+        ? (options.provider as AnchorProvider)
+        : (options.provider = AnchorProvider.local(
+            (options.provider as SolanaProviderOptions).providerUrl
+          ));
 
     this.contract = new HapiCoreProgram(
       options.address || HapiCoreAddresses[options.network],
-      programProvider);
+      programProvider
+    );
 
     this.network = options.network;
     this.provider = programProvider;
   }
 
   async setAuthority(address: string): Promise<Result> {
-    const transactionHash = await this.contract.setAuthority(this.network, address);
+    const transactionHash = await this.contract.setAuthority(
+      this.network,
+      address
+    );
     return { transactionHash };
   }
 
   async getAuthority(): Promise<string> {
     let data = await this.contract.getNetwotkData(this.network);
     return data.authority.toString();
-
   }
 
   async updateStakeConfiguration(
@@ -72,7 +74,7 @@ export class HapiCoreSolana implements HapiCore {
     validatorStake?: string,
     tracerStake?: string,
     publisherStake?: string,
-    authorityStake?: string,
+    authorityStake?: string
   ): Promise<Result> {
     const transactionHash = await this.contract.updateStakeConfiguration(
       this.network,
@@ -81,11 +83,10 @@ export class HapiCoreSolana implements HapiCore {
       validatorStake,
       tracerStake,
       publisherStake,
-      authorityStake,
+      authorityStake
     );
 
     return { transactionHash };
-
   }
 
   async getStakeConfiguration(): Promise<StakeConfiguration> {
@@ -98,7 +99,7 @@ export class HapiCoreSolana implements HapiCore {
       tracerStake: data.stakeConfiguration.tracerStake.toString(),
       publisherStake: data.stakeConfiguration.publisherStake.toString(),
       authorityStake: data.stakeConfiguration.authorityStake.toString(),
-    }
+    };
   }
 
   async updateRewardConfiguration(
@@ -106,7 +107,12 @@ export class HapiCoreSolana implements HapiCore {
     addressConfirmationReward?: string,
     addresstraceReward?: string
   ): Promise<Result> {
-    const transactionHash = await this.contract.updateRewardConfiguration(this.network, token, addressConfirmationReward, addresstraceReward);
+    const transactionHash = await this.contract.updateRewardConfiguration(
+      this.network,
+      token,
+      addressConfirmationReward,
+      addresstraceReward
+    );
 
     return { transactionHash };
   }
@@ -116,8 +122,9 @@ export class HapiCoreSolana implements HapiCore {
 
     return {
       token: data.rewardMint.toString(),
-      addressConfirmationReward: data.rewardConfiguration.addressConfirmationReward.toString(),
-      tracerReward: data.rewardConfiguration.addressTracerReward.toString()
+      addressConfirmationReward:
+        data.rewardConfiguration.addressConfirmationReward.toString(),
+      tracerReward: data.rewardConfiguration.addressTracerReward.toString(),
     };
   }
 
@@ -128,7 +135,14 @@ export class HapiCoreSolana implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
-    const transactionHash = await this.contract.createReporter(this.network, id, ReporterRoleNames[role], account, name, url);
+    const transactionHash = await this.contract.createReporter(
+      this.network,
+      id,
+      ReporterRoleNames[role],
+      account,
+      name,
+      url
+    );
 
     return { transactionHash };
   }
@@ -144,34 +158,29 @@ export class HapiCoreSolana implements HapiCore {
       name: data.name.toString(),
       url: data.url,
       stake: data.stake.toString(),
-      unlockTimestamp: data.unlockTimestamp.toNumber()
+      unlockTimestamp: data.unlockTimestamp.toNumber(),
     };
-
-
   }
 
   async getReporterCount(): Promise<number> {
     const count = (await this.contract.getAllReporters(this.network)).length;
 
     return count;
-
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
     const data = await this.contract.getAllReporters(this.network);
 
-    let res = data.map((acc) => (
-      {
-        id: acc.account.id.toString(),
-        account: acc.account.account.toString(),
-        role: ReporterRoleFromString(acc.account.role as string),
-        status: ReporterStatusFromString(acc.account.status as string),
-        name: acc.account.name.toString(),
-        url: acc.account.url,
-        stake: acc.account.stake.toString(),
-        unlockTimestamp: acc.account.unlockTimestamp.toNumber()
-      }
-    ));
+    let res = data.map((acc) => ({
+      id: acc.account.id.toString(),
+      account: acc.account.account.toString(),
+      role: ReporterRoleFromString(acc.account.role as string),
+      status: ReporterStatusFromString(acc.account.status as string),
+      name: acc.account.name.toString(),
+      url: acc.account.url,
+      stake: acc.account.stake.toString(),
+      unlockTimestamp: acc.account.unlockTimestamp.toNumber(),
+    }));
 
     return res.slice(skip, skip + take);
   }
@@ -183,42 +192,60 @@ export class HapiCoreSolana implements HapiCore {
     name?: string,
     url?: string
   ): Promise<Result> {
-    const transactionHash = await this.contract.updateReporter(this.network, id, ReporterRoleNames[role], account, name, url);
+    const transactionHash = await this.contract.updateReporter(
+      this.network,
+      id,
+      ReporterRoleNames[role],
+      account,
+      name,
+      url
+    );
 
     return { transactionHash };
-
   }
 
   async getReporterAccount(): Promise<web3.PublicKey> {
     const data = await this.contract.getAllReporters(this.network);
-    let reporterAccount = data.find((acc) => acc.account.account.equals(this.provider.publicKey));
+    let reporterAccount = data.find((acc) =>
+      acc.account.account.equals(this.provider.publicKey)
+    );
 
     if (!reporterAccount) {
       throw new Error("Reporter does not exist");
-    }
-    else {
+    } else {
       return reporterAccount.publicKey;
     }
   }
 
   async activateReporter(): Promise<Result> {
     const reporterAccount = await this.getReporterAccount();
-    const transactionHash = await this.contract.activateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
+    const transactionHash = await this.contract.activateReporter(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
 
     return { transactionHash };
-
   }
 
   async deactivateReporter(): Promise<Result> {
     const reporterAccount = await this.getReporterAccount();
-    const transactionHash = await this.contract.deactivateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
+    const transactionHash = await this.contract.deactivateReporter(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
 
     return { transactionHash };
   }
 
   async unstakeReporter(): Promise<Result> {
     const reporterAccount = await this.getReporterAccount();
-    const transactionHash = await this.contract.unstake(this.network, this.provider.wallet as NodeWallet, reporterAccount);
+    const transactionHash = await this.contract.unstake(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
 
     return { transactionHash };
   }

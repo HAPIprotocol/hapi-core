@@ -1,18 +1,17 @@
 import { IDL } from "../target/types/hapi_core_solana";
 import { BN } from "@coral-xyz/anchor";
 
-
 // HapiCore Instructions
 export const HapiCoreInstructionVariants = IDL.instructions.map(
   (ix) => ix.name
 );
 
-export type HapiCoreInstruction = typeof HapiCoreInstructionVariants[number];
+export type HapiCoreInstruction = (typeof HapiCoreInstructionVariants)[number];
 
 // HapiCore Accounts
 export const HapiCoreAccountVariants = IDL.accounts.map((acc) => acc.name);
 
-export type HapiCoreAccount = typeof HapiCoreAccountVariants[number];
+export type HapiCoreAccount = (typeof HapiCoreAccountVariants)[number];
 
 export type stakeConfiguration = {
   unlockDuration: BN;
