@@ -6,7 +6,7 @@ mod error;
 mod state;
 
 use context::*;
-use state::{network::*, reporter::*};
+use state::{case::*, network::*, reporter::*};
 
 declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
@@ -172,6 +172,41 @@ pub mod hapi_core_solana {
         reporter.status = ReporterStatus::Inactive;
         reporter.unlock_timestamp = 0;
         reporter.stake = 0;
+
+        Ok(())
+    }
+
+    pub fn create_case(
+        ctx: Context<CreateCase>,
+        bump: u8,
+        case_id: u64,
+        name: String,
+        url: String,
+    ) -> Result<()> {
+        let case = &mut ctx.accounts.case;
+
+        case.bump = bump;
+        case.id = case_id;
+        case.name = name;
+        case.reporter = ctx.accounts.reporter.key();
+        case.status = CaseStatus::Open;
+        case.url = url;
+        case.version = Case::VERSION;
+
+        Ok(())
+    }
+
+    pub fn update_case(
+        ctx: Context<UpdateCase>,
+        name: String,
+        url: String,
+        status: CaseStatus,
+    ) -> Result<()> {
+        let case = &mut ctx.accounts.case;
+
+        case.name = name;
+        case.url = url;
+        case.status = status;
 
         Ok(())
     }

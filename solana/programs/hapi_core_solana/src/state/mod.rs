@@ -1,3 +1,4 @@
+pub mod case;
 pub mod network;
 pub mod reporter;
 

@@ -38,7 +38,7 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 24 + 1 + 1 + 8 + 8 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 128 + 1 + 1 + 8 + 8 + 128);
     pub const VERSION: u16 = 1;
 }
 

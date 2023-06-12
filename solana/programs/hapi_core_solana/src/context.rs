@@ -7,7 +7,7 @@ use crate::{
     error::ErrorCode,
     id,
     program::HapiCoreSolana,
-    state::{network::*, reporter::*, ACCOUNT_RESERVE_SPACE},
+    state::{case::*, network::*, reporter::*, ACCOUNT_RESERVE_SPACE},
 };
 
 #[derive(Accounts)]
@@ -277,4 +277,74 @@ pub struct Unstake<'info> {
 
     #[account(address = Token::id())]
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(
+    bump: u8,
+    case_id: u64,
+)]
+pub struct CreateCase<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        constraint = reporter.role == ReporterRole::Publisher || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        init,
+        payer = sender,
+        owner = id(),
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case_id.to_le_bytes()],
+        bump,
+        space = Case::LEN + ACCOUNT_RESERVE_SPACE
+    )]
+    pub case: Account<'info, Case>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateCase<'info> {
+    #[account(mut)]
+    pub sender: Signer<'info>,
+
+    #[account(
+        seeds = [b"network".as_ref(), network.name.as_ref()],
+        bump = network.bump,
+    )]
+    pub network: Account<'info, Network>,
+
+    #[account(
+        owner = id(),
+        constraint = (reporter.role == ReporterRole::Publisher
+            && case.reporter == reporter.key()) || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+        constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
+        constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        bump = reporter.bump,
+    )]
+    pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_le_bytes()],
+        bump = case.bump,
+    )]
+    pub case: Account<'info, Case>,
+
+    pub system_program: Program<'info, System>,
 }
