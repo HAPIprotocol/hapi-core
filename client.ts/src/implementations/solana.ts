@@ -56,15 +56,11 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async setAuthority(address: string): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const transactionHash = await this.contract.setAuthority(this.network, address);
     return { transactionHash };
   }
 
   async getAuthority(): Promise<string> {
-    throw new Error("Method is not tested.");
-
     let data = await this.contract.getNetwotkData(this.network);
     return data.authority.toString();
 
@@ -78,8 +74,6 @@ export class HapiCoreSolana implements HapiCore {
     publisherStake?: string,
     authorityStake?: string,
   ): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const transactionHash = await this.contract.updateStakeConfiguration(
       this.network,
       token,
@@ -95,8 +89,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getStakeConfiguration(): Promise<StakeConfiguration> {
-    throw new Error("Method is not tested.");
-
     let data = await this.contract.getNetwotkData(this.network);
 
     return {
@@ -114,16 +106,12 @@ export class HapiCoreSolana implements HapiCore {
     addressConfirmationReward?: string,
     addresstraceReward?: string
   ): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const transactionHash = await this.contract.updateRewardConfiguration(this.network, token, addressConfirmationReward, addresstraceReward);
 
     return { transactionHash };
   }
 
   async getRewardConfiguration(): Promise<RewardConfiguration> {
-    throw new Error("Method is not tested.");
-
     let data = await this.contract.getNetwotkData(this.network);
 
     return {
@@ -140,15 +128,12 @@ export class HapiCoreSolana implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const transactionHash = await this.contract.createReporter(this.network, id, ReporterRoleNames[role], account, name, url);
 
     return { transactionHash };
   }
 
   async getReporter(id: string): Promise<Reporter> {
-    throw new Error("Method is not tested.");
     const data = await this.contract.getReporterData(this.network, id);
 
     return {
@@ -166,7 +151,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporterCount(): Promise<number> {
-    throw new Error("Method is not tested.");
     const count = (await this.contract.getAllReporters(this.network)).length;
 
     return count;
@@ -174,8 +158,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
-    throw new Error("Method is not tested.");
-
     const data = await this.contract.getAllReporters(this.network);
 
     let res = data.map((acc) => (
@@ -201,8 +183,6 @@ export class HapiCoreSolana implements HapiCore {
     name?: string,
     url?: string
   ): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const transactionHash = await this.contract.updateReporter(this.network, id, ReporterRoleNames[role], account, name, url);
 
     return { transactionHash };
@@ -222,8 +202,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async activateReporter(): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const reporterAccount = await this.getReporterAccount();
     const transactionHash = await this.contract.activateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
@@ -232,8 +210,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async deactivateReporter(): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const reporterAccount = await this.getReporterAccount();
     const transactionHash = await this.contract.deactivateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
@@ -241,8 +217,6 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async unstakeReporter(): Promise<Result> {
-    throw new Error("Method is not tested.");
-
     const reporterAccount = await this.getReporterAccount();
     const transactionHash = await this.contract.unstake(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
