@@ -1,6 +1,6 @@
-import { Provider, web3 } from "@coral-xyz/anchor";
+import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
 import { HapiCoreProgram } from "../../../solana/lib";
-import { Signer } from "@solana/web3.js";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 import {
   Addr,
@@ -28,36 +28,44 @@ import {
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
   address?: Addr;
-  provider: Provider;
-  signer: Signer;
+  provider: Provider | SolanaProviderOptions;
+}
+
+export interface SolanaProviderOptions {
+  providerUrl: string;
 }
 
 export class HapiCoreSolana implements HapiCore {
   private contract: HapiCoreProgram;
   private network: string;
-  private signer: Signer;
+  private provider: AnchorProvider;
 
   constructor (options: SolanaConnectionOptions) {
+    let programProvider = options.provider.constructor.name === "Provider" ?
+      options.provider as AnchorProvider :
+      options.provider = AnchorProvider.local(
+        (options.provider as SolanaProviderOptions).providerUrl
+      );
+
     this.contract = new HapiCoreProgram(
       options.address || HapiCoreAddresses[options.network],
-      options.provider);
+      programProvider);
 
-    this.signer = options.signer;
     this.network = options.network;
+    this.provider = programProvider;
   }
 
   async setAuthority(address: string): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     const transactionHash = await this.contract.setAuthority(this.network, address);
     return { transactionHash };
   }
 
   async getAuthority(): Promise<string> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     let data = await this.contract.getNetwotkData(this.network);
-
     return data.authority.toString();
 
   }
@@ -70,7 +78,7 @@ export class HapiCoreSolana implements HapiCore {
     publisherStake?: string,
     authorityStake?: string,
   ): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     const transactionHash = await this.contract.updateStakeConfiguration(
       this.network,
@@ -87,7 +95,7 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getStakeConfiguration(): Promise<StakeConfiguration> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     let data = await this.contract.getNetwotkData(this.network);
 
@@ -106,7 +114,7 @@ export class HapiCoreSolana implements HapiCore {
     addressConfirmationReward?: string,
     addresstraceReward?: string
   ): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     const transactionHash = await this.contract.updateRewardConfiguration(this.network, token, addressConfirmationReward, addresstraceReward);
 
@@ -114,7 +122,7 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getRewardConfiguration(): Promise<RewardConfiguration> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     let data = await this.contract.getNetwotkData(this.network);
 
@@ -132,7 +140,7 @@ export class HapiCoreSolana implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     const transactionHash = await this.contract.createReporter(this.network, id, ReporterRoleNames[role], account, name, url);
 
@@ -140,10 +148,9 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporter(id: string): Promise<Reporter> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
     const data = await this.contract.getReporterData(this.network, id);
 
-    // TODO: fix it
     return {
       id: data.id.toString(),
       account: data.account.toString(),
@@ -159,7 +166,7 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporterCount(): Promise<number> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
     const count = (await this.contract.getAllReporters(this.network)).length;
 
     return count;
@@ -167,12 +174,11 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
-    // TODO: skip & take
     const data = await this.contract.getAllReporters(this.network);
 
-    return data.map((acc) => (
+    let res = data.map((acc) => (
       {
         id: acc.account.id.toString(),
         account: acc.account.account.toString(),
@@ -184,6 +190,8 @@ export class HapiCoreSolana implements HapiCore {
         unlockTimestamp: acc.account.unlockTimestamp.toNumber()
       }
     ));
+
+    return res.slice(skip, skip + take);
   }
 
   async updateReporter(
@@ -193,7 +201,7 @@ export class HapiCoreSolana implements HapiCore {
     name?: string,
     url?: string
   ): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
     const transactionHash = await this.contract.updateReporter(this.network, id, ReporterRoleNames[role], account, name, url);
 
@@ -201,22 +209,33 @@ export class HapiCoreSolana implements HapiCore {
 
   }
 
-  async activateReporter(): Promise<Result> {
-    // throw new Error("Method is not tested.");
+  async getReporterAccount(): Promise<web3.PublicKey> {
+    const data = await this.contract.getAllReporters(this.network);
+    let reporterAccount = data.find((acc) => acc.account.account.equals(this.provider.publicKey));
 
-    // TODO: id
-    const transactionHash = await this.contract.activateReporter(this.network, id, this.signer);
+    if (!reporterAccount) {
+      throw new Error("Reporter does not exist");
+    }
+    else {
+      return reporterAccount.publicKey;
+    }
+  }
+
+  async activateReporter(): Promise<Result> {
+    throw new Error("Method is not tested.");
+
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.activateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
     return { transactionHash };
 
   }
 
   async deactivateReporter(): Promise<Result> {
-    // throw new Error("Method is not tested.");
+    throw new Error("Method is not tested.");
 
-    // TODO: id
-
-    const transactionHash = await this.contract.deactivateReporter(this.network, id, this.signer);
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.deactivateReporter(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
     return { transactionHash };
   }
@@ -224,7 +243,8 @@ export class HapiCoreSolana implements HapiCore {
   async unstakeReporter(): Promise<Result> {
     throw new Error("Method is not tested.");
 
-    const transactionHash = await this.contract.unstake(this.network, id, this.signer);
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.unstake(this.network, this.provider.wallet as NodeWallet, reporterAccount);
 
     return { transactionHash };
   }

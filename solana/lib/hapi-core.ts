@@ -1,7 +1,7 @@
-import { Program, web3, BN, Provider } from "@coral-xyz/anchor";
+import { Program, web3, BN, Provider, AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
 import { bufferFromString, addrToSeeds, padBuffer, stakeConfiguration, rewardConfiguration, ReporterRole, ReporterRoleVariants, ReporterRoleKeys } from ".";
-import { Signer } from "@solana/web3.js";
+import { PublicKey, Signer } from "@solana/web3.js";
 import * as Token from "@solana/spl-token";
 
 export function encodeAddress(
@@ -292,9 +292,9 @@ export class HapiCoreProgram {
     }
 
     const reporter_role = role ? ReporterRole[role] : reporterData.role;
-    const reporter_url = url ? url : reporterData.url;
+    const reporter_url = url ?? reporterData.url;
     const reporter_account = account ? new web3.PublicKey(account) : reporterData.account;
-    const reporter_name = name ? name : reporterData.name.toString();
+    const reporter_name = name ?? reporterData.name.toString();
 
     const transactionHash = await this.program.methods.updateReporter(
       reporter_account,
@@ -312,13 +312,20 @@ export class HapiCoreProgram {
 
   async activateReporter(
     network_name: string,
-    id: string,
-    signer: Signer,
+    wallet: Signer | Wallet,
+    account?: PublicKey,
+    id?: string,
   ) {
+    if (!account && !id) {
+      throw new Error("Reporter id or reporter PDA accout address must be defined");
+    }
+
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(
+    const reporter = account ?? this.findReporterAddress(
       network, new BN(id))[0];
     const networkData = await this.program.account.network.fetch(network);
+
+    let signer = wallet as Signer;
 
     const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
       this.program.provider.connection,
@@ -344,19 +351,25 @@ export class HapiCoreProgram {
       networkStakeTokenAccount,
       reporterStakeTokenAccount,
       tokenProgram: Token.TOKEN_PROGRAM_ID
-    }).signers([signer]).rpc();
+    }).signers([signer as Signer]).rpc();
 
     return transactionHash;
   }
 
   async deactivateReporter(
     network_name: string,
-    id: string,
-    signer: Signer,
+    wallet: Signer | Wallet,
+    account?: PublicKey,
+    id?: string,
   ) {
+    if (!account && !id) {
+      throw new Error("Reporter id or reporter PDA accout address must be defined");
+    }
+
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(
+    const reporter = account ?? this.findReporterAddress(
       network, new BN(id))[0];
+    let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods.deactivateReporter(
     ).accounts({
@@ -370,13 +383,20 @@ export class HapiCoreProgram {
 
   async unstake(
     network_name: string,
-    id: string,
-    signer: Signer,
+    wallet: Signer | Wallet,
+    account?: PublicKey,
+    id?: string,
   ) {
+    if (!account && !id) {
+      throw new Error("Reporter id or reporter PDA accout address must be defined");
+    }
+
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(
+    const reporter = account ?? this.findReporterAddress(
       network, new BN(id))[0];
     const networkData = await this.program.account.network.fetch(network);
+
+    let signer = wallet as Signer;
 
     const networkStakeTokenAccount = (await Token.getOrCreateAssociatedTokenAccount(
       this.program.provider.connection,
