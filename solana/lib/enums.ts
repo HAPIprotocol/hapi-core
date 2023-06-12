@@ -1,16 +1,33 @@
-import { IDL } from "../../target/types/hapi_core_solana";
+import { IDL } from "../target/types/hapi_core_solana";
+import { BN } from "@coral-xyz/anchor";
 
 // HapiCore Instructions
 export const HapiCoreInstructionVariants = IDL.instructions.map(
   (ix) => ix.name
 );
 
-export type HapiCoreInstruction = typeof HapiCoreInstructionVariants[number];
+export type HapiCoreInstruction = (typeof HapiCoreInstructionVariants)[number];
 
 // HapiCore Accounts
 export const HapiCoreAccountVariants = IDL.accounts.map((acc) => acc.name);
 
-export type HapiCoreAccount = typeof HapiCoreAccountVariants[number];
+export type HapiCoreAccount = (typeof HapiCoreAccountVariants)[number];
+
+export type stakeConfiguration = {
+  unlockDuration: BN;
+  validatorStake: BN;
+  tracerStake: BN;
+  publisherStake: BN;
+  authorityStake: BN;
+  appraiserStake: BN;
+};
+
+export type rewardConfiguration = {
+  addressTracerReward: BN;
+  addressConfirmationReward: BN;
+  assetTracerReward: BN;
+  assetConfirmationReward: BN;
+};
 
 // ReporterRole
 export const ReporterRole = {
@@ -84,6 +101,6 @@ export const CategoryVariants = Object.keys(Category) as Readonly<
 >;
 
 export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
-  network: 243,
-  reporter: 253,
+  network: 251,
+  reporter: 285,
 };

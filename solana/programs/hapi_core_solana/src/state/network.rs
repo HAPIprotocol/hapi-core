@@ -29,7 +29,7 @@ pub struct Network {
 }
 
 impl Network {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 32 + 32 + 40 + 32 + 32);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 32 + 32 + 48 + 32 + 32);
     pub const VERSION: u16 = 1;
 }
 
@@ -49,6 +49,9 @@ pub struct StakeConfiguration {
 
     /// Amount of stake required from a reporter of authority type
     pub authority_stake: u64,
+
+    /// Amount of stake required from a reporter of appraiser type
+    pub appraiser_stake: u64,
 }
 
 #[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]

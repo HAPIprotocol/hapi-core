@@ -12,11 +12,14 @@ pub struct Reporter {
     /// Reporter account id
     pub id: u64,
 
+    /// Network account
+    pub network: Pubkey,
+
     /// Reporter's wallet account
     pub account: Pubkey,
 
     /// Short reporter description
-    pub name: [u8; 32],
+    pub name: String,
 
     /// Reporter's type
     pub role: ReporterRole,
@@ -27,12 +30,15 @@ pub struct Reporter {
     /// Current deposited stake
     pub stake: u64,
 
+    /// Duration starting from the deactivation moment
+    pub unlock_timestamp: u64,
+
     /// A link to reporter’s public page
     pub url: String,
 }
 
 impl Reporter {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 1 + 1 + 8 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 24 + 1 + 1 + 8 + 8 + 128);
     pub const VERSION: u16 = 1;
 }
 

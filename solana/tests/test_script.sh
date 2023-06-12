@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KEYPAIR=./tests/lib/test_keypair.json
+KEYPAIR=./tests/test_keypair.json
 
 exception() {
   echo "Error: $1"

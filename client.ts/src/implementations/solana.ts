@@ -1,3 +1,8 @@
+import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+
+import { HapiCoreProgram } from "../../../solana/lib";
+
 import {
   Addr,
   Address,
@@ -12,55 +17,115 @@ import {
   Result,
   RewardConfiguration,
   StakeConfiguration,
+  HapiCoreAddresses,
+  ReporterRoleNames,
 } from "../interface";
 
+import { ReporterRoleFromString, ReporterStatusFromString } from "../util";
+
 export interface SolanaConnectionOptions {
-  network: HapiCoreNetwork.Solana;
-  address: Addr;
-  provider: unknown;
-  signer?: unknown;
+  network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
+  address?: Addr;
+  provider: Provider | SolanaProviderOptions;
+}
+
+export interface SolanaProviderOptions {
+  providerUrl: string;
 }
 
 export class HapiCoreSolana implements HapiCore {
-  private contract: any;
+  private contract: HapiCoreProgram;
+  private network: string;
+  private provider: AnchorProvider;
 
   constructor(options: SolanaConnectionOptions) {
-    this.contract = options.address;
+    let programProvider =
+      options.provider.constructor.name === "Provider"
+        ? (options.provider as AnchorProvider)
+        : (options.provider = AnchorProvider.local(
+            (options.provider as SolanaProviderOptions).providerUrl
+          ));
+
+    this.contract = new HapiCoreProgram(
+      options.address || HapiCoreAddresses[options.network],
+      programProvider
+    );
+
+    this.network = options.network;
+    this.provider = programProvider;
   }
 
   async setAuthority(address: string): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const transactionHash = await this.contract.setAuthority(
+      this.network,
+      address
+    );
+    return { transactionHash };
   }
 
   async getAuthority(): Promise<string> {
-    throw new Error("Method not implemented.");
+    let data = await this.contract.getNetwotkData(this.network);
+    return data.authority.toString();
   }
 
   async updateStakeConfiguration(
-    token: string,
-    unlockDuration: number,
-    validatorStake: string,
-    tracerStake: string,
-    publisherStake: string,
-    authorityStake: string
+    token?: string,
+    unlockDuration?: number,
+    validatorStake?: string,
+    tracerStake?: string,
+    publisherStake?: string,
+    authorityStake?: string
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const transactionHash = await this.contract.updateStakeConfiguration(
+      this.network,
+      token,
+      unlockDuration,
+      validatorStake,
+      tracerStake,
+      publisherStake,
+      authorityStake
+    );
+
+    return { transactionHash };
   }
 
   async getStakeConfiguration(): Promise<StakeConfiguration> {
-    throw new Error("Method not implemented.");
+    let data = await this.contract.getNetwotkData(this.network);
+
+    return {
+      token: data.stakeMint.toString(),
+      unlockDuration: data.unlockTimestamp.toNumber(),
+      validatorStake: data.stakeConfiguration.validatorStake.toString(),
+      tracerStake: data.stakeConfiguration.tracerStake.toString(),
+      publisherStake: data.stakeConfiguration.publisherStake.toString(),
+      authorityStake: data.stakeConfiguration.authorityStake.toString(),
+    };
   }
 
   async updateRewardConfiguration(
-    token: string,
-    addressConfirmationReward: string,
-    traceReward: string
+    token?: string,
+    addressConfirmationReward?: string,
+    addresstraceReward?: string
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const transactionHash = await this.contract.updateRewardConfiguration(
+      this.network,
+      token,
+      addressConfirmationReward,
+      addresstraceReward
+    );
+
+    return { transactionHash };
   }
 
   async getRewardConfiguration(): Promise<RewardConfiguration> {
-    throw new Error("Method not implemented.");
+    let data = await this.contract.getNetwotkData(this.network);
+
+    return {
+      token: data.rewardMint.toString(),
+      addressConfirmationReward:
+        data.rewardConfiguration.addressConfirmationReward.toString(),
+      tracerReward: data.rewardConfiguration.addressTracerReward.toString(),
+    };
   }
 
   async createReporter(
@@ -70,41 +135,119 @@ export class HapiCoreSolana implements HapiCore {
     name: string,
     url: string
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const transactionHash = await this.contract.createReporter(
+      this.network,
+      id,
+      ReporterRoleNames[role],
+      account,
+      name,
+      url
+    );
+
+    return { transactionHash };
   }
 
   async getReporter(id: string): Promise<Reporter> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getReporterData(this.network, id);
+
+    return {
+      id: data.id.toString(),
+      account: data.account.toString(),
+      role: ReporterRoleFromString(data.role as string),
+      status: ReporterStatusFromString(data.status as string),
+      name: data.name.toString(),
+      url: data.url,
+      stake: data.stake.toString(),
+      unlockTimestamp: data.unlockTimestamp.toNumber(),
+    };
   }
 
   async getReporterCount(): Promise<number> {
-    throw new Error("Method not implemented.");
+    const count = (await this.contract.getAllReporters(this.network)).length;
+
+    return count;
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getAllReporters(this.network);
+
+    let res = data.map((acc) => ({
+      id: acc.account.id.toString(),
+      account: acc.account.account.toString(),
+      role: ReporterRoleFromString(acc.account.role as string),
+      status: ReporterStatusFromString(acc.account.status as string),
+      name: acc.account.name.toString(),
+      url: acc.account.url,
+      stake: acc.account.stake.toString(),
+      unlockTimestamp: acc.account.unlockTimestamp.toNumber(),
+    }));
+
+    return res.slice(skip, skip + take);
   }
 
   async updateReporter(
     id: string,
     role: ReporterRole,
-    account: string,
-    name: string,
-    url: string
+    account?: string,
+    name?: string,
+    url?: string
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const transactionHash = await this.contract.updateReporter(
+      this.network,
+      id,
+      ReporterRoleNames[role],
+      account,
+      name,
+      url
+    );
+
+    return { transactionHash };
+  }
+
+  async getReporterAccount(): Promise<web3.PublicKey> {
+    const data = await this.contract.getAllReporters(this.network);
+    let reporterAccount = data.find((acc) =>
+      acc.account.account.equals(this.provider.publicKey)
+    );
+
+    if (!reporterAccount) {
+      throw new Error("Reporter does not exist");
+    } else {
+      return reporterAccount.publicKey;
+    }
   }
 
   async activateReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.activateReporter(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
+
+    return { transactionHash };
   }
 
   async deactivateReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.deactivateReporter(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
+
+    return { transactionHash };
   }
 
   async unstakeReporter(): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterAccount = await this.getReporterAccount();
+    const transactionHash = await this.contract.unstake(
+      this.network,
+      this.provider.wallet as NodeWallet,
+      reporterAccount
+    );
+
+    return { transactionHash };
   }
 
   async createCase(id: string, name: string, url: string): Promise<Result> {

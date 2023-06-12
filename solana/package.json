@@ -1,4 +1,29 @@
 {
+    "name": "@hapi.one/core-cli",
+    "version": "0.14.1",
+    "publishConfig": {
+        "access": "public"
+    },
+    "description": "Client library for HAPI core contract",
+    "author": "HAPI Protocol",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/HAPIprotocol/hapi-core.git"
+    },
+    "keywords": [
+        "HAPI",
+        "protocol",
+        "cybersecurity",
+        "Solana",
+        "client"
+    ],
+    "main": "out-lib/index.cjs.js",
+    "module": "out-lib/index.esm.js",
+    "types": "out-lib/index.d.ts",
+    "files": [
+        "out-lib/**/*"
+    ],
     "scripts": {
         "prebuild": "rimraf out-lib out-tsc",
         "build": "tsc && rollup -c",
@@ -8,7 +33,7 @@
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.27.0",
-        "@solana/spl-token": "^0.3.6",
+        "@solana/spl-token": "^0.3.8",
         "@solana/web3.js": "^1.72.0",
         "@types/bn.js": "^5.1.1",
         "@types/jest": "^29.5.1",
