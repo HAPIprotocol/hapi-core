@@ -1,10 +1,23 @@
 use ethers::types::U256;
+use serde::Serialize;
 use std::str::FromStr;
 
 use super::{Category, Uuid};
 
 #[derive(Default, Clone, Debug)]
 pub struct AssetId(U256);
+
+impl Serialize for AssetId {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.to_string().serialize(serializer)
+    }
+}
+
+impl std::fmt::Display for AssetId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl From<U256> for AssetId {
     fn from(value: U256) -> Self {
@@ -41,7 +54,7 @@ impl FromStr for AssetId {
 pub struct CreateAssetInput {}
 pub struct UpdateAssetInput {}
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize)]
 pub struct Asset {
     pub address: String,
     pub asset_id: AssetId,

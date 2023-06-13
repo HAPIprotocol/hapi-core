@@ -126,6 +126,7 @@ impl Setup {
         wrap_cmd(
             Command::new("./target/debug/hapi-core-cli")
                 .args(args)
+                .env("OUTPUT", "json")
                 .env("TOKEN", token)
                 .env("CONTRACT_ADDRESS", contract_address)
                 .env("NETWORK", network)

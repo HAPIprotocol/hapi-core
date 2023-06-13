@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use serde::Serialize;
 use std::str::FromStr;
 
 pub mod address;
@@ -14,7 +15,7 @@ pub mod result;
 
 pub type Uuid = u128;
 
-#[derive(Default, Clone, PartialEq, Debug)]
+#[derive(Default, Clone, PartialEq, Debug, Serialize)]
 pub enum Category {
     #[default]
     None = 0,
@@ -38,6 +39,38 @@ pub enum Category {
     ChildAbuse = 18,
     Hacker = 19,
     HighRiskJurisdiction = 20,
+}
+
+impl std::fmt::Display for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::None => "none",
+                Self::WalletService => "wallet_service",
+                Self::MerchantService => "merchant_service",
+                Self::MiningPool => "mining_pool",
+                Self::Exchange => "exchange",
+                Self::DeFi => "defi",
+                Self::OTCBroker => "otc_broker",
+                Self::ATM => "atm",
+                Self::Gambling => "gambling",
+                Self::IllicitOrganization => "illicit_organization",
+                Self::Mixer => "mixer",
+                Self::DarknetService => "darknet_service",
+                Self::Scam => "scam",
+                Self::Ransomware => "ransomware",
+                Self::Theft => "theft",
+                Self::Counterfeit => "counterfeit",
+                Self::TerroristFinancing => "terrorist_financing",
+                Self::Sanctions => "sanctions",
+                Self::ChildAbuse => "child_abuse",
+                Self::Hacker => "hacker",
+                Self::HighRiskJurisdiction => "high_risk_jurisdiction",
+            }
+        )
+    }
 }
 
 impl FromStr for Category {

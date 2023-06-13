@@ -1,8 +1,21 @@
 use ethers::types::U256;
+use serde::Serialize;
 use std::str::FromStr;
 
 #[derive(Default, Clone, Debug)]
 pub struct Amount(U256);
+
+impl Serialize for Amount {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.to_string().serialize(serializer)
+    }
+}
+
+impl std::fmt::Display for Amount {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl From<U256> for Amount {
     fn from(value: U256) -> Self {

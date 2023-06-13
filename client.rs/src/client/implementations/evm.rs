@@ -5,6 +5,7 @@ use ethers::{
     providers::{Http, Provider as EthersProvider},
     signers::{LocalWallet, Signer as EthersSigner},
     types::Address as EthAddress,
+    utils::to_checksum,
 };
 use std::{str::FromStr, sync::Arc};
 
@@ -44,10 +45,10 @@ pub struct HapiCoreEvm {
 impl HapiCoreEvm {
     pub fn new(options: HapiCoreEvmOptions) -> Result<Self> {
         let provider = Provider::try_from(options.provider_url.as_str())
-            .map_err(|e| ClientError::UrlParseError(e.to_string()))?;
+            .map_err(|e| ClientError::UrlParseError(format!("`provider_url`: {e}")))?;
 
         let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
-            .map_err(|e| ClientError::Ethers(e.to_string()))?
+            .map_err(|e| ClientError::Ethers(format!("`private_key`: {e}")))?
             .with_chain_id(31337_u64);
 
         let client = Signer::new(provider.clone(), signer.clone());
@@ -57,7 +58,7 @@ impl HapiCoreEvm {
         let contract_address: EthAddress = options
             .contract_address
             .parse()
-            .map_err(|e| ClientError::EthAddressParse(format!("`contract_address`: {e}")))?;
+            .map_err(|e| ClientError::EthAddressParse(format!("`contract_address``: {e}")))?;
 
         let contract: CONTRACT<Signer> = CONTRACT::new(contract_address, client.clone());
 
@@ -73,7 +74,7 @@ impl HapiCoreEvm {
 impl From<contract::StakeConfiguration> for StakeConfiguration {
     fn from(config: contract::StakeConfiguration) -> Self {
         StakeConfiguration {
-            token: config.token.to_string(),
+            token: to_checksum(&config.token, None),
             unlock_duration: config.unlock_duration.as_u64(),
             validator_stake: config.validator_stake.into(),
             tracer_stake: config.tracer_stake.into(),
@@ -86,7 +87,7 @@ impl From<contract::StakeConfiguration> for StakeConfiguration {
 impl From<contract::RewardConfiguration> for RewardConfiguration {
     fn from(config: contract::RewardConfiguration) -> Self {
         RewardConfiguration {
-            token: config.token.to_string(),
+            token: to_checksum(&config.token, None),
             address_confirmation_reward: config.address_confirmation_reward.into(),
             tracer_reward: config.tracer_reward.into(),
         }

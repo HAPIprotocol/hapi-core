@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use clap::{Arg, ArgGroup, ArgMatches, Command};
 
 use hapi_core::{
@@ -53,6 +55,15 @@ async fn main() -> anyhow::Result<()> {
                 .env("PRIVATE_KEY")
                 .hide_env(true)
                 .help("Private key to sign transactions"),
+        )
+        .arg(
+            Arg::new("output")
+                .global(true)
+                .long("output")
+                .value_name("OUTPUT")
+                .env("OUTPUT")
+                .value_parser(["json", "text"])
+                .help("Output format"),
         )
         .subcommand_required(true)
         .subcommand(
@@ -376,8 +387,28 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Default)]
+pub enum CommandOutput {
+    #[default]
+    Plain,
+    Json,
+}
+
+impl FromStr for CommandOutput {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "plain" => Ok(CommandOutput::Plain),
+            "json" => Ok(CommandOutput::Json),
+            _ => Err(anyhow::anyhow!("Unknown command output")),
+        }
+    }
+}
+
 struct CommandContext {
     pub hapi_core: Box<dyn HapiCore>,
+    pub output: CommandOutput,
 }
 
 impl TryFrom<&ArgMatches> for CommandContext {
@@ -388,7 +419,7 @@ impl TryFrom<&ArgMatches> for CommandContext {
             .get_one::<String>("network")
             .expect("`network` is required")
             .parse()
-            .map_err(|e| anyhow::anyhow!("Failed to parse network: {:?}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to parse `network`: {:?}", e))?;
 
         let provider_url = matches
             .get_one::<String>("provider-url")
@@ -401,6 +432,12 @@ impl TryFrom<&ArgMatches> for CommandContext {
             .to_owned();
 
         let private_key: Option<String> = matches.get_one::<String>("private-key").cloned();
+
+        let output: CommandOutput = matches
+            .get_one::<String>("output")
+            .unwrap_or(&"plain".to_string())
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Failed to parse `output`: {:?}", e))?;
 
         let hapi_core: Box<dyn HapiCore> = match network {
             HapiCoreNetwork::Ethereum => Box::new(HapiCoreEvm::new(HapiCoreEvmOptions {
@@ -418,6 +455,6 @@ impl TryFrom<&ArgMatches> for CommandContext {
             HapiCoreNetwork::Near => Box::new(HapiCoreNear::new()?),
         };
 
-        Ok(Self { hapi_core })
+        Ok(Self { hapi_core, output })
     }
 }
