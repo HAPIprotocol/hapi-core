@@ -4,7 +4,7 @@ import { web3, BN } from "@coral-xyz/anchor";
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
 import { programError } from "./util/error";
-import { getReporters, getNetwotks, createNetwotks } from "./util/setup";
+import { getReporters, getNetwotks, setupNetworks } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
@@ -34,8 +34,6 @@ describe("HapiCore Reporter", () => {
   let NETWORKS = getNetwotks([mainNetwork, secondaryNetwork]);
 
   beforeAll(async () => {
-    const wait: Promise<unknown>[] = [];
-
     stakeToken = new TestToken(provider);
     await stakeToken.mint(1_000_000_000);
 
@@ -49,15 +47,12 @@ describe("HapiCore Reporter", () => {
 
     NETWORKS[mainNetwork].stakeConfiguration.unlockDuration = new BN(1);
 
-    await createNetwotks(
+    await setupNetworks(
       program,
       NETWORKS,
-      authority.publicKey,
       rewardToken.mintAccount,
       stakeToken.mintAccount
     );
-
-    await Promise.all(wait);
   });
 
   describe("create_reporter", () => {

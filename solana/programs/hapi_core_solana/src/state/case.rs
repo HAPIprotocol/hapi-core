@@ -12,6 +12,9 @@ pub struct Case {
     /// Sequantial case ID
     pub id: u64,
 
+    /// Network account
+    pub network: Pubkey,
+
     /// Short case description
     pub name: String,
 
@@ -26,7 +29,7 @@ pub struct Case {
 }
 
 impl Case {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 128 + 32 + 1 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 8 + 128 + 32 + 1 + 128);
     pub const VERSION: u16 = 1;
 }
 

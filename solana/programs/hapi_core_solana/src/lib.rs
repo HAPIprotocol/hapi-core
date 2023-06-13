@@ -188,6 +188,7 @@ pub mod hapi_core_solana {
         case.bump = bump;
         case.id = case_id;
         case.name = name;
+        case.network = ctx.accounts.network.key();
         case.reporter = ctx.accounts.reporter.key();
         case.status = CaseStatus::Open;
         case.url = url;

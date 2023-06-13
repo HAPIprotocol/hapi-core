@@ -1,11 +1,4 @@
-import {
-  Program,
-  web3,
-  BN,
-  Provider,
-  AnchorProvider,
-  Wallet,
-} from "@coral-xyz/anchor";
+import { Program, web3, BN, Provider, Wallet } from "@coral-xyz/anchor";
 import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
 import {
   bufferFromString,
@@ -70,9 +63,13 @@ export class HapiCoreProgram {
     );
   }
 
-  public findCaseAddress(caseId: BN) {
+  public findCaseAddress(network: web3.PublicKey, caseId: BN) {
     return web3.PublicKey.findProgramAddressSync(
-      [bufferFromString("case"), new Uint8Array(caseId.toArray("le", 8))],
+      [
+        bufferFromString("case"),
+        network.toBytes(),
+        new Uint8Array(caseId.toArray("le", 8)),
+      ],
       this.programId
     );
   }
@@ -100,7 +97,7 @@ export class HapiCoreProgram {
     );
   }
 
-  public async InitializeNetwotk(
+  public async InitializeNetwork(
     name: string,
     stakeConfiguration: stakeConfiguration,
     rewardConfiguration: rewardConfiguration,
@@ -484,4 +481,43 @@ export class HapiCoreProgram {
 
     return transactionHash;
   }
+
+  // TODO: create case
+  // async createCase(
+  //   network_name: string,
+  //   id: string,
+  //   role: string,
+  //   account: string,
+  //   name: string,
+  //   url: string
+  // ) {
+  //   const network = this.findNetworkAddress(network_name)[0];
+  //   const [reporterAccount, bump] = this.findReporterAddress(
+  //     network,
+  //     new BN(id)
+  //   );
+
+  //   if (!ReporterRoleVariants.includes(role as ReporterRoleKeys)) {
+  //     throw new Error("Invalid reporter role");
+  //   }
+
+  //   const transactionHash = await this.program.methods
+  //     .createCase(
+  //       new BN(id),
+  //       new web3.PublicKey(account),
+  //       name,
+  //       ReporterRole[role],
+  //       url,
+  //       bump
+  //     )
+  //     .accounts({
+  //       authority: this.program.provider.publicKey,
+  //       reporter: reporterAccount,
+  //       network,
+  //       systemProgram: web3.SystemProgram.programId,
+  //     })
+  //     .rpc();
+
+  //   return transactionHash;
+  // }
 }

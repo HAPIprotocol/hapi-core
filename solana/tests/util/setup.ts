@@ -4,9 +4,11 @@ import {
   stakeConfiguration,
   rewardConfiguration,
   HapiCoreProgram,
-  bufferFromString,
+  ReporterRole,
 } from "../../lib";
 import { PublicKey } from "@solana/web3.js";
+
+import * as Token from "@solana/spl-token";
 
 export type Networks = Record<
   string,
@@ -17,48 +19,28 @@ export type Networks = Record<
   }
 >;
 
+export type Reporters = Record<
+  string,
+  {
+    name: string;
+    id: BN;
+    keypair: web3.Keypair;
+    role: keyof typeof ReporterRole;
+    url: string;
+  }
+>;
+
+export type Cases = Record<
+  string,
+  {
+    id: BN;
+    name: string;
+    url: string;
+  }
+>;
+
 export function randomId(): BN {
   return new BN(Math.floor(Math.random() * Math.pow(2, 64)).toString());
-}
-
-export function getReporters() {
-  return {
-    alice: {
-      id: randomId(),
-      name: "alice",
-      keypair: web3.Keypair.generate(),
-      role: "Publisher",
-      url: "https://publisher.blockchain",
-    },
-    bob: {
-      id: randomId(),
-      name: "bob",
-      keypair: web3.Keypair.generate(),
-      role: "Tracer",
-      url: "https://tracer.blockchain",
-    },
-    carol: {
-      id: randomId(),
-      name: "carol",
-      keypair: web3.Keypair.generate(),
-      role: "Authority",
-      url: "https://authority.blockchain",
-    },
-    dave: {
-      id: randomId(),
-      name: "dave",
-      keypair: web3.Keypair.generate(),
-      role: "Validator",
-      url: "https://validator.blockchain",
-    },
-    erin: {
-      id: randomId(),
-      name: "erin",
-      keypair: web3.Keypair.generate(),
-      role: "Appraiser",
-      url: "https://appraiser.blockchain",
-    },
-  };
 }
 
 export function getNetwotks(names: Array<string>) {
@@ -87,42 +69,168 @@ export function getNetwotks(names: Array<string>) {
   return networks;
 }
 
-export async function createNetwotks(
+export function getReporters() {
+  const reporters: Reporters = {
+    publisher: {
+      id: randomId(),
+      name: "alice",
+      keypair: web3.Keypair.generate(),
+      role: "Publisher",
+      url: "https://publisher.blockchain",
+    },
+    tracer: {
+      id: randomId(),
+      name: "bob",
+      keypair: web3.Keypair.generate(),
+      role: "Tracer",
+      url: "https://tracer.blockchain",
+    },
+    authority: {
+      id: randomId(),
+      name: "carol",
+      keypair: web3.Keypair.generate(),
+      role: "Authority",
+      url: "https://authority.blockchain",
+    },
+    validator: {
+      id: randomId(),
+      name: "dave",
+      keypair: web3.Keypair.generate(),
+      role: "Validator",
+      url: "https://validator.blockchain",
+    },
+    appraiser: {
+      id: randomId(),
+      name: "erin",
+      keypair: web3.Keypair.generate(),
+      role: "Appraiser",
+      url: "https://appraiser.blockchain",
+    },
+  };
+
+  return reporters;
+}
+
+export function getCases() {
+  const cases: Cases = {
+    firstCase: {
+      id: randomId(),
+      name: "safe network addresses",
+      url: "https://big.hack",
+    },
+    secondCase: {
+      id: randomId(),
+      name: "suspicious nft txes",
+      url: "https://big.hack",
+    },
+    thirdCase: {
+      id: randomId(),
+      name: "new case",
+      url: "https://big.hack",
+    },
+  };
+
+  return cases;
+}
+
+export async function setupNetworks(
   program: HapiCoreProgram,
   networks: Networks,
-  authority: PublicKey,
   rewardToken: PublicKey,
   stakeToken: PublicKey
 ) {
   const wait: Promise<unknown>[] = [];
-  const programDataAddress = program.findProgramDataAddress()[0];
 
   for (const key of Object.keys(networks)) {
     const network = networks[key];
 
-    const [networkAccount, bump] = program.findNetworkAddress(network.name);
+    wait.push(
+      program.InitializeNetwork(
+        network.name,
+        network.stakeConfiguration,
+        network.rewardConfiguration,
+        rewardToken.toString(),
+        stakeToken.toString()
+      )
+    );
 
-    const args = [
-      bufferFromString(network.name, 32).toJSON().data,
-      network.stakeConfiguration,
-      network.rewardConfiguration,
-      bump,
-    ];
+    // wait.push(
+    //   Token.getOrCreateAssociatedTokenAccount(
+    //     this.program.provider.connection,
+    //     signer,
+    //     network.stakeMint,
+    //     network,
+    //     true
+    //   )
+    // );
+  }
+
+  await Promise.all(wait);
+}
+
+export async function setupReporters(
+  program: HapiCoreProgram,
+  reporters: Reporters,
+  network_name: string
+) {
+  const wait: Promise<unknown>[] = [];
+
+  for (const key of Object.keys(reporters)) {
+    const reporter = reporters[key];
 
     wait.push(
-      program.program.rpc.createNetwork(...args, {
-        accounts: {
-          authority: authority,
-          network: networkAccount,
-          rewardMint: rewardToken,
-          stakeMint: stakeToken,
-          programAccount: program.programId,
-          programData: programDataAddress,
-          systemProgram: web3.SystemProgram.programId,
-        },
-      })
+      program.createReporter(
+        network_name,
+        reporter.id.toString(),
+        reporter.role,
+        reporter.keypair.publicKey.toString(),
+        reporter.name,
+        reporter.url
+      )
+    );
+
+    wait.push(
+      program.program.provider.connection.requestAirdrop(
+        reporter.keypair.publicKey,
+        10_000_000
+      )
+    );
+
+    wait.push(
+      program.activateReporter(
+        network_name,
+        reporter.keypair,
+        undefined,
+        reporter.id.toString()
+      )
     );
   }
 
   await Promise.all(wait);
 }
+
+// TODO: createCases
+// export async function createCases(
+//   program: HapiCoreProgram,
+//   reporters: Reporters,
+//   network_name: string
+// ) {
+//   const wait: Promise<unknown>[] = [];
+
+//   for (const key of Object.keys(reporters)) {
+//     const reporter = reporters[key];
+
+//     wait.push(
+//       program.createCase(
+//         network_name,
+//         reporter.id.toString(),
+//         reporter.role,
+//         reporter.keypair.publicKey.toString(),
+//         reporter.name,
+//         reporter.url
+//       )
+//     );
+//   }
+
+//   await Promise.all(wait);
+// }
