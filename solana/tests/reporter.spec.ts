@@ -1,19 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3, BN } from "@coral-xyz/anchor";
+
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
+import { programError } from "./util/error";
+import { getReporters, getNetwotks, createNetwotks } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
-  bufferFromString,
   ReporterRole,
   HapiCoreProgram,
   ReporterStatus,
-  stakeConfiguration,
-  rewardConfiguration,
 } from "../lib";
-import { programError } from "./util/error";
-import { assert } from "console";
 
 describe("HapiCore Reporter", () => {
   const program = new HapiCoreProgram(
@@ -29,98 +27,11 @@ describe("HapiCore Reporter", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
-  const REPORTERS: Record<
-    string,
-    {
-      name: string;
-      id: BN;
-      keypair: web3.Keypair;
-      role: keyof typeof ReporterRole;
-      url: string;
-    }
-  > = {
-    alice: {
-      id: new BN(1),
-      name: "alice",
-      keypair: web3.Keypair.generate(),
-      role: "Publisher",
-      url: "alice url",
-    },
-    bob: {
-      id: new BN(2),
-      name: "bob",
-      keypair: web3.Keypair.generate(),
-      role: "Tracer",
-      url: "bob url",
-    },
-    carol: {
-      id: new BN(3),
-      name: "carol",
-      keypair: web3.Keypair.generate(),
-      role: "Authority",
-      url: "carol url",
-    },
-    dave: {
-      id: new BN(4),
-      name: "dave",
-      keypair: web3.Keypair.generate(),
-      role: "Publisher",
-      url: "dave url",
-    },
-    erin: {
-      id: new BN(5),
-      name: "erin",
-      keypair: web3.Keypair.generate(),
-      role: "Appraiser",
-      url: "erin url",
-    },
-  };
+  const mainNetwork = "ReporterMainNetwork";
+  const secondaryNetwork = "ReporterSecondaryNetwork";
 
-  const NETWORKS: Record<
-    string,
-    {
-      name: string;
-      stakeConfiguration: stakeConfiguration;
-      rewardConfiguration: rewardConfiguration;
-    }
-  > = {
-    main: {
-      name: "ReporterTest",
-      stakeConfiguration: {
-        unlockDuration: new BN(1),
-        validatorStake: new BN(2_000),
-        tracerStake: new BN(3_000),
-        publisherStake: new BN(4_000),
-        authorityStake: new BN(5_000),
-        appraiserStake: new BN(6_000),
-      },
-      rewardConfiguration: {
-        addressTracerReward: new BN(1_000),
-        addressConfirmationReward: new BN(2_000),
-        assetTracerReward: new BN(3_000),
-        assetConfirmationReward: new BN(4_000),
-      },
-    },
-    secondary: {
-      name: "ReporterTest2",
-      stakeConfiguration: {
-        unlockDuration: new BN(1_000),
-        validatorStake: new BN(2_000),
-        tracerStake: new BN(3_000),
-        publisherStake: new BN(4_000),
-        authorityStake: new BN(5_000),
-        appraiserStake: new BN(6_000),
-      },
-      rewardConfiguration: {
-        addressTracerReward: new BN(1_000),
-        addressConfirmationReward: new BN(2_000),
-        assetTracerReward: new BN(3_000),
-        assetConfirmationReward: new BN(4_000),
-      },
-    },
-  };
-
-  const programDataAddress = program.findProgramDataAddress()[0];
+  const REPORTERS = getReporters();
+  let NETWORKS = getNetwotks([mainNetwork, secondaryNetwork]);
 
   beforeAll(async () => {
     const wait: Promise<unknown>[] = [];
@@ -131,46 +42,27 @@ describe("HapiCore Reporter", () => {
     rewardToken = new TestToken(provider);
     await rewardToken.mint(1_000_000_000);
 
-    wait.push(
-      provider.connection.requestAirdrop(
-        another_authority.publicKey,
-        10_000_000
-      )
+    await provider.connection.requestAirdrop(
+      another_authority.publicKey,
+      10_000_000
     );
 
-    for (const key of Object.keys(NETWORKS)) {
-      const network = NETWORKS[key];
+    NETWORKS[mainNetwork].stakeConfiguration.unlockDuration = new BN(1);
 
-      const [networkAccount, bump] = program.findNetworkAddress(network.name);
-
-      const args = [
-        bufferFromString(network.name, 32).toJSON().data,
-        network.stakeConfiguration,
-        network.rewardConfiguration,
-        bump,
-      ];
-
-      wait.push(
-        program.program.rpc.createNetwork(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            network: networkAccount,
-            rewardMint: rewardToken.mintAccount,
-            stakeMint: stakeToken.mintAccount,
-            programAccount: program.programId,
-            programData: programDataAddress,
-            systemProgram: web3.SystemProgram.programId,
-          },
-        })
-      );
-    }
+    await createNetwotks(
+      program,
+      NETWORKS,
+      authority.publicKey,
+      rewardToken.mintAccount,
+      stakeToken.mintAccount
+    );
 
     await Promise.all(wait);
   });
 
   describe("create_reporter", () => {
     it("fail - authority mismatch", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
       const [networkAccount, _] = program.findNetworkAddress(networkName);
 
@@ -207,7 +99,7 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - alice", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
       const [networkAccount, _] = program.findNetworkAddress(networkName);
 
@@ -261,7 +153,7 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - bob", async () => {
-      const networkName = NETWORKS.secondary.name;
+      const networkName = secondaryNetwork;
 
       const [networkAccount, _] = program.findNetworkAddress(networkName);
 
@@ -315,7 +207,7 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - carol", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
       const [networkAccount, _] = program.findNetworkAddress(networkName);
 
@@ -369,7 +261,7 @@ describe("HapiCore Reporter", () => {
     });
 
     it("fail - reporter already exists", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
       const [networkAccount, _] = program.findNetworkAddress(networkName);
 
@@ -408,9 +300,7 @@ describe("HapiCore Reporter", () => {
   describe("update_reporter", () => {
     it("fail - authority mismatch", async () => {
       const reporter = REPORTERS.alice;
-      const networkName = NETWORKS.main.name;
-
-      const networkAccount = program.findNetworkAddress(networkName)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -442,9 +332,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - reporter does not exists", async () => {
       const reporter = REPORTERS.dave;
-      let name = bufferFromString(reporter.name, 32);
-
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
       const networkAccount = program.findNetworkAddress(networkName)[0];
 
@@ -477,13 +365,9 @@ describe("HapiCore Reporter", () => {
 
     it("fail - network mismatch", async () => {
       const reporter = REPORTERS.alice;
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
+      const networkAccount = program.findNetworkAddress(secondaryNetwork)[0];
 
-      const reporterNetworkAccount = program.findNetworkAddress(
-        NETWORKS.main.name
-      )[0];
+      const reporterNetworkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         reporterNetworkAccount,
@@ -514,9 +398,7 @@ describe("HapiCore Reporter", () => {
 
     it("success", async () => {
       const reporter = REPORTERS.alice;
-      const networkName = NETWORKS.main.name;
-
-      const networkAccount = program.findNetworkAddress(networkName)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -554,14 +436,8 @@ describe("HapiCore Reporter", () => {
   describe("activate_reporter", () => {
     it("fail - network mismatch", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
-
-      const reporterNetworkAccount = program.findNetworkAddress(
-        NETWORKS.main.name
-      )[0];
+      const networkAccount = program.findNetworkAddress(secondaryNetwork)[0];
+      const reporterNetworkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         reporterNetworkAccount,
@@ -597,8 +473,7 @@ describe("HapiCore Reporter", () => {
     it("fail - invalid reporter", async () => {
       const reporter = REPORTERS.alice;
       const anotherReporter = REPORTERS.bob;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -633,8 +508,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid network ATA mint", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -669,8 +543,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid reporter ATA mint", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -704,8 +577,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid network ATA owner", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -735,8 +607,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid reporter ATA owner", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -767,8 +638,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - insufficient funds", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -803,7 +673,7 @@ describe("HapiCore Reporter", () => {
 
     it("success - alice", async () => {
       const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
+      let network = NETWORKS[mainNetwork];
 
       const networkAccount = program.findNetworkAddress(network.name)[0];
 
@@ -852,7 +722,7 @@ describe("HapiCore Reporter", () => {
 
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
-      let network = NETWORKS.secondary;
+      let network = NETWORKS[secondaryNetwork];
 
       const networkAccount = program.findNetworkAddress(network.name)[0];
 
@@ -899,8 +769,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - reporter is already activated", async () => {
       const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
-
+      let network = NETWORKS[mainNetwork];
       const networkAccount = program.findNetworkAddress(network.name)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
@@ -944,8 +813,7 @@ describe("HapiCore Reporter", () => {
   describe("dectivate_reporter", () => {
     it("fail - reporter is not activated", async () => {
       const reporter = REPORTERS.carol;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -968,8 +836,7 @@ describe("HapiCore Reporter", () => {
 
     it("success - alice", async () => {
       const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
-
+      let network = NETWORKS[mainNetwork];
       const networkAccount = program.findNetworkAddress(network.name)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
@@ -1007,8 +874,7 @@ describe("HapiCore Reporter", () => {
 
     it("success - bob", async () => {
       const reporter = REPORTERS.bob;
-      let network = NETWORKS.secondary;
-
+      let network = NETWORKS[secondaryNetwork];
       const networkAccount = program.findNetworkAddress(network.name)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
@@ -1046,8 +912,7 @@ describe("HapiCore Reporter", () => {
   describe("unstake", () => {
     it("fail - reporter is not deacactivated", async () => {
       const reporter = REPORTERS.carol;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -1082,10 +947,7 @@ describe("HapiCore Reporter", () => {
 
     it("fail - release epoch in future", async () => {
       const reporter = REPORTERS.bob;
-
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
+      const networkAccount = program.findNetworkAddress(secondaryNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
@@ -1120,8 +982,7 @@ describe("HapiCore Reporter", () => {
 
     it("success", async () => {
       const reporter = REPORTERS.alice;
-
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
       const [reporterAccount, _] = program.findReporterAddress(
         networkAccount,
