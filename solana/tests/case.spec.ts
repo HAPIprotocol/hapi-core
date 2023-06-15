@@ -67,7 +67,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(bump, cs.id, cs.name, cs.url)
+            .createCase(cs.id, cs.name, cs.url, bump)
             .accounts({
               sender: reporter.publicKey,
               network: networkAccount,
@@ -98,7 +98,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(bump, cs.id, cs.name, cs.url)
+            .createCase(cs.id, cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -129,7 +129,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(bump, cs.id, cs.name, cs.url)
+            .createCase(cs.id, cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -160,7 +160,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(bump, cs.id, cs.name, cs.url)
+            .createCase(cs.id, cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -190,7 +190,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(bump, cs.id, cs.name, cs.url)
+        .createCase(cs.id, cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -234,7 +234,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(bump, cs.id, cs.name, cs.url)
+        .createCase(cs.id, cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -280,7 +280,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(bump, cs.id, cs.name, cs.url)
+            .createCase(cs.id, cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,

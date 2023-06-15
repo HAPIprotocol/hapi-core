@@ -20,6 +20,9 @@ import {
   ReporterRole,
   ReporterRoleVariants,
   ReporterRoleKeys,
+  CaseStatus,
+  CaseStatusVariants,
+  CaseStatusKeys,
 } from ".";
 
 export function encodeAddress(address: string): Buffer {
@@ -110,13 +113,11 @@ export class HapiCoreProgram {
     name: string,
     stakeConfiguration: stakeConfiguration,
     rewardConfiguration: rewardConfiguration,
-    rewardToken: string,
-    stakeToken: string
+    rewardMint: web3.PublicKey,
+    stakeMint: web3.PublicKey
   ) {
     const [network, bump] = this.findNetworkAddress(name);
     const programData = this.findProgramDataAddress()[0];
-    const stakeMint = new web3.PublicKey(stakeToken);
-    const rewardMint = new web3.PublicKey(rewardToken);
 
     await Token.getOrCreateAssociatedTokenAccount(
       this.program.provider.connection,
@@ -154,10 +155,19 @@ export class HapiCoreProgram {
     return data;
   }
 
-  public async getReporterData(network_name: string, id: string) {
+  public async getReporterData(network_name: string, id: BN) {
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, new BN(id))[0];
+    const reporter = this.findReporterAddress(network, id)[0];
     let data = await this.program.account.reporter.fetch(reporter);
+
+    return data;
+  }
+
+  public async getCaseData(network_name: string, id: BN) {
+    const network = this.findNetworkAddress(network_name)[0];
+    const cs = this.findCaseAddress(network, id)[0];
+
+    let data = await this.program.account.case.fetch(cs);
 
     return data;
   }
@@ -174,16 +184,27 @@ export class HapiCoreProgram {
     return data;
   }
 
-  public async setAuthority(network_name: string, address: string) {
+  public async getAllCases(network_name: string) {
+    let res = [];
     const network = this.findNetworkAddress(network_name)[0];
-    let newAuthority = new web3.PublicKey(address);
+    let data = await this.program.account.case.all();
+
+    data.map((acc) => {
+      if (acc.account.network == network) res.push(acc);
+    });
+
+    return data;
+  }
+
+  public async setAuthority(network_name: string, address: web3.PublicKey) {
+    const network = this.findNetworkAddress(network_name)[0];
     const programData = this.findProgramDataAddress()[0];
 
     const transactionHash = await this.program.methods
       .setAuthority()
       .accounts({
         authority: this.program.provider.publicKey,
-        newAuthority,
+        newAuthority: address,
         network,
         programAccount: this.programId,
         programData,
@@ -195,7 +216,7 @@ export class HapiCoreProgram {
 
   public async updateStakeConfiguration(
     network_name: string,
-    token?: string,
+    token?: web3.PublicKey,
     unlockDuration?: number,
     validatorStake?: string,
     tracerStake?: string,
@@ -205,7 +226,7 @@ export class HapiCoreProgram {
   ) {
     const network = this.findNetworkAddress(network_name)[0];
     let network_data = await this.program.account.network.fetch(network);
-    let stakeMint = token ? new web3.PublicKey(token) : network_data.stakeMint;
+    let stakeMint = token ?? network_data.stakeMint;
 
     const stakeConfiguration = {
       unlockDuration: unlockDuration
@@ -242,7 +263,7 @@ export class HapiCoreProgram {
 
   public async updateRewardConfiguration(
     network_name: string,
-    token?: string,
+    token?: web3.PublicKey,
     addressTracerReward?: string,
     addressConfirmationReward?: string,
     assetTracerReward?: string,
@@ -250,9 +271,7 @@ export class HapiCoreProgram {
   ) {
     const network = this.findNetworkAddress(network_name)[0];
     let network_data = await this.program.account.network.fetch(network);
-    let rewardMint = token
-      ? new web3.PublicKey(token)
-      : network_data.rewardMint;
+    let rewardMint = token ?? network_data.rewardMint;
 
     const rewardConfiguration = {
       addressTracerReward: addressTracerReward
@@ -283,31 +302,17 @@ export class HapiCoreProgram {
 
   async createReporter(
     network_name: string,
-    id: string,
-    role: string,
-    account: string,
+    id: BN,
+    role: ReporterRoleKeys,
+    account: web3.PublicKey,
     name: string,
     url: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
-    const [reporterAccount, bump] = this.findReporterAddress(
-      network,
-      new BN(id)
-    );
-
-    if (!ReporterRoleVariants.includes(role as ReporterRoleKeys)) {
-      throw new Error("Invalid reporter role");
-    }
+    const [reporterAccount, bump] = this.findReporterAddress(network, id);
 
     const transactionHash = await this.program.methods
-      .createReporter(
-        new BN(id),
-        new web3.PublicKey(account),
-        name,
-        ReporterRole[role],
-        url,
-        bump
-      )
+      .createReporter(id, account, name, ReporterRole[role], url, bump)
       .accounts({
         authority: this.program.provider.publicKey,
         reporter: reporterAccount,
@@ -321,25 +326,19 @@ export class HapiCoreProgram {
 
   async updateReporter(
     network_name: string,
-    id: string,
-    role?: string,
-    account?: string,
+    id: BN,
+    role?: ReporterRoleKeys,
+    account?: web3.PublicKey,
     name?: string,
     url?: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, new BN(id))[0];
+    const reporter = this.findReporterAddress(network, id)[0];
     const reporterData = await this.program.account.reporter.fetch(reporter);
-
-    if (role && !ReporterRoleVariants.includes(role as ReporterRoleKeys)) {
-      throw new Error("Invalid reporter role");
-    }
 
     const reporter_role = role ? ReporterRole[role] : reporterData.role;
     const reporter_url = url ?? reporterData.url;
-    const reporter_account = account
-      ? new web3.PublicKey(account)
-      : reporterData.account;
+    const reporter_account = account ?? reporterData.account;
     const reporter_name = name ?? reporterData.name.toString();
 
     const transactionHash = await this.program.methods
@@ -362,18 +361,10 @@ export class HapiCoreProgram {
   async activateReporter(
     network_name: string,
     wallet: Signer | Wallet,
-    account?: PublicKey,
-    id?: string
+    id: BN
   ) {
-    if (!account && !id) {
-      throw new Error(
-        "Reporter id or reporter PDA accout address must be defined"
-      );
-    }
-
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter =
-      account ?? this.findReporterAddress(network, new BN(id))[0];
+    const reporter = this.findReporterAddress(network, id)[0];
     const networkData = await this.program.account.network.fetch(network);
 
     let signer = wallet as Signer;
@@ -408,18 +399,10 @@ export class HapiCoreProgram {
   async deactivateReporter(
     network_name: string,
     wallet: Signer | Wallet,
-    account?: PublicKey,
-    id?: string
+    id: BN
   ) {
-    if (!account && !id) {
-      throw new Error(
-        "Reporter id or reporter PDA accout address must be defined"
-      );
-    }
-
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter =
-      account ?? this.findReporterAddress(network, new BN(id))[0];
+    const reporter = this.findReporterAddress(network, id)[0];
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
@@ -435,21 +418,9 @@ export class HapiCoreProgram {
     return transactionHash;
   }
 
-  async unstake(
-    network_name: string,
-    wallet: Signer | Wallet,
-    account?: PublicKey,
-    id?: string
-  ) {
-    if (!account && !id) {
-      throw new Error(
-        "Reporter id or reporter PDA accout address must be defined"
-      );
-    }
-
+  async unstake(network_name: string, wallet: Signer | Wallet, id: BN) {
     const network = this.findNetworkAddress(network_name)[0];
-    const reporter =
-      account ?? this.findReporterAddress(network, new BN(id))[0];
+    const reporter = this.findReporterAddress(network, id)[0];
     const networkData = await this.program.account.network.fetch(network);
 
     let signer = wallet as Signer;
@@ -490,42 +461,65 @@ export class HapiCoreProgram {
     return transactionHash;
   }
 
-  // TODO: create case
-  // async createCase(
-  //   network_name: string,
-  //   id: string,
-  //   role: string,
-  //   account: string,
-  //   name: string,
-  //   url: string
-  // ) {
-  //   const network = this.findNetworkAddress(network_name)[0];
-  //   const [reporterAccount, bump] = this.findReporterAddress(
-  //     network,
-  //     new BN(id)
-  //   );
+  async createCase(
+    network_name: string,
+    id: BN,
+    name: string,
+    url: string,
+    wallet: Signer | Wallet,
+    reporter_id: BN
+  ) {
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(network, reporter_id)[0];
+    const [caseAccount, bump] = this.findCaseAddress(network, id);
 
-  //   if (!ReporterRoleVariants.includes(role as ReporterRoleKeys)) {
-  //     throw new Error("Invalid reporter role");
-  //   }
+    let signer = wallet as Signer;
 
-  //   const transactionHash = await this.program.methods
-  //     .createCase(
-  //       new BN(id),
-  //       new web3.PublicKey(account),
-  //       name,
-  //       ReporterRole[role],
-  //       url,
-  //       bump
-  //     )
-  //     .accounts({
-  //       authority: this.program.provider.publicKey,
-  //       reporter: reporterAccount,
-  //       network,
-  //       systemProgram: web3.SystemProgram.programId,
-  //     })
-  //     .rpc();
+    const transactionHash = await this.program.methods
+      .createCase(id, name, url, bump)
+      .accounts({
+        sender: signer.publicKey,
+        network,
+        reporter,
+        case: caseAccount,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .rpc();
 
-  //   return transactionHash;
-  // }
+    return transactionHash;
+  }
+
+  async updateCase(
+    network_name: string,
+    reporter_id: BN,
+    id: BN,
+    wallet: Signer | Wallet,
+    name?: string,
+    url?: string,
+    status?: CaseStatusKeys
+  ) {
+    const network = this.findNetworkAddress(network_name)[0];
+    const reporter = this.findReporterAddress(network, reporter_id)[0];
+    const caseAccount = this.findCaseAddress(network, id)[0];
+
+    const caseData = await this.program.account.case.fetch(caseAccount);
+    const case_status = status ? CaseStatus[status] : caseData.status;
+    const case_url = url ?? caseData.url;
+    const case_name = name ?? caseData.name;
+
+    let signer = wallet as Signer;
+
+    const transactionHash = await this.program.methods
+      .updateCase(case_name, case_url, case_status)
+      .accounts({
+        sender: signer.publicKey,
+        network,
+        reporter,
+        case: caseAccount,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    return transactionHash;
+  }
 }

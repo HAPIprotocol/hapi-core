@@ -1,7 +1,7 @@
-import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
+import { Provider, AnchorProvider, web3, BN } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
-import { HapiCoreProgram } from "../../../solana/lib";
+import { HapiCoreProgram, ReporterRoleKeys } from "../../../solana/lib";
 
 import {
   Addr,
@@ -18,10 +18,13 @@ import {
   RewardConfiguration,
   StakeConfiguration,
   HapiCoreAddresses,
-  ReporterRoleNames,
 } from "../interface";
 
-import { ReporterRoleFromString, ReporterStatusFromString } from "../util";
+import {
+  ReporterRoleFromString,
+  ReporterStatusFromString,
+  CaseStatusFromString,
+} from "../util";
 
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
@@ -58,7 +61,7 @@ export class HapiCoreSolana implements HapiCore {
   async setAuthority(address: string): Promise<Result> {
     const transactionHash = await this.contract.setAuthority(
       this.network,
-      address
+      new web3.PublicKey(address)
     );
     return { transactionHash };
   }
@@ -76,9 +79,11 @@ export class HapiCoreSolana implements HapiCore {
     publisherStake?: string,
     authorityStake?: string
   ): Promise<Result> {
+    let stakeToken = token ? new web3.PublicKey(token) : undefined;
+
     const transactionHash = await this.contract.updateStakeConfiguration(
       this.network,
-      token,
+      stakeToken,
       unlockDuration,
       validatorStake,
       tracerStake,
@@ -107,9 +112,11 @@ export class HapiCoreSolana implements HapiCore {
     addressConfirmationReward?: string,
     addresstraceReward?: string
   ): Promise<Result> {
+    let rewardToken = token ? new web3.PublicKey(token) : undefined;
+
     const transactionHash = await this.contract.updateRewardConfiguration(
       this.network,
-      token,
+      rewardToken,
       addressConfirmationReward,
       addresstraceReward
     );
@@ -137,9 +144,9 @@ export class HapiCoreSolana implements HapiCore {
   ): Promise<Result> {
     const transactionHash = await this.contract.createReporter(
       this.network,
-      id,
-      ReporterRoleNames[role],
-      account,
+      new BN(id),
+      role.toString() as ReporterRoleKeys,
+      new web3.PublicKey(account),
       name,
       url
     );
@@ -148,7 +155,7 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporter(id: string): Promise<Reporter> {
-    const data = await this.contract.getReporterData(this.network, id);
+    const data = await this.contract.getReporterData(this.network, new BN(id));
 
     return {
       id: data.id.toString(),
@@ -187,16 +194,19 @@ export class HapiCoreSolana implements HapiCore {
 
   async updateReporter(
     id: string,
-    role: ReporterRole,
+    role?: ReporterRole,
     account?: string,
     name?: string,
     url?: string
   ): Promise<Result> {
+    let reporterRole = role ? (role.toString() as ReporterRoleKeys) : undefined;
+    let reporterAccount = account ? new web3.PublicKey(account) : undefined;
+
     const transactionHash = await this.contract.updateReporter(
       this.network,
-      id,
-      ReporterRoleNames[role],
-      account,
+      new BN(id),
+      reporterRole,
+      reporterAccount,
       name,
       url
     );
@@ -204,7 +214,7 @@ export class HapiCoreSolana implements HapiCore {
     return { transactionHash };
   }
 
-  async getReporterAccount(): Promise<web3.PublicKey> {
+  async getReporterAccount(): Promise<BN> {
     const data = await this.contract.getAllReporters(this.network);
     let reporterAccount = data.find((acc) =>
       acc.account.account.equals(this.provider.publicKey)
@@ -213,57 +223,87 @@ export class HapiCoreSolana implements HapiCore {
     if (!reporterAccount) {
       throw new Error("Reporter does not exist");
     } else {
-      return reporterAccount.publicKey;
+      return reporterAccount.account.id;
     }
   }
 
   async activateReporter(): Promise<Result> {
-    const reporterAccount = await this.getReporterAccount();
+    const reporterId = await this.getReporterAccount();
+
     const transactionHash = await this.contract.activateReporter(
       this.network,
       this.provider.wallet as NodeWallet,
-      reporterAccount
+      reporterId
     );
 
     return { transactionHash };
   }
 
   async deactivateReporter(): Promise<Result> {
-    const reporterAccount = await this.getReporterAccount();
+    const reporterId = await this.getReporterAccount();
     const transactionHash = await this.contract.deactivateReporter(
       this.network,
       this.provider.wallet as NodeWallet,
-      reporterAccount
+      reporterId
     );
 
     return { transactionHash };
   }
 
   async unstakeReporter(): Promise<Result> {
-    const reporterAccount = await this.getReporterAccount();
+    const reporterId = await this.getReporterAccount();
     const transactionHash = await this.contract.unstake(
       this.network,
       this.provider.wallet as NodeWallet,
-      reporterAccount
+      reporterId
     );
 
     return { transactionHash };
   }
 
   async createCase(id: string, name: string, url: string): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterId = await this.getReporterAccount();
+
+    const transactionHash = await this.contract.createCase(
+      this.network,
+      new BN(id),
+      name,
+      url,
+      this.provider.wallet as NodeWallet,
+      reporterId
+    );
+
+    return { transactionHash };
   }
 
   async getCase(id: string): Promise<Case> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getCaseData(this.network, new BN(id));
+
+    return {
+      id: data.id.toString(),
+      name: data.name.toString(),
+      url: data.url.toString(),
+      status: CaseStatusFromString(data.status.toString()),
+    };
   }
 
   async getCaseCount(): Promise<number> {
-    throw new Error("Method not implemented.");
+    const count = (await this.contract.getAllCases(this.network)).length;
+
+    return count;
   }
 
   async getCases(skip: number, take: number): Promise<Case[]> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getAllCases(this.network);
+
+    let res = data.map((acc) => ({
+      id: acc.account.id.toString(),
+      name: acc.account.name.toString(),
+      url: acc.account.url.toString(),
+      status: CaseStatusFromString(acc.account.status.toString()),
+    }));
+
+    return res.slice(skip, skip + take);
   }
 
   async updateCase(

@@ -178,10 +178,10 @@ pub mod hapi_core_solana {
 
     pub fn create_case(
         ctx: Context<CreateCase>,
-        bump: u8,
         case_id: u64,
         name: String,
         url: String,
+        bump: u8,
     ) -> Result<()> {
         let case = &mut ctx.accounts.case;
 
