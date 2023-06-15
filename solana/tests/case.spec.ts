@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { web3, BN } from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
@@ -13,7 +13,6 @@ import {
 } from "./util/setup";
 
 import { ACCOUNT_SIZE, HapiCoreProgram, CaseStatus } from "../lib";
-import { Keypair } from "@solana/web3.js";
 
 describe("HapiCore Reporter", () => {
   const program = new HapiCoreProgram(
@@ -46,7 +45,7 @@ describe("HapiCore Reporter", () => {
       stakeToken.mintAccount
     );
 
-    await setupReporters(program, REPORTERS, mainNetwork);
+    await setupReporters(program, REPORTERS, mainNetwork, stakeToken);
   });
 
   describe("create_case", () => {
@@ -54,7 +53,7 @@ describe("HapiCore Reporter", () => {
       const cs = CASES.firstCase;
       const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-      let reporter = Keypair.generate();
+      let reporter = REPORTERS.publisher.keypair;
       const [reporterAccount, __] = program.findReporterAddress(
         networkAccount,
         REPORTERS.authority.id
@@ -291,233 +290,248 @@ describe("HapiCore Reporter", () => {
             })
             .signers([reporter.keypair])
             .rpc(),
-        /123/
+        / Error processing Instruction 0: custom program error: 0x0/
       );
     });
   });
 
-  describe("update_case", () => {});
+  describe("update_case", () => {
+    it("tracer can't update case", async () => {
+      const cs = CASES.firstCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("tracer can't update case", async () => {
-    const cs = CASES.firstCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.tracer;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.tracer;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .updateCase(cs.name, cs.url, CaseStatus.Closed)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
 
-    await expectThrowError(
-      () =>
-        program.program.methods
-          .updateCase(cs.name, cs.url, CaseStatus.Closed)
-          .accounts({
-            sender: reporter.keypair.publicKey,
-            network: networkAccount,
-            reporter: reporterAccount,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          })
-          .signers([reporter.keypair])
-          .rpc(),
-      programError("Unauthorized")
-    );
-  });
+    it("validator can't update case", async () => {
+      const cs = CASES.firstCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("validator can't update case", async () => {
-    const cs = CASES.firstCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.validator;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.validator;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .updateCase(cs.name, cs.url, CaseStatus.Closed)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
 
-    await expectThrowError(
-      () =>
-        program.program.methods
-          .updateCase(cs.name, cs.url, CaseStatus.Closed)
-          .accounts({
-            sender: reporter.keypair.publicKey,
-            network: networkAccount,
-            reporter: reporterAccount,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          })
-          .signers([reporter.keypair])
-          .rpc(),
-      programError("Unauthorized")
-    );
-  });
+    it("appraiser can't update case", async () => {
+      const cs = CASES.firstCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("appraiser can't update case", async () => {
-    const cs = CASES.firstCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.appraiser;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.appraiser;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .updateCase(cs.name, cs.url, CaseStatus.Closed)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
 
-    await expectThrowError(
-      () =>
-        program.program.methods
-          .updateCase(cs.name, cs.url, CaseStatus.Closed)
-          .accounts({
-            sender: reporter.keypair.publicKey,
-            network: networkAccount,
-            reporter: reporterAccount,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          })
-          .signers([reporter.keypair])
-          .rpc(),
-      programError("Unauthorized")
-    );
-  });
+    it("reporter can't update another reporter's case", async () => {
+      const cs = CASES.secondCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("reporter can't update another reporter's case", async () => {
-    const cs = CASES.secondCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.publisher;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.publisher;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .updateCase(cs.name, cs.url, CaseStatus.Closed)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
 
-    await expectThrowError(
-      () =>
-        program.program.methods
-          .updateCase(cs.name, cs.url, CaseStatus.Closed)
-          .accounts({
-            sender: reporter.keypair.publicKey,
-            network: networkAccount,
-            reporter: reporterAccount,
-            case: caseAccount,
-            systemProgram: web3.SystemProgram.programId,
-          })
-          .signers([reporter.keypair])
-          .rpc(),
-      programError("Unauthorized")
-    );
-  });
+    it("publisher updates first case", async () => {
+      const cs = CASES.firstCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("publisher updates first case", async () => {
-    const cs = CASES.firstCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.publisher;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.publisher;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await program.program.methods
+        .updateCase(cs.name, cs.url, CaseStatus.Closed)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
-    await program.program.methods
-      .updateCase(cs.name, cs.url, CaseStatus.Closed)
-      .accounts({
-        sender: reporter.keypair.publicKey,
-        network: networkAccount,
-        reporter: reporterAccount,
-        case: caseAccount,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([reporter.keypair])
-      .rpc();
+      const fetchedCaseAccount = await program.program.account.case.fetch(
+        caseAccount
+      );
 
-    const fetchedCaseAccount = await program.program.account.case.fetch(
-      caseAccount
-    );
+      expect(fetchedCaseAccount.name).toEqual(cs.name);
+      expect(fetchedCaseAccount.url).toEqual(cs.url);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
+    });
 
-    expect(fetchedCaseAccount.name).toEqual(cs.name);
-    expect(fetchedCaseAccount.url).toEqual(cs.url);
-    expect(fetchedCaseAccount.network).toEqual(networkAccount);
-    expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
-    expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
-  });
+    it("authority updates first case", async () => {
+      const cs = CASES.firstCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("authority updates first case", async () => {
-    const cs = CASES.firstCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.authority;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.authority;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      let newName = "new name";
 
-    let newName = "new name";
+      await program.program.methods
+        .updateCase(newName, cs.url, CaseStatus.Closed)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
-    await program.program.methods
-      .updateCase(newName, cs.url, CaseStatus.Closed)
-      .accounts({
-        sender: reporter.keypair.publicKey,
-        network: networkAccount,
-        reporter: reporterAccount,
-        case: caseAccount,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([reporter.keypair])
-      .rpc();
+      const fetchedCaseAccount = await program.program.account.case.fetch(
+        caseAccount
+      );
 
-    const fetchedCaseAccount = await program.program.account.case.fetch(
-      caseAccount
-    );
+      expect(fetchedCaseAccount.name).toEqual(newName);
+      expect(fetchedCaseAccount.url).toEqual(cs.url);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
+    });
 
-    expect(fetchedCaseAccount.name).toEqual(newName);
-    expect(fetchedCaseAccount.url).toEqual(cs.url);
-    expect(fetchedCaseAccount.network).toEqual(networkAccount);
-    expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
-    expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
-  });
+    it("authority updates second case", async () => {
+      const cs = CASES.secondCase;
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
 
-  it("authority updates second case", async () => {
-    const cs = CASES.secondCase;
-    const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      let reporter = REPORTERS.authority;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
 
-    let reporter = REPORTERS.authority;
-    const reporterAccount = program.findReporterAddress(
-      networkAccount,
-      reporter.id
-    )[0];
+      const caseAccount = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      )[0];
 
-    const caseAccount = await program.findCaseAddress(networkAccount, cs.id)[0];
+      await program.program.methods
+        .updateCase(cs.name, cs.url, CaseStatus.Closed)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          case: caseAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
-    await program.program.methods
-      .updateCase(cs.name, cs.url, CaseStatus.Closed)
-      .accounts({
-        sender: reporter.keypair.publicKey,
-        network: networkAccount,
-        reporter: reporterAccount,
-        case: caseAccount,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .signers([reporter.keypair])
-      .rpc();
+      const fetchedCaseAccount = await program.program.account.case.fetch(
+        caseAccount
+      );
 
-    const fetchedCaseAccount = await program.program.account.case.fetch(
-      caseAccount
-    );
-
-    expect(fetchedCaseAccount.name).toEqual(cs.name);
-    expect(fetchedCaseAccount.url).toEqual(cs.url);
-    expect(fetchedCaseAccount.network).toEqual(networkAccount);
-    expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
-    expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.name).toEqual(cs.name);
+      expect(fetchedCaseAccount.url).toEqual(cs.url);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
+    });
   });
 });

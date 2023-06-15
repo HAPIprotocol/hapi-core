@@ -1,4 +1,6 @@
 import { web3, BN } from "@coral-xyz/anchor";
+import * as Token from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 
 import {
   stakeConfiguration,
@@ -6,9 +8,8 @@ import {
   HapiCoreProgram,
   ReporterRole,
 } from "../../lib";
-import { PublicKey } from "@solana/web3.js";
 
-import * as Token from "@solana/spl-token";
+import { TestToken } from "./token";
 
 export type Networks = Record<
   string,
@@ -153,60 +154,64 @@ export async function setupNetworks(
         stakeToken.toString()
       )
     );
-
-    // wait.push(
-    //   Token.getOrCreateAssociatedTokenAccount(
-    //     this.program.provider.connection,
-    //     signer,
-    //     network.stakeMint,
-    //     network,
-    //     true
-    //   )
-    // );
   }
 
   await Promise.all(wait);
 }
 
+// const networkStakeTokenAccount = (
+//   await Token.getOrCreateAssociatedTokenAccount(
+//     this.program.provider.connection,
+//     signer,
+//     networkData.stakeMint,
+//     network,
+//     true
+//   )
+// ).address;
+
+// const reporterStakeTokenAccount = (
+//   await Token.getOrCreateAssociatedTokenAccount(
+//     this.program.provider.connection,
+//     signer,
+//     networkData.stakeMint,
+//     signer.publicKey,
+//     false
+//   )
+// ).address;
+
 export async function setupReporters(
   program: HapiCoreProgram,
   reporters: Reporters,
-  network_name: string
+  network_name: string,
+  stakeToken: TestToken
 ) {
-  const wait: Promise<unknown>[] = [];
-
   for (const key of Object.keys(reporters)) {
     const reporter = reporters[key];
 
-    wait.push(
-      program.createReporter(
-        network_name,
-        reporter.id.toString(),
-        reporter.role,
-        reporter.keypair.publicKey.toString(),
-        reporter.name,
-        reporter.url
-      )
+    await program.createReporter(
+      network_name,
+      reporter.id.toString(),
+      reporter.role,
+      reporter.keypair.publicKey.toString(),
+      reporter.name,
+      reporter.url
     );
 
-    wait.push(
-      program.program.provider.connection.requestAirdrop(
-        reporter.keypair.publicKey,
-        10_000_000
-      )
+    await program.program.provider.connection.requestAirdrop(
+      reporter.keypair.publicKey,
+      10_000_000
     );
 
-    wait.push(
-      program.activateReporter(
-        network_name,
-        reporter.keypair,
-        undefined,
-        reporter.id.toString()
-      )
+    await stakeToken.getTokenAccount(reporter.keypair.publicKey);
+    await stakeToken.transfer(null, reporter.keypair.publicKey, 1_000_000);
+
+    await program.activateReporter(
+      network_name,
+      reporter.keypair,
+      undefined,
+      reporter.id.toString()
     );
   }
-
-  await Promise.all(wait);
 }
 
 // TODO: createCases

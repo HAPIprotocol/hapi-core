@@ -5,10 +5,10 @@ import * as Token from "@solana/spl-token";
 export class TestToken {
   public token: web3.PublicKey;
 
-  constructor (
+  constructor(
     private readonly provider: AnchorProvider,
     private readonly decimals: number = 9
-  ) { }
+  ) {}
 
   get programId() {
     return Token.TOKEN_PROGRAM_ID;
@@ -42,7 +42,7 @@ export class TestToken {
       this.provider.connection,
       this.payer,
       mint,
-      this.payer.publicKey,
+      this.payer.publicKey
     );
 
     if (amount !== undefined) {
@@ -54,10 +54,8 @@ export class TestToken {
         this.payer.publicKey,
         amount
       );
-
-
     }
-    
+
     this.token = mint;
   }
 
@@ -72,7 +70,8 @@ export class TestToken {
       this.provider.connection,
       this.payer,
       this.token,
-      initialOwner.publicKey);
+      initialOwner.publicKey
+    );
 
     await Token.setAuthority(
       this.provider.connection,
@@ -100,14 +99,14 @@ export class TestToken {
       this.provider.connection,
       this.payer,
       this.token,
-      from.publicKey,
+      from.publicKey
     );
 
     const toTokenAccount = await Token.getOrCreateAssociatedTokenAccount(
       this.provider.connection,
       this.payer,
       this.token,
-      to,
+      to
     );
 
     await Token.transfer(
@@ -125,7 +124,7 @@ export class TestToken {
       this.provider.connection,
       this.payer,
       this.token,
-      account,
+      account
     );
 
     const { value } = await this.provider.connection.getTokenAccountBalance(
@@ -134,8 +133,10 @@ export class TestToken {
     return new BN(value.amount);
   }
 
-  async getTokenAccount(account: web3.PublicKey, allowOwnerOffCurve = false): Promise<web3.PublicKey> {
-
+  async getTokenAccount(
+    account: web3.PublicKey,
+    allowOwnerOffCurve = false
+  ): Promise<web3.PublicKey> {
     const { address } = await Token.getOrCreateAssociatedTokenAccount(
       this.provider.connection,
       this.payer,

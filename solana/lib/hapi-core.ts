@@ -1,4 +1,15 @@
-import { Program, web3, BN, Provider, Wallet } from "@coral-xyz/anchor";
+import {
+  Program,
+  web3,
+  BN,
+  Provider,
+  Wallet,
+  AnchorProvider,
+} from "@coral-xyz/anchor";
+import { PublicKey, Signer } from "@solana/web3.js";
+import * as Token from "@solana/spl-token";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+
 import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
 import {
   bufferFromString,
@@ -10,8 +21,6 @@ import {
   ReporterRoleVariants,
   ReporterRoleKeys,
 } from ".";
-import { PublicKey, Signer } from "@solana/web3.js";
-import * as Token from "@solana/spl-token";
 
 export function encodeAddress(address: string): Buffer {
   return padBuffer(Buffer.from(address), 64);
@@ -109,7 +118,15 @@ export class HapiCoreProgram {
     const stakeMint = new web3.PublicKey(stakeToken);
     const rewardMint = new web3.PublicKey(rewardToken);
 
-    const transactionHash = this.program.methods
+    await Token.getOrCreateAssociatedTokenAccount(
+      this.program.provider.connection,
+      ((this.program.provider as AnchorProvider).wallet as NodeWallet).payer,
+      stakeMint,
+      network,
+      true
+    );
+
+    const transactionHash = await this.program.methods
       .createNetwork(
         bufferFromString(name, 32).toJSON().data,
         stakeConfiguration,
@@ -361,25 +378,16 @@ export class HapiCoreProgram {
 
     let signer = wallet as Signer;
 
-    const networkStakeTokenAccount = (
-      await Token.getOrCreateAssociatedTokenAccount(
-        this.program.provider.connection,
-        signer,
-        networkData.stakeMint,
-        network,
-        true
-      )
-    ).address;
+    const networkStakeTokenAccount = Token.getAssociatedTokenAddressSync(
+      networkData.stakeMint,
+      network,
+      true
+    );
 
-    const reporterStakeTokenAccount = (
-      await Token.getOrCreateAssociatedTokenAccount(
-        this.program.provider.connection,
-        signer,
-        networkData.stakeMint,
-        signer.publicKey,
-        false
-      )
-    ).address;
+    const reporterStakeTokenAccount = Token.getAssociatedTokenAddressSync(
+      networkData.stakeMint,
+      signer.publicKey
+    );
 
     const transactionHash = await this.program.methods
       .activateReporter()

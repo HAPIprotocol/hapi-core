@@ -340,6 +340,7 @@ pub struct UpdateCase<'info> {
     pub reporter: Account<'info, Reporter>,
 
     #[account(
+        mut,
         owner = id(),
         seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_le_bytes()],
         bump = case.bump,
