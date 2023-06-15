@@ -1,8 +1,9 @@
 use ethers::types::U256;
 use serde::Serialize;
 use std::str::FromStr;
+use uuid::Uuid;
 
-use super::{Category, Uuid};
+use super::Category;
 
 #[derive(Default, Clone, Debug)]
 pub struct AssetId(U256);
@@ -58,7 +59,9 @@ pub struct UpdateAssetInput {}
 pub struct Asset {
     pub address: String,
     pub asset_id: AssetId,
+    #[serde(with = "super::uuid")]
     pub case_id: Uuid,
+    #[serde(with = "super::uuid")]
     pub reporter_id: Uuid,
     pub risk: u8,
     pub category: Category,

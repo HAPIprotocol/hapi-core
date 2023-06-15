@@ -198,8 +198,8 @@ pub async fn get_reporter(args: &ArgMatches) -> anyhow::Result<()> {
     let context = CommandContext::try_from(args)?;
 
     let reporter_id = args
-        .get_one::<String>("reporter-id")
-        .ok_or(anyhow!("`reporter-id` is required"))?;
+        .get_one::<String>("id")
+        .ok_or(anyhow!("`id` is required"))?;
 
     let reporter = context.hapi_core.get_reporter(reporter_id).await?;
 

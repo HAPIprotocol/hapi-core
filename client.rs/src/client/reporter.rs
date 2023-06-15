@@ -1,7 +1,8 @@
 use serde::Serialize;
 use std::str::FromStr;
+use uuid::Uuid;
 
-use super::{amount::Amount, result::ClientError, Uuid};
+use super::{amount::Amount, result::ClientError};
 
 #[derive(Default, Clone, PartialEq, Debug, Serialize)]
 pub enum ReporterRole {
@@ -108,7 +109,7 @@ impl TryFrom<u8> for ReporterStatus {
 }
 
 pub struct CreateReporterInput {
-    pub id: u128,
+    pub id: Uuid,
     pub account: String,
     pub role: ReporterRole,
     pub name: String,
@@ -116,7 +117,7 @@ pub struct CreateReporterInput {
 }
 
 pub struct UpdateReporterInput {
-    pub id: u128,
+    pub id: Uuid,
     pub account: String,
     pub role: ReporterRole,
     pub name: String,
@@ -125,6 +126,7 @@ pub struct UpdateReporterInput {
 
 #[derive(Default, Clone, Debug, Serialize)]
 pub struct Reporter {
+    #[serde(with = "super::uuid")]
     pub id: Uuid,
     pub account: String,
     pub role: ReporterRole,

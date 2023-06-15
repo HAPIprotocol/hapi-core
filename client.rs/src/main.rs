@@ -166,7 +166,46 @@ async fn main() -> anyhow::Result<()> {
             Command::new("reporter")
                 .about("Reporter commands")
                 .subcommand_required(true)
-                .subcommand(Command::new("create").about("Create reporter"))
+                .subcommand(
+                    Command::new("create")
+                        .about("Create reporter")
+                        .arg(
+                            Arg::new("id")
+                                .value_name("ID")
+                                .index(1)
+                                .required(true)
+                                .help("Reporter UUID"),
+                        )
+                        .arg(
+                            Arg::new("account")
+                                .value_name("ACCOUNT")
+                                .index(2)
+                                .required(true)
+                                .help("Reporter account address"),
+                        )
+                        .arg(
+                            Arg::new("role")
+                                .value_name("ROLE")
+                                .index(3)
+                                .required(true)
+                                .help("Reporter role")
+                                .value_parser(["validator", "tracer", "publisher", "authority"]),
+                        )
+                        .arg(
+                            Arg::new("name")
+                                .value_name("NAME")
+                                .index(4)
+                                .required(true)
+                                .help("Reporter display name"),
+                        )
+                        .arg(
+                            Arg::new("url")
+                                .value_name("URL")
+                                .index(5)
+                                .required(true)
+                                .help("Reporter URL"),
+                        ),
+                )
                 .subcommand(Command::new("update").about("Update reporter"))
                 .subcommand(
                     Command::new("get").about("Get reporter").arg(

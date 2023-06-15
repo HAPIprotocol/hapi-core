@@ -8,6 +8,7 @@ use ethers::{
     utils::to_checksum,
 };
 use std::{str::FromStr, sync::Arc};
+use uuid::Uuid;
 
 use crate::{
     client::{
@@ -98,9 +99,10 @@ impl TryFrom<contract::Reporter> for Reporter {
     type Error = ClientError;
 
     fn try_from(reporter: contract::Reporter) -> Result<Self> {
+        dbg!(&reporter);
         Ok(Reporter {
-            id: reporter.id,
-            account: reporter.account.to_string(),
+            id: Uuid::from_u128(reporter.id),
+            account: to_checksum(&reporter.account, None),
             name: reporter.name.to_string(),
             url: reporter.url.to_string(),
             role: reporter.role.try_into()?,
@@ -234,7 +236,13 @@ impl HapiCore for HapiCoreEvm {
             .map_err(|e| ClientError::EthAddressParse(format!("`addr`: {e}")))?;
 
         self.contract
-            .create_reporter(input.id, addr, input.role as u8, input.name, input.url)
+            .create_reporter(
+                input.id.as_u128(),
+                addr,
+                input.role as u8,
+                input.name,
+                input.url,
+            )
             .send()
             .await
             .map_err(|e| ClientError::Ethers(format!("create_reporter failed: {e}")))?
@@ -260,7 +268,13 @@ impl HapiCore for HapiCoreEvm {
             .map_err(|e| ClientError::EthAddressParse(format!("`addr`: {e}")))?;
 
         self.contract
-            .update_reporter(input.id, addr, input.role as u8, input.name, input.url)
+            .update_reporter(
+                input.id.as_u128(),
+                addr,
+                input.role as u8,
+                input.name,
+                input.url,
+            )
             .send()
             .await
             .map_err(|e| ClientError::Ethers(format!("update_reporter failed: {e}")))?
@@ -280,9 +294,7 @@ impl HapiCore for HapiCoreEvm {
     }
 
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
-        let id = id
-            .parse()
-            .map_err(|e| ClientError::EthAddressParse(format!("`id`: {e}")))?;
+        let id = id.parse::<Uuid>()?.as_u128();
 
         self.contract
             .get_reporter(id)

@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum ClientError {
     #[error("URL parse error: {0}")]
     UrlParseError(String),
+    #[error("Invalid UUID: {0}")]
+    Uuid(#[from] uuid::Error),
     #[error("ETH address parse error: {0}")]
     EthAddressParse(String),
     #[error("Ethers error: {0}")]
@@ -16,7 +18,7 @@ pub enum ClientError {
 
 pub type Result<T> = std::result::Result<T, ClientError>;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Tx {
     pub hash: String,
 }

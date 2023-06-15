@@ -9,13 +9,16 @@ use std::{
 pub const PUBLIC_KEY_1: &str = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
 pub const PRIVATE_KEY_1: &str =
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+pub const REPORTER_UUID_1: &str = "0ca77383-0d2a-4090-98c9-31b69e105b12";
 
 pub const PUBLIC_KEY_2: &str = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";
 pub const PRIVATE_KEY_2: &str =
     "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+pub const REPORTER_UUID_2: &str = "2ef0a8f9-66c8-4be2-981a-b9236bb43f61";
 
 pub struct Setup {
     pub token: String,
+    port: u16,
     contract_address: String,
     network: String,
     provider_url: String,
@@ -110,7 +113,12 @@ impl Setup {
             contract_address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string(),
             network: "ethereum".to_string(),
             provider_url: format!("http://127.0.0.1:{port}"),
+            port,
         }
+    }
+
+    pub fn print(&self, message: &str) {
+        println!("[{}] ==> {message}", self.port);
     }
 
     pub fn exec<I, S>(&self, args: I) -> anyhow::Result<CmdOutput>

@@ -1,6 +1,5 @@
 use serde::Serialize;
-
-use super::Uuid;
+use uuid::Uuid;
 
 #[derive(Default, Clone, PartialEq, Debug, Serialize)]
 pub enum CaseStatus {
@@ -28,6 +27,7 @@ pub struct UpdateCaseInput {}
 
 #[derive(Default, Clone, Debug, Serialize)]
 pub struct Case {
+    #[serde(with = "super::uuid")]
     pub id: Uuid,
     pub name: String,
     pub url: String,

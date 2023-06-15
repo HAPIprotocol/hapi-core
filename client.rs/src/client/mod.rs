@@ -12,8 +12,7 @@ pub mod interface;
 pub mod network;
 pub mod reporter;
 pub mod result;
-
-pub type Uuid = u128;
+mod uuid;
 
 #[derive(Default, Clone, PartialEq, Debug, Serialize)]
 pub enum Category {
