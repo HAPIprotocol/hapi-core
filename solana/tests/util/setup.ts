@@ -11,41 +11,32 @@ import {
 
 import { TestToken } from "./token";
 
-export type Networks = Record<
-  string,
-  {
-    name: string;
-    stakeConfiguration: stakeConfiguration;
-    rewardConfiguration: rewardConfiguration;
-  }
->;
+export type Network = {
+  name: string;
+  stakeConfiguration: stakeConfiguration;
+  rewardConfiguration: rewardConfiguration;
+};
 
-export type Reporters = Record<
-  string,
-  {
-    name: string;
-    id: BN;
-    keypair: web3.Keypair;
-    role: keyof typeof ReporterRole;
-    url: string;
-  }
->;
+export type Reporter = {
+  name: string;
+  id: BN;
+  keypair: web3.Keypair;
+  role: keyof typeof ReporterRole;
+  url: string;
+};
 
-export type Cases = Record<
-  string,
-  {
-    id: BN;
-    name: string;
-    url: string;
-  }
->;
+export type Case = {
+  id: BN;
+  name: string;
+  url: string;
+};
 
 export function randomId(): BN {
   return new BN(Math.floor(Math.random() * Math.pow(2, 64)).toString());
 }
 
 export function getNetwotks(names: Array<string>) {
-  let networks: Networks = {};
+  let networks: Record<string, Network> = {};
 
   names.forEach((name) => {
     networks[name] = {
@@ -71,7 +62,7 @@ export function getNetwotks(names: Array<string>) {
 }
 
 export function getReporters() {
-  const reporters: Reporters = {
+  const reporters: Record<string, Reporter> = {
     publisher: {
       id: randomId(),
       name: "alice",
@@ -113,7 +104,7 @@ export function getReporters() {
 }
 
 export function getCases() {
-  const cases: Cases = {
+  const cases: Record<string, Case> = {
     firstCase: {
       id: randomId(),
       name: "safe network addresses",
@@ -136,7 +127,7 @@ export function getCases() {
 
 export async function setupNetworks(
   program: HapiCoreProgram,
-  networks: Networks,
+  networks: Record<string, Network>,
   rewardToken: PublicKey,
   stakeToken: PublicKey
 ) {
@@ -161,7 +152,7 @@ export async function setupNetworks(
 
 export async function setupReporters(
   program: HapiCoreProgram,
-  reporters: Reporters,
+  reporters: Record<string, Reporter>,
   network_name: string,
   stakeToken: TestToken
 ) {
@@ -193,28 +184,28 @@ export async function setupReporters(
   }
 }
 
-// TODO: createCases
-// export async function createCases(
-//   program: HapiCoreProgram,
-//   reporters: Reporters,
-//   network_name: string
-// ) {
-//   const wait: Promise<unknown>[] = [];
+export async function createCases(
+  program: HapiCoreProgram,
+  cases: Record<string, Case>,
+  network_name: string,
+  reporter: Reporter
+) {
+  const wait: Promise<unknown>[] = [];
 
-//   for (const key of Object.keys(reporters)) {
-//     const reporter = reporters[key];
+  for (const key of Object.keys(cases)) {
+    const cs = cases[key];
 
-//     wait.push(
-//       program.createCase(
-//         network_name,
-//         reporter.id.toString(),
-//         reporter.role,
-//         reporter.keypair.publicKey.toString(),
-//         reporter.name,
-//         reporter.url
-//       )
-//     );
-//   }
+    wait.push(
+      program.createCase(
+        network_name,
+        cs.id,
+        cs.name,
+        cs.url,
+        reporter.keypair,
+        reporter.id
+      )
+    );
+  }
 
-//   await Promise.all(wait);
-// }
+  await Promise.all(wait);
+}
