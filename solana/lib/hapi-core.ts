@@ -18,10 +18,8 @@ import {
   stakeConfiguration,
   rewardConfiguration,
   ReporterRole,
-  ReporterRoleVariants,
   ReporterRoleKeys,
   CaseStatus,
-  CaseStatusVariants,
   CaseStatusKeys,
 } from ".";
 
@@ -504,13 +502,14 @@ export class HapiCoreProgram {
 
     const caseData = await this.program.account.case.fetch(caseAccount);
     const case_status = status ? CaseStatus[status] : caseData.status;
+    // const case_status = CaseStatus.Closed;
     const case_url = url ?? caseData.url;
-    const case_name = name ?? caseData.name;
+    const case_name = name ?? caseData.name.toString();
 
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .updateCase(case_name, case_url, case_status)
+      .updateCase(case_name, case_status, case_url)
       .accounts({
         sender: signer.publicKey,
         network,

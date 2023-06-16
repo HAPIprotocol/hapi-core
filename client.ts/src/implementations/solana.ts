@@ -25,6 +25,7 @@ import {
   ReporterStatusFromString,
   CaseStatusFromString,
 } from "../util";
+import { CaseStatusKeys } from "@hapi.one/core-cli";
 
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
@@ -312,7 +313,19 @@ export class HapiCoreSolana implements HapiCore {
     url: string,
     status: CaseStatus
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterId = await this.getReporterAccount();
+
+    const transactionHash = await this.contract.updateCase(
+      this.network,
+      reporterId,
+      new BN(id),
+      this.provider.wallet as NodeWallet,
+      name,
+      url,
+      status.toString() as CaseStatusKeys
+    );
+
+    return { transactionHash };
   }
 
   async createAddress(
