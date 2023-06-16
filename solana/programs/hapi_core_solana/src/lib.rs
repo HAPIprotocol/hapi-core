@@ -190,7 +190,7 @@ pub mod hapi_core_solana {
         case.name = name;
         case.network = ctx.accounts.network.key();
         case.reporter = ctx.accounts.reporter.key();
-        case.status = CaseStatus::Open;
+        case.state = CaseState::Open;
         case.url = url;
         case.version = Case::VERSION;
 
@@ -201,13 +201,13 @@ pub mod hapi_core_solana {
         ctx: Context<UpdateCase>,
         name: String,
         url: String,
-        status: CaseStatus,
+        state: CaseState,
     ) -> Result<()> {
         let case = &mut ctx.accounts.case;
 
         case.name = name;
         case.url = url;
-        case.status = status;
+        case.state = state;
 
         Ok(())
     }
