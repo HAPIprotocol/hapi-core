@@ -223,28 +223,28 @@ export class HapiCoreProgram {
     appraiserStake?: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
-    let network_data = await this.program.account.network.fetch(network);
-    let stakeMint = token ?? network_data.stakeMint;
+    let networkData = await this.program.account.network.fetch(network);
+    let stakeMint = token ?? networkData.stakeMint;
 
     const stakeConfiguration = {
       unlockDuration: unlockDuration
         ? new BN(unlockDuration)
-        : network_data.stakeConfiguration.unlockDuration,
+        : networkData.stakeConfiguration.unlockDuration,
       validatorStake: validatorStake
         ? new BN(validatorStake)
-        : network_data.stakeConfiguration.validatorStake,
+        : networkData.stakeConfiguration.validatorStake,
       tracerStake: tracerStake
         ? new BN(tracerStake)
-        : network_data.stakeConfiguration.tracerStake,
+        : networkData.stakeConfiguration.tracerStake,
       publisherStake: publisherStake
         ? new BN(publisherStake)
-        : network_data.stakeConfiguration.publisherStake,
+        : networkData.stakeConfiguration.publisherStake,
       authorityStake: authorityStake
         ? new BN(authorityStake)
-        : network_data.stakeConfiguration.authorityStake,
+        : networkData.stakeConfiguration.authorityStake,
       appraiserStake: appraiserStake
         ? new BN(appraiserStake)
-        : network_data.stakeConfiguration.appraiserStake,
+        : networkData.stakeConfiguration.appraiserStake,
     };
 
     const transactionHash = await this.program.methods
@@ -268,22 +268,22 @@ export class HapiCoreProgram {
     assetConfirmationReward?: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
-    let network_data = await this.program.account.network.fetch(network);
-    let rewardMint = token ?? network_data.rewardMint;
+    let networkData = await this.program.account.network.fetch(network);
+    let rewardMint = token ?? networkData.rewardMint;
 
     const rewardConfiguration = {
       addressTracerReward: addressTracerReward
         ? new BN(addressTracerReward)
-        : network_data.rewardConfiguration.addressTracerReward,
+        : networkData.rewardConfiguration.addressTracerReward,
       addressConfirmationReward: addressConfirmationReward
         ? new BN(addressConfirmationReward)
-        : network_data.rewardConfiguration.addressConfirmationReward,
+        : networkData.rewardConfiguration.addressConfirmationReward,
       assetTracerReward: assetTracerReward
         ? new BN(assetTracerReward)
-        : network_data.rewardConfiguration.assetTracerReward,
+        : networkData.rewardConfiguration.assetTracerReward,
       assetConfirmationReward: assetConfirmationReward
         ? new BN(assetConfirmationReward)
-        : network_data.rewardConfiguration.assetConfirmationReward,
+        : networkData.rewardConfiguration.assetConfirmationReward,
     };
 
     const transactionHash = await this.program.methods
@@ -334,18 +334,13 @@ export class HapiCoreProgram {
     const reporter = this.findReporterAddress(network, id)[0];
     const reporterData = await this.program.account.reporter.fetch(reporter);
 
-    const reporter_role = role ? ReporterRole[role] : reporterData.role;
-    const reporter_url = url ?? reporterData.url;
-    const reporter_account = account ?? reporterData.account;
-    const reporter_name = name ?? reporterData.name.toString();
+    const reporterRole = role ? ReporterRole[role] : reporterData.role;
+    const reporterUrl = url ?? reporterData.url;
+    const reporterAccount = account ?? reporterData.account;
+    const reporterName = name ?? reporterData.name.toString();
 
     const transactionHash = await this.program.methods
-      .updateReporter(
-        reporter_account,
-        reporter_name,
-        reporter_role,
-        reporter_url
-      )
+      .updateReporter(reporterAccount, reporterName, reporterRole, reporterUrl)
       .accounts({
         authority: this.program.provider.publicKey,
         reporter,
@@ -501,15 +496,15 @@ export class HapiCoreProgram {
     const caseAccount = this.findCaseAddress(network, id)[0];
 
     const caseData = await this.program.account.case.fetch(caseAccount);
-    const case_status = status ? CaseStatus[status] : caseData.status;
-    // const case_status = CaseStatus.Closed;
-    const case_url = url ?? caseData.url;
-    const case_name = name ?? caseData.name.toString();
+    const caseStatus = status ? CaseStatus[status] : caseData.status;
+    // const caseStatus = CaseStatus.Closed;
+    const caseUrl = url ?? caseData.url;
+    const caseName = name ?? caseData.name.toString();
 
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .updateCase(case_name, case_status, case_url)
+      .updateCase(caseName, caseStatus, caseUrl)
       .accounts({
         sender: signer.publicKey,
         network,

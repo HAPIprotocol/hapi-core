@@ -150,34 +150,14 @@ export async function setupNetworks(
         network.name,
         network.stakeConfiguration,
         network.rewardConfiguration,
-        rewardToken.toString(),
-        stakeToken.toString()
+        rewardToken,
+        stakeToken
       )
     );
   }
 
   await Promise.all(wait);
 }
-
-// const networkStakeTokenAccount = (
-//   await Token.getOrCreateAssociatedTokenAccount(
-//     this.program.provider.connection,
-//     signer,
-//     networkData.stakeMint,
-//     network,
-//     true
-//   )
-// ).address;
-
-// const reporterStakeTokenAccount = (
-//   await Token.getOrCreateAssociatedTokenAccount(
-//     this.program.provider.connection,
-//     signer,
-//     networkData.stakeMint,
-//     signer.publicKey,
-//     false
-//   )
-// ).address;
 
 export async function setupReporters(
   program: HapiCoreProgram,
@@ -190,9 +170,9 @@ export async function setupReporters(
 
     await program.createReporter(
       network_name,
-      reporter.id.toString(),
+      reporter.id,
       reporter.role,
-      reporter.keypair.publicKey.toString(),
+      reporter.keypair.publicKey,
       reporter.name,
       reporter.url
     );
@@ -208,8 +188,7 @@ export async function setupReporters(
     await program.activateReporter(
       network_name,
       reporter.keypair,
-      undefined,
-      reporter.id.toString()
+      new BN(reporter.id)
     );
   }
 }
