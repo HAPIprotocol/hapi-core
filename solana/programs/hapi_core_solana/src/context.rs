@@ -281,8 +281,8 @@ pub struct Unstake<'info> {
 
 #[derive(Accounts)]
 #[instruction(
-    bump: u8,
     case_id: u64,
+    bump: u8,
 )]
 pub struct CreateCase<'info> {
     #[account(mut)]

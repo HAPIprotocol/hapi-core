@@ -1,7 +1,11 @@
 import { Provider, AnchorProvider, web3, BN } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
-import { HapiCoreProgram, ReporterRoleKeys } from "../../../solana/lib";
+import {
+  HapiCoreProgram,
+  ReporterRoleKeys,
+  CaseStatusKeys,
+} from "../../../solana/lib";
 
 import {
   Addr,
@@ -25,7 +29,6 @@ import {
   ReporterStatusFromString,
   CaseStatusFromString,
 } from "../util";
-import { CaseStatusKeys } from "@hapi.one/core-cli";
 
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;

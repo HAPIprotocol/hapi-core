@@ -6,7 +6,7 @@ import {
   Wallet,
   AnchorProvider,
 } from "@coral-xyz/anchor";
-import { PublicKey, Signer } from "@solana/web3.js";
+import { Signer } from "@solana/web3.js";
 import * as Token from "@solana/spl-token";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
@@ -418,25 +418,16 @@ export class HapiCoreProgram {
 
     let signer = wallet as Signer;
 
-    const networkStakeTokenAccount = (
-      await Token.getOrCreateAssociatedTokenAccount(
-        this.program.provider.connection,
-        signer,
-        networkData.stakeMint,
-        network,
-        true
-      )
-    ).address;
+    const networkStakeTokenAccount = Token.getAssociatedTokenAddressSync(
+      networkData.stakeMint,
+      network,
+      true
+    );
 
-    const reporterStakeTokenAccount = (
-      await Token.getOrCreateAssociatedTokenAccount(
-        this.program.provider.connection,
-        signer,
-        networkData.stakeMint,
-        signer.publicKey,
-        false
-      )
-    ).address;
+    const reporterStakeTokenAccount = Token.getAssociatedTokenAddressSync(
+      networkData.stakeMint,
+      signer.publicKey
+    );
 
     const transactionHash = await this.program.methods
       .unstake()
@@ -496,15 +487,16 @@ export class HapiCoreProgram {
     const caseAccount = this.findCaseAddress(network, id)[0];
 
     const caseData = await this.program.account.case.fetch(caseAccount);
-    const caseStatus = status ? CaseStatus[status] : caseData.status;
-    // const caseStatus = CaseStatus.Closed;
+    const caseStatus = status
+      ? CaseStatus[status]
+      : CaseStatus[caseData.status.toString() as CaseStatusKeys];
     const caseUrl = url ?? caseData.url;
     const caseName = name ?? caseData.name.toString();
 
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .updateCase(caseName, caseStatus, caseUrl)
+      .updateCase(caseName, caseUrl, caseStatus)
       .accounts({
         sender: signer.publicKey,
         network,
