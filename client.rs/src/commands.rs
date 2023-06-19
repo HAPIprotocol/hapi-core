@@ -2,18 +2,21 @@ use anyhow::anyhow;
 use clap::ArgMatches;
 use serde_json::json;
 
-use hapi_core::client::{
-    address::{CreateAddressInput, UpdateAddressInput},
-    asset::{CreateAssetInput, UpdateAssetInput},
-    case::{CreateCaseInput, UpdateCaseInput},
-    configuration::{RewardConfiguration, StakeConfiguration},
-    reporter::{CreateReporterInput, UpdateReporterInput},
+use hapi_core::{
+    client::{
+        address::{CreateAddressInput, UpdateAddressInput},
+        asset::{CreateAssetInput, UpdateAssetInput},
+        case::{CreateCaseInput, UpdateCaseInput},
+        configuration::{RewardConfiguration, StakeConfiguration},
+        reporter::{CreateReporterInput, UpdateReporterInput},
+    },
+    Amount,
 };
 
-use crate::{CommandContext, CommandOutput};
+use crate::{CommandOutput, HapiCoreCommandContext, TokenCommandContext};
 
 pub async fn get_authority(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let authority = context.hapi_core.get_authority().await?;
 
@@ -26,7 +29,7 @@ pub async fn get_authority(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn set_authority(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let authority = args
         .get_one::<String>("authority")
@@ -43,7 +46,7 @@ pub async fn set_authority(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_stake_configuration(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     // TODO: validate address depending on network
     let token = args
@@ -101,7 +104,7 @@ pub async fn update_stake_configuration(args: &ArgMatches) -> anyhow::Result<()>
 }
 
 pub async fn get_stake_configuration(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let configuration = context.hapi_core.get_stake_configuration().await?;
 
@@ -116,7 +119,7 @@ pub async fn get_stake_configuration(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_reward_configuration(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     // TODO: validate address depending on network
     let token = args
@@ -153,7 +156,7 @@ pub async fn update_reward_configuration(args: &ArgMatches) -> anyhow::Result<()
 }
 
 pub async fn get_reward_configuration(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let configuration = context.hapi_core.get_reward_configuration().await?;
 
@@ -168,7 +171,7 @@ pub async fn get_reward_configuration(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_reporters(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let skip = args
         .get_one::<String>("skip")
@@ -195,7 +198,7 @@ pub async fn get_reporters(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let reporter_id = args
         .get_one::<String>("id")
@@ -214,7 +217,7 @@ pub async fn get_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_reporter_count(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let count = context.hapi_core.get_reporter_count().await?;
 
@@ -229,7 +232,7 @@ pub async fn get_reporter_count(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn create_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let id = args
         .get_one::<String>("id")
@@ -281,7 +284,7 @@ pub async fn create_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let id = args
         .get_one::<String>("id")
@@ -332,7 +335,7 @@ pub async fn update_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn activate_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.activate_reporter().await?;
 
@@ -344,7 +347,7 @@ pub async fn activate_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn deactivate_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.deactivate_reporter().await?;
 
@@ -357,7 +360,7 @@ pub async fn deactivate_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn unstake_reporter(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.unstake_reporter().await?;
 
@@ -370,7 +373,7 @@ pub async fn unstake_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn create_case(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.create_case(CreateCaseInput {}).await?;
 
@@ -383,7 +386,7 @@ pub async fn create_case(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_case(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.update_case(UpdateCaseInput {}).await?;
 
@@ -396,7 +399,7 @@ pub async fn update_case(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_case(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let case_id = args
         .get_one::<String>("case-id")
@@ -415,7 +418,7 @@ pub async fn get_case(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_case_count(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let count = context.hapi_core.get_case_count().await?;
 
@@ -430,7 +433,7 @@ pub async fn get_case_count(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_cases(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let skip = args
         .get_one::<String>("skip")
@@ -457,7 +460,7 @@ pub async fn get_cases(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn create_address(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let address = args
         .get_one::<String>("address")
@@ -501,7 +504,7 @@ pub async fn create_address(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_address(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let address = args
         .get_one::<String>("address")
@@ -545,7 +548,7 @@ pub async fn update_address(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_address(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let addr = args
         .get_one::<String>("address")
@@ -564,7 +567,7 @@ pub async fn get_address(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_address_count(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let count = context.hapi_core.get_address_count().await?;
 
@@ -579,7 +582,7 @@ pub async fn get_address_count(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_addresses(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let skip = args
         .get_one::<String>("skip")
@@ -601,7 +604,7 @@ pub async fn get_addresses(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn create_asset(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.create_asset(CreateAssetInput {}).await?;
 
@@ -614,7 +617,7 @@ pub async fn create_asset(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn update_asset(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let tx = context.hapi_core.update_asset(UpdateAssetInput {}).await?;
 
@@ -627,7 +630,7 @@ pub async fn update_asset(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_asset(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let addr = args
         .get_one::<String>("address")
@@ -652,7 +655,7 @@ pub async fn get_asset(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_asset_count(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let count = context.hapi_core.get_asset_count().await?;
 
@@ -667,7 +670,7 @@ pub async fn get_asset_count(args: &ArgMatches) -> anyhow::Result<()> {
 }
 
 pub async fn get_assets(args: &ArgMatches) -> anyhow::Result<()> {
-    let context = CommandContext::try_from(args)?;
+    let context = HapiCoreCommandContext::try_from(args)?;
 
     let skip = args
         .get_one::<String>("skip")
@@ -688,6 +691,69 @@ pub async fn get_assets(args: &ArgMatches) -> anyhow::Result<()> {
         CommandOutput::Plain => {
             println!("{:#?}", assets)
         }
+    }
+
+    Ok(())
+}
+
+pub async fn transfer_token(args: &ArgMatches) -> anyhow::Result<()> {
+    let context = TokenCommandContext::try_from(args)?;
+
+    let to = args
+        .get_one::<String>("to")
+        .ok_or(anyhow!("`to` is required"))?;
+
+    let amount: Amount = args
+        .get_one::<String>("amount")
+        .ok_or(anyhow!("`amount` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`amount`: {}", e))?;
+
+    let tx = context.token.transfer(to, amount).await?;
+
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
+        CommandOutput::Plain => println!("{}", tx.hash),
+    }
+
+    Ok(())
+}
+
+pub async fn approve_token(args: &ArgMatches) -> anyhow::Result<()> {
+    let context = TokenCommandContext::try_from(args)?;
+
+    let spender = args
+        .get_one::<String>("spender")
+        .ok_or(anyhow!("`spender` is required"))?;
+
+    let amount: Amount = args
+        .get_one::<String>("amount")
+        .ok_or(anyhow!("`amount` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`amount`: {}", e))?;
+
+    let tx = context.token.approve(spender, amount).await?;
+
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
+        CommandOutput::Plain => println!("{}", tx.hash),
+    }
+
+    Ok(())
+}
+
+pub async fn balance_token(args: &ArgMatches) -> anyhow::Result<()> {
+    let context = TokenCommandContext::try_from(args)?;
+
+    let address = args
+        .get_one::<String>("address")
+        .ok_or(anyhow!("`address` is required"))?;
+
+    let balance = context.token.balance(address).await?;
+
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "balance": balance })),
+        CommandOutput::Plain => println!("{}", balance),
     }
 
     Ok(())

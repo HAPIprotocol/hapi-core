@@ -8,8 +8,9 @@ use crate::{
         configuration::{RewardConfiguration, StakeConfiguration},
         reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         result::{Result, Tx},
+        token::TokenContract,
     },
-    HapiCore,
+    Amount, HapiCore,
 };
 
 pub struct HapiCoreNear {}
@@ -115,5 +116,32 @@ impl HapiCore for HapiCoreNear {
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
         unimplemented!()
+    }
+}
+
+pub struct TokenContractNear {}
+
+impl TokenContractNear {
+    pub fn new() -> Result<Self> {
+        Ok(Self {})
+    }
+}
+
+#[async_trait]
+impl TokenContract for TokenContractNear {
+    fn is_approve_needed(&self) -> bool {
+        false
+    }
+
+    async fn transfer(&self, _to: &str, _amount: Amount) -> Result<Tx> {
+        unimplemented!("`transfer` is not implemented for Near");
+    }
+
+    async fn approve(&self, _spender: &str, _amount: Amount) -> Result<Tx> {
+        unimplemented!("`approve` is not implemented for Near");
+    }
+
+    async fn balance(&self, _addr: &str) -> Result<Amount> {
+        unimplemented!("`balance` is not implemented for Near");
     }
 }

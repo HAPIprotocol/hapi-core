@@ -488,7 +488,8 @@ contract HapiCore is OwnableUpgradeable {
                 msg.sender,
                 address(this),
                 amount
-            )
+            ),
+            "Insufficient tokens or allowance to stake"
         );
 
         reporter.status = ReporterStatus.Active;

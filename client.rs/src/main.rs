@@ -1,20 +1,13 @@
+use clap::{Arg, ArgGroup, ArgMatches, Command};
 use std::str::FromStr;
 
-use clap::{Arg, ArgGroup, ArgMatches, Command};
-
 use hapi_core::{
+    client::{implementations::TokenContractSolana, token::TokenContract},
     HapiCore, HapiCoreEvm, HapiCoreEvmOptions, HapiCoreNear, HapiCoreNetwork, HapiCoreSolana,
+    TokenContractEvm, TokenContractNear,
 };
 
 mod commands;
-use commands::{
-    activate_reporter, create_address, create_asset, create_case, create_reporter,
-    deactivate_reporter, get_address, get_address_count, get_addresses, get_asset, get_asset_count,
-    get_assets, get_authority, get_case, get_case_count, get_cases, get_reporter,
-    get_reporter_count, get_reporters, get_reward_configuration, get_stake_configuration,
-    set_authority, unstake_reporter, update_address, update_asset, update_case, update_reporter,
-    update_reward_configuration, update_stake_configuration,
-};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -370,54 +363,137 @@ async fn main() -> anyhow::Result<()> {
                         ),
                 ),
         )
+        .subcommand(
+            Command::new("token")
+                .about("Token operations")
+                .subcommand_required(true)
+                .subcommand(
+                    Command::new("transfer")
+                        .about("Transfer token")
+                        .arg(
+                            Arg::new("token-contract")
+                                .value_name("TOKEN_CONTRACT")
+                                .index(1)
+                                .required(true)
+                                .help("Token contract address"),
+                        )
+                        .arg(
+                            Arg::new("to")
+                                .value_name("TO")
+                                .index(2)
+                                .required(true)
+                                .help("Receiver address"),
+                        )
+                        .arg(
+                            Arg::new("amount")
+                                .value_name("AMOUNT")
+                                .index(3)
+                                .required(true)
+                                .help("Amount to transfer"),
+                        ),
+                )
+                .subcommand(
+                    Command::new("approve")
+                        .about("Approve token allowance")
+                        .arg(
+                            Arg::new("token-contract")
+                                .value_name("TOKEN_CONTRACT")
+                                .index(1)
+                                .required(true)
+                                .help("Token contract address"),
+                        )
+                        .arg(
+                            Arg::new("spender")
+                                .value_name("SPENDER")
+                                .index(2)
+                                .required(true)
+                                .help("Address that receives allowance"),
+                        )
+                        .arg(
+                            Arg::new("amount")
+                                .value_name("AMOUNT")
+                                .index(3)
+                                .required(true)
+                                .help("Amount to approve"),
+                        ),
+                )
+                .subcommand(
+                    Command::new("balance")
+                        .about("Get token balance")
+                        .arg(
+                            Arg::new("token-contract")
+                                .value_name("TOKEN_CONTRACT")
+                                .index(1)
+                                .required(true)
+                                .help("Token contract address"),
+                        )
+                        .arg(
+                            Arg::new("address")
+                                .value_name("ADDRESS")
+                                .index(2)
+                                .required(true)
+                                .help("Address to get balance for"),
+                        ),
+                ),
+        )
         .get_matches();
 
     match matches.subcommand() {
         Some(("authority", matches)) => match matches.subcommand() {
-            Some(("get", matches)) => get_authority(matches).await?,
-            Some(("set", matches)) => set_authority(matches).await?,
+            Some(("get", matches)) => commands::get_authority(matches).await?,
+            Some(("set", matches)) => commands::set_authority(matches).await?,
             _ => unreachable!(),
         },
         Some(("configuration", matches)) => match matches.subcommand() {
-            Some(("get-stake", matches)) => get_stake_configuration(matches).await?,
-            Some(("update-stake", matches)) => update_stake_configuration(matches).await?,
-            Some(("get-reward", matches)) => get_reward_configuration(matches).await?,
-            Some(("update-reward", matches)) => update_reward_configuration(matches).await?,
+            Some(("get-stake", matches)) => commands::get_stake_configuration(matches).await?,
+            Some(("update-stake", matches)) => {
+                commands::update_stake_configuration(matches).await?
+            }
+            Some(("get-reward", matches)) => commands::get_reward_configuration(matches).await?,
+            Some(("update-reward", matches)) => {
+                commands::update_reward_configuration(matches).await?
+            }
             _ => unreachable!(),
         },
-        Some(("reporter", mathces)) => match mathces.subcommand() {
-            Some(("create", matches)) => create_reporter(matches).await?,
-            Some(("update", matches)) => update_reporter(matches).await?,
-            Some(("get", matches)) => get_reporter(matches).await?,
-            Some(("count", matches)) => get_reporter_count(matches).await?,
-            Some(("list", matches)) => get_reporters(matches).await?,
-            Some(("activate", matches)) => activate_reporter(matches).await?,
-            Some(("deactivate", matches)) => deactivate_reporter(matches).await?,
-            Some(("unstake", matches)) => unstake_reporter(matches).await?,
+        Some(("reporter", matches)) => match matches.subcommand() {
+            Some(("create", matches)) => commands::create_reporter(matches).await?,
+            Some(("update", matches)) => commands::update_reporter(matches).await?,
+            Some(("get", matches)) => commands::get_reporter(matches).await?,
+            Some(("count", matches)) => commands::get_reporter_count(matches).await?,
+            Some(("list", matches)) => commands::get_reporters(matches).await?,
+            Some(("activate", matches)) => commands::activate_reporter(matches).await?,
+            Some(("deactivate", matches)) => commands::deactivate_reporter(matches).await?,
+            Some(("unstake", matches)) => commands::unstake_reporter(matches).await?,
             _ => unreachable!(),
         },
-        Some(("case", mathces)) => match mathces.subcommand() {
-            Some(("create", matches)) => create_case(matches).await?,
-            Some(("update", matches)) => update_case(matches).await?,
-            Some(("get", matches)) => get_case(matches).await?,
-            Some(("count", matches)) => get_case_count(matches).await?,
-            Some(("list", matches)) => get_cases(matches).await?,
+        Some(("case", matches)) => match matches.subcommand() {
+            Some(("create", matches)) => commands::create_case(matches).await?,
+            Some(("update", matches)) => commands::update_case(matches).await?,
+            Some(("get", matches)) => commands::get_case(matches).await?,
+            Some(("count", matches)) => commands::get_case_count(matches).await?,
+            Some(("list", matches)) => commands::get_cases(matches).await?,
             _ => unreachable!(),
         },
-        Some(("address", mathces)) => match mathces.subcommand() {
-            Some(("create", matches)) => create_address(matches).await?,
-            Some(("update", matches)) => update_address(matches).await?,
-            Some(("get", matches)) => get_address(matches).await?,
-            Some(("count", matches)) => get_address_count(matches).await?,
-            Some(("list", matches)) => get_addresses(matches).await?,
+        Some(("address", matches)) => match matches.subcommand() {
+            Some(("create", matches)) => commands::create_address(matches).await?,
+            Some(("update", matches)) => commands::update_address(matches).await?,
+            Some(("get", matches)) => commands::get_address(matches).await?,
+            Some(("count", matches)) => commands::get_address_count(matches).await?,
+            Some(("list", matches)) => commands::get_addresses(matches).await?,
             _ => unreachable!(),
         },
-        Some(("asset", mathces)) => match mathces.subcommand() {
-            Some(("create", matches)) => create_asset(matches).await?,
-            Some(("update", matches)) => update_asset(matches).await?,
-            Some(("get", matches)) => get_asset(matches).await?,
-            Some(("count", matches)) => get_asset_count(matches).await?,
-            Some(("list", matches)) => get_assets(matches).await?,
+        Some(("asset", matches)) => match matches.subcommand() {
+            Some(("create", matches)) => commands::create_asset(matches).await?,
+            Some(("update", matches)) => commands::update_asset(matches).await?,
+            Some(("get", matches)) => commands::get_asset(matches).await?,
+            Some(("count", matches)) => commands::get_asset_count(matches).await?,
+            Some(("list", matches)) => commands::get_assets(matches).await?,
+            _ => unreachable!(),
+        },
+        Some(("token", matches)) => match matches.subcommand() {
+            Some(("transfer", matches)) => commands::transfer_token(matches).await?,
+            Some(("approve", matches)) => commands::approve_token(matches).await?,
+            Some(("balance", matches)) => commands::balance_token(matches).await?,
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -445,12 +521,12 @@ impl FromStr for CommandOutput {
     }
 }
 
-struct CommandContext {
+struct HapiCoreCommandContext {
     pub hapi_core: Box<dyn HapiCore>,
     pub output: CommandOutput,
 }
 
-impl TryFrom<&ArgMatches> for CommandContext {
+impl TryFrom<&ArgMatches> for HapiCoreCommandContext {
     type Error = anyhow::Error;
 
     fn try_from(matches: &ArgMatches) -> Result<Self, Self::Error> {
@@ -483,11 +559,13 @@ impl TryFrom<&ArgMatches> for CommandContext {
                 provider_url,
                 contract_address,
                 private_key,
+                chain_id: None,
             })?),
             HapiCoreNetwork::Bsc => Box::new(HapiCoreEvm::new(HapiCoreEvmOptions {
                 provider_url,
                 contract_address,
                 private_key,
+                chain_id: None,
             })?),
             HapiCoreNetwork::Solana => Box::new(HapiCoreSolana::new()?),
             HapiCoreNetwork::Bitcoin => Box::new(HapiCoreSolana::new()?),
@@ -495,5 +573,60 @@ impl TryFrom<&ArgMatches> for CommandContext {
         };
 
         Ok(Self { hapi_core, output })
+    }
+}
+
+struct TokenCommandContext {
+    pub token: Box<dyn TokenContract>,
+    pub output: CommandOutput,
+}
+
+impl TryFrom<&ArgMatches> for TokenCommandContext {
+    type Error = anyhow::Error;
+
+    fn try_from(matches: &ArgMatches) -> Result<Self, Self::Error> {
+        let network: HapiCoreNetwork = matches
+            .get_one::<String>("network")
+            .expect("`network` is required")
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Failed to parse `network`: {:?}", e))?;
+
+        let provider_url = matches
+            .get_one::<String>("provider-url")
+            .expect("`provider-url` is required")
+            .to_owned();
+
+        let contract_address = matches
+            .get_one::<String>("token-contract")
+            .expect("`token-contract` is required")
+            .to_owned();
+
+        let private_key: Option<String> = matches.get_one::<String>("private-key").cloned();
+
+        let output: CommandOutput = matches
+            .get_one::<String>("output")
+            .unwrap_or(&"plain".to_string())
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Failed to parse `output`: {:?}", e))?;
+
+        let token: Box<dyn TokenContract> = match network {
+            HapiCoreNetwork::Ethereum => Box::new(TokenContractEvm::new(HapiCoreEvmOptions {
+                provider_url,
+                contract_address,
+                private_key,
+                chain_id: None,
+            })?),
+            HapiCoreNetwork::Bsc => Box::new(TokenContractEvm::new(HapiCoreEvmOptions {
+                provider_url,
+                contract_address,
+                private_key,
+                chain_id: None,
+            })?),
+            HapiCoreNetwork::Solana => Box::new(TokenContractSolana::new()?),
+            HapiCoreNetwork::Bitcoin => Box::new(TokenContractSolana::new()?),
+            HapiCoreNetwork::Near => Box::new(TokenContractNear::new()?),
+        };
+
+        Ok(Self { token, output })
     }
 }

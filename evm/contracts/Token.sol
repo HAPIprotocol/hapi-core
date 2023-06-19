@@ -9,4 +9,3 @@ contract Token is ERC20 {
         _mint(msg.sender, 1000000000);
     }
 }
-

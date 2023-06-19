@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use ethers::{
-    contract::ContractError,
     prelude::{abigen, SignerMiddleware},
     providers::{Http, Provider as EthersProvider},
     signers::{LocalWallet, Signer as EthersSigner},
@@ -22,24 +21,25 @@ use crate::{
     HapiCore,
 };
 
-pub struct HapiCoreEvmOptions {
-    pub provider_url: String,
-    pub contract_address: String,
-    pub private_key: Option<String>,
-}
+pub mod error;
+pub mod options;
+pub mod token;
+
+use error::map_ethers_error;
+use options::HapiCoreEvmOptions;
 
 abigen!(
-    CONTRACT,
+    HAPI_CORE_CONTRACT,
     "../evm/artifacts/contracts/HapiCore.sol/HapiCore.json"
 );
 
-type Provider = EthersProvider<Http>;
-type Signer = SignerMiddleware<Provider, LocalWallet>;
+pub(super) type Provider = EthersProvider<Http>;
+pub(super) type Signer = SignerMiddleware<Provider, LocalWallet>;
 
 pub struct HapiCoreEvm {
     pub provider: Provider,
     pub signer: LocalWallet,
-    pub contract: CONTRACT<Signer>,
+    pub contract: HAPI_CORE_CONTRACT<Signer>,
     pub client: Arc<Signer>,
 }
 
@@ -50,7 +50,7 @@ impl HapiCoreEvm {
 
         let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
             .map_err(|e| ClientError::Ethers(format!("`private_key`: {e}")))?
-            .with_chain_id(31337_u64);
+            .with_chain_id(options.chain_id.unwrap_or(31337_u64));
 
         let client = Signer::new(provider.clone(), signer.clone());
 
@@ -61,7 +61,8 @@ impl HapiCoreEvm {
             .parse()
             .map_err(|e| ClientError::EthAddressParse(format!("`contract_address``: {e}")))?;
 
-        let contract: CONTRACT<Signer> = CONTRACT::new(contract_address, client.clone());
+        let contract: HAPI_CORE_CONTRACT<Signer> =
+            HAPI_CORE_CONTRACT::new(contract_address, client.clone());
 
         Ok(Self {
             provider,
@@ -72,8 +73,8 @@ impl HapiCoreEvm {
     }
 }
 
-impl From<contract::StakeConfiguration> for StakeConfiguration {
-    fn from(config: contract::StakeConfiguration) -> Self {
+impl From<hapi_core_contract::StakeConfiguration> for StakeConfiguration {
+    fn from(config: hapi_core_contract::StakeConfiguration) -> Self {
         StakeConfiguration {
             token: to_checksum(&config.token, None),
             unlock_duration: config.unlock_duration.as_u64(),
@@ -85,8 +86,8 @@ impl From<contract::StakeConfiguration> for StakeConfiguration {
     }
 }
 
-impl From<contract::RewardConfiguration> for RewardConfiguration {
-    fn from(config: contract::RewardConfiguration) -> Self {
+impl From<hapi_core_contract::RewardConfiguration> for RewardConfiguration {
+    fn from(config: hapi_core_contract::RewardConfiguration) -> Self {
         RewardConfiguration {
             token: to_checksum(&config.token, None),
             address_confirmation_reward: config.address_confirmation_reward.into(),
@@ -95,11 +96,10 @@ impl From<contract::RewardConfiguration> for RewardConfiguration {
     }
 }
 
-impl TryFrom<contract::Reporter> for Reporter {
+impl TryFrom<hapi_core_contract::Reporter> for Reporter {
     type Error = ClientError;
 
-    fn try_from(reporter: contract::Reporter) -> Result<Self> {
-        dbg!(&reporter);
+    fn try_from(reporter: hapi_core_contract::Reporter) -> Result<Self> {
         Ok(Reporter {
             id: Uuid::from_u128(reporter.id),
             account: to_checksum(&reporter.account, None),
@@ -124,7 +124,7 @@ impl HapiCore for HapiCoreEvm {
             .set_authority(authority)
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("set_authority failed: {e}")))?
+            .map_err(|e| map_ethers_error("set_authority", e))?
             .await?
             .map_or_else(
                 || {
@@ -166,7 +166,7 @@ impl HapiCore for HapiCoreEvm {
             )
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("update_stake_configuration failed: {e}")))?
+            .map_err(|e| map_ethers_error("update_stake_configuration", e))?
             .await?
             .map_or_else(
                 || {
@@ -204,7 +204,7 @@ impl HapiCore for HapiCoreEvm {
             )
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("update_reward_configuration failed: {e}")))?
+            .map_err(|e| map_ethers_error("update_reward_configuration", e))?
             .await?
             .map_or_else(
                 || {
@@ -245,7 +245,7 @@ impl HapiCore for HapiCoreEvm {
             )
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("create_reporter failed: {e}")))?
+            .map_err(|e| map_ethers_error("create_reporter", e))?
             .await?
             .map_or_else(
                 || {
@@ -277,7 +277,7 @@ impl HapiCore for HapiCoreEvm {
             )
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("update_reporter failed: {e}")))?
+            .map_err(|e| map_ethers_error("update_reporter", e))?
             .await?
             .map_or_else(
                 || {
@@ -303,15 +303,39 @@ impl HapiCore for HapiCoreEvm {
             .map_err(|e| map_ethers_error("get_reporter", e))
             .map(|c| c.try_into())?
     }
+
     async fn get_reporter_count(&self) -> Result<u64> {
-        unimplemented!()
+        self.contract
+            .get_reporter_count()
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_reporter_count", e))
+            .map(|c| c.as_u64())
     }
+
     async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
         unimplemented!()
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        self.contract
+            .activate_reporter()
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("activate_reporter", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`activate_reporter` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
     async fn deactivate_reporter(&self) -> Result<Tx> {
         unimplemented!()
@@ -366,22 +390,5 @@ impl HapiCore for HapiCoreEvm {
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
         unimplemented!()
-    }
-}
-
-fn map_ethers_error<M: ethers_providers::Middleware>(
-    caller: &str,
-    e: ContractError<M>,
-) -> ClientError {
-    match e {
-        // TODO: get rid of black magic parsing
-        ContractError::Revert(e) => ClientError::Ethers(format!(
-            "`{caller}` reverted with: {}",
-            String::from_utf8_lossy(&e[64..])
-                .chars()
-                .filter(|c| !c.is_control())
-                .collect::<String>()
-        )),
-        _ => ClientError::Ethers(format!("`{caller}` failed: {e}")),
     }
 }

@@ -12,6 +12,7 @@ pub mod interface;
 pub mod network;
 pub mod reporter;
 pub mod result;
+pub mod token;
 mod uuid;
 
 #[derive(Default, Clone, PartialEq, Debug, Serialize)]

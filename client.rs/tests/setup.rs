@@ -17,9 +17,9 @@ pub const PRIVATE_KEY_2: &str =
 pub const REPORTER_UUID_2: &str = "2ef0a8f9-66c8-4be2-981a-b9236bb43f61";
 
 pub struct Setup {
-    pub token: String,
+    pub token_contract: String,
     port: u16,
-    contract_address: String,
+    pub contract_address: String,
     network: String,
     provider_url: String,
 }
@@ -109,7 +109,7 @@ impl Setup {
         .unwrap();
 
         Setup {
-            token: "0x5FbDB2315678afecb367f032d93F642f64180aa3".to_string(),
+            token_contract: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9".to_string(),
             contract_address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string(),
             network: "ethereum".to_string(),
             provider_url: format!("http://127.0.0.1:{port}"),
@@ -126,7 +126,7 @@ impl Setup {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        let token = self.token.clone();
+        let token = self.token_contract.clone();
         let contract_address = self.contract_address.clone();
         let network = self.network.clone();
         let provider_url = self.provider_url.clone();
@@ -135,7 +135,7 @@ impl Setup {
             Command::new("./target/debug/hapi-core-cli")
                 .args(args)
                 .env("OUTPUT", "json")
-                .env("TOKEN", token)
+                .env("TOKEN_CONTRACT", token)
                 .env("CONTRACT_ADDRESS", contract_address)
                 .env("NETWORK", network)
                 .env("PROVIDER_URL", provider_url),
