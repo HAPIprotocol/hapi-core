@@ -71,13 +71,17 @@ pub mod hapi_core_solana {
 
     pub fn create_reporter(
         ctx: Context<CreateReporter>,
-        reporter_id: u64,
+        reporter_id: u128,
         account: Pubkey,
         name: String,
         role: ReporterRole,
         url: String,
         bump: u8,
     ) -> Result<()> {
+        if uuid::Uuid::from_u128(reporter_id).get_version_num() != UUID_VERSION {
+            return print_error(ErrorCode::InvalidUUID);
+        }
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.bump = bump;
@@ -186,11 +190,11 @@ pub mod hapi_core_solana {
         url: String,
         bump: u8,
     ) -> Result<()> {
-        let case = &mut ctx.accounts.case;
-
         if uuid::Uuid::from_u128(case_id).get_version_num() != UUID_VERSION {
-            return print_error(ErrorCode::InvalidCaseId);
+            return print_error(ErrorCode::InvalidUUID);
         }
+
+        let case = &mut ctx.accounts.case;
 
         case.bump = bump;
         case.id = case_id;

@@ -26,8 +26,8 @@ pub enum ErrorCode {
     UpdatedMint,
     #[msg("Account is not authorized to perform this action")]
     Unauthorized,
-    #[msg("Invalid case Id")]
-    InvalidCaseId,
+    #[msg("Invalid UUID")]
+    InvalidUUID,
 }
 
 pub fn print_error(error: ErrorCode) -> Result<()> {

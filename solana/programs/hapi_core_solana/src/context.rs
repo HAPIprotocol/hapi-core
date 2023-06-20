@@ -126,7 +126,7 @@ pub struct SetAuthority<'info> {
 
 #[derive(Accounts)]
 #[instruction(
-    reporter_id: u64,
+    reporter_id: u128,
     bump: u8,
 )]
 pub struct CreateReporter<'info> {
@@ -144,7 +144,7 @@ pub struct CreateReporter<'info> {
         init,
         payer = authority,
         owner = id(),
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter_id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter_id.to_be_bytes()],
         bump,
         space = Reporter::LEN + ACCOUNT_RESERVE_SPACE
     )]
@@ -168,7 +168,7 @@ pub struct UpdateReporter<'info> {
     #[account(
         mut,
         owner = id(),
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -190,7 +190,7 @@ pub struct ActivateReporter<'info> {
         owner = id(),
         constraint = reporter.status == ReporterStatus::Inactive @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -231,7 +231,7 @@ pub struct DeactivateReporter<'info> {
         owner = id(),
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -254,7 +254,7 @@ pub struct Unstake<'info> {
         constraint = reporter.status == ReporterStatus::Unstaking @ ErrorCode::InvalidReporterStatus,
         constraint = reporter.account == signer.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.unlock_timestamp <= Clock::get()?.unix_timestamp as u64 @ ErrorCode::ReleaseEpochInFuture,
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -299,7 +299,7 @@ pub struct CreateCase<'info> {
         constraint = reporter.role == ReporterRole::Publisher || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
@@ -334,7 +334,7 @@ pub struct UpdateCase<'info> {
             && case.reporter == reporter.key()) || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
-        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_le_bytes()],
+        seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,

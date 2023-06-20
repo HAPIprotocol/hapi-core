@@ -9,8 +9,8 @@ pub struct Reporter {
     /// Seed bump for PDA
     pub bump: u8,
 
-    /// Reporter account id
-    pub id: u64,
+    /// Reporter UUID
+    pub id: u128,
 
     /// Network account
     pub network: Pubkey,
@@ -38,7 +38,8 @@ pub struct Reporter {
 }
 
 impl Reporter {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 8 + 32 + 32 + 128 + 1 + 1 + 8 + 8 + 128);
+    pub const LEN: usize =
+        DISCRIMINATOR_LENGTH + (2 + 1 + 16 + 32 + 32 + 128 + 1 + 1 + 8 + 8 + 128);
     pub const VERSION: u16 = 1;
 }
 

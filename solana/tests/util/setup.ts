@@ -19,7 +19,7 @@ export type Network = {
 
 export type Reporter = {
   name: string;
-  id: BN;
+  id: string;
   keypair: web3.Keypair;
   role: keyof typeof ReporterRole;
   url: string;
@@ -30,10 +30,6 @@ export type Case = {
   name: string;
   url: string;
 };
-
-export function randomId(): BN {
-  return new BN(Math.floor(Math.random() * Math.pow(2, 64)).toString());
-}
 
 export function getNetwotks(names: Array<string>) {
   let networks: Record<string, Network> = {};
@@ -64,35 +60,35 @@ export function getNetwotks(names: Array<string>) {
 export function getReporters() {
   const reporters: Record<string, Reporter> = {
     publisher: {
-      id: randomId(),
+      id: uuidv4(),
       name: "alice",
       keypair: web3.Keypair.generate(),
       role: "Publisher",
       url: "https://publisher.blockchain",
     },
     tracer: {
-      id: randomId(),
+      id: uuidv4(),
       name: "bob",
       keypair: web3.Keypair.generate(),
       role: "Tracer",
       url: "https://tracer.blockchain",
     },
     authority: {
-      id: randomId(),
+      id: uuidv4(),
       name: "carol",
       keypair: web3.Keypair.generate(),
       role: "Authority",
       url: "https://authority.blockchain",
     },
     validator: {
-      id: randomId(),
+      id: uuidv4(),
       name: "dave",
       keypair: web3.Keypair.generate(),
       role: "Validator",
       url: "https://validator.blockchain",
     },
     appraiser: {
-      id: randomId(),
+      id: uuidv4(),
       name: "erin",
       keypair: web3.Keypair.generate(),
       role: "Appraiser",
@@ -176,11 +172,7 @@ export async function setupReporters(
     await stakeToken.getTokenAccount(reporter.keypair.publicKey);
     await stakeToken.transfer(null, reporter.keypair.publicKey, 1_000_000);
 
-    await program.activateReporter(
-      network_name,
-      reporter.keypair,
-      new BN(reporter.id)
-    );
+    await program.activateReporter(network_name, reporter.keypair, reporter.id);
   }
 }
 

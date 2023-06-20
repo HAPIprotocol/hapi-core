@@ -36,6 +36,14 @@ export function decodeAddress(address: Buffer | Uint8Array | number[]): string {
   return address.filter((b) => b).toString();
 }
 
+export function uuid_to_bn(id: string): BN {
+  return new BN(uuidParse(id), "be");
+}
+
+// export function bn_uuid_to_str(id: BN): string {
+//   return id.toB
+// }
+
 export class HapiCoreProgram {
   program: Program<HapiCoreSolana>;
   programId: web3.PublicKey;
@@ -63,13 +71,9 @@ export class HapiCoreProgram {
     );
   }
 
-  public findReporterAddress(network: web3.PublicKey, reporterId: BN) {
+  public findReporterAddress(network: web3.PublicKey, reporterId: string) {
     return web3.PublicKey.findProgramAddressSync(
-      [
-        bufferFromString("reporter"),
-        network.toBytes(),
-        new Uint8Array(reporterId.toArray("le", 8)),
-      ],
+      [bufferFromString("reporter"), network.toBytes(), uuidParse(reporterId)],
       this.programId
     );
   }
@@ -150,7 +154,7 @@ export class HapiCoreProgram {
     return data;
   }
 
-  public async getReporterData(network_name: string, id: BN) {
+  public async getReporterData(network_name: string, id: string) {
     const network = this.findNetworkAddress(network_name)[0];
     const reporter = this.findReporterAddress(network, id)[0];
     let data = await this.program.account.reporter.fetch(reporter);
@@ -297,7 +301,7 @@ export class HapiCoreProgram {
 
   async createReporter(
     network_name: string,
-    id: BN,
+    id: string,
     role: ReporterRoleKeys,
     account: web3.PublicKey,
     name: string,
@@ -307,7 +311,14 @@ export class HapiCoreProgram {
     const [reporterAccount, bump] = this.findReporterAddress(network, id);
 
     const transactionHash = await this.program.methods
-      .createReporter(id, account, name, ReporterRole[role], url, bump)
+      .createReporter(
+        uuid_to_bn(id),
+        account,
+        name,
+        ReporterRole[role],
+        url,
+        bump
+      )
       .accounts({
         authority: this.program.provider.publicKey,
         reporter: reporterAccount,
@@ -321,7 +332,7 @@ export class HapiCoreProgram {
 
   async updateReporter(
     network_name: string,
-    id: BN,
+    id: string,
     role?: ReporterRoleKeys,
     account?: web3.PublicKey,
     name?: string,
@@ -351,7 +362,7 @@ export class HapiCoreProgram {
   async activateReporter(
     network_name: string,
     wallet: Signer | Wallet,
-    id: BN
+    id: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
     const reporter = this.findReporterAddress(network, id)[0];
@@ -389,7 +400,7 @@ export class HapiCoreProgram {
   async deactivateReporter(
     network_name: string,
     wallet: Signer | Wallet,
-    id: BN
+    id: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
     const reporter = this.findReporterAddress(network, id)[0];
@@ -408,7 +419,7 @@ export class HapiCoreProgram {
     return transactionHash;
   }
 
-  async unstake(network_name: string, wallet: Signer | Wallet, id: BN) {
+  async unstake(network_name: string, wallet: Signer | Wallet, id: string) {
     const network = this.findNetworkAddress(network_name)[0];
     const reporter = this.findReporterAddress(network, id)[0];
     const networkData = await this.program.account.network.fetch(network);
@@ -448,7 +459,7 @@ export class HapiCoreProgram {
     name: string,
     url: string,
     wallet: Signer | Wallet,
-    reporter_id: BN
+    reporter_id: string
   ) {
     const network = this.findNetworkAddress(network_name)[0];
     const reporter = this.findReporterAddress(network, reporter_id)[0];
@@ -457,7 +468,7 @@ export class HapiCoreProgram {
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .createCase(new BN(uuidParse(id), "be"), name, url, bump)
+      .createCase(uuid_to_bn(id), name, url, bump)
       .accounts({
         sender: signer.publicKey,
         network,
@@ -472,7 +483,7 @@ export class HapiCoreProgram {
 
   async updateCase(
     network_name: string,
-    reporter_id: BN,
+    reporter_id: string,
     id: string,
     wallet: Signer | Wallet,
     name?: string,
