@@ -1,12 +1,7 @@
 use ethers::{types::H160, utils::to_checksum as ethers_to_checksum};
 use regex::Regex;
-use serde_json::Value;
 
-pub fn to_json(value: &str) -> Value {
-    serde_json::from_str::<Value>(value).expect("json parse error")
-}
-
-pub fn is_tx_match(value: &Value) -> bool {
+pub fn is_tx_match(value: &serde_json::Value) -> bool {
     Regex::new(r"^0x[0-9a-fA-F]{64}$").unwrap().is_match(
         value
             .get("tx")
@@ -29,7 +24,8 @@ macro_rules! assert_json_output {
             panic!("Expected command success: {:?}", output);
         }
 
-        let value = to_json(&output.stdout);
+        let value =
+            serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
 
         assert_eq!(value, $json_val, "correct json value expected");
 
@@ -46,7 +42,8 @@ macro_rules! assert_tx_output {
             panic!("Expected command success: {:?}", output);
         }
 
-        let value = to_json(&output.stdout);
+        let value =
+            serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
 
         assert!(is_tx_match(&value), "transaction hash expected");
 

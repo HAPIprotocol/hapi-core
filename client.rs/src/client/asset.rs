@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::str::FromStr;
 use uuid::Uuid;
 
-use super::Category;
+use super::category::Category;
 
 #[derive(Default, Clone, Debug)]
 pub struct AssetId(U256);

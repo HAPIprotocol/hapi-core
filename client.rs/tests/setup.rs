@@ -21,6 +21,14 @@ pub const PRIVATE_KEY_2: &str =
     "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 pub const REPORTER_UUID_2: &str = "2ef0a8f9-66c8-4be2-981a-b9236bb43f61";
 
+pub const CASE_UUID_1: &str = "34b9d809-7511-46c5-9117-c7f80f379fad";
+pub const CASE_NAME_1: &str = "HAPI Case 1";
+pub const CASE_URL_1: &str = "https://hapi.one/case/1";
+
+pub const ADDRESS_ADDR_1: &str = "0x9e833a87087efd527b1a842742eb0f3548cd82ab";
+pub const ADDRESS_RISK_1: &str = "5";
+pub const ADDRESS_CATEGORY_1: &str = "ransomware";
+
 pub struct Setup {
     pub token_contract: String,
     port: u16,
@@ -46,11 +54,11 @@ impl Setup {
     pub fn new() -> Setup {
         let port = get_port();
 
-        println!("[{port}] ==> Setting up the environment");
+        println!("==> Setting up the environment [{port}]");
 
         env::set_var("PRIVATE_KEY", PRIVATE_KEY_1);
 
-        println!("[{port}] ==> Compiling the contract");
+        println!("==> Compiling the contract [{port}]");
         ensure_cmd(
             Command::new("npm")
                 .args(["run", "build"])
@@ -58,7 +66,7 @@ impl Setup {
         )
         .unwrap();
 
-        println!("[{port}] ==> Checking if the node is running");
+        println!("==> Checking if the node is running [{port}]");
         let maybe_pid: Option<u32> = Command::new("lsof")
             .args(["-t", "-i", &format!(":{port}")])
             .output()
@@ -72,7 +80,7 @@ impl Setup {
             .ok();
 
         if let Some(pid) = maybe_pid {
-            println!("[{port}] ==> Killing the node: {pid}");
+            println!("==> Killing the node: {pid} [{port}]");
             ensure_cmd(
                 Command::new("kill")
                     .args([&pid.to_string()])
@@ -81,7 +89,7 @@ impl Setup {
             .unwrap();
         }
 
-        println!("[{port}] ==> Starting the node");
+        println!("==> Starting the node [{port}]");
         Command::new("npx")
             .args(["hardhat", "node", "--port", &port.to_string()])
             .current_dir("../evm")
@@ -90,10 +98,10 @@ impl Setup {
             .spawn()
             .expect("Failed to execute command");
 
-        println!("[{port}] ==> Waiting for the node to start");
+        println!("==> Waiting for the node to start [{port}]");
         sleep(Duration::from_millis(1000));
 
-        println!("[{port}] ==> Deploying the contract");
+        println!("==> Deploying the contract [{port}]");
         ensure_cmd(
             Command::new("npm")
                 .args(["run", "deploy"])
@@ -103,7 +111,7 @@ impl Setup {
         )
         .unwrap();
 
-        println!("[{port}] ==> Deploying the test token contract");
+        println!("==> Deploying the test token contract [{port}]");
         ensure_cmd(
             Command::new("npm")
                 .args(["run", "deploy-test-token"])
@@ -123,7 +131,7 @@ impl Setup {
     }
 
     pub fn print(&self, message: &str) {
-        println!("[{}] ==> {message}", self.port);
+        println!("==> {message} [{}]", self.port);
     }
 
     pub fn exec<I, S>(&self, args: I) -> anyhow::Result<CmdOutput>
@@ -191,7 +199,15 @@ fn get_port() -> u16 {
 fn ensure_cmd(command: &mut Command) -> anyhow::Result<()> {
     let output = command.output();
 
-    println!("Exec: {:?}", command);
+    println!(
+        "Exec: {} {}",
+        command.get_program().to_string_lossy(),
+        command
+            .get_args()
+            .map(|s| format!("\"{}\"", s.to_string_lossy()))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
 
     if let Err(e) = output {
         panic!("Failed to execute command: {e}");
@@ -219,7 +235,15 @@ fn ensure_cmd(command: &mut Command) -> anyhow::Result<()> {
 fn wrap_cmd(command: &mut Command) -> anyhow::Result<CmdOutput> {
     let output = command.output()?;
 
-    println!("Exec: {:?}", command);
+    println!(
+        "Exec: {} {}",
+        command.get_program().to_string_lossy(),
+        command
+            .get_args()
+            .map(|s| format!("\"{}\"", s.to_string_lossy()))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);

@@ -1,7 +1,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use super::Category;
+use super::category::Category;
 
 pub struct CreateAddressInput {
     pub address: String,

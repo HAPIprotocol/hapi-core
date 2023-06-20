@@ -13,7 +13,11 @@ use hapi_core::{
     Amount,
 };
 
-use crate::{CommandOutput, HapiCoreCommandContext, TokenCommandContext};
+mod context;
+mod matcher;
+
+pub(crate) use context::{CommandOutput, HapiCoreCommandContext, TokenCommandContext};
+pub(crate) use matcher::matcher;
 
 pub async fn get_authority(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
@@ -375,7 +379,28 @@ pub async fn unstake_reporter(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn create_case(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    let tx = context.hapi_core.create_case(CreateCaseInput {}).await?;
+    let id = args
+        .get_one::<String>("id")
+        .ok_or(anyhow!("`id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`id`: {e}"))?;
+
+    let name = args
+        .get_one::<String>("name")
+        .ok_or(anyhow!("`name` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`name`: {e}"))?;
+
+    let url = args
+        .get_one::<String>("url")
+        .ok_or(anyhow!("`url` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`url`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .create_case(CreateCaseInput { id, name, url })
+        .await?;
 
     match context.output {
         CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
@@ -388,7 +413,39 @@ pub async fn create_case(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn update_case(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    let tx = context.hapi_core.update_case(UpdateCaseInput {}).await?;
+    let id = args
+        .get_one::<String>("id")
+        .ok_or(anyhow!("`id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`id`: {e}"))?;
+
+    let name = args
+        .get_one::<String>("name")
+        .ok_or(anyhow!("`name` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`name`: {e}"))?;
+
+    let url = args
+        .get_one::<String>("url")
+        .ok_or(anyhow!("`url` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`url`: {e}"))?;
+
+    let status = args
+        .get_one::<String>("status")
+        .ok_or(anyhow!("`status` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`status`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .update_case(UpdateCaseInput {
+            id,
+            name,
+            url,
+            status,
+        })
+        .await?;
 
     match context.output {
         CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
@@ -402,8 +459,8 @@ pub async fn get_case(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
     let case_id = args
-        .get_one::<String>("case-id")
-        .ok_or(anyhow!("`case-id` is required"))?;
+        .get_one::<String>("id")
+        .ok_or(anyhow!("`id` is required"))?;
 
     let case = context.hapi_core.get_case(case_id).await?;
 
@@ -473,11 +530,9 @@ pub async fn create_address(args: &ArgMatches) -> anyhow::Result<()> {
         .parse()
         .map_err(|e| anyhow!("`case-id`: {e}"))?;
 
-    let risk = args
-        .get_one::<String>("risk")
-        .ok_or(anyhow!("`risk` is required"))?
-        .parse()
-        .map_err(|e| anyhow!("`risk`: {e}"))?;
+    let risk = *args
+        .get_one::<u8>("risk")
+        .ok_or(anyhow!("`risk` is required"))?;
 
     let category = args
         .get_one::<String>("category")
@@ -517,11 +572,9 @@ pub async fn update_address(args: &ArgMatches) -> anyhow::Result<()> {
         .parse()
         .map_err(|e| anyhow!("`case-id`: {e}"))?;
 
-    let risk = args
-        .get_one::<String>("risk")
-        .ok_or(anyhow!("`risk` is required"))?
-        .parse()
-        .map_err(|e| anyhow!("`risk`: {e}"))?;
+    let risk = *args
+        .get_one::<u8>("risk")
+        .ok_or(anyhow!("`risk` is required"))?;
 
     let category = args
         .get_one::<String>("category")
@@ -598,7 +651,12 @@ pub async fn get_addresses(args: &ArgMatches) -> anyhow::Result<()> {
 
     let addresses = context.hapi_core.get_addresses(skip, take).await?;
 
-    println!("{:#?}", addresses);
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "addresses": addresses })),
+        CommandOutput::Plain => {
+            println!("{:#?}", addresses)
+        }
+    }
 
     Ok(())
 }

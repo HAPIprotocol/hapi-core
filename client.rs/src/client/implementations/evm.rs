@@ -113,6 +113,33 @@ impl TryFrom<hapi_core_contract::Reporter> for Reporter {
     }
 }
 
+impl TryFrom<hapi_core_contract::Case> for Case {
+    type Error = ClientError;
+
+    fn try_from(case: hapi_core_contract::Case) -> Result<Self> {
+        Ok(Case {
+            id: Uuid::from_u128(case.id),
+            name: case.name.to_string(),
+            url: case.url.to_string(),
+            status: case.status.try_into()?,
+        })
+    }
+}
+
+impl TryFrom<hapi_core_contract::Address> for Address {
+    type Error = ClientError;
+
+    fn try_from(address: hapi_core_contract::Address) -> Result<Self> {
+        Ok(Address {
+            address: to_checksum(&address.addr, None),
+            case_id: Uuid::from_u128(address.case_id),
+            reporter_id: Uuid::from_u128(address.reporter_id),
+            risk: address.risk,
+            category: address.category.try_into()?,
+        })
+    }
+}
+
 #[async_trait]
 impl HapiCore for HapiCoreEvm {
     async fn set_authority(&self, address: &str) -> Result<Tx> {
@@ -385,36 +412,167 @@ impl HapiCore for HapiCoreEvm {
             )
     }
 
-    async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
-        unimplemented!()
-    }
-    async fn update_case(&self, _input: UpdateCaseInput) -> Result<Tx> {
-        unimplemented!()
-    }
-    async fn get_case(&self, _id: &str) -> Result<Case> {
-        unimplemented!()
-    }
-    async fn get_case_count(&self) -> Result<u64> {
-        unimplemented!()
-    }
-    async fn get_cases(&self, _skip: u64, _take: u64) -> Result<Vec<Case>> {
-        unimplemented!()
+    async fn create_case(&self, input: CreateCaseInput) -> Result<Tx> {
+        self.contract
+            .create_case(input.id.as_u128(), input.name, input.url)
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("create_case", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`create_case` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
 
-    async fn create_address(&self, _input: CreateAddressInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_case(&self, input: UpdateCaseInput) -> Result<Tx> {
+        self.contract
+            .update_case(
+                input.id.as_u128(),
+                input.name,
+                input.url,
+                input.status as u8,
+            )
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("update_case", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`update_case` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
-    async fn update_address(&self, _input: UpdateAddressInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn get_case(&self, id: &str) -> Result<Case> {
+        self.contract
+            .get_case(id.parse::<Uuid>()?.as_u128())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_case", e))
+            .map(|c| c.try_into())?
     }
-    async fn get_address(&self, _addr: &str) -> Result<Address> {
-        unimplemented!()
+
+    async fn get_case_count(&self) -> Result<u64> {
+        self.contract
+            .get_case_count()
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_case_count", e))
+            .map(|c| c.as_u64())
     }
+
+    async fn get_cases(&self, skip: u64, take: u64) -> Result<Vec<Case>> {
+        self.contract
+            .get_cases(skip.into(), take.into())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_cases", e))
+            .map(|c| c.into_iter().map(|r| r.try_into()).collect())?
+    }
+
+    async fn create_address(&self, input: CreateAddressInput) -> Result<Tx> {
+        let case_id = input.case_id.as_u128();
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        self.contract
+            .create_address(address, case_id, input.risk, input.category as u8)
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("create_address", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`create_address` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
+    }
+
+    async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx> {
+        let case_id = input.case_id.as_u128();
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        self.contract
+            .update_address(address, input.risk, input.category as u8, case_id)
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("update_address", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`update_address` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
+    }
+
+    async fn get_address(&self, address: &str) -> Result<Address> {
+        let address = address.parse().map_err(|e| {
+            ClientError::Ethers(format!("failed to parse address `{}`: {}", address, e))
+        })?;
+
+        self.contract
+            .get_address(address)
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_address", e))
+            .map(|a| a.try_into())?
+    }
+
     async fn get_address_count(&self) -> Result<u64> {
-        unimplemented!()
+        self.contract
+            .get_address_count()
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_address_count", e))
+            .map(|c| c.as_u64())
     }
-    async fn get_addresses(&self, _skip: u64, _take: u64) -> Result<Vec<Address>> {
-        unimplemented!()
+
+    async fn get_addresses(&self, skip: u64, take: u64) -> Result<Vec<Address>> {
+        self.contract
+            .get_addresses(skip.into(), take.into())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_addresses", e))
+            .map(|c| c.into_iter().map(|r| r.try_into()).collect())?
     }
 
     async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {

@@ -3,10 +3,13 @@ use std::{thread::sleep, time::Duration};
 use serde_json::json;
 
 mod setup;
-use setup::{Setup, PRIVATE_KEY_2, PUBLIC_KEY_1, PUBLIC_KEY_2, REPORTER_UUID_1, REPORTER_UUID_2};
+use setup::{
+    Setup, ADDRESS_ADDR_1, ADDRESS_CATEGORY_1, ADDRESS_RISK_1, CASE_NAME_1, CASE_URL_1,
+    CASE_UUID_1, PRIVATE_KEY_2, PUBLIC_KEY_1, PUBLIC_KEY_2, REPORTER_UUID_1, REPORTER_UUID_2,
+};
 
 mod util;
-use util::{is_tx_match, to_checksum, to_json};
+use util::{is_tx_match, to_checksum};
 
 #[tokio::test]
 async fn evm_works() {
@@ -269,6 +272,109 @@ async fn evm_works() {
 
     t.print("Make sure that reporter counter has increased");
     assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
+
+    t.print("Create a case by authority");
+    assert_tx_output!(t.exec(["case", "create", CASE_UUID_1, CASE_NAME_1, CASE_URL_1]));
+
+    t.print("Verify that the case has been created");
+    assert_json_output!(
+        t.exec(["case", "get", CASE_UUID_1]),
+        json!({ "case": {
+            "id": CASE_UUID_1,
+            "name": CASE_NAME_1,
+            "url": CASE_URL_1,
+            "status": "Open",
+        }})
+    );
+
+    t.print("Verify the case count has increased");
+    assert_json_output!(t.exec(["case", "count"]), json!({ "count": 1 }));
+
+    t.print("Create an address by authority");
+    assert_tx_output!(t.exec([
+        "address",
+        "create",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        ADDRESS_CATEGORY_1,
+        ADDRESS_RISK_1,
+    ]));
+
+    t.print("Verify that the address has been created");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": to_checksum(ADDRESS_ADDR_1),
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 5,
+            "category": "Ransomware",
+        }})
+    );
+
+    t.print("Verify the address count has increased");
+    assert_json_output!(t.exec(["address", "count"]), json!({ "count": 1 }));
+
+    t.print("List addresses");
+    assert_json_output!(
+        t.exec(["address", "list"]),
+        json!({ "addresses": [
+            {
+                "address": to_checksum(ADDRESS_ADDR_1),
+                "case_id": CASE_UUID_1,
+                "reporter_id": REPORTER_UUID_1,
+                "risk": 5,
+                "category": "Ransomware",
+            }
+        ]})
+    );
+
+    t.print("Update the address");
+    assert_tx_output!(t.exec([
+        "address",
+        "update",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        "scam",
+        "6",
+    ]));
+
+    t.print("Verify that the address has been updated");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": to_checksum(ADDRESS_ADDR_1),
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "Scam",
+        }})
+    );
+
+    t.print("Create an asset by authority");
+
+    t.print("Update the asset");
+
+    t.print("Close the case by authority");
+    assert_tx_output!(t.exec([
+        "case",
+        "update",
+        CASE_UUID_1,
+        "closed case",
+        "https://hapi.one/case/closed",
+        "closed"
+    ]));
+
+    t.print("Verify that the case has been closed");
+    assert_json_output!(
+        t.exec(["case", "get", CASE_UUID_1]),
+        json!({ "case": {
+            "id": CASE_UUID_1,
+            "name": "closed case",
+            "url": "https://hapi.one/case/closed",
+            "status": "Closed",
+        }})
+    );
 
     t.print("Deactivate authority reporter");
     let unlock_timestamp = {
