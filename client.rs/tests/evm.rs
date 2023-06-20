@@ -1,6 +1,5 @@
-use std::{thread::sleep, time::Duration};
-
 use serde_json::json;
+use std::{thread::sleep, time::Duration};
 
 mod setup;
 use setup::{
