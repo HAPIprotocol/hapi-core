@@ -1,7 +1,12 @@
+use ethers::{
+    providers::{Http, Middleware, Provider},
+    types::{Block, Transaction, H256},
+};
 use std::{
     env,
     ffi::OsStr,
     process::{Command, Stdio},
+    str::FromStr,
     thread::sleep,
     time::Duration,
 };
@@ -140,6 +145,37 @@ impl Setup {
                 .env("NETWORK", network)
                 .env("PROVIDER_URL", provider_url),
         )
+    }
+
+    pub async fn get_tx(&self, hash: &str) -> Transaction {
+        let provider = Provider::<Http>::try_from(self.provider_url.clone()).unwrap();
+
+        let tx_hash = ethers::types::H256::from_str(hash).expect("Expected valid transaction hash");
+        let tx = provider
+            .get_transaction(tx_hash)
+            .await
+            .expect("Could not retrieve transaction");
+
+        tx.expect("Transaction not found")
+    }
+
+    pub async fn get_block(&self, hash: &str) -> Block<H256> {
+        let provider = Provider::<Http>::try_from(self.provider_url.clone()).unwrap();
+
+        let block_hash = ethers::types::H256::from_str(hash).expect("Expected valid block hash");
+        let block = provider
+            .get_block(block_hash)
+            .await
+            .expect("Could not retrieve block");
+
+        block.expect("Block not found")
+    }
+
+    pub async fn get_tx_timestamp(&self, hash: &str) -> u64 {
+        let tx = self.get_tx(hash).await;
+        let block_hash = format!("{:?}", tx.block_hash.expect("block hash is expected"));
+        let block = self.get_block(&block_hash).await;
+        block.timestamp.as_u64()
     }
 }
 

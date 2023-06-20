@@ -1,3 +1,5 @@
+use std::{thread::sleep, time::Duration};
+
 use serde_json::json;
 
 mod setup;
@@ -9,6 +11,14 @@ use util::{is_tx_match, to_checksum, to_json};
 #[tokio::test]
 async fn evm_works() {
     let t = Setup::new();
+
+    let unlock_duration = 3;
+    let validator_stake = 10;
+    let tracer_stake = 11;
+    let publisher_stake = 12;
+    let authority_stake = 13;
+    let address_confirmation_reward = 5;
+    let tracer_reward = 6;
 
     t.print("Check that initial authority matches the key of contract deployer");
     assert_json_output!(
@@ -51,38 +61,53 @@ async fn evm_works() {
         "configuration",
         "update-stake",
         &t.token_contract,
-        "600",
-        "10",
-        "11",
-        "12",
-        "13",
+        &unlock_duration.to_string(),
+        &validator_stake.to_string(),
+        &tracer_stake.to_string(),
+        &publisher_stake.to_string(),
+        &authority_stake.to_string(),
     ]));
 
     t.print("Make sure that the new stake configuration is applied");
     assert_json_output!(
         t.exec(["configuration", "get-stake"]),
-        json!({ "configuration": { "token": t.token_contract, "unlock_duration": 600, "validator_stake": "10", "tracer_stake": "11", "publisher_stake": "12", "authority_stake": "13" }})
+        json!({
+            "configuration": {
+                "token": t.token_contract,
+                "unlock_duration": unlock_duration,
+                "validator_stake": validator_stake.to_string(),
+                "tracer_stake": tracer_stake.to_string(),
+                "publisher_stake": publisher_stake.to_string(),
+                "authority_stake": authority_stake.to_string()
+            }
+        })
     );
 
     t.print("Check that initial reward configuration is empty");
     assert_error_output!(
-            t.exec(["configuration", "get-reward"]),
-            "Error: Ethers error: `get_reward_configuration` reverted with: Reward configuration is not set"
-        );
+        t.exec(["configuration", "get-reward"]),
+        "Error: Ethers error: `get_reward_configuration` reverted with: Reward configuration is not set"
+    );
 
     t.print("Update reward configuration");
     assert_tx_output!(t.exec([
         "configuration",
         "update-reward",
         &t.token_contract,
-        "5",
-        "6",
+        &address_confirmation_reward.to_string(),
+        &tracer_reward.to_string(),
     ]));
 
     t.print("Make sure that the new reward configuration is applied");
     assert_json_output!(
         t.exec(["configuration", "get-reward"]),
-        json!({ "configuration": { "token": t.token_contract, "address_confirmation_reward": "5", "tracer_reward": "6" }})
+        json!({
+            "configuration": {
+                "token": t.token_contract,
+                "address_confirmation_reward": address_confirmation_reward.to_string(),
+                "tracer_reward": tracer_reward.to_string()
+            }
+        })
     );
 
     t.print("Make sure that the reporter 1 does not exist yet");
@@ -127,10 +152,12 @@ async fn evm_works() {
     );
 
     t.print("Check authority's token balance");
-    assert_json_output!(
+    let json = assert_json_output!(
         t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
         json!({ "balance": "1000000000" })
     );
+
+    let authority_balance = json["balance"].as_str().unwrap().parse::<u64>().unwrap();
 
     t.print("Establish token allowance from authority to activate the reporter account");
     assert_tx_output!(t.exec([
@@ -138,7 +165,7 @@ async fn evm_works() {
         "approve",
         &t.token_contract,
         &t.contract_address,
-        "13",
+        &authority_stake.to_string(),
     ]));
 
     t.print("Activate authority reporter");
@@ -147,16 +174,24 @@ async fn evm_works() {
     t.print("Check authority's token balance after activation");
     assert_json_output!(
         t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
-        json!({ "balance": "999999987" })
+        json!({ "balance": (authority_balance - authority_stake).to_string() })
     );
 
     t.print("Send tokens from authority to reporter");
-    assert_tx_output!(t.exec(["token", "transfer", &t.token_contract, PUBLIC_KEY_2, "12"]));
+    assert_tx_output!(t.exec([
+        "token",
+        "transfer",
+        &t.token_contract,
+        PUBLIC_KEY_2,
+        &publisher_stake.to_string()
+    ]));
+
+    let authority_balance = authority_balance - publisher_stake;
 
     t.print("Check publisher's token balance");
     assert_json_output!(
         t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_2]),
-        json!({ "balance": "12" })
+        json!({ "balance": publisher_stake.to_string() })
     );
 
     t.print("Create publisher reporter");
@@ -191,7 +226,7 @@ async fn evm_works() {
         "approve",
         &t.token_contract,
         &t.contract_address,
-        "12",
+        &publisher_stake.to_string(),
         "--private-key",
         PRIVATE_KEY_2,
     ]));
@@ -215,7 +250,7 @@ async fn evm_works() {
                 "role": "Authority",
                 "name": "HAPI Authority",
                 "url": "https://hapi.one/reporter/authority",
-                "stake": "13",
+                "stake": authority_stake.to_string(),
                 "status": "Active",
                 "unlock_timestamp": 0
             },
@@ -225,10 +260,61 @@ async fn evm_works() {
                 "role": "Publisher",
                 "name": "HAPI Publisher",
                 "url": "https://hapi.one/reporter/publisher",
-                "stake": "12",
+                "stake": publisher_stake.to_string(),
                 "status": "Active",
                 "unlock_timestamp": 0
             }
         ]})
+    );
+
+    t.print("Make sure that reporter counter has increased");
+    assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
+
+    t.print("Deactivate authority reporter");
+    let unlock_timestamp = {
+        let tx_hash = assert_tx_output!(t.exec(["reporter", "deactivate"]));
+        let timestamp = t.get_tx_timestamp(&tx_hash).await;
+        timestamp + unlock_duration
+    };
+
+    t.print("Verify that authority reporter is being deactivated");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_1]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_1,
+            "account": to_checksum(PUBLIC_KEY_1),
+            "role": "Authority",
+            "name": "HAPI Authority",
+            "url": "https://hapi.one/reporter/authority",
+            "stake": authority_stake.to_string(),
+            "status": "Unstaking",
+            "unlock_timestamp": unlock_timestamp
+        }})
+    );
+
+    sleep(Duration::from_secs(unlock_duration));
+
+    t.print("Unstake authority reporter");
+    assert_tx_output!(t.exec(["reporter", "unstake"]));
+
+    t.print("Verify that the stake has been transferred back to the authority");
+    assert_json_output!(
+        t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
+        json!({ "balance": authority_balance.to_string() })
+    );
+
+    t.print("Make sure that the status of the authority reporter is now Inactive");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_1]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_1,
+            "account": to_checksum(PUBLIC_KEY_1),
+            "role": "Authority",
+            "name": "HAPI Authority",
+            "url": "https://hapi.one/reporter/authority",
+            "stake": "0",
+            "status": "Inactive",
+            "unlock_timestamp": 0
+        }})
     );
 }
