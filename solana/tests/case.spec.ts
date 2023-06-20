@@ -59,10 +59,10 @@ describe("HapiCore Reporter", () => {
   describe("create_case", () => {
     it("fail - unknown reporter", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher.keypair;
-      const [reporterAccount, __] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         REPORTERS.authority.id
       );
@@ -91,13 +91,14 @@ describe("HapiCore Reporter", () => {
 
     it("fail - tracers can't report cases", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.tracer;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
+
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
         cs.id
@@ -122,13 +123,13 @@ describe("HapiCore Reporter", () => {
 
     it("fail - validator can't report cases", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.validator;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
         cs.id
@@ -153,13 +154,13 @@ describe("HapiCore Reporter", () => {
 
     it("fail - appraiser can't report cases", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.appraiser;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
         cs.id
@@ -184,13 +185,13 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid case id", async () => {
       const caseId = bufferFromString("invalid-id", 16);
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
       const [caseAccount, bump] = web3.PublicKey.findProgramAddressSync(
         [bufferFromString("case"), networkAccount.toBytes(), caseId],
@@ -216,13 +217,13 @@ describe("HapiCore Reporter", () => {
 
     it("fail - invalid case id version", async () => {
       const caseId = uuidv1();
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
@@ -248,13 +249,13 @@ describe("HapiCore Reporter", () => {
 
     it("success - publisher report first case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
@@ -292,13 +293,13 @@ describe("HapiCore Reporter", () => {
 
     it("success - authority report second case", async () => {
       const cs = CASES.secondCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.authority;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
@@ -336,13 +337,13 @@ describe("HapiCore Reporter", () => {
 
     it("fail - case can be reported only once", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.authority;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
       const [caseAccount, bump] = await program.findCaseAddress(
         networkAccount,
@@ -370,18 +371,18 @@ describe("HapiCore Reporter", () => {
   describe("update_case", () => {
     it("tracer can't update case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.tracer;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await expectThrowError(
         () =>
@@ -402,18 +403,18 @@ describe("HapiCore Reporter", () => {
 
     it("validator can't update case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.validator;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await expectThrowError(
         () =>
@@ -434,18 +435,18 @@ describe("HapiCore Reporter", () => {
 
     it("appraiser can't update case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.appraiser;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await expectThrowError(
         () =>
@@ -466,18 +467,18 @@ describe("HapiCore Reporter", () => {
 
     it("reporter can't update another reporter's case", async () => {
       const cs = CASES.secondCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await expectThrowError(
         () =>
@@ -498,18 +499,18 @@ describe("HapiCore Reporter", () => {
 
     it("publisher updates first case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.publisher;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await program.program.methods
         .updateCase(cs.name, cs.url, CaseStatus.Closed)
@@ -534,18 +535,18 @@ describe("HapiCore Reporter", () => {
 
     it("authority updates first case", async () => {
       const cs = CASES.firstCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.authority;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       let newName = "new name";
 
@@ -572,18 +573,18 @@ describe("HapiCore Reporter", () => {
 
     it("authority updates second case", async () => {
       const cs = CASES.secondCase;
-      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       let reporter = REPORTERS.authority;
-      const reporterAccount = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
-      )[0];
+      );
 
-      const caseAccount = await program.findCaseAddress(
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      )[0];
+      );
 
       await program.program.methods
         .updateCase(cs.name, cs.url, CaseStatus.Closed)

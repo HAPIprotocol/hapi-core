@@ -109,7 +109,7 @@ export class HapiCoreProgram {
     stakeMint: web3.PublicKey
   ) {
     const [network, bump] = this.findNetworkAddress(name);
-    const programData = this.findProgramDataAddress()[0];
+    const [programData] = this.findProgramDataAddress();
 
     await Token.getOrCreateAssociatedTokenAccount(
       this.program.provider.connection,
@@ -141,31 +141,31 @@ export class HapiCoreProgram {
   }
 
   public async getNetwotkData(name: string) {
-    const network = this.findNetworkAddress(name)[0];
+    const [network] = this.findNetworkAddress(name);
     let data = await this.program.account.network.fetch(network);
 
     return data;
   }
 
   public async getReporterData(network_name: string, id: string) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, id);
     let data = await this.program.account.reporter.fetch(reporter);
 
     return data;
   }
 
   public async getCaseData(network_name: string, id: string) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const cs = this.findCaseAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [caseAccount] = this.findCaseAddress(network, id);
 
-    let data = await this.program.account.case.fetch(cs);
+    let data = await this.program.account.case.fetch(caseAccount);
 
     return data;
   }
 
   public async getAllReporters(network_name: string) {
-    const network = this.findNetworkAddress(network_name)[0];
+    const [network] = this.findNetworkAddress(network_name);
     let data = await this.program.account.reporter.all();
     const res = data.filter((acc) => acc.account.network === network);
 
@@ -173,7 +173,7 @@ export class HapiCoreProgram {
   }
 
   public async getAllCases(network_name: string) {
-    const network = this.findNetworkAddress(network_name)[0];
+    const [network] = this.findNetworkAddress(network_name);
     let data = await this.program.account.case.all();
     const res = data.filter((acc) => acc.account.network === network);
 
@@ -181,8 +181,8 @@ export class HapiCoreProgram {
   }
 
   public async setAuthority(network_name: string, address: web3.PublicKey) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const programData = this.findProgramDataAddress()[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [programData] = this.findProgramDataAddress();
 
     const transactionHash = await this.program.methods
       .setAuthority()
@@ -208,7 +208,7 @@ export class HapiCoreProgram {
     authorityStake?: string,
     appraiserStake?: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
+    const [network] = this.findNetworkAddress(network_name);
     let networkData = await this.program.account.network.fetch(network);
     let stakeMint = token ?? networkData.stakeMint;
 
@@ -253,7 +253,7 @@ export class HapiCoreProgram {
     assetTracerReward?: string,
     assetConfirmationReward?: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
+    const [network] = this.findNetworkAddress(network_name);
     let networkData = await this.program.account.network.fetch(network);
     let rewardMint = token ?? networkData.rewardMint;
 
@@ -292,7 +292,7 @@ export class HapiCoreProgram {
     name: string,
     url: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
+    const [network] = this.findNetworkAddress(network_name);
     const [reporterAccount, bump] = this.findReporterAddress(network, id);
 
     const transactionHash = await this.program.methods
@@ -323,8 +323,8 @@ export class HapiCoreProgram {
     name?: string,
     url?: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, id);
     const reporterData = await this.program.account.reporter.fetch(reporter);
 
     const reporterRole = role ? ReporterRole[role] : reporterData.role;
@@ -349,8 +349,8 @@ export class HapiCoreProgram {
     wallet: Signer | Wallet,
     id: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, id);
     const networkData = await this.program.account.network.fetch(network);
 
     let signer = wallet as Signer;
@@ -387,8 +387,8 @@ export class HapiCoreProgram {
     wallet: Signer | Wallet,
     id: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, id);
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
@@ -405,8 +405,8 @@ export class HapiCoreProgram {
   }
 
   async unstake(network_name: string, wallet: Signer | Wallet, id: string) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, id);
     const networkData = await this.program.account.network.fetch(network);
 
     let signer = wallet as Signer;
@@ -446,8 +446,8 @@ export class HapiCoreProgram {
     wallet: Signer | Wallet,
     reporter_id: string
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, reporter_id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, reporter_id);
     const [caseAccount, bump] = this.findCaseAddress(network, id);
 
     let signer = wallet as Signer;
@@ -475,9 +475,9 @@ export class HapiCoreProgram {
     url?: string,
     status?: CaseStatusKeys
   ) {
-    const network = this.findNetworkAddress(network_name)[0];
-    const reporter = this.findReporterAddress(network, reporter_id)[0];
-    const caseAccount = this.findCaseAddress(network, id)[0];
+    const [network] = this.findNetworkAddress(network_name);
+    const [reporter] = this.findReporterAddress(network, reporter_id);
+    const [caseAccount] = this.findCaseAddress(network, id);
 
     const caseData = await this.program.account.case.fetch(caseAccount);
     const caseStatus = status ? CaseStatus[status] : caseData.state;
