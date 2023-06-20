@@ -22,6 +22,7 @@ import {
   ReporterRoleKeys,
   CaseStatus,
   CaseStatusKeys,
+  uuidToBn,
 } from ".";
 
 export function encodeAddress(address: string): Buffer {
@@ -35,14 +36,6 @@ export function decodeAddress(address: Buffer | Uint8Array | number[]): string {
 
   return address.filter((b) => b).toString();
 }
-
-export function uuid_to_bn(id: string): BN {
-  return new BN(uuidParse(id), "be");
-}
-
-// export function bn_uuid_to_str(id: BN): string {
-//   return id.toB
-// }
 
 export class HapiCoreProgram {
   program: Program<HapiCoreSolana>;
@@ -312,7 +305,7 @@ export class HapiCoreProgram {
 
     const transactionHash = await this.program.methods
       .createReporter(
-        uuid_to_bn(id),
+        uuidToBn(id),
         account,
         name,
         ReporterRole[role],
@@ -468,7 +461,7 @@ export class HapiCoreProgram {
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .createCase(uuid_to_bn(id), name, url, bump)
+      .createCase(uuidToBn(id), name, url, bump)
       .accounts({
         sender: signer.publicKey,
         network,

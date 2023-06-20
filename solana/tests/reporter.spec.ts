@@ -12,7 +12,7 @@ import {
   ReporterRole,
   HapiCoreProgram,
   ReporterStatus,
-  uuid_to_bn,
+  uuidToBn,
   bufferFromString,
 } from "../lib";
 
@@ -77,7 +77,7 @@ describe("HapiCore Reporter", () => {
         () =>
           program.program.methods
             .createReporter(
-              uuid_to_bn(reporter.id),
+              uuidToBn(reporter.id),
               reporter.keypair.publicKey,
               networkName,
               reporterRole,
@@ -152,7 +152,7 @@ describe("HapiCore Reporter", () => {
         () =>
           program.program.methods
             .createReporter(
-              uuid_to_bn(reporterId),
+              uuidToBn(reporterId),
               reporter.keypair.publicKey,
               networkName,
               reporterRole,
@@ -182,7 +182,7 @@ describe("HapiCore Reporter", () => {
       );
 
       const reporterRole = ReporterRole[reporter.role];
-      const id = uuid_to_bn(reporter.id);
+      const id = uuidToBn(reporter.id);
 
       await program.program.methods
         .createReporter(
@@ -236,7 +236,7 @@ describe("HapiCore Reporter", () => {
       );
 
       const reporterRole = ReporterRole[reporter.role];
-      const id = uuid_to_bn(reporter.id);
+      const id = uuidToBn(reporter.id);
 
       await program.program.methods
         .createReporter(
@@ -290,7 +290,7 @@ describe("HapiCore Reporter", () => {
       );
 
       const reporterRole = ReporterRole[reporter.role];
-      const id = uuid_to_bn(reporter.id);
+      const id = uuidToBn(reporter.id);
 
       await program.program.methods
         .createReporter(
@@ -349,7 +349,7 @@ describe("HapiCore Reporter", () => {
         () =>
           program.program.methods
             .createReporter(
-              uuid_to_bn(reporter.id),
+              uuidToBn(reporter.id),
               reporter.keypair.publicKey,
               networkName,
               reporterRole,

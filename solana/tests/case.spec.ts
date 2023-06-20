@@ -18,7 +18,8 @@ import {
   HapiCoreProgram,
   CaseStatus,
   bufferFromString,
-  uuid_to_bn,
+  uuidToBn,
+  bnToUuid,
 } from "../lib";
 
 describe("HapiCore Reporter", () => {
@@ -74,7 +75,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+            .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.publicKey,
               network: networkAccount,
@@ -105,7 +106,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+            .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -136,7 +137,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+            .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -167,7 +168,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+            .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -231,7 +232,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(caseId), "name", "url", bump)
+            .createCase(uuidToBn(caseId), "name", "url", bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -261,7 +262,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+        .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -305,7 +306,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+        .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -351,7 +352,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(uuid_to_bn(cs.id), cs.name, cs.url, bump)
+            .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,

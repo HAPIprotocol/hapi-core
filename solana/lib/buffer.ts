@@ -1,5 +1,6 @@
 import { web3, utils, BN } from "@coral-xyz/anchor";
 import { encode as eip55encode } from "eip55";
+import { parse as uuidParse, v4 as uuidv4 } from "uuid";
 
 export function addrToSeeds(buffer: Buffer | Uint8Array) {
   const addr = padBuffer(buffer, 64);
@@ -78,6 +79,16 @@ export function pubkeyToEthereumAddress(pubkey: web3.PublicKey): string {
   return eip55encode(utils.bytes.hex.encode(bytes));
 }
 
-export function toNativeBn(anchorBn: BN) {
-  return new BN(anchorBn.toArrayLike(Buffer, "le", 8));
+export function uuidToBn(id: string): BN {
+  return new BN(uuidParse(id), "be");
+}
+
+export function bnToUuid(id: BN): string {
+  const buf = id.toArray("be");
+
+  if (buf.length != 16) {
+    throw RangeError("Invalid UUID");
+  }
+
+  return uuidv4({ random: buf });
 }

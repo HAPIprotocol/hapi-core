@@ -1,10 +1,11 @@
-import { Provider, AnchorProvider, web3, BN } from "@coral-xyz/anchor";
+import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 import {
   HapiCoreProgram,
   ReporterRoleKeys,
   CaseStatusKeys,
+  bnToUuid,
 } from "../../../solana/lib";
 
 import {
@@ -148,7 +149,7 @@ export class HapiCoreSolana implements HapiCore {
   ): Promise<Result> {
     const transactionHash = await this.contract.createReporter(
       this.network,
-      new BN(id),
+      id,
       role.toString() as ReporterRoleKeys,
       new web3.PublicKey(account),
       name,
@@ -159,10 +160,10 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getReporter(id: string): Promise<Reporter> {
-    const data = await this.contract.getReporterData(this.network, new BN(id));
+    const data = await this.contract.getReporterData(this.network, id);
 
     return {
-      id: data.id.toString(),
+      id: bnToUuid(data.id),
       account: data.account.toString(),
       role: ReporterRoleFromString(data.role as string),
       status: ReporterStatusFromString(data.status as string),
@@ -183,7 +184,7 @@ export class HapiCoreSolana implements HapiCore {
     const data = await this.contract.getAllReporters(this.network);
 
     let res = data.map((acc) => ({
-      id: acc.account.id.toString(),
+      id: bnToUuid(acc.account.id),
       account: acc.account.account.toString(),
       role: ReporterRoleFromString(acc.account.role as string),
       status: ReporterStatusFromString(acc.account.status as string),
@@ -208,7 +209,7 @@ export class HapiCoreSolana implements HapiCore {
 
     const transactionHash = await this.contract.updateReporter(
       this.network,
-      new BN(id),
+      id,
       reporterRole,
       reporterAccount,
       name,
@@ -218,7 +219,7 @@ export class HapiCoreSolana implements HapiCore {
     return { transactionHash };
   }
 
-  async getReporterAccount(): Promise<BN> {
+  async getReporterAccount(): Promise<string> {
     const data = await this.contract.getAllReporters(this.network);
     let reporterAccount = data.find((acc) =>
       acc.account.account.equals(this.provider.publicKey)
@@ -227,7 +228,7 @@ export class HapiCoreSolana implements HapiCore {
     if (!reporterAccount) {
       throw new Error("Reporter does not exist");
     } else {
-      return reporterAccount.account.id;
+      return bnToUuid(reporterAccount.account.id);
     }
   }
 
@@ -270,7 +271,7 @@ export class HapiCoreSolana implements HapiCore {
 
     const transactionHash = await this.contract.createCase(
       this.network,
-      new BN(id),
+      id,
       name,
       url,
       this.provider.wallet as NodeWallet,
@@ -281,10 +282,10 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getCase(id: string): Promise<Case> {
-    const data = await this.contract.getCaseData(this.network, new BN(id));
+    const data = await this.contract.getCaseData(this.network, id);
 
     return {
-      id: data.id.toString(),
+      id: bnToUuid(data.id),
       name: data.name.toString(),
       url: data.url.toString(),
       status: CaseStatusFromString(data.status.toString()),
@@ -301,7 +302,7 @@ export class HapiCoreSolana implements HapiCore {
     const data = await this.contract.getAllCases(this.network);
 
     let res = data.map((acc) => ({
-      id: acc.account.id.toString(),
+      id: bnToUuid(acc.account.id),
       name: acc.account.name.toString(),
       url: acc.account.url.toString(),
       status: CaseStatusFromString(acc.account.status.toString()),
@@ -321,7 +322,7 @@ export class HapiCoreSolana implements HapiCore {
     const transactionHash = await this.contract.updateCase(
       this.network,
       reporterId,
-      new BN(id),
+      id,
       this.provider.wallet as NodeWallet,
       name,
       url,
