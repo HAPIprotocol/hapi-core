@@ -480,7 +480,9 @@ export class HapiCoreProgram {
     const [caseAccount] = this.findCaseAddress(network, id);
 
     const caseData = await this.program.account.case.fetch(caseAccount);
-    const caseStatus = status ? CaseStatus[status] : caseData.status;
+    const caseStatus = status
+      ? CaseStatus[status]
+      : (caseData.status as (typeof CaseStatus)[keyof typeof CaseStatus]);
     const caseUrl = url ?? caseData.url;
     const caseName = name ?? caseData.name.toString();
 
