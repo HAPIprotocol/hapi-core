@@ -165,27 +165,19 @@ export class HapiCoreProgram {
   }
 
   public async getAllReporters(network_name: string) {
-    let res = [];
     const network = this.findNetworkAddress(network_name)[0];
     let data = await this.program.account.reporter.all();
+    const res = data.filter((acc) => acc.account.network === network);
 
-    data.map((acc) => {
-      if (acc.account.network == network) res.push(acc);
-    });
-
-    return data;
+    return res;
   }
 
   public async getAllCases(network_name: string) {
-    let res = [];
     const network = this.findNetworkAddress(network_name)[0];
     let data = await this.program.account.case.all();
+    const res = data.filter((acc) => acc.account.network === network);
 
-    data.map((acc) => {
-      if (acc.account.network == network) res.push(acc);
-    });
-
-    return data;
+    return res;
   }
 
   public async setAuthority(network_name: string, address: web3.PublicKey) {
