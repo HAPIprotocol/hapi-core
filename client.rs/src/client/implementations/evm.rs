@@ -313,8 +313,13 @@ impl HapiCore for HapiCoreEvm {
             .map(|c| c.as_u64())
     }
 
-    async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        unimplemented!()
+    async fn get_reporters(&self, skip: u64, take: u64) -> Result<Vec<Reporter>> {
+        self.contract
+            .get_reporters(skip.into(), take.into())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_reporters", e))
+            .map(|c| c.into_iter().map(|r| r.try_into()).collect())?
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
@@ -337,11 +342,47 @@ impl HapiCore for HapiCoreEvm {
                 },
             )
     }
+
     async fn deactivate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        self.contract
+            .deactivate_reporter()
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("deactivate_reporter", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`deactivate_reporter` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
+
     async fn unstake_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        self.contract
+            .unstake()
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("unstake_reporter", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`unstake_reporter` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
 
     async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
