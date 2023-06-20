@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { web3 } from "@coral-xyz/anchor";
+import { web3, BN } from "@coral-xyz/anchor";
+import { parse as uuidParse, v1 as uuidv1 } from "uuid";
 
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
@@ -12,7 +13,12 @@ import {
   getCases,
 } from "./util/setup";
 
-import { ACCOUNT_SIZE, HapiCoreProgram, CaseStatus } from "../lib";
+import {
+  ACCOUNT_SIZE,
+  HapiCoreProgram,
+  CaseStatus,
+  bufferFromString,
+} from "../lib";
 
 describe("HapiCore Reporter", () => {
   const program = new HapiCoreProgram(
@@ -67,7 +73,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(cs.id, cs.name, cs.url, bump)
+            .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.publicKey,
               network: networkAccount,
@@ -98,7 +104,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(cs.id, cs.name, cs.url, bump)
+            .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -129,7 +135,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(cs.id, cs.name, cs.url, bump)
+            .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -160,7 +166,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(cs.id, cs.name, cs.url, bump)
+            .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
@@ -171,6 +177,70 @@ describe("HapiCore Reporter", () => {
             .signers([reporter.keypair])
             .rpc(),
         programError("Unauthorized")
+      );
+    });
+
+    it("fail - invalid case id", async () => {
+      const caseId = bufferFromString("invalid-id", 16);
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+
+      let reporter = REPORTERS.publisher;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
+
+      const [caseAccount, bump] = web3.PublicKey.findProgramAddressSync(
+        [bufferFromString("case"), networkAccount.toBytes(), caseId],
+        program.programId
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .createCase(new BN(caseId, "be"), "name", "url", bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("InvalidCaseId")
+      );
+    });
+
+    it("fail - invalid case id version", async () => {
+      const caseId = uuidv1();
+      const networkAccount = program.findNetworkAddress(mainNetwork)[0];
+
+      let reporter = REPORTERS.publisher;
+      const reporterAccount = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      )[0];
+
+      const [caseAccount, bump] = await program.findCaseAddress(
+        networkAccount,
+        caseId
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .createCase(new BN(uuidParse(caseId), "be"), "name", "url", bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("InvalidCaseId")
       );
     });
 
@@ -190,7 +260,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(cs.id, cs.name, cs.url, bump)
+        .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -234,7 +304,7 @@ describe("HapiCore Reporter", () => {
       );
 
       await program.program.methods
-        .createCase(cs.id, cs.name, cs.url, bump)
+        .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -280,7 +350,7 @@ describe("HapiCore Reporter", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .createCase(cs.id, cs.name, cs.url, bump)
+            .createCase(new BN(uuidParse(cs.id), "be"), cs.name, cs.url, bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,

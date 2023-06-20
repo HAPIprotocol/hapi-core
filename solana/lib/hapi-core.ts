@@ -9,6 +9,7 @@ import {
 import { Signer } from "@solana/web3.js";
 import * as Token from "@solana/spl-token";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
+import { parse as uuidParse } from "uuid";
 
 import { IDL, HapiCoreSolana } from "../target/types/hapi_core_solana";
 import {
@@ -73,13 +74,9 @@ export class HapiCoreProgram {
     );
   }
 
-  public findCaseAddress(network: web3.PublicKey, caseId: BN) {
+  public findCaseAddress(network: web3.PublicKey, caseId: string) {
     return web3.PublicKey.findProgramAddressSync(
-      [
-        bufferFromString("case"),
-        network.toBytes(),
-        new Uint8Array(caseId.toArray("le", 8)),
-      ],
+      [bufferFromString("case"), network.toBytes(), uuidParse(caseId)],
       this.programId
     );
   }
@@ -161,7 +158,7 @@ export class HapiCoreProgram {
     return data;
   }
 
-  public async getCaseData(network_name: string, id: BN) {
+  public async getCaseData(network_name: string, id: string) {
     const network = this.findNetworkAddress(network_name)[0];
     const cs = this.findCaseAddress(network, id)[0];
 
@@ -447,7 +444,7 @@ export class HapiCoreProgram {
 
   async createCase(
     network_name: string,
-    id: BN,
+    id: string,
     name: string,
     url: string,
     wallet: Signer | Wallet,
@@ -460,7 +457,7 @@ export class HapiCoreProgram {
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .createCase(id, name, url, bump)
+      .createCase(new BN(uuidParse(id), "be"), name, url, bump)
       .accounts({
         sender: signer.publicKey,
         network,
@@ -476,7 +473,7 @@ export class HapiCoreProgram {
   async updateCase(
     network_name: string,
     reporter_id: BN,
-    id: BN,
+    id: string,
     wallet: Signer | Wallet,
     name?: string,
     url?: string,

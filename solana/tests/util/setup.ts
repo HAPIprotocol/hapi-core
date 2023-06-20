@@ -1,6 +1,6 @@
 import { web3, BN } from "@coral-xyz/anchor";
-import * as Token from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   stakeConfiguration,
@@ -26,7 +26,7 @@ export type Reporter = {
 };
 
 export type Case = {
-  id: BN;
+  id: string;
   name: string;
   url: string;
 };
@@ -106,17 +106,17 @@ export function getReporters() {
 export function getCases() {
   const cases: Record<string, Case> = {
     firstCase: {
-      id: randomId(),
+      id: uuidv4(),
       name: "safe network addresses",
       url: "https://big.hack",
     },
     secondCase: {
-      id: randomId(),
+      id: uuidv4(),
       name: "suspicious nft txes",
       url: "https://big.hack",
     },
     thirdCase: {
-      id: randomId(),
+      id: uuidv4(),
       name: "new case",
       url: "https://big.hack",
     },

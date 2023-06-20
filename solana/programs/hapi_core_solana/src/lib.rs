@@ -6,7 +6,10 @@ mod error;
 mod state;
 
 use context::*;
+use error::{print_error, ErrorCode};
 use state::{case::*, network::*, reporter::*};
+
+const UUID_VERSION: usize = 4;
 
 declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
@@ -178,12 +181,16 @@ pub mod hapi_core_solana {
 
     pub fn create_case(
         ctx: Context<CreateCase>,
-        case_id: u64,
+        case_id: u128,
         name: String,
         url: String,
         bump: u8,
     ) -> Result<()> {
         let case = &mut ctx.accounts.case;
+
+        if uuid::Uuid::from_u128(case_id).get_version_num() != UUID_VERSION {
+            return print_error(ErrorCode::InvalidCaseId);
+        }
 
         case.bump = bump;
         case.id = case_id;

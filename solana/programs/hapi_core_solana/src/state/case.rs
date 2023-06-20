@@ -9,8 +9,8 @@ pub struct Case {
     /// Seed bump for PDA
     pub bump: u8,
 
-    /// Sequantial case ID
-    pub id: u64,
+    /// Case UUID
+    pub id: u128,
 
     /// Network account
     pub network: Pubkey,
@@ -29,7 +29,7 @@ pub struct Case {
 }
 
 impl Case {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 8 + 128 + 32 + 1 + 128);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 16 + 32 + 128 + 32 + 1 + 128);
     pub const VERSION: u16 = 1;
 }
 

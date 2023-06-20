@@ -281,7 +281,7 @@ pub struct Unstake<'info> {
 
 #[derive(Accounts)]
 #[instruction(
-    case_id: u64,
+    case_id: u128,
     bump: u8,
 )]
 pub struct CreateCase<'info> {
@@ -308,7 +308,7 @@ pub struct CreateCase<'info> {
         init,
         payer = sender,
         owner = id(),
-        seeds = [b"case".as_ref(), network.key().as_ref(), &case_id.to_le_bytes()],
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case_id.to_be_bytes()],
         bump,
         space = Case::LEN + ACCOUNT_RESERVE_SPACE
     )]
@@ -342,7 +342,7 @@ pub struct UpdateCase<'info> {
     #[account(
         mut,
         owner = id(),
-        seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_le_bytes()],
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_be_bytes()],
         bump = case.bump,
     )]
     pub case: Account<'info, Case>,
