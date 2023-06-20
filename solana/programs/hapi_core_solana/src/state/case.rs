@@ -21,8 +21,8 @@ pub struct Case {
     /// Case reporter's account
     pub reporter: Pubkey,
 
-    /// Case state
-    pub state: CaseState,
+    /// Case status
+    pub status: CaseStatus,
 
     /// A link to publicly available case documentation
     pub url: String,
@@ -34,7 +34,7 @@ impl Case {
 }
 
 #[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
-pub enum CaseState {
+pub enum CaseStatus {
     /// Investigations over this case are finished
     Closed = 0,
 

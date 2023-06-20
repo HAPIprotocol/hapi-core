@@ -281,7 +281,7 @@ describe("HapiCore Reporter", () => {
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
-      expect(fetchedCaseAccount.state).toEqual(CaseStatus.Open);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
       expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
@@ -325,7 +325,7 @@ describe("HapiCore Reporter", () => {
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
-      expect(fetchedCaseAccount.state).toEqual(CaseStatus.Open);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
       expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
@@ -530,7 +530,7 @@ describe("HapiCore Reporter", () => {
 
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
-      expect(fetchedCaseAccount.state).toEqual(CaseStatus.Closed);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
     });
 
     it("authority updates first case", async () => {
@@ -568,7 +568,7 @@ describe("HapiCore Reporter", () => {
 
       expect(fetchedCaseAccount.name).toEqual(newName);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
-      expect(fetchedCaseAccount.state).toEqual(CaseStatus.Closed);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
     });
 
     it("authority updates second case", async () => {
@@ -604,7 +604,7 @@ describe("HapiCore Reporter", () => {
 
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
-      expect(fetchedCaseAccount.state).toEqual(CaseStatus.Closed);
+      expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
     });
   });
 });
