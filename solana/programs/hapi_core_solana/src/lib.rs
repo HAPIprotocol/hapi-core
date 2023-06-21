@@ -6,7 +6,10 @@ mod error;
 mod state;
 
 use context::*;
-use state::{network::*, reporter::*};
+use error::{print_error, ErrorCode};
+use state::{case::*, network::*, reporter::*};
+
+const UUID_VERSION: usize = 4;
 
 declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
@@ -68,13 +71,17 @@ pub mod hapi_core_solana {
 
     pub fn create_reporter(
         ctx: Context<CreateReporter>,
-        reporter_id: u64,
+        reporter_id: u128,
         account: Pubkey,
         name: String,
         role: ReporterRole,
         url: String,
         bump: u8,
     ) -> Result<()> {
+        if uuid::Uuid::from_u128(reporter_id).get_version_num() != UUID_VERSION {
+            return print_error(ErrorCode::InvalidUUID);
+        }
+
         let reporter = &mut ctx.accounts.reporter;
 
         reporter.bump = bump;
@@ -172,6 +179,46 @@ pub mod hapi_core_solana {
         reporter.status = ReporterStatus::Inactive;
         reporter.unlock_timestamp = 0;
         reporter.stake = 0;
+
+        Ok(())
+    }
+
+    pub fn create_case(
+        ctx: Context<CreateCase>,
+        case_id: u128,
+        name: String,
+        url: String,
+        bump: u8,
+    ) -> Result<()> {
+        if uuid::Uuid::from_u128(case_id).get_version_num() != UUID_VERSION {
+            return print_error(ErrorCode::InvalidUUID);
+        }
+
+        let case = &mut ctx.accounts.case;
+
+        case.bump = bump;
+        case.id = case_id;
+        case.name = name;
+        case.network = ctx.accounts.network.key();
+        case.reporter = ctx.accounts.reporter.key();
+        case.status = CaseStatus::Open;
+        case.url = url;
+        case.version = Case::VERSION;
+
+        Ok(())
+    }
+
+    pub fn update_case(
+        ctx: Context<UpdateCase>,
+        name: String,
+        url: String,
+        state: CaseStatus,
+    ) -> Result<()> {
+        let case = &mut ctx.accounts.case;
+
+        case.name = name;
+        case.url = url;
+        case.status = state;
 
         Ok(())
     }

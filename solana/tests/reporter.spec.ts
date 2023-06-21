@@ -1,19 +1,20 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3, BN } from "@coral-xyz/anchor";
+import { v1 as uuidv1 } from "uuid";
+
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
+import { programError } from "./util/error";
+import { getReporters, getNetwotks, setupNetworks } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
-  bufferFromString,
   ReporterRole,
   HapiCoreProgram,
   ReporterStatus,
-  stakeConfiguration,
-  rewardConfiguration,
+  uuidToBn,
+  bufferFromString,
 } from "../lib";
-import { programError } from "./util/error";
-import { assert } from "console";
 
 describe("HapiCore Reporter", () => {
   const program = new HapiCoreProgram(
@@ -29,152 +30,42 @@ describe("HapiCore Reporter", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
-  const REPORTERS: Record<
-    string,
-    {
-      name: string;
-      id: BN;
-      keypair: web3.Keypair;
-      role: keyof typeof ReporterRole;
-      url: string;
-    }
-  > = {
-    alice: {
-      id: new BN(1),
-      name: "alice",
-      keypair: web3.Keypair.generate(),
-      role: "Publisher",
-      url: "alice url",
-    },
-    bob: {
-      id: new BN(2),
-      name: "bob",
-      keypair: web3.Keypair.generate(),
-      role: "Tracer",
-      url: "bob url",
-    },
-    carol: {
-      id: new BN(3),
-      name: "carol",
-      keypair: web3.Keypair.generate(),
-      role: "Authority",
-      url: "carol url",
-    },
-    dave: {
-      id: new BN(4),
-      name: "dave",
-      keypair: web3.Keypair.generate(),
-      role: "Publisher",
-      url: "dave url",
-    },
-    erin: {
-      id: new BN(5),
-      name: "erin",
-      keypair: web3.Keypair.generate(),
-      role: "Appraiser",
-      url: "erin url",
-    },
-  };
+  const mainNetwork = "ReporterMainNetwork";
+  const secondaryNetwork = "ReporterSecondaryNetwork";
 
-  const NETWORKS: Record<
-    string,
-    {
-      name: string;
-      stakeConfiguration: stakeConfiguration;
-      rewardConfiguration: rewardConfiguration;
-    }
-  > = {
-    main: {
-      name: "ReporterTest",
-      stakeConfiguration: {
-        unlockDuration: new BN(1),
-        validatorStake: new BN(2_000),
-        tracerStake: new BN(3_000),
-        publisherStake: new BN(4_000),
-        authorityStake: new BN(5_000),
-        appraiserStake: new BN(6_000),
-      },
-      rewardConfiguration: {
-        addressTracerReward: new BN(1_000),
-        addressConfirmationReward: new BN(2_000),
-        assetTracerReward: new BN(3_000),
-        assetConfirmationReward: new BN(4_000),
-      },
-    },
-    secondary: {
-      name: "ReporterTest2",
-      stakeConfiguration: {
-        unlockDuration: new BN(1_000),
-        validatorStake: new BN(2_000),
-        tracerStake: new BN(3_000),
-        publisherStake: new BN(4_000),
-        authorityStake: new BN(5_000),
-        appraiserStake: new BN(6_000),
-      },
-      rewardConfiguration: {
-        addressTracerReward: new BN(1_000),
-        addressConfirmationReward: new BN(2_000),
-        assetTracerReward: new BN(3_000),
-        assetConfirmationReward: new BN(4_000),
-      },
-    },
-  };
-
-  const programDataAddress = program.findProgramDataAddress()[0];
+  const REPORTERS = getReporters();
+  let NETWORKS = getNetwotks([mainNetwork, secondaryNetwork]);
 
   beforeAll(async () => {
-    const wait: Promise<unknown>[] = [];
-
     stakeToken = new TestToken(provider);
     await stakeToken.mint(1_000_000_000);
 
     rewardToken = new TestToken(provider);
     await rewardToken.mint(1_000_000_000);
 
-    wait.push(
-      provider.connection.requestAirdrop(
-        another_authority.publicKey,
-        10_000_000
-      )
+    await provider.connection.requestAirdrop(
+      another_authority.publicKey,
+      10_000_000
     );
 
-    for (const key of Object.keys(NETWORKS)) {
-      const network = NETWORKS[key];
+    NETWORKS[mainNetwork].stakeConfiguration.unlockDuration = new BN(1);
 
-      const [networkAccount, bump] = program.findNetworkAddress(network.name);
-
-      const args = [
-        bufferFromString(network.name, 32).toJSON().data,
-        network.stakeConfiguration,
-        network.rewardConfiguration,
-        bump,
-      ];
-
-      wait.push(
-        program.program.rpc.createNetwork(...args, {
-          accounts: {
-            authority: authority.publicKey,
-            network: networkAccount,
-            rewardMint: rewardToken.mintAccount,
-            stakeMint: stakeToken.mintAccount,
-            programAccount: program.programId,
-            programData: programDataAddress,
-            systemProgram: web3.SystemProgram.programId,
-          },
-        })
-      );
-    }
-
-    await Promise.all(wait);
+    await setupNetworks(
+      program,
+      NETWORKS,
+      rewardToken.mintAccount,
+      stakeToken.mintAccount
+    );
   });
 
   describe("create_reporter", () => {
     it("fail - authority mismatch", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
-      const [networkAccount, _] = program.findNetworkAddress(networkName);
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+
       const [reporterAccount, bump] = program.findReporterAddress(
         networkAccount,
         reporter.id
@@ -182,65 +73,138 @@ describe("HapiCore Reporter", () => {
 
       const reporterRole = ReporterRole[reporter.role];
 
-      const args = [
-        reporter.id,
-        reporter.keypair.publicKey,
-        networkName,
-        reporterRole,
-        reporter.url,
-        bump,
-      ];
-
       await expectThrowError(
         () =>
-          program.program.rpc.createReporter(...args, {
-            accounts: {
+          program.program.methods
+            .createReporter(
+              uuidToBn(reporter.id),
+              reporter.keypair.publicKey,
+              networkName,
+              reporterRole,
+              reporter.url,
+              bump
+            )
+            .accounts({
               authority: another_authority.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               systemProgram: web3.SystemProgram.programId,
-            },
-            signers: [another_authority],
-          }),
+            })
+            .signers([another_authority])
+            .rpc(),
         programError("AuthorityMismatch")
       );
     });
 
+    it("fail - invalid reporter id", async () => {
+      const networkName = mainNetwork;
+      const reporterId = bufferFromString("invalid-id", 16);
+
+      const [networkAccount] = program.findNetworkAddress(networkName);
+
+      const reporter = REPORTERS.publisher;
+
+      const [reporterAccount, bump] = web3.PublicKey.findProgramAddressSync(
+        [bufferFromString("reporter"), networkAccount.toBytes(), reporterId],
+        program.programId
+      );
+
+      const reporterRole = ReporterRole[reporter.role];
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .createReporter(
+              new BN(reporterId, "be"),
+              reporter.keypair.publicKey,
+              networkName,
+              reporterRole,
+              reporter.url,
+              bump
+            )
+            .accounts({
+              authority: authority.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .rpc(),
+        programError("InvalidUUID")
+      );
+    });
+
+    it("fail - invalid reporter id", async () => {
+      const networkName = mainNetwork;
+      const reporterId = uuidv1();
+
+      const [networkAccount] = program.findNetworkAddress(networkName);
+
+      const reporter = REPORTERS.publisher;
+
+      const [reporterAccount, bump] = program.findReporterAddress(
+        networkAccount,
+        reporterId
+      );
+
+      const reporterRole = ReporterRole[reporter.role];
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .createReporter(
+              uuidToBn(reporterId),
+              reporter.keypair.publicKey,
+              networkName,
+              reporterRole,
+              reporter.url,
+              bump
+            )
+            .accounts({
+              authority: authority.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .rpc(),
+        programError("InvalidUUID")
+      );
+    });
+
     it("success - alice", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
-      const [networkAccount, _] = program.findNetworkAddress(networkName);
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
       const [reporterAccount, bump] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
 
       const reporterRole = ReporterRole[reporter.role];
+      const id = uuidToBn(reporter.id);
 
-      const args = [
-        reporter.id,
-        reporter.keypair.publicKey,
-        networkName,
-        reporterRole,
-        reporter.url,
-        bump,
-      ];
-
-      await program.program.rpc.createReporter(...args, {
-        accounts: {
+      await program.program.methods
+        .createReporter(
+          id,
+          reporter.keypair.publicKey,
+          networkName,
+          reporterRole,
+          reporter.url,
+          bump
+        )
+        .accounts({
           authority: authority.publicKey,
-          reporter: reporterAccount,
           network: networkAccount,
+          reporter: reporterAccount,
           systemProgram: web3.SystemProgram.programId,
-        },
-      });
+        })
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey
@@ -261,40 +225,40 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - bob", async () => {
-      const networkName = NETWORKS.secondary.name;
+      const networkName = secondaryNetwork;
 
-      const [networkAccount, _] = program.findNetworkAddress(networkName);
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const reporter = REPORTERS.bob;
+      const reporter = REPORTERS.tracer;
       const [reporterAccount, bump] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
 
       const reporterRole = ReporterRole[reporter.role];
+      const id = uuidToBn(reporter.id);
 
-      const args = [
-        reporter.id,
-        reporter.keypair.publicKey,
-        networkName,
-        reporterRole,
-        reporter.url,
-        bump,
-      ];
-
-      await program.program.rpc.createReporter(...args, {
-        accounts: {
+      await program.program.methods
+        .createReporter(
+          id,
+          reporter.keypair.publicKey,
+          networkName,
+          reporterRole,
+          reporter.url,
+          bump
+        )
+        .accounts({
           authority: authority.publicKey,
-          reporter: reporterAccount,
           network: networkAccount,
+          reporter: reporterAccount,
           systemProgram: web3.SystemProgram.programId,
-        },
-      });
+        })
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey
@@ -315,40 +279,40 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - carol", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
-      const [networkAccount, _] = program.findNetworkAddress(networkName);
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const reporter = REPORTERS.carol;
+      const reporter = REPORTERS.authority;
       const [reporterAccount, bump] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
 
       const reporterRole = ReporterRole[reporter.role];
+      const id = uuidToBn(reporter.id);
 
-      const args = [
-        reporter.id,
-        reporter.keypair.publicKey,
-        networkName,
-        reporterRole,
-        reporter.url,
-        bump,
-      ];
-
-      await program.program.rpc.createReporter(...args, {
-        accounts: {
+      await program.program.methods
+        .createReporter(
+          id,
+          reporter.keypair.publicKey,
+          networkName,
+          reporterRole,
+          reporter.url,
+          bump
+        )
+        .accounts({
           authority: authority.publicKey,
-          reporter: reporterAccount,
           network: networkAccount,
+          reporter: reporterAccount,
           systemProgram: web3.SystemProgram.programId,
-        },
-      });
+        })
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(reporter.id)).toBeTruthy();
+      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey
@@ -369,11 +333,11 @@ describe("HapiCore Reporter", () => {
     });
 
     it("fail - reporter already exists", async () => {
-      const networkName = NETWORKS.main.name;
+      const networkName = mainNetwork;
 
-      const [networkAccount, _] = program.findNetworkAddress(networkName);
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
       const [reporterAccount, bump] = program.findReporterAddress(
         networkAccount,
         reporter.id
@@ -381,25 +345,24 @@ describe("HapiCore Reporter", () => {
 
       const reporterRole = ReporterRole[reporter.role];
 
-      const args = [
-        reporter.id,
-        reporter.keypair.publicKey,
-        networkName,
-        reporterRole,
-        reporter.url,
-        bump,
-      ];
-
       await expectThrowError(
         () =>
-          program.program.rpc.createReporter(...args, {
-            accounts: {
+          program.program.methods
+            .createReporter(
+              uuidToBn(reporter.id),
+              reporter.keypair.publicKey,
+              networkName,
+              reporterRole,
+              reporter.url,
+              bump
+            )
+            .accounts({
               authority: authority.publicKey,
-              reporter: reporterAccount,
               network: networkAccount,
+              reporter: reporterAccount,
               systemProgram: web3.SystemProgram.programId,
-            },
-          }),
+            })
+            .rpc(),
         /custom program error: 0x0/
       );
     });
@@ -407,138 +370,121 @@ describe("HapiCore Reporter", () => {
 
   describe("update_reporter", () => {
     it("fail - authority mismatch", async () => {
-      const reporter = REPORTERS.alice;
-      const networkName = NETWORKS.main.name;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(networkName)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const reporterRole = ReporterRole[reporter.role];
-
-      const args = [
-        reporter.keypair.publicKey,
-        reporter.name,
-        reporterRole,
-        reporter.url,
-      ];
 
       await expectThrowError(
         () =>
-          program.program.rpc.updateReporter(...args, {
-            accounts: {
+          program.program.methods
+            .updateReporter(
+              reporter.keypair.publicKey,
+              reporter.name,
+              reporterRole,
+              reporter.url
+            )
+            .accounts({
               authority: another_authority.publicKey,
               reporter: reporterAccount,
               network: networkAccount,
-            },
-            signers: [another_authority],
-          }),
+            })
+            .signers([another_authority])
+            .rpc(),
         programError("AuthorityMismatch")
       );
     });
 
     it("fail - reporter does not exists", async () => {
-      const reporter = REPORTERS.dave;
-      let name = bufferFromString(reporter.name, 32);
+      const reporter = REPORTERS.validator;
+      const networkName = mainNetwork;
 
-      const networkName = NETWORKS.main.name;
+      const [networkAccount] = program.findNetworkAddress(networkName);
 
-      const networkAccount = program.findNetworkAddress(networkName)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const reporterRole = ReporterRole[reporter.role];
-
-      const args = [
-        reporter.keypair.publicKey,
-        reporter.name,
-        reporterRole,
-        reporter.url,
-      ];
 
       await expectThrowError(
         () =>
-          program.program.rpc.updateReporter(...args, {
-            accounts: {
+          program.program.methods
+            .updateReporter(
+              reporter.keypair.publicKey,
+              reporter.name,
+              reporterRole,
+              reporter.url
+            )
+            .accounts({
               authority: authority.publicKey,
               reporter: reporterAccount,
               network: networkAccount,
-            },
-          }),
+            })
+            .rpc(),
         /The program expected this account to be already initialized/
       );
     });
 
     it("fail - network mismatch", async () => {
-      const reporter = REPORTERS.alice;
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(secondaryNetwork);
+      const [reporterNetworkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporterNetworkAccount = program.findNetworkAddress(
-        NETWORKS.main.name
-      )[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         reporterNetworkAccount,
         reporter.id
       );
 
       const reporterRole = ReporterRole[reporter.role];
 
-      const args = [
-        reporter.keypair.publicKey,
-        reporter.name,
-        reporterRole,
-        reporter.url,
-      ];
-
       await expectThrowError(
         () =>
-          program.program.rpc.updateReporter(...args, {
-            accounts: {
+          program.program.methods
+            .updateReporter(
+              reporter.keypair.publicKey,
+              reporter.name,
+              reporterRole,
+              reporter.url
+            )
+            .accounts({
               authority: authority.publicKey,
               reporter: reporterAccount,
               network: networkAccount,
-            },
-          }),
+            })
+            .rpc(),
         /A seeds constraint was violated/
       );
     });
 
     it("success", async () => {
-      const reporter = REPORTERS.alice;
-      const networkName = NETWORKS.main.name;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(networkName)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const reporterRole = ReporterRole[reporter.role];
 
-      const args = [
-        reporter.keypair.publicKey,
-        reporter.name,
-        reporterRole,
-        reporter.url,
-      ];
-
-      await program.program.rpc.updateReporter(...args, {
-        accounts: {
+      await program.program.methods
+        .updateReporter(
+          reporter.keypair.publicKey,
+          reporter.name,
+          reporterRole,
+          reporter.url
+        )
+        .accounts({
           authority: authority.publicKey,
           reporter: reporterAccount,
           network: networkAccount,
-        },
-      });
+        })
+        .rpc();
+
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
@@ -553,17 +499,11 @@ describe("HapiCore Reporter", () => {
 
   describe("activate_reporter", () => {
     it("fail - network mismatch", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(secondaryNetwork);
+      const [reporterNetworkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
-
-      const reporterNetworkAccount = program.findNetworkAddress(
-        NETWORKS.main.name
-      )[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         reporterNetworkAccount,
         reporter.id
       );
@@ -579,32 +519,31 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         /A seeds constraint was violated/
       );
     });
 
     it("fail - invalid reporter", async () => {
-      const reporter = REPORTERS.alice;
-      const anotherReporter = REPORTERS.bob;
+      const reporter = REPORTERS.publisher;
+      const anotherReporter = REPORTERS.tracer;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -616,31 +555,30 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: anotherReporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [anotherReporter.keypair],
-          }),
+            })
+            .signers([anotherReporter.keypair])
+            .rpc(),
         programError("InvalidReporter")
       );
     });
 
     it("fail - invalid network ATA mint", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const invalidNetworkStakeTokenAccount = await rewardToken.getTokenAccount(
         networkAccount,
         true
@@ -652,31 +590,30 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount: invalidNetworkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("InvalidToken")
       );
     });
 
     it("fail - invalid reporter ATA mint", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -687,62 +624,60 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount: invalidReporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("InvalidToken")
       );
     });
 
     it("fail - invalid network ATA owner", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount: reporterStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("IllegalOwner")
       );
     });
 
     it("fail - invalid reporter ATA owner", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -750,31 +685,30 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount: networkStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("IllegalOwner")
       );
     });
 
     it("fail - insufficient funds", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -786,28 +720,29 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         /Error processing Instruction 0: custom program error: 0x1/
       );
     });
 
     it("success - alice", async () => {
-      const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
+      const reporter = REPORTERS.publisher;
+      let network = NETWORKS[mainNetwork];
 
-      const networkAccount = program.findNetworkAddress(network.name)[0];
+      const [networkAccount] = program.findNetworkAddress(network.name);
 
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
@@ -827,17 +762,18 @@ describe("HapiCore Reporter", () => {
         network.stakeConfiguration.publisherStake.toNumber()
       );
 
-      await program.program.rpc.activateReporter({
-        accounts: {
+      await program.program.methods
+        .activateReporter()
+        .accounts({
           signer: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
           networkStakeTokenAccount,
           reporterStakeTokenAccount,
           tokenProgram: stakeToken.programId,
-        },
-        signers: [reporter.keypair],
-      });
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
@@ -851,16 +787,15 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - bob", async () => {
-      const reporter = REPORTERS.bob;
-      let network = NETWORKS.secondary;
+      const reporter = REPORTERS.tracer;
+      let network = NETWORKS[secondaryNetwork];
 
-      const networkAccount = program.findNetworkAddress(network.name)[0];
+      const [networkAccount] = program.findNetworkAddress(network.name);
 
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -876,17 +811,18 @@ describe("HapiCore Reporter", () => {
         network.stakeConfiguration.publisherStake.toNumber()
       );
 
-      await program.program.rpc.activateReporter({
-        accounts: {
+      await program.program.methods
+        .activateReporter()
+        .accounts({
           signer: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
           networkStakeTokenAccount,
           reporterStakeTokenAccount,
           tokenProgram: stakeToken.programId,
-        },
-        signers: [reporter.keypair],
-      });
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
@@ -898,16 +834,14 @@ describe("HapiCore Reporter", () => {
     });
 
     it("fail - reporter is already activated", async () => {
-      const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
+      const reporter = REPORTERS.publisher;
+      let network = NETWORKS[mainNetwork];
+      const [networkAccount] = program.findNetworkAddress(network.name);
 
-      const networkAccount = program.findNetworkAddress(network.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -925,17 +859,18 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.activateReporter({
-            accounts: {
+          program.program.methods
+            .activateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("InvalidReporterStatus")
       );
     });
@@ -943,51 +878,49 @@ describe("HapiCore Reporter", () => {
 
   describe("dectivate_reporter", () => {
     it("fail - reporter is not activated", async () => {
-      const reporter = REPORTERS.carol;
+      const reporter = REPORTERS.authority;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       await expectThrowError(
         () =>
-          program.program.rpc.deactivateReporter({
-            accounts: {
+          program.program.methods
+            .deactivateReporter()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("InvalidReporterStatus")
       );
     });
 
     it("success - alice", async () => {
-      const reporter = REPORTERS.alice;
-      let network = NETWORKS.main;
+      const reporter = REPORTERS.publisher;
+      let network = NETWORKS[mainNetwork];
+      const [networkAccount] = program.findNetworkAddress(network.name);
 
-      const networkAccount = program.findNetworkAddress(network.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       let { slotIndex } = await provider.connection.getEpochInfo();
       const timestamp = await provider.connection.getBlockTime(slotIndex);
 
-      await program.program.rpc.deactivateReporter({
-        accounts: {
+      await program.program.methods
+        .deactivateReporter()
+        .accounts({
           signer: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
-        },
-        signers: [reporter.keypair],
-      });
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
@@ -1006,27 +939,26 @@ describe("HapiCore Reporter", () => {
     });
 
     it("success - bob", async () => {
-      const reporter = REPORTERS.bob;
-      let network = NETWORKS.secondary;
+      const reporter = REPORTERS.tracer;
+      let network = NETWORKS[secondaryNetwork];
+      const [networkAccount] = program.findNetworkAddress(network.name);
 
-      const networkAccount = program.findNetworkAddress(network.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       let { slotIndex } = await provider.connection.getEpochInfo();
       const timestamp = await provider.connection.getBlockTime(slotIndex);
 
-      await program.program.rpc.deactivateReporter({
-        accounts: {
+      await program.program.methods
+        .deactivateReporter()
+        .accounts({
           signer: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
-        },
-        signers: [reporter.keypair],
-      });
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
@@ -1045,15 +977,13 @@ describe("HapiCore Reporter", () => {
 
   describe("unstake", () => {
     it("fail - reporter is not deacactivated", async () => {
-      const reporter = REPORTERS.carol;
+      const reporter = REPORTERS.authority;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -1065,33 +995,30 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.unstake({
-            accounts: {
+          program.program.methods
+            .unstake()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("InvalidReporterStatus")
       );
     });
 
     it("fail - release epoch in future", async () => {
-      const reporter = REPORTERS.bob;
+      const reporter = REPORTERS.tracer;
+      const [networkAccount] = program.findNetworkAddress(secondaryNetwork);
 
-      const networkAccount = program.findNetworkAddress(
-        NETWORKS.secondary.name
-      )[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -1103,31 +1030,30 @@ describe("HapiCore Reporter", () => {
 
       await expectThrowError(
         () =>
-          program.program.rpc.unstake({
-            accounts: {
+          program.program.methods
+            .unstake()
+            .accounts({
               signer: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               networkStakeTokenAccount,
               reporterStakeTokenAccount,
               tokenProgram: stakeToken.programId,
-            },
-            signers: [reporter.keypair],
-          }),
+            })
+            .signers([reporter.keypair])
+            .rpc(),
         programError("ReleaseEpochInFuture")
       );
     });
 
     it("success", async () => {
-      const reporter = REPORTERS.alice;
+      const reporter = REPORTERS.publisher;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const networkAccount = program.findNetworkAddress(NETWORKS.main.name)[0];
-
-      const [reporterAccount, _] = program.findReporterAddress(
+      const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
       );
-
       const networkStakeTokenAccount = await stakeToken.getTokenAccount(
         networkAccount,
         true
@@ -1136,17 +1062,19 @@ describe("HapiCore Reporter", () => {
       const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
       );
-      await program.program.rpc.unstake({
-        accounts: {
+
+      await program.program.methods
+        .unstake()
+        .accounts({
           signer: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
           networkStakeTokenAccount,
           reporterStakeTokenAccount,
           tokenProgram: stakeToken.programId,
-        },
-        signers: [reporter.keypair],
-      });
+        })
+        .signers([reporter.keypair])
+        .rpc();
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);

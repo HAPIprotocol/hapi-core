@@ -19,6 +19,7 @@
     "@types/yargs": "^17.0.24",
     "ethers": "^6.3.0",
     "hapi-core-evm": "file:../evm",
+    "ts-node": "^10.9.1",
     "uuid": "^9.0.0",
     "yargs": "^17.7.2"
   }

@@ -24,4 +24,13 @@ pub enum ErrorCode {
     ReleaseEpochInFuture,
     #[msg("Mint has already been updated")]
     UpdatedMint,
+    #[msg("Account is not authorized to perform this action")]
+    Unauthorized,
+    #[msg("Invalid UUID")]
+    InvalidUUID,
+}
+
+pub fn print_error(error: ErrorCode) -> Result<()> {
+    msg!("Error: {}", error);
+    Err(error.into())
 }
