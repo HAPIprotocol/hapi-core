@@ -39,6 +39,11 @@ pub async fn set_authority(args: &ArgMatches) -> anyhow::Result<()> {
         .get_one::<String>("authority")
         .expect("`authority` is required");
 
+    context
+        .hapi_core
+        .is_valid_address(authority)
+        .map_err(|e| anyhow!("Invalid address in `authority`: {e}"))?;
+
     let tx = context.hapi_core.set_authority(authority).await?;
 
     match context.output {
@@ -52,11 +57,15 @@ pub async fn set_authority(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn update_stake_configuration(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    // TODO: validate address depending on network
     let token = args
         .get_one::<String>("token")
         .ok_or(anyhow!("`token` is required"))?
         .to_string();
+
+    context
+        .hapi_core
+        .is_valid_address(&token)
+        .map_err(|e| anyhow!("Invalid address in `token`: {e}"))?;
 
     let unlock_duration = args
         .get_one::<String>("unlock-duration")
@@ -125,11 +134,15 @@ pub async fn get_stake_configuration(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn update_reward_configuration(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    // TODO: validate address depending on network
     let token = args
         .get_one::<String>("token")
         .ok_or(anyhow!("`token` is required"))?
         .to_string();
+
+    context
+        .hapi_core
+        .is_valid_address(&token)
+        .map_err(|e| anyhow!("Invalid address in `token`: {e}"))?;
 
     let address_confirmation_reward = args
         .get_one::<String>("address-confirmation-reward")
@@ -244,11 +257,16 @@ pub async fn create_reporter(args: &ArgMatches) -> anyhow::Result<()> {
         .parse()
         .map_err(|e| anyhow!("`id`: {e}"))?;
 
-    let account = args
+    let account: String = args
         .get_one::<String>("account")
         .ok_or(anyhow!("`account` is required"))?
         .parse()
         .map_err(|e| anyhow!("`account`: {e}"))?;
+
+    context
+        .hapi_core
+        .is_valid_address(&account.clone())
+        .map_err(|e| anyhow!("Invalid address in `account`: {e}"))?;
 
     let role = args
         .get_one::<String>("role")
@@ -296,11 +314,16 @@ pub async fn update_reporter(args: &ArgMatches) -> anyhow::Result<()> {
         .parse()
         .map_err(|e| anyhow!("`id`: {e}"))?;
 
-    let account = args
+    let account: String = args
         .get_one::<String>("account")
         .ok_or(anyhow!("`account` is required"))?
         .parse()
         .map_err(|e| anyhow!("`account`: {e}"))?;
+
+    context
+        .hapi_core
+        .is_valid_address(&account.clone())
+        .map_err(|e| anyhow!("Invalid address in `account`: {e}"))?;
 
     let role = args
         .get_one::<String>("role")
@@ -524,6 +547,11 @@ pub async fn create_address(args: &ArgMatches) -> anyhow::Result<()> {
         .ok_or(anyhow!("`address` is required"))?
         .to_owned();
 
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
     let case_id = args
         .get_one::<String>("case-id")
         .ok_or(anyhow!("`case-id` is required"))?
@@ -566,6 +594,11 @@ pub async fn update_address(args: &ArgMatches) -> anyhow::Result<()> {
         .ok_or(anyhow!("`address` is required"))?
         .to_owned();
 
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
     let case_id = args
         .get_one::<String>("case-id")
         .ok_or(anyhow!("`case-id` is required"))?
@@ -606,6 +639,11 @@ pub async fn get_address(args: &ArgMatches) -> anyhow::Result<()> {
     let addr = args
         .get_one::<String>("address")
         .ok_or(anyhow!("`address` is required"))?;
+
+    context
+        .hapi_core
+        .is_valid_address(addr)
+        .map_err(|e| anyhow!("Invalid address in `addr`: {e}"))?;
 
     let address = context.hapi_core.get_address(addr).await?;
 
@@ -669,6 +707,11 @@ pub async fn create_asset(args: &ArgMatches) -> anyhow::Result<()> {
         .ok_or(anyhow!("`address` is required"))?
         .to_owned();
 
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
     let asset_id = args
         .get_one::<String>("asset-id")
         .ok_or(anyhow!("`asset-id` is required"))?
@@ -718,6 +761,11 @@ pub async fn update_asset(args: &ArgMatches) -> anyhow::Result<()> {
         .ok_or(anyhow!("`address` is required"))?
         .to_owned();
 
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
     let asset_id = args
         .get_one::<String>("asset-id")
         .ok_or(anyhow!("`asset-id` is required"))?
@@ -765,6 +813,11 @@ pub async fn get_asset(args: &ArgMatches) -> anyhow::Result<()> {
     let addr = args
         .get_one::<String>("address")
         .ok_or(anyhow!("`address` is required"))?;
+
+    context
+        .hapi_core
+        .is_valid_address(addr)
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
 
     let asset_id = args
         .get_one::<String>("asset-id")

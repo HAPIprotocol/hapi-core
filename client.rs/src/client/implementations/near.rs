@@ -23,6 +23,9 @@ impl HapiCoreNear {
 
 #[async_trait]
 impl HapiCore for HapiCoreNear {
+    fn is_valid_address(&self, _address: &str) -> Result<()> {
+        unimplemented!()
+    }
     async fn set_authority(&self, _address: &str) -> Result<Tx> {
         unimplemented!()
     }

@@ -23,6 +23,9 @@ impl HapiCoreSolana {
 
 #[async_trait]
 impl HapiCore for HapiCoreSolana {
+    fn is_valid_address(&self, _address: &str) -> Result<()> {
+        unimplemented!()
+    }
     async fn set_authority(&self, _address: &str) -> Result<Tx> {
         unimplemented!()
     }

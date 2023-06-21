@@ -157,6 +157,14 @@ impl TryFrom<hapi_core_contract::Asset> for Asset {
 
 #[async_trait]
 impl HapiCore for HapiCoreEvm {
+    fn is_valid_address(&self, address: &str) -> Result<()> {
+        address
+            .parse::<EthAddress>()
+            .map_err(|e| ClientError::EthAddressParse(e.to_string()))?;
+
+        Ok(())
+    }
+
     async fn set_authority(&self, address: &str) -> Result<Tx> {
         let authority: EthAddress = address
             .parse()
