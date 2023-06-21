@@ -1,14 +1,14 @@
 use serde_json::json;
 use std::{thread::sleep, time::Duration};
 
-mod setup;
-use setup::{
-    Setup, ADDRESS_ADDR_1, ADDRESS_CATEGORY_1, ADDRESS_RISK_1, CASE_NAME_1, CASE_URL_1,
-    CASE_UUID_1, PRIVATE_KEY_2, PUBLIC_KEY_1, PUBLIC_KEY_2, REPORTER_UUID_1, REPORTER_UUID_2,
-};
+mod assert;
+mod evm;
 
-mod util;
-use util::{is_tx_match, to_checksum};
+use evm::{
+    fixtures::*,
+    setup::Setup,
+    util::{is_tx_match, to_checksum},
+};
 
 #[tokio::test]
 async fn evm_works() {
@@ -351,8 +351,44 @@ async fn evm_works() {
     );
 
     t.print("Create an asset by authority");
+    assert_tx_output!(t.exec([
+        "asset",
+        "create",
+        ASSET_ADDR_1,
+        ASSET_ID_1,
+        CASE_UUID_1,
+        ASSET_CATEGORY_1,
+        ASSET_RISK_1,
+    ]));
+
+    t.print("Verify the asset count has increased");
+    assert_json_output!(t.exec(["asset", "count"]), json!({ "count": 1 }));
+
+    t.print("List assets");
+    assert_json_output!(
+        t.exec(["asset", "list"]),
+        json!({ "assets": [
+            {
+                "address": to_checksum(ASSET_ADDR_1),
+                "asset_id": ASSET_ID_1,
+                "case_id": CASE_UUID_1,
+                "reporter_id": REPORTER_UUID_1,
+                "risk": 7,
+                "category": "Counterfeit",
+            }
+        ]})
+    );
 
     t.print("Update the asset");
+    assert_tx_output!(t.exec([
+        "asset",
+        "update",
+        ASSET_ADDR_1,
+        ASSET_ID_1,
+        CASE_UUID_1,
+        "scam",
+        "6",
+    ]));
 
     t.print("Close the case by authority");
     assert_tx_output!(t.exec([
@@ -419,6 +455,32 @@ async fn evm_works() {
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
             "status": "Inactive",
+            "unlock_timestamp": 0
+        }})
+    );
+
+    t.print("Update publisher reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "update",
+        REPORTER_UUID_2,
+        PUBLIC_KEY_2,
+        "publisher",
+        "HAPI Publisher+",
+        "https://hapi.one/reporter/new_publisher",
+    ]));
+
+    t.print("Verify that the publisher reporter has been updated");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_2]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_2,
+            "account": to_checksum(PUBLIC_KEY_2),
+            "role": "Publisher",
+            "name": "HAPI Publisher+",
+            "url": "https://hapi.one/reporter/new_publisher",
+            "stake": "12",
+            "status": "Active",
             "unlock_timestamp": 0
         }})
     );

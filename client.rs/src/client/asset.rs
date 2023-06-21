@@ -52,8 +52,21 @@ impl FromStr for AssetId {
     }
 }
 
-pub struct CreateAssetInput {}
-pub struct UpdateAssetInput {}
+pub struct CreateAssetInput {
+    pub address: String,
+    pub asset_id: AssetId,
+    pub case_id: Uuid,
+    pub risk: u8,
+    pub category: Category,
+}
+
+pub struct UpdateAssetInput {
+    pub address: String,
+    pub asset_id: AssetId,
+    pub case_id: Uuid,
+    pub risk: u8,
+    pub category: Category,
+}
 
 #[derive(Default, Clone, Debug, Serialize)]
 pub struct Asset {

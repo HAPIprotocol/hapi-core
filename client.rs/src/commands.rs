@@ -664,7 +664,43 @@ pub async fn get_addresses(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn create_asset(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    let tx = context.hapi_core.create_asset(CreateAssetInput {}).await?;
+    let address = args
+        .get_one::<String>("address")
+        .ok_or(anyhow!("`address` is required"))?
+        .to_owned();
+
+    let asset_id = args
+        .get_one::<String>("asset-id")
+        .ok_or(anyhow!("`asset-id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`asset-id`: {e}"))?;
+
+    let case_id = args
+        .get_one::<String>("case-id")
+        .ok_or(anyhow!("`case-id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`case-id`: {e}"))?;
+
+    let risk = *args
+        .get_one::<u8>("risk")
+        .ok_or(anyhow!("`risk` is required"))?;
+
+    let category = args
+        .get_one::<String>("category")
+        .ok_or(anyhow!("`category` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`category`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .create_asset(CreateAssetInput {
+            address,
+            asset_id,
+            case_id,
+            risk,
+            category,
+        })
+        .await?;
 
     match context.output {
         CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
@@ -677,7 +713,43 @@ pub async fn create_asset(args: &ArgMatches) -> anyhow::Result<()> {
 pub async fn update_asset(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
-    let tx = context.hapi_core.update_asset(UpdateAssetInput {}).await?;
+    let address = args
+        .get_one::<String>("address")
+        .ok_or(anyhow!("`address` is required"))?
+        .to_owned();
+
+    let asset_id = args
+        .get_one::<String>("asset-id")
+        .ok_or(anyhow!("`asset-id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`asset-id`: {e}"))?;
+
+    let case_id = args
+        .get_one::<String>("case-id")
+        .ok_or(anyhow!("`case-id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`case-id`: {e}"))?;
+
+    let risk = *args
+        .get_one::<u8>("risk")
+        .ok_or(anyhow!("`risk` is required"))?;
+
+    let category = args
+        .get_one::<String>("category")
+        .ok_or(anyhow!("`category` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`category`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .update_asset(UpdateAssetInput {
+            address,
+            asset_id,
+            case_id,
+            risk,
+            category,
+        })
+        .await?;
 
     match context.output {
         CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),

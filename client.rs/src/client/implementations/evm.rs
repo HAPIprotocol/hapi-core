@@ -140,6 +140,21 @@ impl TryFrom<hapi_core_contract::Address> for Address {
     }
 }
 
+impl TryFrom<hapi_core_contract::Asset> for Asset {
+    type Error = ClientError;
+
+    fn try_from(asset: hapi_core_contract::Asset) -> Result<Self> {
+        Ok(Asset {
+            address: to_checksum(&asset.addr, None),
+            asset_id: asset.asset_id.into(),
+            case_id: Uuid::from_u128(asset.case_id),
+            reporter_id: Uuid::from_u128(asset.reporter_id),
+            risk: asset.risk,
+            category: asset.category.try_into()?,
+        })
+    }
+}
+
 #[async_trait]
 impl HapiCore for HapiCoreEvm {
     async fn set_authority(&self, address: &str) -> Result<Tx> {
@@ -575,19 +590,102 @@ impl HapiCore for HapiCoreEvm {
             .map(|c| c.into_iter().map(|r| r.try_into()).collect())?
     }
 
-    async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx> {
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        self.contract
+            .create_asset(
+                address,
+                input.asset_id.into(),
+                input.case_id.as_u128(),
+                input.risk,
+                input.category as u8,
+            )
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("create_asset", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`create_asset` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
-    async fn update_asset(&self, _input: UpdateAssetInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx> {
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        self.contract
+            .update_asset(
+                address,
+                input.asset_id.into(),
+                input.risk,
+                input.category as u8,
+                input.case_id.as_u128(),
+            )
+            .send()
+            .await
+            .map_err(|e| map_ethers_error("update_asset", e))?
+            .await?
+            .map_or_else(
+                || {
+                    Err(ClientError::Ethers(
+                        "`update_asset` failed: no receipt".to_string(),
+                    ))
+                },
+                |receipt| {
+                    Ok(Tx {
+                        hash: format!("{:?}", receipt.transaction_hash),
+                    })
+                },
+            )
     }
-    async fn get_asset(&self, _address: &str, _id: &AssetId) -> Result<Asset> {
-        unimplemented!()
+
+    async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {
+        let address = address.parse().map_err(|e| {
+            ClientError::Ethers(format!("failed to parse address `{}`: {}", address, e))
+        })?;
+
+        self.contract
+            .get_asset(address, id.clone().into())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_asset", e))
+            .map(|a| a.try_into())?
     }
+
     async fn get_asset_count(&self) -> Result<u64> {
-        unimplemented!()
+        self.contract
+            .get_asset_count()
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_asset_count", e))
+            .map(|c| c.as_u64())
     }
-    async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
-        unimplemented!()
+
+    async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>> {
+        self.contract
+            .get_assets(skip.into(), take.into())
+            .call()
+            .await
+            .map_err(|e| map_ethers_error("get_assets", e))
+            .map(|c| c.into_iter().map(|r| r.try_into()).collect())?
     }
 }

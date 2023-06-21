@@ -189,7 +189,46 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Reporter URL"),
                         ),
                 )
-                .subcommand(Command::new("update").about("Update reporter"))
+                .subcommand(
+                    Command::new("update")
+                        .about("Update reporter")
+                        .arg(
+                            Arg::new("id")
+                                .value_name("ID")
+                                .index(1)
+                                .required(true)
+                                .help("Reporter UUID"),
+                        )
+                        .arg(
+                            Arg::new("account")
+                                .value_name("ACCOUNT")
+                                .index(2)
+                                .required(true)
+                                .help("Reporter account address"),
+                        )
+                        .arg(
+                            Arg::new("role")
+                                .value_name("ROLE")
+                                .index(3)
+                                .required(true)
+                                .help("Reporter role")
+                                .value_parser(["validator", "tracer", "publisher", "authority"]),
+                        )
+                        .arg(
+                            Arg::new("name")
+                                .value_name("NAME")
+                                .index(4)
+                                .required(true)
+                                .help("Reporter display name"),
+                        )
+                        .arg(
+                            Arg::new("url")
+                                .value_name("URL")
+                                .index(5)
+                                .required(true)
+                                .help("Reporter URL"),
+                        ),
+                )
                 .subcommand(
                     Command::new("get").about("Get reporter").arg(
                         Arg::new("id")
@@ -475,8 +514,132 @@ pub(crate) fn matcher() -> ArgMatches {
             Command::new("asset")
                 .about("Asset commands")
                 .subcommand_required(true)
-                .subcommand(Command::new("create").about("Create asset"))
-                .subcommand(Command::new("update").about("Update asset"))
+                .subcommand(
+                    Command::new("create")
+                        .about("Create asset")
+                        .arg(
+                            Arg::new("address")
+                                .value_name("ADDRESS")
+                                .index(1)
+                                .required(true)
+                                .help("Asset contract address"),
+                        )
+                        .arg(
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
+                                .index(2)
+                                .required(true)
+                                .help("Asset ID"),
+                        )
+                        .arg(
+                            Arg::new("case-id")
+                                .value_name("CASE_ID")
+                                .index(3)
+                                .required(true)
+                                .help("Case UUID"),
+                        )
+                        .arg(
+                            Arg::new("category")
+                                .value_name("CATEGORY")
+                                .index(4)
+                                .required(true)
+                                .help("Category")
+                                .value_parser([
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
+                                ]),
+                        )
+                        .arg(
+                            Arg::new("risk")
+                                .value_name("RISK")
+                                .index(5)
+                                .required(true)
+                                .help("Risk score (0..10)")
+                                .value_parser(risk_parser),
+                        ),
+                )
+                .subcommand(
+                    Command::new("update")
+                        .about("Update asset")
+                        .arg(
+                            Arg::new("address")
+                                .value_name("ADDRESS")
+                                .index(1)
+                                .required(true)
+                                .help("Asset contract address"),
+                        )
+                        .arg(
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
+                                .index(2)
+                                .required(true)
+                                .help("Asset ID"),
+                        )
+                        .arg(
+                            Arg::new("case-id")
+                                .value_name("CASE_ID")
+                                .index(3)
+                                .required(true)
+                                .help("Case UUID"),
+                        )
+                        .arg(
+                            Arg::new("category")
+                                .value_name("CATEGORY")
+                                .index(4)
+                                .required(true)
+                                .help("Category")
+                                .value_parser([
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
+                                ]),
+                        )
+                        .arg(
+                            Arg::new("risk")
+                                .value_name("RISK")
+                                .index(5)
+                                .required(true)
+                                .help("Risk score (0..10)")
+                                .value_parser(risk_parser),
+                        ),
+                )
                 .subcommand(
                     Command::new("get")
                         .about("Get asset")
