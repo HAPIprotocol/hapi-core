@@ -28,6 +28,10 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Invalid UUID")]
     InvalidUUID,
+    #[msg("Case closed")]
+    CaseClosed,
+    #[msg("Risk score must be in 0..10 range")]
+    RiskOutOfRange,
 }
 
 pub fn print_error(error: ErrorCode) -> Result<()> {
