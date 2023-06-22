@@ -435,7 +435,7 @@ describe("HapiCore Address", () => {
     });
   });
 
-  describe("create_address", () => {
+  describe("update_address", () => {
     it("fail - validator can't update address", async () => {
       const address = ADDRESSES.firstAddress;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
@@ -632,6 +632,7 @@ describe("HapiCore Address", () => {
 
       expect(fetchedAddressAccount.category).toEqual(Category["Scam"]);
       expect(fetchedAddressAccount.riskScore).toEqual(10);
+      expect(fetchedAddressAccount.caseId).toEqual(uuidToBn(cs.id));
     });
 
     it("success - authority updates second case", async () => {
@@ -644,7 +645,7 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const cs = CASES.firstCase;
+      const cs = CASES.secondCase;
       const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
@@ -674,6 +675,7 @@ describe("HapiCore Address", () => {
 
       expect(fetchedAddressAccount.category).toEqual(Category["Gambling"]);
       expect(fetchedAddressAccount.riskScore).toEqual(7);
+      expect(fetchedAddressAccount.caseId).toEqual(uuidToBn(cs.id));
     });
 
     it("fail - case closed", async () => {
@@ -724,6 +726,311 @@ describe("HapiCore Address", () => {
             .signers([reporter.keypair])
             .rpc(),
         programError("CaseClosed")
+      );
+    });
+  });
+
+  describe("confirm_address", () => {
+    it("fail - reporter can't confirm address reported by himself", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.tracer;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - appraiser can't confirm address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.appraiser;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("success - publisher confirms second address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.publisher;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      const confirmationsBefore = (
+        await program.program.account.address.fetch(addressAccount)
+      ).confirmations;
+
+      await program.program.methods
+        .confirmAddress(bump)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          address: addressAccount,
+          confirmation: confirmationAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc(),
+        programError("Unauthorized");
+
+      const fetchedConfirmationAccount =
+        await program.program.account.confirmation.fetch(confirmationAccount);
+
+      expect(fetchedConfirmationAccount.bump).toEqual(bump);
+      expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(
+        fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
+      ).toBeTruthy();
+
+      let fetchedAddressAccount = await program.program.account.address.fetch(
+        addressAccount
+      );
+
+      expect(fetchedAddressAccount.confirmations).toEqual(
+        confirmationsBefore + 1
+      );
+
+      const addressInfo = await provider.connection.getAccountInfoAndContext(
+        confirmationAccount
+      );
+      expect(addressInfo.value.owner).toEqual(program.programId);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+    });
+
+    it("success - authority confirms second address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.authority;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      const confirmationsBefore = (
+        await program.program.account.address.fetch(addressAccount)
+      ).confirmations;
+
+      await program.program.methods
+        .confirmAddress(bump)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          address: addressAccount,
+          confirmation: confirmationAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc(),
+        programError("Unauthorized");
+
+      const fetchedConfirmationAccount =
+        await program.program.account.confirmation.fetch(confirmationAccount);
+
+      expect(fetchedConfirmationAccount.bump).toEqual(bump);
+      expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(
+        fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
+      ).toBeTruthy();
+
+      let fetchedAddressAccount = await program.program.account.address.fetch(
+        addressAccount
+      );
+
+      expect(fetchedAddressAccount.confirmations).toEqual(
+        confirmationsBefore + 1
+      );
+
+      const addressInfo = await provider.connection.getAccountInfoAndContext(
+        confirmationAccount
+      );
+      expect(addressInfo.value.owner).toEqual(program.programId);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+    });
+
+    it("success - validator confirms second address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.validator;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      const confirmationsBefore = (
+        await program.program.account.address.fetch(addressAccount)
+      ).confirmations;
+
+      await program.program.methods
+        .confirmAddress(bump)
+        .accounts({
+          sender: reporter.keypair.publicKey,
+          network: networkAccount,
+          reporter: reporterAccount,
+          address: addressAccount,
+          confirmation: confirmationAccount,
+          systemProgram: web3.SystemProgram.programId,
+        })
+        .signers([reporter.keypair])
+        .rpc(),
+        programError("Unauthorized");
+
+      const fetchedConfirmationAccount =
+        await program.program.account.confirmation.fetch(confirmationAccount);
+
+      expect(fetchedConfirmationAccount.bump).toEqual(bump);
+      expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(
+        fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
+      ).toBeTruthy();
+
+      let fetchedAddressAccount = await program.program.account.address.fetch(
+        addressAccount
+      );
+
+      expect(fetchedAddressAccount.confirmations).toEqual(
+        confirmationsBefore + 1
+      );
+
+      const addressInfo = await provider.connection.getAccountInfoAndContext(
+        confirmationAccount
+      );
+      expect(addressInfo.value.owner).toEqual(program.programId);
+      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+    });
+
+    it("fail - reporter can confirm address only once", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.validator;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        /Error processing Instruction 0: custom program error: 0x0/
       );
     });
   });

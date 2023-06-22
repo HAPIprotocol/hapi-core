@@ -1,5 +1,6 @@
 pub mod address;
 pub mod case;
+pub mod confirmation;
 pub mod network;
 pub mod reporter;
 

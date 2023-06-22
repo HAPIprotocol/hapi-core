@@ -101,6 +101,17 @@ export class HapiCoreProgram {
     );
   }
 
+  public findConfirmationAddress(account: web3.PublicKey, reporterId: string) {
+    return web3.PublicKey.findProgramAddressSync(
+      [
+        bufferFromString("confirmation"),
+        account.toBytes(),
+        uuidParse(reporterId),
+      ],
+      this.programId
+    );
+  }
+
   public async InitializeNetwork(
     name: string,
     stakeConfiguration: stakeConfiguration,

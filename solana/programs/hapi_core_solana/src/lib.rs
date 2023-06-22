@@ -265,4 +265,19 @@ pub mod hapi_core_solana {
 
         Ok(())
     }
+
+    pub fn confirm_address(ctx: Context<ConfirmAddress>, bump: u8) -> Result<()> {
+        let address = &mut ctx.accounts.address;
+        let confirmation = &mut ctx.accounts.confirmation;
+
+        confirmation.network = ctx.accounts.network.key();
+        confirmation.bump = bump;
+        confirmation.reporter_id = ctx.accounts.reporter.id;
+        confirmation.account = address.key();
+        confirmation.version = Address::VERSION;
+
+        address.confirmations += 1;
+
+        Ok(())
+    }
 }
