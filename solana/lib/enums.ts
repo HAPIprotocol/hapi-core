@@ -104,4 +104,5 @@ export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   network: 251,
   reporter: 397,
   case: 380,
+  address: 174,
 };

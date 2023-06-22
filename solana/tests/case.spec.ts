@@ -7,7 +7,7 @@ import { expectThrowError } from "./util/console";
 import { programError } from "./util/error";
 import {
   getReporters,
-  getNetwotks,
+  getNetworks,
   setupNetworks,
   setupReporters,
   getCases,
@@ -19,10 +19,9 @@ import {
   CaseStatus,
   bufferFromString,
   uuidToBn,
-  bnToUuid,
 } from "../lib";
 
-describe("HapiCore Reporter", () => {
+describe("HapiCore Case", () => {
   const program = new HapiCoreProgram(
     new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
   );
@@ -36,7 +35,7 @@ describe("HapiCore Reporter", () => {
   const mainNetwork = "CaseMainNetwork";
 
   const REPORTERS = getReporters();
-  let NETWORKS = getNetwotks([mainNetwork]);
+  const NETWORKS = getNetworks([mainNetwork]);
   const CASES = getCases();
 
   beforeAll(async () => {
@@ -262,8 +261,10 @@ describe("HapiCore Reporter", () => {
         cs.id
       );
 
+      const id = uuidToBn(cs.id);
+
       await program.program.methods
-        .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
+        .createCase(id, cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -278,6 +279,7 @@ describe("HapiCore Reporter", () => {
         caseAccount
       );
 
+      expect(fetchedCaseAccount.id.eq(id)).toBeTruthy();
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
@@ -306,8 +308,10 @@ describe("HapiCore Reporter", () => {
         cs.id
       );
 
+      const id = uuidToBn(cs.id);
+
       await program.program.methods
-        .createCase(uuidToBn(cs.id), cs.name, cs.url, bump)
+        .createCase(id, cs.name, cs.url, bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
@@ -322,6 +326,7 @@ describe("HapiCore Reporter", () => {
         caseAccount
       );
 
+      expect(fetchedCaseAccount.id.eq(id)).toBeTruthy();
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
@@ -369,7 +374,7 @@ describe("HapiCore Reporter", () => {
   });
 
   describe("update_case", () => {
-    it("tracer can't update case", async () => {
+    it("fail - tracer can't update case", async () => {
       const cs = CASES.firstCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -401,7 +406,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("validator can't update case", async () => {
+    it("fail - validator can't update case", async () => {
       const cs = CASES.firstCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -433,7 +438,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("appraiser can't update case", async () => {
+    it("fail - appraiser can't update case", async () => {
       const cs = CASES.firstCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -465,7 +470,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("reporter can't update another reporter's case", async () => {
+    it("fail - reporter can't update another reporter's case", async () => {
       const cs = CASES.secondCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -497,7 +502,7 @@ describe("HapiCore Reporter", () => {
       );
     });
 
-    it("publisher updates first case", async () => {
+    it("success - publisher updates first case", async () => {
       const cs = CASES.firstCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -533,7 +538,7 @@ describe("HapiCore Reporter", () => {
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
     });
 
-    it("authority updates first case", async () => {
+    it("success - authority updates first case", async () => {
       const cs = CASES.firstCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
@@ -571,7 +576,7 @@ describe("HapiCore Reporter", () => {
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Closed);
     });
 
-    it("authority updates second case", async () => {
+    it("success - authority updates second case", async () => {
       const cs = CASES.secondCase;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 

@@ -461,6 +461,7 @@ export class HapiCoreProgram {
         case: caseAccount,
         systemProgram: web3.SystemProgram.programId,
       })
+      .signers([signer])
       .rpc();
 
     return transactionHash;
