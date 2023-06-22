@@ -3,9 +3,8 @@ pub mod client;
 pub use client::{
     amount::Amount,
     implementations::{
-        HapiCoreEvm, HapiCoreEvmOptions, HapiCoreNear, HapiCoreSolana, TokenContractEvm,
-        TokenContractNear,
+        HapiCoreEvm, HapiCoreNear, HapiCoreSolana, TokenContractEvm, TokenContractNear,
     },
-    interface::HapiCore,
+    interface::{HapiCore, HapiCoreOptions},
     network::HapiCoreNetwork,
 };

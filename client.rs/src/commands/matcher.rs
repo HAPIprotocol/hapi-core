@@ -1,4 +1,5 @@
 use clap::{Arg, ArgGroup, ArgMatches, Command};
+use std::process::exit;
 
 pub(crate) fn matcher() -> ArgMatches {
     Command::new(env!("CARGO_CRATE_NAME"))
@@ -9,6 +10,7 @@ pub(crate) fn matcher() -> ArgMatches {
             Arg::new("network")
                 .global(true)
                 .long("network")
+                .short('n')
                 .value_name("NETWORK")
                 .env("NETWORK")
                 .value_parser(["ethereum", "bsc", "solana", "bitcoin", "near"])
@@ -18,35 +20,48 @@ pub(crate) fn matcher() -> ArgMatches {
             Arg::new("provider-url")
                 .global(true)
                 .long("provider-url")
+                .short('p')
                 .value_name("PROVIDER_URL")
                 .env("PROVIDER_URL")
-                .help("Provider URL"),
+                .help("Network-specific provider URL (e.g. RPC node URL)"),
         )
         .arg(
             Arg::new("contract-address")
                 .global(true)
                 .long("contract-address")
+                .short('c')
                 .value_name("CONTRACT_ADDRESS")
                 .env("CONTRACT_ADDRESS")
-                .help("Contract address"),
+                .help("Network-specific HAPI Core contract address"),
         )
         .arg(
             Arg::new("private-key")
                 .global(true)
                 .long("private-key")
+                .short('k')
                 .value_name("PRIVATE_KEY")
                 .env("PRIVATE_KEY")
                 .hide_env(true)
                 .help("Private key to sign transactions"),
         )
         .arg(
+            Arg::new("chain-id")
+                .global(true)
+                .long("chain-id")
+                .value_name("CHAIN_ID")
+                .env("CHAIN_ID")
+                .required(false)
+                .help("[OPTIONAL] Chain ID for EVM-based networks"),
+        )
+        .arg(
             Arg::new("output")
                 .global(true)
+                .short('o')
                 .long("output")
                 .value_name("OUTPUT")
                 .env("OUTPUT")
                 .value_parser(["json", "text"])
-                .help("Output format"),
+                .help("[OPTIONAL] Command output format"),
         )
         .subcommand_required(true)
         .subcommand(
@@ -755,7 +770,12 @@ pub(crate) fn matcher() -> ArgMatches {
                         ),
                 ),
         )
-        .get_matches()
+        .try_get_matches()
+        .map_err(|e| {
+            eprintln!("{}", e);
+            exit(1);
+        })
+        .unwrap()
 }
 
 fn risk_parser(val: &str) -> Result<u8, String> {

@@ -8,13 +8,14 @@ use std::{str::FromStr, sync::Arc};
 
 use crate::{
     client::{
+        interface::HapiCoreOptions,
         result::{ClientError, Result, Tx},
         token::TokenContract,
     },
     Amount,
 };
 
-use super::{error::map_ethers_error, options::HapiCoreEvmOptions, Provider, Signer};
+use super::{error::map_ethers_error, Provider, Signer};
 
 abigen!(
     TOKEN_CONTRACT,
@@ -26,7 +27,7 @@ pub struct TokenContractEvm {
 }
 
 impl TokenContractEvm {
-    pub fn new(options: HapiCoreEvmOptions) -> Result<Self> {
+    pub fn new(options: HapiCoreOptions) -> Result<Self> {
         let provider = Provider::try_from(options.provider_url.as_str())
             .map_err(|e| ClientError::UrlParseError(format!("`provider_url`: {e}")))?;
 

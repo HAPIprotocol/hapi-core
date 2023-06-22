@@ -50,3 +50,10 @@ pub trait HapiCore {
     async fn get_asset_count(&self) -> Result<u64>;
     async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>>;
 }
+
+pub struct HapiCoreOptions {
+    pub provider_url: String,
+    pub contract_address: String,
+    pub private_key: Option<String>,
+    pub chain_id: Option<u64>,
+}
