@@ -5,7 +5,7 @@ import { v1 as uuidv1 } from "uuid";
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
 import { programError } from "./util/error";
-import { getReporters, getNetwotks, setupNetworks } from "./util/setup";
+import { getReporters, getNetworks, setupNetworks } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
@@ -34,7 +34,7 @@ describe("HapiCore Reporter", () => {
   const secondaryNetwork = "ReporterSecondaryNetwork";
 
   const REPORTERS = getReporters();
-  let NETWORKS = getNetwotks([mainNetwork, secondaryNetwork]);
+  let NETWORKS = getNetworks([mainNetwork, secondaryNetwork]);
 
   beforeAll(async () => {
     stakeToken = new TestToken(provider);
