@@ -6,7 +6,8 @@ import {
   stakeConfiguration,
   rewardConfiguration,
   HapiCoreProgram,
-  ReporterRole,
+  ReporterRoleKeys,
+  CategoryKeys,
 } from "../../lib";
 
 import { TestToken } from "./token";
@@ -21,7 +22,7 @@ export type Reporter = {
   name: string;
   id: string;
   keypair: web3.Keypair;
-  role: keyof typeof ReporterRole;
+  role: ReporterRoleKeys;
   url: string;
 };
 
@@ -31,7 +32,13 @@ export type Case = {
   url: string;
 };
 
-export function getNetwotks(names: Array<string>) {
+export type Address = {
+  address: Buffer;
+  category: CategoryKeys;
+  riskScore: number;
+};
+
+export function getNetworks(names: Array<string>) {
   let networks: Record<string, Network> = {};
 
   names.forEach((name) => {
@@ -121,6 +128,37 @@ export function getCases() {
   return cases;
 }
 
+export function getAddresses() {
+  const cases: Record<string, Address> = {
+    firstAddress: {
+      address: Buffer.from(
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "hex"
+      ),
+      category: "WalletService",
+      riskScore: 3,
+    },
+    secondAddress: {
+      address: Buffer.from(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
+        "hex"
+      ),
+      category: "Mixer",
+      riskScore: 6,
+    },
+    thirdAddress: {
+      address: Buffer.from(
+        "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de",
+        "hex"
+      ),
+      category: "Sanctions",
+      riskScore: 10,
+    },
+  };
+
+  return cases;
+}
+
 export async function setupNetworks(
   program: HapiCoreProgram,
   networks: Record<string, Network>,
@@ -166,7 +204,7 @@ export async function setupReporters(
 
     await program.program.provider.connection.requestAirdrop(
       reporter.keypair.publicKey,
-      10_000_000
+      100_000_000
     );
 
     await stakeToken.getTokenAccount(reporter.keypair.publicKey);
@@ -176,7 +214,7 @@ export async function setupReporters(
   }
 }
 
-export async function createCases(
+export async function setupCases(
   program: HapiCoreProgram,
   cases: Record<string, Case>,
   network_name: string,

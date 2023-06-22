@@ -5,7 +5,9 @@ import {
   HapiCoreProgram,
   ReporterRoleKeys,
   CaseStatusKeys,
+  CategoryKeys,
   bnToUuid,
+  stringFromArray,
 } from "../../../solana/lib";
 
 import {
@@ -29,6 +31,7 @@ import {
   ReporterRoleFromString,
   ReporterStatusFromString,
   CaseStatusFromString,
+  CategoryFromString,
 } from "../util";
 
 export interface SolanaConnectionOptions {
@@ -338,19 +341,51 @@ export class HapiCoreSolana implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterId = await this.getReporterAccount();
+
+    const transactionHash = await this.contract.createAddress(
+      this.network,
+      address,
+      category.toString() as CategoryKeys,
+      risk,
+      caseId,
+      this.provider.wallet as NodeWallet,
+      reporterId
+    );
+
+    return { transactionHash };
   }
 
   async getAddress(address: string): Promise<Address> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getAddressData(this.network, address);
+
+    return {
+      address: stringFromArray(data.address),
+      caseId: bnToUuid(data.caseId),
+      reporterId: bnToUuid(data.reporterId),
+      risk: data.riskScore,
+      category: CategoryFromString(data.category.toString()),
+    };
   }
 
   async getAddressCount(): Promise<number> {
-    throw new Error("Method not implemented.");
+    const count = (await this.contract.getAllAddresses(this.network)).length;
+
+    return count;
   }
 
   async getAddresses(skip: number, take: number): Promise<Address[]> {
-    throw new Error("Method not implemented.");
+    const data = await this.contract.getAllAddresses(this.network);
+
+    let res = data.map((acc) => ({
+      address: stringFromArray(acc.account.address),
+      caseId: bnToUuid(acc.account.caseId),
+      reporterId: bnToUuid(acc.account.reporterId),
+      risk: acc.account.riskScore,
+      category: CategoryFromString(acc.account.category.toString()),
+    }));
+
+    return res.slice(skip, skip + take);
   }
 
   async updateAddress(
@@ -359,7 +394,33 @@ export class HapiCoreSolana implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
-    throw new Error("Method not implemented.");
+    const reporterId = await this.getReporterAccount();
+
+    const transactionHash = await this.contract.updateAddress(
+      this.network,
+      address,
+      this.provider.wallet as NodeWallet,
+      reporterId,
+      category.toString() as CategoryKeys,
+      risk,
+      caseId
+    );
+
+    return { transactionHash };
+  }
+
+  // TODO: this method is absent in interface
+  async confirmAddress(address: string): Promise<Result> {
+    const reporterId = await this.getReporterAccount();
+
+    const transactionHash = await this.contract.confirmAddress(
+      this.network,
+      address,
+      this.provider.wallet as NodeWallet,
+      reporterId
+    );
+
+    return { transactionHash };
   }
 
   async createAsset(

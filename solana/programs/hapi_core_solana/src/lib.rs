@@ -7,7 +7,7 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{case::*, network::*, reporter::*};
+use state::{address::*, case::*, network::*, reporter::*};
 
 const UUID_VERSION: usize = 4;
 
@@ -219,6 +219,64 @@ pub mod hapi_core_solana {
         case.name = name;
         case.url = url;
         case.status = state;
+
+        Ok(())
+    }
+
+    pub fn create_address(
+        ctx: Context<CreateAddress>,
+        addr: [u8; 64],
+        category: Category,
+        risk_score: u8,
+        bump: u8,
+    ) -> Result<()> {
+        if risk_score > 10 {
+            return print_error(ErrorCode::RiskOutOfRange);
+        }
+
+        let address = &mut ctx.accounts.address;
+
+        address.network = ctx.accounts.network.key();
+        address.address = addr;
+        address.bump = bump;
+        address.category = category;
+        address.risk_score = risk_score;
+        address.case_id = ctx.accounts.case.id;
+        address.reporter_id = ctx.accounts.reporter.id;
+        address.version = Address::VERSION;
+
+        Ok(())
+    }
+
+    pub fn update_address(
+        ctx: Context<UpdateAddress>,
+        category: Category,
+        risk_score: u8,
+    ) -> Result<()> {
+        if risk_score > 10 {
+            return print_error(ErrorCode::RiskOutOfRange);
+        }
+
+        let address = &mut ctx.accounts.address;
+
+        address.category = category;
+        address.risk_score = risk_score;
+        address.case_id = ctx.accounts.case.id;
+
+        Ok(())
+    }
+
+    pub fn confirm_address(ctx: Context<ConfirmAddress>, bump: u8) -> Result<()> {
+        let address = &mut ctx.accounts.address;
+        let confirmation = &mut ctx.accounts.confirmation;
+
+        confirmation.network = ctx.accounts.network.key();
+        confirmation.bump = bump;
+        confirmation.reporter_id = ctx.accounts.reporter.id;
+        confirmation.account = address.key();
+        confirmation.version = Address::VERSION;
+
+        address.confirmations += 1;
 
         Ok(())
     }
