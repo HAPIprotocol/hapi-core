@@ -346,7 +346,7 @@ describe("HapiCoreAsset ", () => {
         reporter.id
       );
 
-      const cs = CASES.firstCase;
+      const cs = CASES.secondCase;
       const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
@@ -700,12 +700,14 @@ describe("HapiCoreAsset ", () => {
       expect(fetchedassetAccount.riskScore).toEqual(7);
       expect(fetchedassetAccount.caseId).toEqual(uuidToBn(cs.id));
     });
+  });
 
-    it("fail - case closed", async () => {
+  describe("confirm_address", () => {
+    it("fail - reporter can't confirm asset reported by himself", async () => {
       const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporter = REPORTERS.authority;
+      const reporter = REPORTERS.publisher;
       const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
@@ -715,54 +717,6 @@ describe("HapiCoreAsset ", () => {
       const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      );
-
-      const [assetAccount] = await program.findAssetAddress(
-        networkAccount,
-        asset.address,
-        asset.id
-      );
-
-      await program.program.methods
-        .updateCase(cs.name, cs.url, CaseStatus.Closed)
-        .accounts({
-          sender: reporter.keypair.publicKey,
-          network: networkAccount,
-          reporter: reporterAccount,
-          case: caseAccount,
-          systemProgram: web3.SystemProgram.programId,
-        })
-        .signers([reporter.keypair])
-        .rpc();
-
-      await expectThrowError(
-        () =>
-          program.program.methods
-            .updateAsset(Category[asset.category], 11)
-            .accounts({
-              sender: reporter.keypair.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              asset: assetAccount,
-              systemProgram: web3.SystemProgram.programId,
-            })
-            .signers([reporter.keypair])
-            .rpc(),
-        programError("CaseClosed")
-      );
-    });
-  });
-
-  describe("confirm_address", () => {
-    it("fail - reporter can't confirm asset reported by himself", async () => {
-      const asset = ASSETS.secondAsset;
-      const [networkAccount] = program.findNetworkAddress(mainNetwork);
-
-      const reporter = REPORTERS.tracer;
-      const [reporterAccount] = program.findReporterAddress(
-        networkAccount,
-        reporter.id
       );
 
       const [assetAccount] = await program.findAssetAddress(
@@ -784,6 +738,7 @@ describe("HapiCoreAsset ", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
               asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
@@ -804,6 +759,12 @@ describe("HapiCoreAsset ", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [assetAccount] = await program.findAssetAddress(
         networkAccount,
         asset.address,
@@ -823,6 +784,7 @@ describe("HapiCoreAsset ", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
               asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
@@ -830,6 +792,164 @@ describe("HapiCoreAsset ", () => {
             .signers([reporter.keypair])
             .rpc(),
         programError("Unauthorized")
+      );
+    });
+
+    it("fail - authority can't confirm asset", async () => {
+      const asset = ASSETS.secondAsset;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.appraiser;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.address,
+        asset.id
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        assetAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAsset(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              asset: assetAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - tracer can't confirm asset", async () => {
+      const asset = ASSETS.secondAsset;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.tracer;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.address,
+        asset.id
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        assetAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAsset(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              asset: assetAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - case closed", async () => {
+      const asset = ASSETS.firstAsset;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.validator;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.firstCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [assetAccount] = await program.findAssetAddress(
+        networkAccount,
+        asset.address,
+        asset.id
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        assetAccount,
+        reporter.id
+      );
+
+      {
+        const reporter = REPORTERS.authority;
+        const [reporterAccount] = program.findReporterAddress(
+          networkAccount,
+          reporter.id
+        );
+
+        await program.program.methods
+          .updateCase(cs.name, cs.url, CaseStatus.Closed)
+          .accounts({
+            sender: reporter.keypair.publicKey,
+            network: networkAccount,
+            reporter: reporterAccount,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          })
+          .signers([reporter.keypair])
+          .rpc();
+      }
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAsset(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              asset: assetAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("CaseClosed")
       );
     });
 
@@ -843,68 +963,10 @@ describe("HapiCoreAsset ", () => {
         reporter.id
       );
 
-      const [assetAccount] = await program.findAssetAddress(
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
-        asset.address,
-        asset.id
-      );
-
-      const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        assetAccount,
-        reporter.id
-      );
-
-      const confirmationsBefore = (
-        await program.program.account.asset.fetch(assetAccount)
-      ).confirmations;
-
-      await program.program.methods
-        .confirmAsset(bump)
-        .accounts({
-          sender: reporter.keypair.publicKey,
-          network: networkAccount,
-          reporter: reporterAccount,
-          asset: assetAccount,
-          confirmation: confirmationAccount,
-          systemProgram: web3.SystemProgram.programId,
-        })
-        .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
-
-      const fetchedConfirmationAccount =
-        await program.program.account.confirmation.fetch(confirmationAccount);
-
-      expect(fetchedConfirmationAccount.bump).toEqual(bump);
-      expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
-      expect(fetchedConfirmationAccount.account).toEqual(assetAccount);
-      expect(
-        fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
-      ).toBeTruthy();
-
-      let fetchedassetAccount = await program.program.account.asset.fetch(
-        assetAccount
-      );
-
-      expect(fetchedassetAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
-
-      const assetInfo = await provider.connection.getAccountInfoAndContext(
-        confirmationAccount
-      );
-      expect(assetInfo.value.owner).toEqual(program.programId);
-      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
-    });
-
-    it("success - authority confirms second asset", async () => {
-      const asset = ASSETS.secondAsset;
-      const [networkAccount] = program.findNetworkAddress(mainNetwork);
-
-      const reporter = REPORTERS.authority;
-      const [reporterAccount] = program.findReporterAddress(
-        networkAccount,
-        reporter.id
+        cs.id
       );
 
       const [assetAccount] = await program.findAssetAddress(
@@ -928,6 +990,7 @@ describe("HapiCoreAsset ", () => {
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          case: caseAccount,
           asset: assetAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
@@ -971,6 +1034,12 @@ describe("HapiCoreAsset ", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [assetAccount] = await program.findAssetAddress(
         networkAccount,
         asset.address,
@@ -992,6 +1061,7 @@ describe("HapiCoreAsset ", () => {
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          case: caseAccount,
           asset: assetAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
@@ -1035,6 +1105,12 @@ describe("HapiCoreAsset ", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [assetAccount] = await program.findAssetAddress(
         networkAccount,
         asset.address,
@@ -1054,6 +1130,7 @@ describe("HapiCoreAsset ", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
               asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,

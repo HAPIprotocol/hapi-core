@@ -30,6 +30,8 @@ pub enum ErrorCode {
     InvalidUUID,
     #[msg("Case closed")]
     CaseClosed,
+    #[msg("Case mismatched")]
+    CaseMismatch,
     #[msg("Risk score must be in 0..10 range")]
     RiskOutOfRange,
 }

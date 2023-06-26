@@ -677,12 +677,14 @@ describe("HapiCore Address", () => {
       expect(fetchedAddressAccount.riskScore).toEqual(7);
       expect(fetchedAddressAccount.caseId).toEqual(uuidToBn(cs.id));
     });
+  });
 
-    it("fail - case closed", async () => {
+  describe("confirm_address", () => {
+    it("fail - reporter can't confirm address reported by himself", async () => {
       const address = ADDRESSES.firstAddress;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporter = REPORTERS.authority;
+      const reporter = REPORTERS.publisher;
       const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
@@ -692,53 +694,6 @@ describe("HapiCore Address", () => {
       const [caseAccount] = await program.findCaseAddress(
         networkAccount,
         cs.id
-      );
-
-      const [addressAccount] = await program.findAddressAddress(
-        networkAccount,
-        address.address
-      );
-
-      await program.program.methods
-        .updateCase(cs.name, cs.url, CaseStatus.Closed)
-        .accounts({
-          sender: reporter.keypair.publicKey,
-          network: networkAccount,
-          reporter: reporterAccount,
-          case: caseAccount,
-          systemProgram: web3.SystemProgram.programId,
-        })
-        .signers([reporter.keypair])
-        .rpc();
-
-      await expectThrowError(
-        () =>
-          program.program.methods
-            .updateAddress(Category[address.category], 11)
-            .accounts({
-              sender: reporter.keypair.publicKey,
-              network: networkAccount,
-              reporter: reporterAccount,
-              case: caseAccount,
-              address: addressAccount,
-              systemProgram: web3.SystemProgram.programId,
-            })
-            .signers([reporter.keypair])
-            .rpc(),
-        programError("CaseClosed")
-      );
-    });
-  });
-
-  describe("confirm_address", () => {
-    it("fail - reporter can't confirm address reported by himself", async () => {
-      const address = ADDRESSES.secondAddress;
-      const [networkAccount] = program.findNetworkAddress(mainNetwork);
-
-      const reporter = REPORTERS.tracer;
-      const [reporterAccount] = program.findReporterAddress(
-        networkAccount,
-        reporter.id
       );
 
       const [addressAccount] = await program.findAddressAddress(
@@ -759,6 +714,52 @@ describe("HapiCore Address", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - authority can't confirm address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.authority;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
               address: addressAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
@@ -779,6 +780,12 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [addressAccount] = await program.findAddressAddress(
         networkAccount,
         address.address
@@ -797,6 +804,7 @@ describe("HapiCore Address", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
               address: addressAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
@@ -804,6 +812,116 @@ describe("HapiCore Address", () => {
             .signers([reporter.keypair])
             .rpc(),
         programError("Unauthorized")
+      );
+    });
+
+    it("fail - tracer can't confirm address", async () => {
+      const address = ADDRESSES.secondAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.tracer;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("Unauthorized")
+      );
+    });
+
+    it("fail - case closed", async () => {
+      const address = ADDRESSES.firstAddress;
+      const [networkAccount] = program.findNetworkAddress(mainNetwork);
+
+      const reporter = REPORTERS.validator;
+      const [reporterAccount] = program.findReporterAddress(
+        networkAccount,
+        reporter.id
+      );
+
+      const cs = CASES.firstCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
+      const [addressAccount] = await program.findAddressAddress(
+        networkAccount,
+        address.address
+      );
+
+      const [confirmationAccount, bump] = await program.findConfirmationAddress(
+        addressAccount,
+        reporter.id
+      );
+
+      {
+        const reporter = REPORTERS.authority;
+        const [reporterAccount] = program.findReporterAddress(
+          networkAccount,
+          reporter.id
+        );
+
+        await program.program.methods
+          .updateCase(cs.name, cs.url, CaseStatus.Closed)
+          .accounts({
+            sender: reporter.keypair.publicKey,
+            network: networkAccount,
+            reporter: reporterAccount,
+            case: caseAccount,
+            systemProgram: web3.SystemProgram.programId,
+          })
+          .signers([reporter.keypair])
+          .rpc();
+      }
+
+      await expectThrowError(
+        () =>
+          program.program.methods
+            .confirmAddress(bump)
+            .accounts({
+              sender: reporter.keypair.publicKey,
+              network: networkAccount,
+              reporter: reporterAccount,
+              case: caseAccount,
+              address: addressAccount,
+              confirmation: confirmationAccount,
+              systemProgram: web3.SystemProgram.programId,
+            })
+            .signers([reporter.keypair])
+            .rpc(),
+        programError("CaseClosed")
       );
     });
 
@@ -817,67 +935,10 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
         networkAccount,
-        address.address
-      );
-
-      const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
-        reporter.id
-      );
-
-      const confirmationsBefore = (
-        await program.program.account.address.fetch(addressAccount)
-      ).confirmations;
-
-      await program.program.methods
-        .confirmAddress(bump)
-        .accounts({
-          sender: reporter.keypair.publicKey,
-          network: networkAccount,
-          reporter: reporterAccount,
-          address: addressAccount,
-          confirmation: confirmationAccount,
-          systemProgram: web3.SystemProgram.programId,
-        })
-        .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
-
-      const fetchedConfirmationAccount =
-        await program.program.account.confirmation.fetch(confirmationAccount);
-
-      expect(fetchedConfirmationAccount.bump).toEqual(bump);
-      expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
-      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
-      expect(
-        fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
-      ).toBeTruthy();
-
-      let fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
-      );
-
-      expect(fetchedAddressAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
-
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
-        confirmationAccount
-      );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
-    });
-
-    it("success - authority confirms second address", async () => {
-      const address = ADDRESSES.secondAddress;
-      const [networkAccount] = program.findNetworkAddress(mainNetwork);
-
-      const reporter = REPORTERS.authority;
-      const [reporterAccount] = program.findReporterAddress(
-        networkAccount,
-        reporter.id
+        cs.id
       );
 
       const [addressAccount] = await program.findAddressAddress(
@@ -900,6 +961,7 @@ describe("HapiCore Address", () => {
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          case: caseAccount,
           address: addressAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
@@ -943,6 +1005,12 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [addressAccount] = await program.findAddressAddress(
         networkAccount,
         address.address
@@ -963,6 +1031,7 @@ describe("HapiCore Address", () => {
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
+          case: caseAccount,
           address: addressAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
@@ -1006,6 +1075,12 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
+      const cs = CASES.secondCase;
+      const [caseAccount] = await program.findCaseAddress(
+        networkAccount,
+        cs.id
+      );
+
       const [addressAccount] = await program.findAddressAddress(
         networkAccount,
         address.address
@@ -1024,6 +1099,7 @@ describe("HapiCore Address", () => {
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
+              case: caseAccount,
               address: addressAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,

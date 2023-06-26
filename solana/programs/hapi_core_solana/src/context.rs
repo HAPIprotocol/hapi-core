@@ -465,13 +465,24 @@ pub struct ConfirmAddress<'info> {
 
     #[account(
         owner = id(),
-        constraint = (address.reporter_id != reporter.id) && (reporter.role != ReporterRole::Appraiser) @ ErrorCode::Unauthorized,
+        constraint = (address.reporter_id != reporter.id) &&
+        (reporter.role == ReporterRole::Validator ||
+        reporter.role == ReporterRole::Publisher) @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        constraint = case.id == address.case_id @ ErrorCode::CaseMismatch,
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_be_bytes()],
+        bump = case.bump,
+    )]
+    pub case: Account<'info, Case>,
 
     #[account(
         mut,
@@ -613,13 +624,24 @@ pub struct ConfirmAsset<'info> {
 
     #[account(
         owner = id(),
-        constraint = (asset.reporter_id != reporter.id) && (reporter.role != ReporterRole::Appraiser) @ ErrorCode::Unauthorized,
+        constraint = (asset.reporter_id != reporter.id) &&
+            (reporter.role == ReporterRole::Validator ||
+            reporter.role == ReporterRole::Publisher) @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
         bump = reporter.bump,
     )]
     pub reporter: Account<'info, Reporter>,
+
+    #[account(
+        owner = id(),
+        constraint = case.status == CaseStatus::Open @ ErrorCode::CaseClosed,
+        constraint = case.id == asset.case_id @ ErrorCode::CaseMismatch,
+        seeds = [b"case".as_ref(), network.key().as_ref(), &case.id.to_be_bytes()],
+        bump = case.bump,
+    )]
+    pub case: Account<'info, Case>,
 
     #[account(
         mut,
