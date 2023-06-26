@@ -7,7 +7,7 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{address::*, case::*, network::*, reporter::*};
+use state::{address::*, asset::*, case::*, network::*, reporter::*, utils::*};
 
 const UUID_VERSION: usize = 4;
 
@@ -15,6 +15,8 @@ declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
 #[program]
 pub mod hapi_core_solana {
+    use crate::state::confirmation::Confirmation;
+
     use super::*;
 
     pub fn create_network(
@@ -274,9 +276,73 @@ pub mod hapi_core_solana {
         confirmation.bump = bump;
         confirmation.reporter_id = ctx.accounts.reporter.id;
         confirmation.account = address.key();
-        confirmation.version = Address::VERSION;
+        confirmation.version = Confirmation::VERSION;
 
         address.confirmations += 1;
+
+        Ok(())
+    }
+
+    pub fn create_asset(
+        ctx: Context<CreateAsset>,
+        addr: [u8; 64],
+        asset_id: u128,
+        category: Category,
+        risk_score: u8,
+        bump: u8,
+    ) -> Result<()> {
+        if risk_score > 10 {
+            return print_error(ErrorCode::RiskOutOfRange);
+        }
+
+        let asset = &mut ctx.accounts.asset;
+
+        asset.network = ctx.accounts.network.key();
+        asset.address = addr;
+        asset.id = asset_id;
+        asset.bump = bump;
+        asset.category = category;
+        asset.risk_score = risk_score;
+        asset.case_id = ctx.accounts.case.id;
+        asset.reporter_id = ctx.accounts.reporter.id;
+        asset.version = Asset::VERSION;
+
+        Ok(())
+    }
+
+    pub fn update_asset(
+        ctx: Context<UpdateAsset>,
+        // addr: [u8; 64],
+        // asset_id: u128,
+        category: Category,
+        risk_score: u8,
+    ) -> Result<()> {
+        if risk_score > 10 {
+            return print_error(ErrorCode::RiskOutOfRange);
+        }
+
+        let asset = &mut ctx.accounts.asset;
+
+        // asset.address = addr;
+        // asset.id = asset_id;
+        asset.category = category;
+        asset.risk_score = risk_score;
+        asset.case_id = ctx.accounts.case.id;
+
+        Ok(())
+    }
+
+    pub fn confirm_asset(ctx: Context<ConfirmAsset>, bump: u8) -> Result<()> {
+        let asset = &mut ctx.accounts.asset;
+        let confirmation = &mut ctx.accounts.confirmation;
+
+        confirmation.network = ctx.accounts.network.key();
+        confirmation.bump = bump;
+        confirmation.reporter_id = ctx.accounts.reporter.id;
+        confirmation.account = asset.key();
+        confirmation.version = Confirmation::VERSION;
+
+        asset.confirmations += 1;
 
         Ok(())
     }

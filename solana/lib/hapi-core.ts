@@ -90,15 +90,15 @@ export class HapiCoreProgram {
 
   public findAssetAddress(
     network: web3.PublicKey,
-    mint: Buffer,
-    assetId: Buffer | Uint8Array
+    address: Buffer,
+    assetId: string
   ) {
     return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("asset"),
         network.toBytes(),
-        ...addrToSeeds(mint),
-        assetId,
+        ...addrToSeeds(address),
+        uuidParse(assetId),
       ],
       this.programId
     );
