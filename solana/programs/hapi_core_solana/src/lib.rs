@@ -312,8 +312,6 @@ pub mod hapi_core_solana {
 
     pub fn update_asset(
         ctx: Context<UpdateAsset>,
-        // addr: [u8; 64],
-        // asset_id: u128,
         category: Category,
         risk_score: u8,
     ) -> Result<()> {
@@ -323,8 +321,6 @@ pub mod hapi_core_solana {
 
         let asset = &mut ctx.accounts.asset;
 
-        // asset.address = addr;
-        // asset.id = asset_id;
         asset.category = category;
         asset.risk_score = risk_score;
         asset.case_id = ctx.accounts.case.id;
