@@ -55,7 +55,7 @@ async fn evm_works() {
     t.print("Check that initial stake configuration is empty");
     assert_error_output!(
         t.exec(["configuration", "get-stake"]),
-        "Error: Ethers error: `get_stake_configuration` reverted with: Stake configuration is not set"
+        "Error: Ethers error: `stake_configuration` reverted with: Stake configuration is not set"
     );
 
     t.print("Update stake configuration");
@@ -88,7 +88,7 @@ async fn evm_works() {
     t.print("Check that initial reward configuration is empty");
     assert_error_output!(
         t.exec(["configuration", "get-reward"]),
-        "Error: Ethers error: `get_reward_configuration` reverted with: Reward configuration is not set"
+        "Error: Ethers error: `reward_configuration` reverted with: Reward configuration is not set"
     );
 
     t.print("Update reward configuration");
