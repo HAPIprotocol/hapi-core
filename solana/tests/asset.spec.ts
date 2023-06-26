@@ -8,7 +8,7 @@ import {
   getReporters,
   getNetworks,
   getCases,
-  getAddresses,
+  getAssets,
   setupNetworks,
   setupReporters,
   setupCases,
@@ -23,7 +23,7 @@ import {
   CaseStatus,
 } from "../lib";
 
-describe("HapiCore Address", () => {
+describe("HapiCoreAsset ", () => {
   const program = new HapiCoreProgram(
     new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
   );
@@ -34,12 +34,12 @@ describe("HapiCore Address", () => {
   let stakeToken: TestToken;
   let rewardToken: TestToken;
 
-  const mainNetwork = "AddressMainNetwork";
+  const mainNetwork = "AssetMainNetwork";
 
   const REPORTERS = getReporters();
   const NETWORKS = getNetworks([mainNetwork]);
   const CASES = getCases();
-  const ADDRESSES = getAddresses();
+  const ASSETS = getAssets();
 
   beforeAll(async () => {
     stakeToken = new TestToken(provider);
@@ -60,8 +60,8 @@ describe("HapiCore Address", () => {
   });
 
   describe("create_address", () => {
-    it("fail - validator can't report address", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("fail - validator can't report asset", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.validator;
@@ -76,18 +76,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .createAddress(
-              [...address.address],
-              Category[address.category],
-              address.riskScore,
+            .createAsset(
+              [...asset.address],
+              uuidToBn(asset.id),
+              Category[asset.category],
+              asset.riskScore,
               bump
             )
             .accounts({
@@ -95,7 +97,7 @@ describe("HapiCore Address", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -104,8 +106,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("fail - appraiser can't report address", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("fail - appraiser can't report asset", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.appraiser;
@@ -120,18 +122,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .createAddress(
-              [...address.address],
-              Category[address.category],
-              address.riskScore,
+            .createAsset(
+              [...asset.address],
+              uuidToBn(asset.id),
+              Category[asset.category],
+              asset.riskScore,
               bump
             )
             .accounts({
@@ -139,7 +143,7 @@ describe("HapiCore Address", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -149,7 +153,7 @@ describe("HapiCore Address", () => {
     });
 
     it("fail - risk out of range", async () => {
-      const address = ADDRESSES.firstAddress;
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.publisher;
@@ -164,17 +168,19 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .createAddress(
-              [...address.address],
-              Category[address.category],
+            .createAsset(
+              [...asset.address],
+              uuidToBn(asset.id),
+              Category[asset.category],
               11,
               bump
             )
@@ -183,7 +189,7 @@ describe("HapiCore Address", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -192,8 +198,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("success - publisher creates first address ", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("success - publisher creates first asset ", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.publisher;
@@ -208,16 +214,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
+      const id = uuidToBn(asset.id);
+
       await program.program.methods
-        .createAddress(
-          [...address.address],
-          Category[address.category],
-          address.riskScore,
+        .createAsset(
+          [...asset.address],
+          id,
+          Category[asset.category],
+          asset.riskScore,
           bump
         )
         .accounts({
@@ -225,41 +235,40 @@ describe("HapiCore Address", () => {
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
-          address: addressAccount,
+          asset: assetAccount,
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      const fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.bump).toEqual(bump);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
-      expect(fetchedAddressAccount.category).toEqual(
-        Category[address.category]
-      );
-      expect(fetchedAddressAccount.riskScore).toEqual(address.riskScore);
-      expect(fetchedAddressAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedassetAccount.bump).toEqual(bump);
+      expect(fetchedassetAccount.network).toEqual(networkAccount);
+      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedassetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+        padBuffer(asset.address, 64)
       );
+      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
-        addressAccount
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
+        assetAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.asset);
     });
 
-    it("success - tracer creates second address ", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("success - tracer creates second asset ", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.tracer;
@@ -274,16 +283,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
+      const id = uuidToBn(asset.id);
+
       await program.program.methods
-        .createAddress(
-          [...address.address],
-          Category[address.category],
-          address.riskScore,
+        .createAsset(
+          [...asset.address],
+          id,
+          Category[asset.category],
+          asset.riskScore,
           bump
         )
         .accounts({
@@ -291,41 +304,40 @@ describe("HapiCore Address", () => {
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
-          address: addressAccount,
+          asset: assetAccount,
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      const fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.bump).toEqual(bump);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
-      expect(fetchedAddressAccount.category).toEqual(
-        Category[address.category]
-      );
-      expect(fetchedAddressAccount.riskScore).toEqual(address.riskScore);
-      expect(fetchedAddressAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedassetAccount.bump).toEqual(bump);
+      expect(fetchedassetAccount.network).toEqual(networkAccount);
+      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedassetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+        padBuffer(asset.address, 64)
       );
+      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
-        addressAccount
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
+        assetAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.asset);
     });
 
-    it("success - authority creates third address ", async () => {
-      const address = ADDRESSES.thirdAddress;
+    it("success - authority creates third asset ", async () => {
+      const asset = ASSETS.thirdAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.authority;
@@ -340,16 +352,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
+      const id = uuidToBn(asset.id);
+
       await program.program.methods
-        .createAddress(
-          [...address.address],
-          Category[address.category],
-          address.riskScore,
+        .createAsset(
+          [...asset.address],
+          id,
+          Category[asset.category],
+          asset.riskScore,
           bump
         )
         .accounts({
@@ -357,41 +373,40 @@ describe("HapiCore Address", () => {
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
-          address: addressAccount,
+          asset: assetAccount,
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      const fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.bump).toEqual(bump);
-      expect(fetchedAddressAccount.network).toEqual(networkAccount);
-      expect(fetchedAddressAccount.category).toEqual(
-        Category[address.category]
-      );
-      expect(fetchedAddressAccount.riskScore).toEqual(address.riskScore);
-      expect(fetchedAddressAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedassetAccount.bump).toEqual(bump);
+      expect(fetchedassetAccount.network).toEqual(networkAccount);
+      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedassetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+        padBuffer(asset.address, 64)
       );
+      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
-        addressAccount
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
+        assetAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.address);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.asset);
     });
 
-    it("fail - address can be reported only once", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("fail - asset can be reported only once", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.authority;
@@ -406,18 +421,20 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount, bump] = await program.findAddressAddress(
+      const [assetAccount, bump] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .createAddress(
-              [...address.address],
-              Category[address.category],
-              address.riskScore,
+            .createAsset(
+              [...asset.address],
+              uuidToBn(asset.id),
+              Category[asset.category],
+              asset.riskScore,
               bump
             )
             .accounts({
@@ -425,7 +442,7 @@ describe("HapiCore Address", () => {
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -436,8 +453,8 @@ describe("HapiCore Address", () => {
   });
 
   describe("update_address", () => {
-    it("fail - validator can't update address", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("fail - validator can't update asset", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.validator;
@@ -452,21 +469,22 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .updateAddress(Category[address.category], address.riskScore)
+            .updateAsset(Category[asset.category], asset.riskScore)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -475,8 +493,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("fail - tracer can't update address", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("fail - tracer can't update asset", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.tracer;
@@ -491,21 +509,22 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .updateAddress(Category[address.category], address.riskScore)
+            .updateAsset(Category[asset.category], asset.riskScore)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -514,8 +533,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("fail - appraiser can't update address", async () => {
-      const address = ADDRESSES.firstAddress;
+    it("fail - appraiser can't update asset", async () => {
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.appraiser;
@@ -530,21 +549,22 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .updateAddress(Category[address.category], address.riskScore)
+            .updateAsset(Category[asset.category], asset.riskScore)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -554,7 +574,7 @@ describe("HapiCore Address", () => {
     });
 
     it("fail - risk out of range", async () => {
-      const address = ADDRESSES.firstAddress;
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.authority;
@@ -569,21 +589,22 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .updateAddress(Category[address.category], 11)
+            .updateAsset(Category[asset.category], 11)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -593,7 +614,7 @@ describe("HapiCore Address", () => {
     });
 
     it("success - publisher updates first case", async () => {
-      const address = ADDRESSES.firstAddress;
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.publisher;
@@ -608,35 +629,36 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await program.program.methods
-        .updateAddress(Category["Scam"], 10)
+        .updateAsset(Category["Scam"], 10)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
-          address: addressAccount,
+          asset: assetAccount,
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      const fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.category).toEqual(Category["Scam"]);
-      expect(fetchedAddressAccount.riskScore).toEqual(10);
-      expect(fetchedAddressAccount.caseId).toEqual(uuidToBn(cs.id));
+      expect(fetchedassetAccount.category).toEqual(Category["Scam"]);
+      expect(fetchedassetAccount.riskScore).toEqual(10);
+      expect(fetchedassetAccount.caseId).toEqual(uuidToBn(cs.id));
     });
 
     it("success - authority updates second case", async () => {
-      const address = ADDRESSES.secondAddress;
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.publisher;
@@ -651,35 +673,36 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await program.program.methods
-        .updateAddress(Category["Gambling"], 7)
+        .updateAsset(Category["Gambling"], 7)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
           case: caseAccount,
-          address: addressAccount,
+          asset: assetAccount,
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      const fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.category).toEqual(Category["Gambling"]);
-      expect(fetchedAddressAccount.riskScore).toEqual(7);
-      expect(fetchedAddressAccount.caseId).toEqual(uuidToBn(cs.id));
+      expect(fetchedassetAccount.category).toEqual(Category["Gambling"]);
+      expect(fetchedassetAccount.riskScore).toEqual(7);
+      expect(fetchedassetAccount.caseId).toEqual(uuidToBn(cs.id));
     });
 
     it("fail - case closed", async () => {
-      const address = ADDRESSES.firstAddress;
+      const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.authority;
@@ -694,9 +717,10 @@ describe("HapiCore Address", () => {
         cs.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       await program.program.methods
@@ -714,13 +738,13 @@ describe("HapiCore Address", () => {
       await expectThrowError(
         () =>
           program.program.methods
-            .updateAddress(Category[address.category], 11)
+            .updateAsset(Category[asset.category], 11)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
               case: caseAccount,
-              address: addressAccount,
+              asset: assetAccount,
               systemProgram: web3.SystemProgram.programId,
             })
             .signers([reporter.keypair])
@@ -731,8 +755,8 @@ describe("HapiCore Address", () => {
   });
 
   describe("confirm_address", () => {
-    it("fail - reporter can't confirm address reported by himself", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("fail - reporter can't confirm asset reported by himself", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.tracer;
@@ -741,25 +765,26 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .confirmAddress(bump)
+            .confirmAsset(bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
-              address: addressAccount,
+              asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
             })
@@ -769,8 +794,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("fail - appraiser can't confirm address", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("fail - appraiser can't confirm asset", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.appraiser;
@@ -779,25 +804,26 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .confirmAddress(bump)
+            .confirmAsset(bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
-              address: addressAccount,
+              asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
             })
@@ -807,8 +833,8 @@ describe("HapiCore Address", () => {
       );
     });
 
-    it("success - publisher confirms second address", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("success - publisher confirms second asset", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.publisher;
@@ -817,27 +843,28 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       const confirmationsBefore = (
-        await program.program.account.address.fetch(addressAccount)
+        await program.program.account.asset.fetch(assetAccount)
       ).confirmations;
 
       await program.program.methods
-        .confirmAddress(bump)
+        .confirmAsset(bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
-          address: addressAccount,
+          asset: assetAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
         })
@@ -850,28 +877,28 @@ describe("HapiCore Address", () => {
 
       expect(fetchedConfirmationAccount.bump).toEqual(bump);
       expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
-      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(assetAccount);
       expect(
         fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
 
-      let fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      let fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.confirmations).toEqual(
+      expect(fetchedassetAccount.confirmations).toEqual(
         confirmationsBefore + 1
       );
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
     });
 
-    it("success - authority confirms second address", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("success - authority confirms second asset", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.authority;
@@ -880,27 +907,28 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       const confirmationsBefore = (
-        await program.program.account.address.fetch(addressAccount)
+        await program.program.account.asset.fetch(assetAccount)
       ).confirmations;
 
       await program.program.methods
-        .confirmAddress(bump)
+        .confirmAsset(bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
-          address: addressAccount,
+          asset: assetAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
         })
@@ -913,28 +941,28 @@ describe("HapiCore Address", () => {
 
       expect(fetchedConfirmationAccount.bump).toEqual(bump);
       expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
-      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(assetAccount);
       expect(
         fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
 
-      let fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      let fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.confirmations).toEqual(
+      expect(fetchedassetAccount.confirmations).toEqual(
         confirmationsBefore + 1
       );
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
     });
 
-    it("success - validator confirms second address", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("success - validator confirms second asset", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.validator;
@@ -943,27 +971,28 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       const confirmationsBefore = (
-        await program.program.account.address.fetch(addressAccount)
+        await program.program.account.asset.fetch(assetAccount)
       ).confirmations;
 
       await program.program.methods
-        .confirmAddress(bump)
+        .confirmAsset(bump)
         .accounts({
           sender: reporter.keypair.publicKey,
           network: networkAccount,
           reporter: reporterAccount,
-          address: addressAccount,
+          asset: assetAccount,
           confirmation: confirmationAccount,
           systemProgram: web3.SystemProgram.programId,
         })
@@ -976,28 +1005,28 @@ describe("HapiCore Address", () => {
 
       expect(fetchedConfirmationAccount.bump).toEqual(bump);
       expect(fetchedConfirmationAccount.network).toEqual(networkAccount);
-      expect(fetchedConfirmationAccount.account).toEqual(addressAccount);
+      expect(fetchedConfirmationAccount.account).toEqual(assetAccount);
       expect(
         fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
 
-      let fetchedAddressAccount = await program.program.account.address.fetch(
-        addressAccount
+      let fetchedassetAccount = await program.program.account.asset.fetch(
+        assetAccount
       );
 
-      expect(fetchedAddressAccount.confirmations).toEqual(
+      expect(fetchedassetAccount.confirmations).toEqual(
         confirmationsBefore + 1
       );
 
-      const addressInfo = await provider.connection.getAccountInfoAndContext(
+      const assetInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
       );
-      expect(addressInfo.value.owner).toEqual(program.programId);
-      expect(addressInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
+      expect(assetInfo.value.owner).toEqual(program.programId);
+      expect(assetInfo.value.data).toHaveLength(ACCOUNT_SIZE.confirmation);
     });
 
-    it("fail - reporter can confirm address only once", async () => {
-      const address = ADDRESSES.secondAddress;
+    it("fail - reporter can confirm asset only once", async () => {
+      const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
       const reporter = REPORTERS.validator;
@@ -1006,25 +1035,26 @@ describe("HapiCore Address", () => {
         reporter.id
       );
 
-      const [addressAccount] = await program.findAddressAddress(
+      const [assetAccount] = await program.findAssetAddress(
         networkAccount,
-        address.address
+        asset.address,
+        asset.id
       );
 
       const [confirmationAccount, bump] = await program.findConfirmationAddress(
-        addressAccount,
+        assetAccount,
         reporter.id
       );
 
       await expectThrowError(
         () =>
           program.program.methods
-            .confirmAddress(bump)
+            .confirmAsset(bump)
             .accounts({
               sender: reporter.keypair.publicKey,
               network: networkAccount,
               reporter: reporterAccount,
-              address: addressAccount,
+              asset: assetAccount,
               confirmation: confirmationAccount,
               systemProgram: web3.SystemProgram.programId,
             })
