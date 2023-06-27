@@ -511,7 +511,7 @@ pub struct ConfirmAddress<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(addr: [u8; 64], asset_id: u128, bump: u8)]
+#[instruction(addr: [u8; 64], asset_id: [u8; 64], bump: u8)]
 pub struct CreateAsset<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
@@ -551,7 +551,8 @@ pub struct CreateAsset<'info> {
             network.key().as_ref(),
             addr[0..32].as_ref(),
             addr[32..64].as_ref(),
-            &asset_id.to_be_bytes(),
+            asset_id[0..32].as_ref(),
+            asset_id[32..64].as_ref(),
         ],
         bump,
         space = Asset::LEN + ACCOUNT_RESERVE_SPACE
@@ -600,7 +601,8 @@ pub struct UpdateAsset<'info> {
             network.key().as_ref(),
             asset.address[0..32].as_ref(),
             asset.address[32..64].as_ref(),
-            &asset.id.to_be_bytes(),
+            asset.id[0..32].as_ref(),
+            asset.id[32..64].as_ref(),
         ],
         bump = asset.bump,
     )]
@@ -651,7 +653,8 @@ pub struct ConfirmAsset<'info> {
             network.key().as_ref(),
             asset.address[0..32].as_ref(),
             asset.address[32..64].as_ref(),
-            &asset.id.to_be_bytes(),
+            asset.id[0..32].as_ref(),
+            asset.id[32..64].as_ref(),
         ],
         bump = asset.bump,
     )]

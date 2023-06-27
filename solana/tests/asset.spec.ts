@@ -59,7 +59,7 @@ describe("HapiCoreAsset ", () => {
     await setupCases(program, CASES, mainNetwork, REPORTERS.publisher);
   });
 
-  describe("create_address", () => {
+  describe("create_asset", () => {
     it("fail - validator can't report asset", async () => {
       const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
@@ -87,7 +87,7 @@ describe("HapiCoreAsset ", () => {
           program.program.methods
             .createAsset(
               [...asset.address],
-              uuidToBn(asset.id),
+              [...asset.id],
               Category[asset.category],
               asset.riskScore,
               bump
@@ -133,7 +133,7 @@ describe("HapiCoreAsset ", () => {
           program.program.methods
             .createAsset(
               [...asset.address],
-              uuidToBn(asset.id),
+              [...asset.id],
               Category[asset.category],
               asset.riskScore,
               bump
@@ -179,7 +179,7 @@ describe("HapiCoreAsset ", () => {
           program.program.methods
             .createAsset(
               [...asset.address],
-              uuidToBn(asset.id),
+              [...asset.id],
               Category[asset.category],
               11,
               bump
@@ -220,12 +220,10 @@ describe("HapiCoreAsset ", () => {
         asset.id
       );
 
-      const id = uuidToBn(asset.id);
-
       await program.program.methods
         .createAsset(
           [...asset.address],
-          id,
+          [...asset.id],
           Category[asset.category],
           asset.riskScore,
           bump
@@ -241,24 +239,26 @@ describe("HapiCoreAsset ", () => {
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedassetAccount = await program.program.account.asset.fetch(
+      const fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.bump).toEqual(bump);
-      expect(fetchedassetAccount.network).toEqual(networkAccount);
-      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
-      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
-      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedAssetAccount.bump).toEqual(bump);
+      expect(fetchedAssetAccount.network).toEqual(networkAccount);
+      expect(fetchedAssetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedAssetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedAssetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedassetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
         padBuffer(asset.address, 64)
       );
-      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
+      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
+        padBuffer(asset.id, 64)
+      );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
         assetAccount
@@ -289,12 +289,10 @@ describe("HapiCoreAsset ", () => {
         asset.id
       );
 
-      const id = uuidToBn(asset.id);
-
       await program.program.methods
         .createAsset(
           [...asset.address],
-          id,
+          [...asset.id],
           Category[asset.category],
           asset.riskScore,
           bump
@@ -310,24 +308,26 @@ describe("HapiCoreAsset ", () => {
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedassetAccount = await program.program.account.asset.fetch(
+      const fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.bump).toEqual(bump);
-      expect(fetchedassetAccount.network).toEqual(networkAccount);
-      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
-      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
-      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedAssetAccount.bump).toEqual(bump);
+      expect(fetchedAssetAccount.network).toEqual(networkAccount);
+      expect(fetchedAssetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedAssetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedAssetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedassetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
         padBuffer(asset.address, 64)
       );
-      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
+      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
+        padBuffer(asset.id, 64)
+      );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
         assetAccount
@@ -358,12 +358,10 @@ describe("HapiCoreAsset ", () => {
         asset.id
       );
 
-      const id = uuidToBn(asset.id);
-
       await program.program.methods
         .createAsset(
           [...asset.address],
-          id,
+          [...asset.id],
           Category[asset.category],
           asset.riskScore,
           bump
@@ -379,24 +377,26 @@ describe("HapiCoreAsset ", () => {
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedassetAccount = await program.program.account.asset.fetch(
+      const fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.bump).toEqual(bump);
-      expect(fetchedassetAccount.network).toEqual(networkAccount);
-      expect(fetchedassetAccount.category).toEqual(Category[asset.category]);
-      expect(fetchedassetAccount.riskScore).toEqual(asset.riskScore);
-      expect(fetchedassetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
+      expect(fetchedAssetAccount.bump).toEqual(bump);
+      expect(fetchedAssetAccount.network).toEqual(networkAccount);
+      expect(fetchedAssetAccount.category).toEqual(Category[asset.category]);
+      expect(fetchedAssetAccount.riskScore).toEqual(asset.riskScore);
+      expect(fetchedAssetAccount.caseId.eq(uuidToBn(cs.id))).toBeTruthy();
       expect(
-        fetchedassetAccount.reporterId.eq(uuidToBn(reporter.id))
+        fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedassetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedassetAccount.address)).toEqual(
+      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
         padBuffer(asset.address, 64)
       );
-      expect(fetchedassetAccount.id.eq(id)).toBeTruthy();
+      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
+        padBuffer(asset.id, 64)
+      );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
         assetAccount
@@ -432,7 +432,7 @@ describe("HapiCoreAsset ", () => {
           program.program.methods
             .createAsset(
               [...asset.address],
-              uuidToBn(asset.id),
+              [...asset.id],
               Category[asset.category],
               asset.riskScore,
               bump
@@ -452,7 +452,7 @@ describe("HapiCoreAsset ", () => {
     });
   });
 
-  describe("update_address", () => {
+  describe("update_asset", () => {
     it("fail - validator can't update asset", async () => {
       const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
@@ -648,13 +648,13 @@ describe("HapiCoreAsset ", () => {
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedassetAccount = await program.program.account.asset.fetch(
+      const fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.category).toEqual(Category["Scam"]);
-      expect(fetchedassetAccount.riskScore).toEqual(10);
-      expect(fetchedassetAccount.caseId).toEqual(uuidToBn(cs.id));
+      expect(fetchedAssetAccount.category).toEqual(Category["Scam"]);
+      expect(fetchedAssetAccount.riskScore).toEqual(10);
+      expect(fetchedAssetAccount.caseId).toEqual(uuidToBn(cs.id));
     });
 
     it("success - authority updates second case", async () => {
@@ -692,17 +692,17 @@ describe("HapiCoreAsset ", () => {
         .signers([reporter.keypair])
         .rpc();
 
-      const fetchedassetAccount = await program.program.account.asset.fetch(
+      const fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.category).toEqual(Category["Gambling"]);
-      expect(fetchedassetAccount.riskScore).toEqual(7);
-      expect(fetchedassetAccount.caseId).toEqual(uuidToBn(cs.id));
+      expect(fetchedAssetAccount.category).toEqual(Category["Gambling"]);
+      expect(fetchedAssetAccount.riskScore).toEqual(7);
+      expect(fetchedAssetAccount.caseId).toEqual(uuidToBn(cs.id));
     });
   });
 
-  describe("confirm_address", () => {
+  describe("confirm_asset", () => {
     it("fail - reporter can't confirm asset reported by himself", async () => {
       const asset = ASSETS.firstAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
@@ -1009,11 +1009,11 @@ describe("HapiCoreAsset ", () => {
         fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
 
-      let fetchedassetAccount = await program.program.account.asset.fetch(
+      let fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.confirmations).toEqual(
+      expect(fetchedAssetAccount.confirmations).toEqual(
         confirmationsBefore + 1
       );
 
@@ -1080,11 +1080,11 @@ describe("HapiCoreAsset ", () => {
         fetchedConfirmationAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
 
-      let fetchedassetAccount = await program.program.account.asset.fetch(
+      let fetchedAssetAccount = await program.program.account.asset.fetch(
         assetAccount
       );
 
-      expect(fetchedassetAccount.confirmations).toEqual(
+      expect(fetchedAssetAccount.confirmations).toEqual(
         confirmationsBefore + 1
       );
 

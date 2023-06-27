@@ -91,14 +91,14 @@ export class HapiCoreProgram {
   public findAssetAddress(
     network: web3.PublicKey,
     address: Buffer,
-    assetId: string
+    assetId: Buffer
   ) {
     return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("asset"),
         network.toBytes(),
         ...addrToSeeds(address),
-        uuidParse(assetId),
+        ...addrToSeeds(assetId),
       ],
       this.programId
     );
@@ -192,12 +192,13 @@ export class HapiCoreProgram {
   public async getAssetData(
     networkName: string,
     address: Buffer | string,
-    id: string
+    id: Buffer | string
   ) {
     const addr =
       typeof address === "string" ? Buffer.from(address, "hex") : address;
+    const assetId = typeof id === "string" ? Buffer.from(id, "hex") : id;
     const [network] = this.findNetworkAddress(networkName);
-    const [assetAccount] = this.findAssetAddress(network, addr, id);
+    const [assetAccount] = this.findAssetAddress(network, addr, assetId);
 
     let data = await this.program.account.asset.fetch(assetAccount);
 
@@ -678,16 +679,27 @@ export class HapiCoreProgram {
     wallet: Signer | Wallet,
     reporterId: string
   ) {
-    let buf = Buffer.from(address, "hex");
+    let assetAddress = Buffer.from(address, "hex");
+    let assetId = Buffer.from(id, "hex");
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [caseAccount] = this.findCaseAddress(network, caseId);
-    const [assetAccount, bump] = this.findAssetAddress(network, buf, id);
+    const [assetAccount, bump] = this.findAssetAddress(
+      network,
+      assetAddress,
+      assetId
+    );
 
     let signer = wallet as Signer;
 
     const transactionHash = await this.program.methods
-      .createAsset([...buf], uuidToBn(id), Category[category], riskScore, bump)
+      .createAsset(
+        [...assetAddress],
+        [...assetId],
+        Category[category],
+        riskScore,
+        bump
+      )
       .accounts({
         sender: signer.publicKey,
         network,
@@ -712,10 +724,13 @@ export class HapiCoreProgram {
     riskScore?: number,
     caseId?: string
   ) {
-    let buf = Buffer.from(address, "hex");
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
-    const [assetAccount] = this.findAssetAddress(network, buf, id);
+    const [assetAccount] = this.findAssetAddress(
+      network,
+      Buffer.from(address, "hex"),
+      Buffer.from(id, "hex")
+    );
 
     const assetData = await this.program.account.asset.fetch(assetAccount);
 
@@ -749,10 +764,13 @@ export class HapiCoreProgram {
     wallet: Signer | Wallet,
     reporterId: string
   ) {
-    let buf = Buffer.from(address, "hex");
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
-    const [assetAccount] = this.findAssetAddress(network, buf, id);
+    const [assetAccount] = this.findAssetAddress(
+      network,
+      Buffer.from(address, "hex"),
+      Buffer.from(id, "hex")
+    );
     const [confirmationAccount, bump] = this.findConfirmationAddress(
       assetAccount,
       reporterId

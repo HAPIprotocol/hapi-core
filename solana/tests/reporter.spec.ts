@@ -204,7 +204,7 @@ describe("HapiCore Reporter", () => {
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
+      expect((fetchedReporterAccount.id as BN).eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey
@@ -258,7 +258,7 @@ describe("HapiCore Reporter", () => {
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
+      expect((fetchedReporterAccount.id as BN).eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey
@@ -312,7 +312,7 @@ describe("HapiCore Reporter", () => {
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
-      expect(fetchedReporterAccount.id.eq(id)).toBeTruthy();
+      expect((fetchedReporterAccount.id as BN).eq(id)).toBeTruthy();
       expect(fetchedReporterAccount.network).toEqual(networkAccount);
       expect(fetchedReporterAccount.account).toEqual(
         reporter.keypair.publicKey

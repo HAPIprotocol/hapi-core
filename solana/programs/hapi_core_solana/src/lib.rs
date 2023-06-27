@@ -7,7 +7,7 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{address::*, asset::*, case::*, network::*, reporter::*, utils::*};
+use state::{address::*, asset::*, case::*, confirmation::*, network::*, reporter::*, utils::*};
 
 const UUID_VERSION: usize = 4;
 
@@ -15,8 +15,6 @@ declare_id!("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk");
 
 #[program]
 pub mod hapi_core_solana {
-    use crate::state::confirmation::Confirmation;
-
     use super::*;
 
     pub fn create_network(
@@ -286,7 +284,7 @@ pub mod hapi_core_solana {
     pub fn create_asset(
         ctx: Context<CreateAsset>,
         addr: [u8; 64],
-        asset_id: u128,
+        asset_id: [u8; 64],
         category: Category,
         risk_score: u8,
         bump: u8,
