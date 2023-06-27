@@ -33,7 +33,7 @@ impl Case {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum CaseStatus {
     /// Investigations over this case are finished
     Closed = 0,

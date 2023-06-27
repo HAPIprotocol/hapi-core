@@ -28,6 +28,8 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Invalid UUID")]
     InvalidUUID,
+    #[msg("Invalid Data")]
+    InvalidData,
     #[msg("Case closed")]
     CaseClosed,
     #[msg("Case mismatched")]

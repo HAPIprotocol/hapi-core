@@ -33,7 +33,7 @@ impl Network {
     pub const VERSION: u16 = 1;
 }
 
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub struct StakeConfiguration {
     /// Duration in seconds of reporter suspension before the stake can be withdrawn
     pub unlock_duration: u64,
@@ -54,7 +54,7 @@ pub struct StakeConfiguration {
     pub appraiser_stake: u64,
 }
 
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub struct RewardConfiguration {
     /// Reward amount for tracers that report addresses to this network
     pub address_tracer_reward: u64,

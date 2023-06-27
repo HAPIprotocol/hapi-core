@@ -56,7 +56,7 @@ pub enum ReporterStatus {
     Unstaking,
 }
 
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum ReporterRole {
     /// Validator - can validate addresses
     #[default]

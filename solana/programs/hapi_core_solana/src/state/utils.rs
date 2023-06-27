@@ -1,6 +1,7 @@
+use crate::error::ErrorCode;
 use anchor_lang::prelude::*;
 
-#[derive(Default, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
+#[derive(Default, Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub enum Category {
     // Tier 0
     /// None
@@ -70,4 +71,10 @@ pub enum Category {
 
     /// Address belongs to a person or an organization from a high risk jurisdiction
     HighRiskJurisdiction,
+}
+
+pub fn bytes_to_string(arr: &[u8]) -> Result<String> {
+    let null_index = arr.iter().position(|&ch| ch == b'\0').unwrap_or(arr.len());
+
+    String::from_utf8(arr[0..null_index].to_vec()).map_err(|_| ErrorCode::InvalidData.into())
 }

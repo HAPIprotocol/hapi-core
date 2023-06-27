@@ -35,6 +35,14 @@ pub mod hapi_core_solana {
         network.stake_configuration = stake_info;
         network.version = Network::VERSION;
 
+        msg!(
+            "Network created, data:
+            name: {}, stake configuration: {:#?}, reward configuration: {:#?}",
+            bytes_to_string(&name)?,
+            network.stake_configuration,
+            network.reward_configuration
+        );
+
         Ok(())
     }
 
@@ -46,6 +54,11 @@ pub mod hapi_core_solana {
 
         network.stake_configuration = stake_configuration;
         network.stake_mint = ctx.accounts.stake_mint.key();
+
+        msg!(
+            "Network stake configuration updated: {:#?}",
+            network.stake_configuration,
+        );
 
         Ok(())
     }
@@ -59,11 +72,24 @@ pub mod hapi_core_solana {
         network.reward_configuration = reward_configuration;
         network.reward_mint = ctx.accounts.reward_mint.key();
 
+        msg!(
+            "Network reward configuration updated: {:#?}",
+            network.reward_configuration,
+        );
+
         Ok(())
     }
 
     pub fn set_authority(ctx: Context<SetAuthority>) -> Result<()> {
         let network = &mut ctx.accounts.network;
+
+        msg!(
+            "Network authority updated
+            from {:#?} to {:#?}",
+            network.authority,
+            ctx.accounts.new_authority.key()
+        );
+
         network.authority = ctx.accounts.new_authority.key();
 
         Ok(())
@@ -78,7 +104,9 @@ pub mod hapi_core_solana {
         url: String,
         bump: u8,
     ) -> Result<()> {
-        if uuid::Uuid::from_u128(reporter_id).get_version_num() != UUID_VERSION {
+        let id = uuid::Uuid::from_u128(reporter_id);
+
+        if id.get_version_num() != UUID_VERSION {
             return print_error(ErrorCode::InvalidUUID);
         }
 
@@ -94,6 +122,16 @@ pub mod hapi_core_solana {
         reporter.url = url;
         reporter.stake = 0;
         reporter.version = Reporter::VERSION;
+
+        msg!(
+            "Reporter created, data:
+            id: {}, account: {}, name: {}, role: {:#?}, url: {}",
+            id,
+            reporter.account,
+            reporter.name,
+            reporter.role,
+            reporter.url,
+        );
 
         Ok(())
     }
@@ -112,6 +150,15 @@ pub mod hapi_core_solana {
         reporter.role = role;
         reporter.url = url;
 
+        msg!(
+            "Reporter updated, data:
+            account: {}, name: {}, role: {:#?}, url: {}",
+            reporter.account,
+            reporter.name,
+            reporter.role,
+            reporter.url,
+        );
+
         Ok(())
     }
 
@@ -126,6 +173,8 @@ pub mod hapi_core_solana {
             ReporterRole::Authority => stake_configuration.authority_stake,
             ReporterRole::Appraiser => stake_configuration.appraiser_stake,
         };
+
+        msg!("Reporter stake {} will be charged", stake);
 
         token::transfer(
             CpiContext::new(
@@ -142,6 +191,8 @@ pub mod hapi_core_solana {
         reporter.status = ReporterStatus::Active;
         reporter.stake = stake;
 
+        msg!("Reporter activated");
+
         Ok(())
     }
 
@@ -153,6 +204,11 @@ pub mod hapi_core_solana {
         reporter.unlock_timestamp =
             Clock::get()?.unix_timestamp as u64 + network.stake_configuration.unlock_duration;
 
+        msg!(
+            "Reporter deactivated, unlock timestamp: {}",
+            reporter.unlock_timestamp
+        );
+
         Ok(())
     }
 
@@ -162,6 +218,8 @@ pub mod hapi_core_solana {
         let network = &ctx.accounts.network;
 
         let seeds = &[b"network".as_ref(), network.name.as_ref(), &[network.bump]];
+
+        msg!("Reporter stake {} will be refunded", reporter.stake);
 
         token::transfer(
             CpiContext::new_with_signer(
@@ -180,6 +238,8 @@ pub mod hapi_core_solana {
         reporter.unlock_timestamp = 0;
         reporter.stake = 0;
 
+        msg!("Reporter is inactive");
+
         Ok(())
     }
 
@@ -190,7 +250,9 @@ pub mod hapi_core_solana {
         url: String,
         bump: u8,
     ) -> Result<()> {
-        if uuid::Uuid::from_u128(case_id).get_version_num() != UUID_VERSION {
+        let id = uuid::Uuid::from_u128(case_id);
+
+        if id.get_version_num() != UUID_VERSION {
             return print_error(ErrorCode::InvalidUUID);
         }
 
@@ -204,6 +266,14 @@ pub mod hapi_core_solana {
         case.status = CaseStatus::Open;
         case.url = url;
         case.version = Case::VERSION;
+
+        msg!(
+            "Case created, data:
+            id: {}, name: {}, url: {}",
+            id,
+            case.name,
+            case.url,
+        );
 
         Ok(())
     }
@@ -219,6 +289,14 @@ pub mod hapi_core_solana {
         case.name = name;
         case.url = url;
         case.status = state;
+
+        msg!(
+            "Case updated, data:
+            name: {}, url: {}, status: {:#?}",
+            case.name,
+            case.url,
+            case.status,
+        );
 
         Ok(())
     }
@@ -245,6 +323,14 @@ pub mod hapi_core_solana {
         address.reporter_id = ctx.accounts.reporter.id;
         address.version = Address::VERSION;
 
+        msg!(
+            "Address created, data:
+            address: {}, category: {:#?}, risk score: {}",
+            bytes_to_string(&address.address)?,
+            address.category,
+            address.risk_score,
+        );
+
         Ok(())
     }
 
@@ -263,6 +349,13 @@ pub mod hapi_core_solana {
         address.risk_score = risk_score;
         address.case_id = ctx.accounts.case.id;
 
+        msg!(
+            "Address updated, data:
+            category: {:#?}, risk score: {}",
+            address.category,
+            address.risk_score,
+        );
+
         Ok(())
     }
 
@@ -277,6 +370,12 @@ pub mod hapi_core_solana {
         confirmation.version = Confirmation::VERSION;
 
         address.confirmations += 1;
+
+        msg!(
+            "Address confirmed by {}, confirmation count: {}",
+            ctx.accounts.reporter.id,
+            address.confirmations
+        );
 
         Ok(())
     }
@@ -305,6 +404,15 @@ pub mod hapi_core_solana {
         asset.reporter_id = ctx.accounts.reporter.id;
         asset.version = Asset::VERSION;
 
+        msg!(
+            "Asset created, data:
+            address: {}, id: {}, category: {:#?}, risk score: {}",
+            bytes_to_string(&asset.address)?,
+            bytes_to_string(&asset.id)?,
+            asset.category,
+            asset.risk_score,
+        );
+
         Ok(())
     }
 
@@ -323,6 +431,13 @@ pub mod hapi_core_solana {
         asset.risk_score = risk_score;
         asset.case_id = ctx.accounts.case.id;
 
+        msg!(
+            "Asset updated, data:
+            category: {:#?}, risk score: {}",
+            asset.category,
+            asset.risk_score,
+        );
+
         Ok(())
     }
 
@@ -337,6 +452,12 @@ pub mod hapi_core_solana {
         confirmation.version = Confirmation::VERSION;
 
         asset.confirmations += 1;
+
+        msg!(
+            "Asset confirmed by {}, confirmation count: {}",
+            ctx.accounts.reporter.id,
+            asset.confirmations
+        );
 
         Ok(())
     }
