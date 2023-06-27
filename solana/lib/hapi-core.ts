@@ -90,15 +90,15 @@ export class HapiCoreProgram {
 
   public findAssetAddress(
     network: web3.PublicKey,
-    mint: Buffer,
-    assetId: Buffer | Uint8Array
+    address: Buffer,
+    assetId: Buffer
   ) {
     return web3.PublicKey.findProgramAddressSync(
       [
         bufferFromString("asset"),
         network.toBytes(),
-        ...addrToSeeds(mint),
-        assetId,
+        ...addrToSeeds(address),
+        ...addrToSeeds(assetId),
       ],
       this.programId
     );
@@ -189,6 +189,22 @@ export class HapiCoreProgram {
     return data;
   }
 
+  public async getAssetData(
+    networkName: string,
+    address: Buffer | string,
+    id: Buffer | string
+  ) {
+    const addr =
+      typeof address === "string" ? Buffer.from(address, "hex") : address;
+    const assetId = typeof id === "string" ? Buffer.from(id, "hex") : id;
+    const [network] = this.findNetworkAddress(networkName);
+    const [assetAccount] = this.findAssetAddress(network, addr, assetId);
+
+    let data = await this.program.account.asset.fetch(assetAccount);
+
+    return data;
+  }
+
   public async getAllReporters(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.reporter.all();
@@ -208,6 +224,14 @@ export class HapiCoreProgram {
   public async getAllAddresses(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.address.all();
+    const res = data.filter((acc) => acc.account.network === network);
+
+    return res;
+  }
+
+  public async getAllAssets(networkName: string) {
+    const [network] = this.findNetworkAddress(networkName);
+    let data = await this.program.account.asset.all();
     const res = data.filter((acc) => acc.account.network === network);
 
     return res;
@@ -636,6 +660,131 @@ export class HapiCoreProgram {
         network,
         reporter,
         address: addressAccount,
+        confirmation: confirmationAccount,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .signers([signer])
+      .rpc();
+
+    return transactionHash;
+  }
+
+  async createAsset(
+    networkName: string,
+    address: string,
+    id: string,
+    category: CategoryKeys,
+    riskScore: number,
+    caseId: string,
+    wallet: Signer | Wallet,
+    reporterId: string
+  ) {
+    let assetAddress = Buffer.from(address, "hex");
+    let assetId = Buffer.from(id, "hex");
+    const [network] = this.findNetworkAddress(networkName);
+    const [reporter] = this.findReporterAddress(network, reporterId);
+    const [caseAccount] = this.findCaseAddress(network, caseId);
+    const [assetAccount, bump] = this.findAssetAddress(
+      network,
+      assetAddress,
+      assetId
+    );
+
+    let signer = wallet as Signer;
+
+    const transactionHash = await this.program.methods
+      .createAsset(
+        [...assetAddress],
+        [...assetId],
+        Category[category],
+        riskScore,
+        bump
+      )
+      .accounts({
+        sender: signer.publicKey,
+        network,
+        reporter,
+        case: caseAccount,
+        asset: assetAccount,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .signers([signer])
+      .rpc();
+
+    return transactionHash;
+  }
+
+  async updateAsset(
+    networkName: string,
+    address: string,
+    id: string,
+    wallet: Signer | Wallet,
+    reporterId: string,
+    category?: CategoryKeys,
+    riskScore?: number,
+    caseId?: string
+  ) {
+    const [network] = this.findNetworkAddress(networkName);
+    const [reporter] = this.findReporterAddress(network, reporterId);
+    const [assetAccount] = this.findAssetAddress(
+      network,
+      Buffer.from(address, "hex"),
+      Buffer.from(id, "hex")
+    );
+
+    const assetData = await this.program.account.asset.fetch(assetAccount);
+
+    const addressCategory = category ? Category[category] : assetData.category;
+    const addressRiskScore = riskScore ?? assetData.riskScore;
+    const addressCaseId = caseId ?? bnToUuid(assetData.caseId);
+    const [caseAccount] = this.findCaseAddress(network, addressCaseId);
+
+    let signer = wallet as Signer;
+
+    const transactionHash = await this.program.methods
+      .updateAsset(addressCategory, addressRiskScore)
+      .accounts({
+        sender: signer.publicKey,
+        network,
+        reporter,
+        case: caseAccount,
+        asset: assetAccount,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .signers([signer])
+      .rpc();
+
+    return transactionHash;
+  }
+
+  async confirmAsset(
+    networkName: string,
+    address: string,
+    id: string,
+    wallet: Signer | Wallet,
+    reporterId: string
+  ) {
+    const [network] = this.findNetworkAddress(networkName);
+    const [reporter] = this.findReporterAddress(network, reporterId);
+    const [assetAccount] = this.findAssetAddress(
+      network,
+      Buffer.from(address, "hex"),
+      Buffer.from(id, "hex")
+    );
+    const [confirmationAccount, bump] = this.findConfirmationAddress(
+      assetAccount,
+      reporterId
+    );
+
+    let signer = wallet as Signer;
+
+    const transactionHash = await this.program.methods
+      .confirmAsset(bump)
+      .accounts({
+        sender: signer.publicKey,
+        network,
+        reporter,
+        asset: assetAccount,
         confirmation: confirmationAccount,
         systemProgram: web3.SystemProgram.programId,
       })

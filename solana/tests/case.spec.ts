@@ -279,7 +279,7 @@ describe("HapiCore Case", () => {
         caseAccount
       );
 
-      expect(fetchedCaseAccount.id.eq(id)).toBeTruthy();
+      expect((fetchedCaseAccount.id as BN).eq(id)).toBeTruthy();
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
@@ -326,7 +326,7 @@ describe("HapiCore Case", () => {
         caseAccount
       );
 
-      expect(fetchedCaseAccount.id.eq(id)).toBeTruthy();
+      expect((fetchedCaseAccount.id as BN).eq(id)).toBeTruthy();
       expect(fetchedCaseAccount.name).toEqual(cs.name);
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);

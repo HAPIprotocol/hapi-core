@@ -2,7 +2,7 @@ use super::{utils::Category, DISCRIMINATOR_LENGTH};
 use anchor_lang::prelude::*;
 
 #[account]
-pub struct Address {
+pub struct Asset {
     /// Account version
     pub version: u16,
 
@@ -12,8 +12,11 @@ pub struct Address {
     /// Network account
     pub network: Pubkey,
 
-    /// Actual address public key
+    /// Asset contract address (i.e. NFT)
     pub address: [u8; 64],
+
+    /// Asset ID on it’s contract
+    pub id: [u8; 64],
 
     /// Primary category of activity detected on the address
     pub category: Category,
@@ -31,7 +34,7 @@ pub struct Address {
     pub confirmations: u8,
 }
 
-impl Address {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 1 + 1 + 16 + 16 + 1);
+impl Asset {
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 64 + 1 + 1 + 16 + 16 + 1);
     pub const VERSION: u16 = 1;
 }
