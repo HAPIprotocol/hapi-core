@@ -6,7 +6,7 @@ import {
   Wallet,
   AnchorProvider,
 } from "@coral-xyz/anchor";
-import { Signer } from "@solana/web3.js";
+import { PublicKey, Signer } from "@solana/web3.js";
 import * as Token from "@solana/spl-token";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { parse as uuidParse } from "uuid";
@@ -42,58 +42,58 @@ export function decodeAddress(address: Buffer | Uint8Array | number[]): string {
 
 export class HapiCoreProgram {
   program: Program<HapiCoreSolana>;
-  programId: web3.PublicKey;
+  programId: PublicKey;
 
-  constructor(hapiCoreProgramId: string | web3.PublicKey, provider?: Provider) {
+  constructor(hapiCoreProgramId: string | PublicKey, provider?: Provider) {
     this.programId =
       typeof hapiCoreProgramId === "string"
-        ? new web3.PublicKey(hapiCoreProgramId)
+        ? new PublicKey(hapiCoreProgramId)
         : hapiCoreProgramId;
 
     this.program = new Program(IDL, this.programId, provider);
   }
 
   public findProgramDataAddress() {
-    return web3.PublicKey.findProgramAddressSync(
+    return PublicKey.findProgramAddressSync(
       [this.programId.toBytes()],
-      new web3.PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
+      new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111")
     );
   }
 
   public findNetworkAddress(name: string) {
-    return web3.PublicKey.findProgramAddressSync(
+    return PublicKey.findProgramAddressSync(
       [bufferFromString("network"), bufferFromString(name, 32)],
       this.programId
     );
   }
 
-  public findReporterAddress(network: web3.PublicKey, reporterId: string) {
-    return web3.PublicKey.findProgramAddressSync(
+  public findReporterAddress(network: PublicKey, reporterId: string) {
+    return PublicKey.findProgramAddressSync(
       [bufferFromString("reporter"), network.toBytes(), uuidParse(reporterId)],
       this.programId
     );
   }
 
-  public findCaseAddress(network: web3.PublicKey, caseId: string) {
-    return web3.PublicKey.findProgramAddressSync(
+  public findCaseAddress(network: PublicKey, caseId: string) {
+    return PublicKey.findProgramAddressSync(
       [bufferFromString("case"), network.toBytes(), uuidParse(caseId)],
       this.programId
     );
   }
 
-  public findAddressAddress(network: web3.PublicKey, address: Buffer) {
-    return web3.PublicKey.findProgramAddressSync(
+  public findAddressAddress(network: PublicKey, address: Buffer) {
+    return PublicKey.findProgramAddressSync(
       [bufferFromString("address"), network.toBytes(), ...addrToSeeds(address)],
       this.programId
     );
   }
 
   public findAssetAddress(
-    network: web3.PublicKey,
+    network: PublicKey,
     address: Buffer,
     assetId: Buffer
   ) {
-    return web3.PublicKey.findProgramAddressSync(
+    return PublicKey.findProgramAddressSync(
       [
         bufferFromString("asset"),
         network.toBytes(),
@@ -104,8 +104,8 @@ export class HapiCoreProgram {
     );
   }
 
-  public findConfirmationAddress(account: web3.PublicKey, reporterId: string) {
-    return web3.PublicKey.findProgramAddressSync(
+  public findConfirmationAddress(account: PublicKey, reporterId: string) {
+    return PublicKey.findProgramAddressSync(
       [
         bufferFromString("confirmation"),
         account.toBytes(),
@@ -119,19 +119,21 @@ export class HapiCoreProgram {
     name: string,
     stakeConfiguration: stakeConfiguration,
     rewardConfiguration: rewardConfiguration,
-    rewardMint: web3.PublicKey,
-    stakeMint: web3.PublicKey
+    rewardMint: PublicKey,
+    stakeMint: PublicKey
   ) {
     const [network, bump] = this.findNetworkAddress(name);
     const [programData] = this.findProgramDataAddress();
 
-    await Token.getOrCreateAssociatedTokenAccount(
-      this.program.provider.connection,
-      ((this.program.provider as AnchorProvider).wallet as NodeWallet).payer,
-      stakeMint,
-      network,
-      true
-    );
+    if (!stakeMint.equals(PublicKey.default)) {
+      await Token.getOrCreateAssociatedTokenAccount(
+        this.program.provider.connection,
+        ((this.program.provider as AnchorProvider).wallet as NodeWallet).payer,
+        stakeMint,
+        network,
+        true
+      );
+    }
 
     const transactionHash = await this.program.methods
       .createNetwork(
@@ -237,7 +239,7 @@ export class HapiCoreProgram {
     return res;
   }
 
-  public async setAuthority(networkName: string, address: web3.PublicKey) {
+  public async setAuthority(networkName: string, address: PublicKey) {
     const [network] = this.findNetworkAddress(networkName);
     const [programData] = this.findProgramDataAddress();
 
@@ -257,7 +259,7 @@ export class HapiCoreProgram {
 
   public async updateStakeConfiguration(
     networkName: string,
-    token?: web3.PublicKey,
+    token?: PublicKey,
     unlockDuration?: number,
     validatorStake?: string,
     tracerStake?: string,
@@ -304,7 +306,7 @@ export class HapiCoreProgram {
 
   public async updateRewardConfiguration(
     networkName: string,
-    token?: web3.PublicKey,
+    token?: PublicKey,
     addressTracerReward?: string,
     addressConfirmationReward?: string,
     assetTracerReward?: string,
@@ -345,7 +347,7 @@ export class HapiCoreProgram {
     networkName: string,
     id: string,
     role: ReporterRoleKeys,
-    account: web3.PublicKey,
+    account: PublicKey,
     name: string,
     url: string
   ) {
@@ -376,7 +378,7 @@ export class HapiCoreProgram {
     networkName: string,
     id: string,
     role?: ReporterRoleKeys,
-    account?: web3.PublicKey,
+    account?: PublicKey,
     name?: string,
     url?: string
   ) {
