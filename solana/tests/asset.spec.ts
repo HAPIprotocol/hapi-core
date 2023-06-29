@@ -17,10 +17,10 @@ import {
 import {
   ACCOUNT_SIZE,
   HapiCoreProgram,
-  padBuffer,
   Category,
   uuidToBn,
   CaseStatus,
+  decodeAddress,
 } from "../lib";
 
 describe("HapiCoreAsset ", () => {
@@ -253,11 +253,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
@@ -322,11 +322,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
@@ -391,11 +391,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(

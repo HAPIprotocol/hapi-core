@@ -17,10 +17,10 @@ import {
 import {
   ACCOUNT_SIZE,
   HapiCoreProgram,
-  padBuffer,
   Category,
   uuidToBn,
   CaseStatus,
+  decodeAddress,
 } from "../lib";
 
 describe("HapiCore Address", () => {
@@ -247,8 +247,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
@@ -313,8 +313,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
@@ -379,8 +379,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
