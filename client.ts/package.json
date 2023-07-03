@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "cmd": "ts-node src/cmd",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Info: only solana test specified\" && ts-node tests/solana_cli"
   },
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
@@ -17,6 +17,7 @@
     "@types/node": "^20.2.0",
     "@types/uuid": "^9.0.1",
     "@types/yargs": "^17.0.24",
+    "chalk": "^4.1.2",
     "ethers": "^6.3.0",
     "hapi-core-evm": "file:../evm",
     "ts-node": "^10.9.1",
