@@ -529,6 +529,13 @@ yargs(hideBin(process.argv))
     type: "string",
     default: "http://localhost:8545",
   })
+  .option("address", {
+    global: true,
+    demandOption: false,
+    description: "Contract address",
+    type: "string",
+    default: undefined,
+  })
   .option("private-key", {
     global: true,
     demandOption: false,
@@ -549,6 +556,7 @@ async function setup(argv: any): Promise<Setup> {
     provider: {
       providerUrl: argv.providerUrl,
     },
+    address: argv.address,
     signerPrivateKey: argv.privateKey,
   });
 

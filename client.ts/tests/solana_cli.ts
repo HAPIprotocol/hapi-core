@@ -1,16 +1,23 @@
-import { spawn, ExecException } from "child_process";
+import { spawn } from "child_process";
 import chalk from "chalk";
 
 const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 
-const KEYPAIR = "../solana/tests/test_keypair.json";
-const NETWORK = "solana";
+const PROGRAM_KEYPAIR = "../solana/tests/test_keypair.json";
+const WALLET_PATH =
+  "/home/olha/Desktop/Solana/hapi-core2/hapi-core/client.ts/tests/keys";
 
-async function execute_command(
-  command: string,
-  ignoreError = false
-): Promise<string | undefined> {
+const NETWORK = "solana";
+const PROGRAM_ADDRESS = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
+
+const WALLET1 = "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ";
+const WALLET2 = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
+const WALLET3 = "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk";
+
+const ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" --address ${PROGRAM_ADDRESS}`;
+
+async function execute_command(command: string, ignoreError = false) {
   try {
     const { stdout, stderr } = await exec(command);
 
@@ -43,10 +50,9 @@ async function setup() {
       )
     );
 
-    await execute_command(`kill ${pid}`);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
+    process.kill(pid);
     console.log(chalk.green(`Process with ${pid} pid was killed`));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   console.log("==> Initializing solana local validator");
@@ -58,15 +64,37 @@ async function setup() {
   });
 
   console.log("==> Waiting for the validator to start");
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  console.log("==> Airdropping lamports on wallets");
+  await execute_command(
+    `solana airdrop 1000  ${WALLET1} && \
+     solana airdrop 1000  ${WALLET2} && \
+     solana airdrop 1000  ${WALLET3}`
+  );
 
   console.log("==> Building and deploying program");
+
+  process.env.ANCHOR_WALLET = `${WALLET_PATH}/wallet_1.json`;
   await execute_command(
-    `cd ../solana && anchor build &&  anchor deploy --program-keypair ${KEYPAIR}`
+    `cd ../solana && anchor build &&  anchor deploy \
+    --program-keypair ${PROGRAM_KEYPAIR} --provider.wallet ${WALLET_PATH}/wallet_1.json`
   );
 
   console.log("==> Creating network for tests");
   await execute_command(`npm --prefix ../solana run create-network ${NETWORK}`);
+}
+
+function check_result(output: string, val: string) {
+  let result = output
+    .split("\n")
+    .filter((line) => !line.startsWith(">") && line.length > 0)
+    .toString();
+
+  if (result != val) {
+    console.error(chalk.red(`Expected: ${val}, got: ${result}`));
+    process.exit(1);
+  }
 }
 
 async function authorityTest() {
@@ -75,13 +103,23 @@ async function authorityTest() {
   // 2. Assign authority to a new address - Make sure that authority has changed
   // 3. Use the private key of the new authority to change the authority back - Make sure that authority has changed back
 
-  await execute_command(`npm run cmd`);
+  // Check that initial authority matches the key of contract deployer
+  check_result(
+    await execute_command(`npm run cmd get-authority ${ARGS}`),
+    WALLET1
+  );
+  console.log(chalk.green("Initial authority test passed"));
+
+  check_result(
+    await execute_command(`npm run cmd set-authority ${ARGS}`),
+    WALLET1
+  );
+  console.log(chalk.green("New authority test passed"));
 }
 
 async function main() {
-  setup();
-
-  // ls();
+  await setup();
+  await authorityTest();
 }
 
 main();
