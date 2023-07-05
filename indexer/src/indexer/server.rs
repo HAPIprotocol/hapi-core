@@ -41,6 +41,8 @@ impl Indexer {
     }
 
     pub async fn spawn_server(&self, addr: &str) -> Result<JoinHandle<Result<(), hyper::Error>>> {
+        tracing::debug!(?addr, "Start server");
+
         let server = Server::bind(&addr.parse()?)
             .serve(self.create_router().into_make_service())
             .with_graceful_shutdown(self.shutdown_signal().await);

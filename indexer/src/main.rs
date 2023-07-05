@@ -1,40 +1,32 @@
 use {
     anyhow::{Error, Result},
-    std::env::var,
     tokio::{task::spawn, try_join},
-    tracing_subscriber::fmt::Subscriber,
 };
 
+mod config;
 mod indexer;
-use indexer::{Indexer, Network};
-
-fn setup_observability() {
-    let subscriber = Subscriber::builder()
-        .json()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "hapi_indexer=trace".into()),
-        )
-        .with_writer(std::io::stdout)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set up tracing subscriber");
-}
+mod observability;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    setup_observability();
+    let cfg = config::get_configuration()
+        .map_err(|e| anyhow::anyhow!("Configuration parsing error: {e}"))?;
 
-    let network: Network = var("NETWORK")
-        .unwrap_or_else(|_| "ethereum".to_string())
-        .parse()?;
+    if cfg.is_json_logging {
+        observability::setup_json_tracing(&cfg.log_level);
+    } else {
+        observability::setup_tracing(&cfg.log_level);
+    }
 
-    let mut indexer = Indexer::new(network);
+    tracing::info!(
+        "Starting {} v{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
 
-    let server_task = indexer.spawn_server("0.0.0.0:3000").await?;
+    let mut indexer = indexer::Indexer::new(cfg.indexer)?;
 
-    tracing::debug!(port = 3000, "Start server");
+    let server_task = indexer.spawn_server(&cfg.listener).await?;
 
     let indexer_task = spawn(async move {
         indexer.run().await.or_else(|error: Error| -> Result<()> {
