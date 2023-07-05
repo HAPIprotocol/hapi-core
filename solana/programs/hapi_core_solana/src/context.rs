@@ -113,9 +113,6 @@ pub struct SetAuthority<'info> {
     pub network: Account<'info, Network>,
 
     /// CHECK: this account is not dangerous
-    #[account(
-        constraint = new_authority.key() != authority.key() @ ErrorCode::AuthorityMismatch,
-    )]
     pub new_authority: AccountInfo<'info>,
 
     #[account(

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 KEYPAIR=./tests/test_keypair.json
+AUTHORITY=~/.config/solana/id.json
 
 exception() {
   echo "Error: $1"
@@ -17,6 +18,7 @@ run_validator() {
 test() {
   sleep 5 
   echo "==> Deploying program to test validator and running tests"
+  export ANCHOR_WALLET=$AUTHORITY
   (anchor deploy --program-keypair $KEYPAIR 1> /dev/null && anchor test --skip-local-validator)
 }
 
