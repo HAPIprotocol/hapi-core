@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "cmd": "ts-node src/cmd",
-    "test": "echo \"Info: only solana test specified\" && ts-node tests/solana_cli"
+    "test": "echo \"Info: only solana test specified\" && mocha --timeout 20000 --require ts-node/register ./test/*.test.ts"
   },
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
@@ -17,11 +17,16 @@
     "@types/node": "^20.2.0",
     "@types/uuid": "^9.0.1",
     "@types/yargs": "^17.0.24",
+    "chai": "^4.3.7",
     "chalk": "^4.1.2",
     "ethers": "^6.3.0",
     "hapi-core-evm": "file:../evm",
+    "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "uuid": "^9.0.0",
     "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1"
   }
 }

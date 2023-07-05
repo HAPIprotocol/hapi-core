@@ -107,7 +107,7 @@ export class HapiCoreSolana implements HapiCore {
 
     return {
       token: data.stakeMint.toString(),
-      unlockDuration: data.unlockTimestamp.toNumber(),
+      unlockDuration: data.stakeConfiguration.unlockDuration.toNumber(),
       validatorStake: data.stakeConfiguration.validatorStake.toString(),
       tracerStake: data.stakeConfiguration.tracerStake.toString(),
       publisherStake: data.stakeConfiguration.publisherStake.toString(),
