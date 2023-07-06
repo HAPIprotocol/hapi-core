@@ -4,6 +4,15 @@ import {
   SolanaConnectionOptions,
 } from "./implementations";
 
+export const CommandOutputNames = ["Plain", "Json"];
+
+export enum CommandOutput {
+  Plain = "plain",
+  Json = "json",
+}
+
+export const CommandOutputs = [CommandOutput.Plain, CommandOutput.Json];
+
 export enum HapiCoreNetwork {
   Ethereum = "ethereum",
   BSC = "bsc",

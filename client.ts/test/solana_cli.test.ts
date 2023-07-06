@@ -10,14 +10,8 @@ import {
   NETWORK,
 } from "./setup";
 
-import {
-  ACCOUNT_SIZE,
-  HapiCoreProgram,
-  Category,
-  uuidToBn,
-  CaseStatus,
-  decodeAddress,
-} from "../../solana/lib";
+import { StakeConfiguration, RewardConfiguration } from "../src/interface";
+import { HapiCoreProgram } from "../../solana/lib";
 
 var expect = require("chai").expect;
 
@@ -38,7 +32,6 @@ describe("Solana Cli test", function () {
       const res = await run_cmd("get-authority");
       const networkData = await program.getNetwotkData(NETWORK);
 
-      checkCommandResult(res, WALLET1);
       checkCommandResult(res, networkData.authority.toString());
     });
 
@@ -51,10 +44,7 @@ describe("Solana Cli test", function () {
 
     it("Set new authority by the current authority", async function () {
       process.env.ANCHOR_WALLET = `${WALLET_PATH}/wallet_2.json`;
-      checkCommandResult(
-        await run_cmd("set-authority", `--address ${WALLET1}`),
-        "transactionHash"
-      );
+      await run_cmd("set-authority", `--address ${WALLET1}`);
       const networkData = await program.getNetwotkData(NETWORK);
 
       expect(networkData.authority.toString()).to.eq(WALLET1);
@@ -64,11 +54,9 @@ describe("Solana Cli test", function () {
   describe("Stake configuration", function () {
     it("Get stake configuration", async function () {
       const res = await run_cmd("get-stake-configuration");
-      console.log(res);
-
       const networkData = await program.getNetwotkData(NETWORK);
 
-      const val = {
+      const val: StakeConfiguration = {
         token: networkData.stakeMint.toString(),
         unlockDuration:
           networkData.stakeConfiguration.unlockDuration.toNumber(),
@@ -81,7 +69,84 @@ describe("Solana Cli test", function () {
           networkData.stakeConfiguration.authorityStake.toString(),
       };
 
-      checkCommandResult(res, `${val}`);
+      checkCommandResult(res, val);
+    });
+
+    it("Update stake configuration", async function () {
+      const token = "3edemy16mYEwURaQrRsFcy8vznwSs1nZR7FGCqqbpdeq";
+      const unlockDuration = 123;
+      const validatorStake = 1001;
+      const tracerStake = 2002;
+      const publisherStake = 3003;
+      const authorityStake = 4004;
+
+      await run_cmd(
+        `update-stake-configuration \
+      --token ${token} \
+      --unlock-duration ${unlockDuration} \
+      --validator-stake ${validatorStake}\
+      --tracer-stake ${tracerStake}\
+      --publisher-stake ${publisherStake} \
+      --authority-stake ${authorityStake}`
+      );
+      const networkData = await program.getNetwotkData(NETWORK);
+
+      expect(networkData.stakeMint).to.eq(token);
+      expect(networkData.stakeConfiguration.unlockDuration.toNumber()).to.eq(
+        unlockDuration
+      );
+      expect(networkData.stakeConfiguration.validatorStake.toString()).to.eq(
+        validatorStake
+      );
+      expect(networkData.stakeConfiguration.tracerStake.toString()).to.eq(
+        tracerStake
+      );
+      expect(networkData.stakeConfiguration.publisherStake.toString()).to.eq(
+        publisherStake
+      );
+      expect(networkData.stakeConfiguration.authorityStake.toString()).to.eq(
+        authorityStake
+      );
+    });
+  });
+
+  describe("Reward configuration", function () {
+    it("Get reward configuration", async function () {
+      const res = await run_cmd("get-reward-configuration");
+      const networkData = await program.getNetwotkData(NETWORK);
+
+      // TODO: add asset configuration
+      const val: RewardConfiguration = {
+        token: networkData.rewardMint.toString(),
+        addressConfirmationReward:
+          networkData.rewardConfiguration.addressConfirmationReward.toString(),
+        tracerReward:
+          networkData.rewardConfiguration.addressTracerReward.toString(),
+      };
+
+      checkCommandResult(res, val);
+    });
+
+    it("Update reward configuration", async function () {
+      const token = "3edemy16mYEwURaQrRsFcy8vznwSs1nZR7FGCqqbpdeq";
+      const addressConfirmationReward = 1001;
+      const tracerReward = 2002;
+
+      await run_cmd(
+        `update-reward-configuration \
+      --token ${token} \
+      --address-confirmation-reward ${addressConfirmationReward} \
+      --trace-reward ${tracerReward}`
+      );
+      const networkData = await program.getNetwotkData(NETWORK);
+
+      expect(networkData.rewardMint).to.eq(token);
+      expect(
+        networkData.rewardConfiguration.addressConfirmationReward.toString()
+      ).to.eq(addressConfirmationReward);
+      expect(
+        networkData.rewardConfiguration.addressTracerReward.toString()
+      ).to.eq(tracerReward);
     });
   });
 });

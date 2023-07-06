@@ -1,12 +1,15 @@
 import { spawn } from "child_process";
 import chalk from "chalk";
-var expect = require("chai").expect;
+
+const chai = require("chai");
+var expect = chai.expect;
+chai.config.truncateThreshold = 0;
 
 const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 
 const PROGRAM_KEYPAIR = "../solana/tests/test_keypair.json";
-export const WALLET_PATH = "./test/keys";
+export const WALLET_PATH = "test/keys";
 
 export const NETWORK = "solana";
 export const PROGRAM_ADDRESS = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
@@ -15,7 +18,7 @@ export const WALLET1 = "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ";
 export const WALLET2 = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
 export const WALLET3 = "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk";
 
-const ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" --contract-address ${PROGRAM_ADDRESS}`;
+const ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" --contract-address ${PROGRAM_ADDRESS} --output json`;
 
 async function execute_command(command: string, ignoreError = false) {
   try {
@@ -31,23 +34,23 @@ async function execute_command(command: string, ignoreError = false) {
 }
 
 export async function run_cmd(command: string, arg = "") {
-  return await execute_command(`npm run cmd ${command} ${ARGS} ${arg}`);
-}
+  const { stdout, stderr } = await execute_command(
+    `npm run cmd ${command} ${ARGS} ${arg}`
+  );
 
-export function checkCommandResult(
-  res: { stdout: string; stderr: string },
-  val: string
-) {
-  if (res.stderr.length > 0) {
-    throw new Error(`Error stream: ${res.stderr}`);
+  if (stderr.length > 0) {
+    throw new Error(`Error stream: ${stderr}`);
   }
 
-  let result = res.stdout
-    .split("\n")
-    .filter((line) => !line.startsWith(">") && line.length > 0)
-    .toString();
+  return stdout;
+}
 
-  expect(result).to.contains(val);
+export function checkCommandResult<Type>(res: string, val: Type) {
+  const parsedObject: Type = JSON.parse(
+    res.substring(res.indexOf("{")).replace(/'/g, '"')
+  ).data;
+
+  expect(parsedObject).to.deep.equal(val);
 }
 
 // TODO: add custom port
@@ -93,10 +96,11 @@ export async function setup() {
 
   console.log("==> Building and deploying program");
 
-  process.env.ANCHOR_WALLET = `${WALLET_PATH}/wallet_1.json`;
+  const wallet = process.cwd() + `/${WALLET_PATH}/wallet_1.json`;
+  process.env.ANCHOR_WALLET = wallet;
   await execute_command(
     `cd ../solana && anchor build &&  anchor deploy \
-    --program-keypair ${PROGRAM_KEYPAIR} --provider.wallet ${WALLET_PATH}/wallet_1.json`
+    --program-keypair ${PROGRAM_KEYPAIR} --provider.wallet ${wallet}`
   );
 
   console.log("==> Creating network for tests");

@@ -14,6 +14,8 @@ import {
 import {
   CaseStatusNames,
   CategoryNames,
+  CommandOutput,
+  CommandOutputs,
   HapiCore,
   HapiCoreNetworks,
   ReporterRoleNames,
@@ -536,6 +538,14 @@ yargs(hideBin(process.argv))
     type: "string",
     default: undefined,
   })
+  .option("output", {
+    global: true,
+    demandOption: false,
+    description: "Command output format",
+    choices: CommandOutputs,
+    default: CommandOutput.Plain,
+  })
+  // Used only with evm part
   .option("private-key", {
     global: true,
     demandOption: false,
@@ -587,28 +597,36 @@ function cmdWrapper(
   };
 }
 
+function printResult(result: any, output: CommandOutput) {
+  if (output === CommandOutput.Json) {
+    console.log(JSON.stringify({ data: result }));
+  } else {
+    console.log(result);
+  }
+}
+
 async function getAuthority(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAuthority());
+  printResult(await hapiCore.getAuthority(), argv.output);
 }
 
 async function setAuthority(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.setAuthority(argv.address));
+  printResult(await hapiCore.setAuthority(argv.address), argv.output);
 }
 
 async function getStakeConfiguration(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getStakeConfiguration());
+  printResult(await hapiCore.getStakeConfiguration(), argv.output);
 }
 
 async function updateStakeConfiguration(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateStakeConfiguration(
       argv.token,
       argv.unlockDuration,
@@ -616,25 +634,27 @@ async function updateStakeConfiguration(setup: Setup, argv: any) {
       argv.tracerStake,
       argv.publisherStake,
       argv.authorityStake
-    )
+    ),
+    argv.output
   );
 }
 
 async function getRewardConfiguration(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getRewardConfiguration());
+  printResult(await hapiCore.getRewardConfiguration(), argv.output);
 }
 
 async function updateRewardConfiguration(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateRewardConfiguration(
       argv.token,
       argv.addressConfirmationReward,
       argv.traceReward
-    )
+    ),
+    argv.output
   );
 }
 
@@ -643,17 +663,20 @@ async function getReporter(setup: Setup, argv: any) {
 
   const reporter = await hapiCore.getReporter(argv.id.toString());
 
-  console.log({
-    ...reporter,
-    role: ReporterRoleToString(reporter.role),
-    status: ReporterStatusToString(reporter.status),
-  });
+  printResult(
+    {
+      ...reporter,
+      role: ReporterRoleToString(reporter.role),
+      status: ReporterStatusToString(reporter.status),
+    },
+    argv.output
+  );
 }
 
 async function getReporterCount(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getReporterCount());
+  printResult(await hapiCore.getReporterCount(), argv.output);
 }
 
 async function getReporters(setup: Setup, argv: any) {
@@ -661,59 +684,62 @@ async function getReporters(setup: Setup, argv: any) {
 
   const reporters = await hapiCore.getReporters(argv.skip, argv.take);
 
-  console.log(
+  printResult(
     reporters.map((reporter) => ({
       ...reporter,
       role: ReporterRoleToString(reporter.role),
       status: ReporterStatusToString(reporter.status),
-    }))
+    })),
+    argv.output
   );
 }
 
 async function createReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.createReporter(
       argv.id,
       ReporterRoleFromString(argv.role),
       argv.account,
       argv.name,
       argv.url
-    )
+    ),
+    argv.output
   );
 }
 
 async function updateReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateReporter(
       argv.id.toString(),
       ReporterRoleFromString(argv.role),
       argv.account,
       argv.name,
       argv.url
-    )
+    ),
+    argv.output
   );
 }
 
 async function activateReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.activateReporter());
+  printResult(await hapiCore.activateReporter(), argv.output);
 }
 
 async function deactivateReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.deactivateReporter());
+  printResult(await hapiCore.deactivateReporter(), argv.output);
 }
 
 async function unstakeReporter(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.unstakeReporter());
+  printResult(await hapiCore.unstakeReporter(), argv.output);
 }
 
 async function getCase(setup: Setup, argv: any) {
@@ -721,16 +747,19 @@ async function getCase(setup: Setup, argv: any) {
 
   const case_ = await hapiCore.getCase(argv.id.toString());
 
-  console.log({
-    ...case_,
-    status: CaseStatusToString(case_.status),
-  });
+  printResult(
+    {
+      ...case_,
+      status: CaseStatusToString(case_.status),
+    },
+    argv.output
+  );
 }
 
 async function getCaseCount(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getCaseCount());
+  printResult(await hapiCore.getCaseCount(), argv.output);
 }
 
 async function getCases(setup: Setup, argv: any) {
@@ -742,115 +771,124 @@ async function getCases(setup: Setup, argv: any) {
     cases.map((case_) => ({
       ...case_,
       status: CaseStatusToString(case_.status),
-    }))
+    })),
+    argv.output
   );
 }
 
 async function createCase(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.createCase(argv.id, argv.name, argv.url));
+  printResult(
+    await hapiCore.createCase(argv.id, argv.name, argv.url),
+    argv.output
+  );
 }
 
 async function updateCase(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateCase(
       argv.id,
       argv.name,
       argv.url,
       CaseStatusFromString(argv.status)
-    )
+    ),
+    argv.output
   );
 }
 
 async function getAddress(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAddress(argv.address));
+  printResult(await hapiCore.getAddress(argv.address), argv.output);
 }
 
 async function getAddressCount(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAddressCount());
+  printResult(await hapiCore.getAddressCount(), argv.output);
 }
 
 async function getAddresses(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAddresses(argv.skip, argv.take));
+  printResult(await hapiCore.getAddresses(argv.skip, argv.take), argv.output);
 }
 
 async function createAddress(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.createAddress(
       argv.address,
       argv.caseId,
       argv.risk,
       CategoryFromString(argv.category)
-    )
+    ),
+    argv.output
   );
 }
 
 async function updateAddress(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateAddress(
       argv.address,
       argv.caseId,
       argv.risk,
       CategoryFromString(argv.category)
-    )
+    ),
+    argv.output
   );
 }
 
 async function getAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAsset(argv.address, argv.id));
+  printResult(await hapiCore.getAsset(argv.address, argv.id), argv.output);
 }
 
 async function getAssetCount(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAssetCount());
+  printResult(await hapiCore.getAssetCount(), argv.output);
 }
 
 async function getAssets(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(await hapiCore.getAssets(argv.skip, argv.take));
+  printResult(await hapiCore.getAssets(argv.skip, argv.take), argv.output);
 }
 
 async function createAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.createAsset(
       argv.address,
       argv.assetId,
       argv.caseId,
       argv.risk,
       CategoryFromString(argv.category)
-    )
+    ),
+    argv.output
   );
 }
 
 async function updateAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  console.log(
+  printResult(
     await hapiCore.updateAsset(
       argv.address,
       argv.assetId,
       argv.caseId,
       argv.risk,
       CategoryFromString(argv.category)
-    )
+    ),
+    argv.output
   );
 }
