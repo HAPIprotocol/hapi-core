@@ -210,7 +210,8 @@ export class HapiCoreProgram {
   public async getAllReporters(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.reporter.all();
-    const res = data.filter((acc) => acc.account.network === network);
+
+    const res = data.filter((acc) => acc.account.network.equals(network));
 
     return res;
   }
@@ -218,7 +219,7 @@ export class HapiCoreProgram {
   public async getAllCases(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.case.all();
-    const res = data.filter((acc) => acc.account.network === network);
+    const res = data.filter((acc) => acc.account.network.equals(network));
 
     return res;
   }
@@ -226,7 +227,7 @@ export class HapiCoreProgram {
   public async getAllAddresses(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.address.all();
-    const res = data.filter((acc) => acc.account.network === network);
+    const res = data.filter((acc) => acc.account.network.equals(network));
 
     return res;
   }
@@ -234,7 +235,7 @@ export class HapiCoreProgram {
   public async getAllAssets(networkName: string) {
     const [network] = this.findNetworkAddress(networkName);
     let data = await this.program.account.asset.all();
-    const res = data.filter((acc) => acc.account.network === network);
+    const res = data.filter((acc) => acc.account.network.equals(network));
 
     return res;
   }
@@ -405,14 +406,15 @@ export class HapiCoreProgram {
 
   async activateReporter(
     networkName: string,
-    wallet: Signer | Wallet,
+    // wallet: Signer | Wallet,
     id: string
   ) {
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, id);
     const networkData = await this.program.account.network.fetch(network);
 
-    let signer = wallet as Signer;
+    // let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).wallet as NodeWallet;
 
     const networkStakeTokenAccount = Token.getAssociatedTokenAddressSync(
       networkData.stakeMint,
@@ -435,7 +437,6 @@ export class HapiCoreProgram {
         reporterStakeTokenAccount,
         tokenProgram: Token.TOKEN_PROGRAM_ID,
       })
-      .signers([signer as Signer])
       .rpc();
 
     return transactionHash;
