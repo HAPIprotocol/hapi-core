@@ -51,7 +51,7 @@ impl HapiCoreEvm {
             options
                 .private_key
                 .unwrap_or(
-                    "380eb0f3d505f087e438eca80bc4df9a7faa24f868e69fc0440261a0fc0567dc".to_string(),
+                    "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
                 )
                 .as_str(),
         )
