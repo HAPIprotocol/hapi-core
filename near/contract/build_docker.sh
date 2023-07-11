@@ -25,5 +25,5 @@ docker start $NAME
 docker exec -it $NAME /bin/bash -c "rustup toolchain install stable-2023-04-20; rustup default stable-2023-04-20; rustup target add wasm32-unknown-unknown; cargo build --target wasm32-unknown-unknown --release"
 
 mkdir -p res
-cp $DIR/target/wasm32-unknown-unknown/release/hapi_contract.wasm $DIR/res/hapi_contract_release.wasm
+cp $DIR/target/wasm32-unknown-unknown/release/hapi_core_near.wasm $DIR/res/hapi_core_near_release.wasm
 

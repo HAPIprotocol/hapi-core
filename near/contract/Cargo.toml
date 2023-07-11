@@ -1,14 +1,13 @@
 [package]
-name = "hapi-contract"
+name = "hapi-core-near"
 authors = ["HAPI"]
 version = "0.1.0"
 edition = "2021"
 
 readme = "README.md"
-license = "GPL-3.0"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = { version = "4.1.1" }
