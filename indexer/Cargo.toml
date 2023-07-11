@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+hapi-core-cli = { path = "../client.rs" }
 anyhow = "1"
 axum = "0.6"
 config = "0.13"

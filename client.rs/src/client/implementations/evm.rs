@@ -47,9 +47,16 @@ impl HapiCoreEvm {
         let provider = Provider::try_from(options.provider_url.as_str())
             .map_err(|e| ClientError::UrlParseError(format!("`provider-url`: {e}")))?;
 
-        let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
-            .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
-            .with_chain_id(options.chain_id.unwrap_or(31337_u64));
+        let signer = LocalWallet::from_str(
+            options
+                .private_key
+                .unwrap_or(
+                    "380eb0f3d505f087e438eca80bc4df9a7faa24f868e69fc0440261a0fc0567dc".to_string(),
+                )
+                .as_str(),
+        )
+        .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
+        .with_chain_id(options.chain_id.unwrap_or(31337_u64));
 
         let client = Signer::new(provider.clone(), signer.clone());
 
