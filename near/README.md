@@ -4,6 +4,12 @@ This is a HAPI Core contract for NEAR blockchain.
 
 ## Usage
 
+## Building
+
+For building locally use `build_local.sh` script located in **near/contract** folder.
+
+For building in docker use `build_docker.sh` script located in **near** folder.
+
 ## Accounts
 
 ```bash

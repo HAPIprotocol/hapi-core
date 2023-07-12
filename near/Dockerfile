@@ -1,8 +1,6 @@
 # Use NEAR maintained image as a base
 FROM nearprotocol/contract-builder:latest
 
-LABEL description="Container for build hapi-core-near contract"
-
 # Setup tooling
 RUN rustup toolchain install stable-2023-04-20 && \
     rustup default stable-2023-04-20 && \
