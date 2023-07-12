@@ -8,12 +8,12 @@ use {
     },
 };
 
-use super::IndexingCursor;
+use super::{IndexerJob, IndexingCursor};
 
 #[derive(Serialize, Deserialize)]
 pub struct PersistedState {
     pub(crate) cursor: IndexingCursor,
-    pub(crate) tx_stack: VecDeque<String>,
+    pub(crate) jobs: VecDeque<IndexerJob>,
 }
 
 impl PersistedState {

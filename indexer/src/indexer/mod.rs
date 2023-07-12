@@ -2,8 +2,9 @@ use {
     anyhow::Result,
     ethers::{
         providers::Middleware,
-        types::{Address, BlockNumber, Filter, H256},
+        types::{Address, BlockNumber, Filter, Log, H256},
     },
+    serde::{Deserialize, Serialize},
     std::{
         collections::VecDeque,
         path::PathBuf,
@@ -38,7 +39,7 @@ pub(crate) struct Indexer {
     state: Arc<Mutex<IndexerState>>,
 
     /// Stack of transactions to index
-    tx_stack: VecDeque<String>,
+    jobs: VecDeque<IndexerJob>,
 
     /// The number of milliseconds between wait checks
     wait_interval_ms: Duration,
@@ -50,6 +51,12 @@ pub(crate) struct Indexer {
     state_file: PathBuf,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) enum IndexerJob {
+    Transaction(String),
+    Log(Log),
+}
+
 impl Indexer {
     pub fn new(cfg: IndexerConfiguration) -> Result<Self> {
         tracing::info!(network = ?cfg.network, "Initializing indexer");
@@ -57,7 +64,7 @@ impl Indexer {
             contract_address: cfg.contract_address.clone(),
             wait_interval_ms: cfg.wait_interval_ms,
             state: Arc::new(Mutex::new(IndexerState::Init)),
-            tx_stack: VecDeque::new(),
+            jobs: VecDeque::new(),
             client: IndexerClient::new(cfg.network, &cfg.rpc_node_url, &cfg.contract_address)?,
             state_file: PathBuf::from(cfg.state_file),
         })
@@ -119,12 +126,9 @@ impl Indexer {
         if let Ok(state) = PersistedState::from_file(&self.state_file) {
             tracing::info!("Found persisted state");
 
-            if !state.tx_stack.is_empty() {
-                tracing::info!(
-                    size = state.tx_stack.len(),
-                    "Found persisted transaction stack"
-                );
-                self.tx_stack = state.tx_stack;
+            if !state.jobs.is_empty() {
+                tracing::info!(size = state.jobs.len(), "Found persisted transaction stack");
+                self.jobs = state.jobs;
             }
 
             if state.cursor != IndexingCursor::None {
@@ -184,22 +188,36 @@ impl Indexer {
                             .to_block(BlockNumber::Number(current.into()))
                             .address(self.contract_address.parse::<Address>()?);
 
-                        self.tx_stack.extend(
+                        self.jobs.extend(
                             client
                                 .contract
                                 .client()
                                 .get_logs(&filter)
                                 .await?
-                                .iter()
-                                .filter_map(|x| {
-                                    x.transaction_hash
-                                        .as_ref()
-                                        .map(|hash| format!("{:?}", hash))
+                                .into_iter()
+                                .filter_map(|log| {
+                                    if let Some(event_signature) = log.topics.first() {
+                                        if let Some(name) = client
+                                            .get_event_name_from_signature(H256(event_signature.0))
+                                        {
+                                            let tokens = client.contract.decode_event_raw(
+                                                &name,
+                                                log.topics.clone(),
+                                                log.data.clone(),
+                                            );
+                                            tracing::info!(name, tx = ?log.transaction_hash, block = ?log.block_number, ?tokens, "Found event");
+
+                                            Some(IndexerJob::Log(log))
+                                        } else {
+                                            tracing::warn!(tx = ?log.transaction_hash, block = ?log.block_number, "Unknown event signature");
+                                            None
+                                        }
+                                    }
+                                    else {
+                                        tracing::warn!(tx = ?log.transaction_hash, block = ?log.block_number, "Event without signature");
+                                        None
+                                    }
                                 })
-                                .map(|tx| {
-                                    tracing::info!(tx = tx, "Found transaction");
-                                    tx
-                                }),
                         );
 
                         Ok(IndexerState::Processing {
@@ -222,7 +240,7 @@ impl Indexer {
                     {
                         Some(_) => {
                             tracing::info!(tx = hash, "Found transaction");
-                            self.tx_stack.push_back(hash.clone());
+                            self.jobs.push_back(IndexerJob::Transaction(hash.clone()));
                             Ok(IndexerState::Processing {
                                 cursor: IndexingCursor::Transaction(hash),
                             })
@@ -272,8 +290,8 @@ impl Indexer {
 
     #[tracing::instrument(name = "process", skip(self))]
     async fn handle_process(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        match self.tx_stack.pop_front() {
-            Some(tx) => {
+        match self.jobs.pop_front() {
+            Some(IndexerJob::Transaction(tx)) => {
                 tracing::info!(tx, "Processing transaction");
 
                 match &self.client {
@@ -308,7 +326,91 @@ impl Indexer {
 
                 PersistedState {
                     cursor: cursor.clone(),
-                    tx_stack: self.tx_stack.clone(),
+                    jobs: self.jobs.clone(),
+                }
+                .to_file(&self.state_file)?;
+
+                Ok(IndexerState::Processing { cursor })
+            }
+            Some(IndexerJob::Log(log)) => {
+                match &self.client {
+                    IndexerClient::Evm(client) => {
+                        if let Some(event_signature) = log.topics.first() {
+                            if let Some(name) =
+                                client.get_event_name_from_signature(H256(event_signature.0))
+                            {
+                                if let Ok(tokens) = client.contract.decode_event_raw(
+                                    &name,
+                                    log.topics.clone(),
+                                    log.data.clone(),
+                                ) {
+                                    tracing::info!(name, tx = ?log.transaction_hash, block = ?log.block_number, ?tokens, "Found event");
+
+                                    match name.as_str() {
+                                        "ReporterCreated"
+                                        | "ReporterUpdated"
+                                        | "ReporterActivated"
+                                        | "ReporterDeactivated"
+                                        | "ReporterStakeWithdrawn" => {
+                                            if let Some(reporter_id) = tokens.first() {
+                                                tracing::info!(
+                                                    ?reporter_id,
+                                                    "Reporter is created or modified"
+                                                );
+                                            }
+                                        }
+                                        "CaseCreated" | "CaseUpdated" => {
+                                            if let Some(case_id) = tokens.first() {
+                                                tracing::info!(
+                                                    ?case_id,
+                                                    "Case is created or modified"
+                                                );
+                                            }
+                                        }
+                                        "AddressCreated" | "AddressUpdated" => {
+                                            if let Some(addr) = tokens.first() {
+                                                tracing::info!(
+                                                    ?addr,
+                                                    "Address is created or modified"
+                                                );
+                                            }
+                                        }
+                                        "AssetCreated" | "AssetUpdated" => {
+                                            if let (Some(addr), Some(id)) =
+                                                (tokens.get(0), tokens.get(1))
+                                            {
+                                                tracing::info!(
+                                                    ?addr,
+                                                    ?id,
+                                                    "Asset is created or modified"
+                                                );
+                                            }
+                                        }
+                                        "AuthorityChanged"
+                                        | "StakeConfigurationChanged"
+                                        | "RewardConfigurationChanged" => {
+                                            tracing::info!("Configuration is changed");
+                                        }
+                                        _ => {
+                                            tracing::warn!("Uknown event");
+                                        }
+                                    }
+                                } else {
+                                    tracing::warn!(tx = ?log.transaction_hash, block = ?log.block_number, "Failed to decode event");
+                                }
+                            } else {
+                                tracing::warn!(tx = ?log.transaction_hash, block = ?log.block_number, "Unknown event signature");
+                            }
+                        } else {
+                            tracing::warn!(tx = ?log.transaction_hash, block = ?log.block_number, "No event signature");
+                        }
+                    }
+                    _ => unimplemented!(),
+                }
+
+                PersistedState {
+                    cursor: cursor.clone(),
+                    jobs: self.jobs.clone(),
                 }
                 .to_file(&self.state_file)?;
 
