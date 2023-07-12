@@ -3,7 +3,7 @@ use ethers::{
     prelude::{abigen, SignerMiddleware},
     providers::{Http, Provider as EthersProvider},
     signers::{LocalWallet, Signer as EthersSigner},
-    types::Address as EthAddress,
+    types::{Address as EthAddress, H256},
 };
 use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
@@ -76,6 +76,14 @@ impl HapiCoreEvm {
             contract,
             client,
         })
+    }
+
+    pub fn get_event_name_from_signature(&self, signature: H256) -> Option<String> {
+        self.contract
+            .abi()
+            .events()
+            .find(|e| e.signature() == signature)
+            .map(|e| e.name.to_string())
     }
 }
 
