@@ -60,6 +60,26 @@ export const REPORTERS: Record<
   },
 };
 
+export const CASES: Record<
+  string,
+  {
+    id: string;
+    name: string;
+    url: string;
+  }
+> = {
+  firstCase: {
+    id: uuidv4(),
+    name: "firstCase",
+    url: "https://big.hack",
+  },
+  secondCase: {
+    id: uuidv4(),
+    name: "secondCase",
+    url: "https://big2.hack",
+  },
+};
+
 const ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" \
               --contract-address ${KEYS.program.pk} --output json`;
 

@@ -12,6 +12,8 @@ import {
   getReporterStatusIndex,
   ReporterStatus as SolReporterStatus,
   ReporterRole as SolReporterRole,
+  CaseStatus as SolCaseStatus,
+  getCaseStatusIndex,
 } from "../../../solana/lib";
 
 import {
@@ -31,15 +33,10 @@ import {
   StakeConfiguration,
   HapiCoreAddresses,
   ReporterStatus,
+  CaseStatusNames,
 } from "../interface";
 
-import {
-  ReporterRoleFromString,
-  ReporterRoleToString,
-  ReporterStatusFromString,
-  CaseStatusFromString,
-  CategoryFromString,
-} from "../util";
+import { CategoryFromString } from "../util";
 
 export interface SolanaConnectionOptions {
   network: HapiCoreNetwork.Solana | HapiCoreNetwork.Bitcoin;
@@ -194,7 +191,7 @@ export class HapiCoreSolana implements HapiCore {
       throw new Error("Invalid reporter role");
     }
 
-    const ReporterStatus = getReporterStatusIndex(
+    const reporterStatus = getReporterStatusIndex(
       data.status as typeof SolReporterStatus
     );
 
@@ -202,7 +199,7 @@ export class HapiCoreSolana implements HapiCore {
       id: bnToUuid(data.id),
       account: data.account.toString(),
       role: reporterRole as ReporterRole,
-      status: ReporterStatus,
+      status: reporterStatus,
       name: data.name.toString(),
       url: data.url,
       stake: data.stake.toString(),
@@ -230,7 +227,7 @@ export class HapiCoreSolana implements HapiCore {
         throw new Error("Invalid reporter role");
       }
 
-      const ReporterStatus = getReporterStatusIndex(
+      const reporterStatus = getReporterStatusIndex(
         data.status as typeof SolReporterStatus
       );
 
@@ -238,7 +235,7 @@ export class HapiCoreSolana implements HapiCore {
         id: bnToUuid(data.id),
         account: data.account.toString(),
         role: reporterRole,
-        status: ReporterStatus,
+        status: reporterStatus,
         name: data.name.toString(),
         url: data.url,
         stake: data.stake.toString(),
@@ -321,11 +318,13 @@ export class HapiCoreSolana implements HapiCore {
   async getCase(id: string): Promise<Case> {
     const data = await this.contract.getCaseData(this.network, id);
 
+    const caseStatus = getCaseStatusIndex(data.status as typeof SolCaseStatus);
+
     return {
       id: bnToUuid(data.id),
       name: data.name.toString(),
       url: data.url.toString(),
-      status: CaseStatusFromString(data.status.toString()),
+      status: caseStatus,
     };
   }
 
@@ -338,12 +337,19 @@ export class HapiCoreSolana implements HapiCore {
   async getCases(skip: number, take: number): Promise<Case[]> {
     const data = await this.contract.getAllCases(this.network);
 
-    let res = data.map((acc) => ({
-      id: bnToUuid(acc.account.id),
-      name: acc.account.name.toString(),
-      url: acc.account.url.toString(),
-      status: CaseStatusFromString(acc.account.status.toString()),
-    }));
+    let res = data.map((acc) => {
+      const data = acc.account;
+      const caseStatus = getCaseStatusIndex(
+        data.status as typeof SolCaseStatus
+      );
+
+      return {
+        id: bnToUuid(acc.account.id),
+        name: data.name.toString(),
+        url: data.url.toString(),
+        status: caseStatus,
+      };
+    });
 
     return res.slice(skip, skip + take);
   }
@@ -362,7 +368,7 @@ export class HapiCoreSolana implements HapiCore {
       id,
       name,
       url,
-      status.toString() as CaseStatusKeys
+      CaseStatusNames[status] as CaseStatusKeys
     );
 
     return { transactionHash };

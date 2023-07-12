@@ -767,7 +767,7 @@ async function getCases(setup: Setup, argv: any) {
 
   const cases = await hapiCore.getCases(argv.skip, argv.take);
 
-  console.log(
+  printResult(
     cases.map((case_) => ({
       ...case_,
       status: CaseStatusToString(case_.status),

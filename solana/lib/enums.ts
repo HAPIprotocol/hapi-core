@@ -107,9 +107,9 @@ export function getCaseStatusIndex(status: typeof CaseStatus) {
   const key = Object.keys(status)[0];
 
   switch (key) {
-    case "open":
-      return 0;
     case "closed":
+      return 0;
+    case "open":
       return 1;
     default:
       throw new Error(`Unsupported case status: ${status}`);

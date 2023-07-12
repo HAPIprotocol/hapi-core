@@ -5,25 +5,35 @@ import {
   NETWORK,
   KEYS,
   REPORTERS,
+  CASES,
 } from "./helpers";
 
 import {
   StakeConfiguration,
   RewardConfiguration,
-  ReporterRole,
-  ReporterStatus,
+  ReporterRole as CliReporterRole,
+  ReporterStatus as CliReporterStatus,
+  CaseStatus as CliCaseStatus,
 } from "../src/interface";
 
-import { ReporterRoleToString, ReporterStatusToString } from "../src/util";
+import {
+  ReporterRoleToString,
+  ReporterStatusToString,
+  CaseStatusToString,
+} from "../src/util";
 
 import {
   HapiCoreProgram,
   bnToUuid,
-  ReporterRole as SolReporterRole,
-  ReporterStatus as SolReporterStatus,
+  ReporterRole,
+  ReporterStatus,
   getReporterRoleIndex,
   getReporterStatusIndex,
+  getCaseStatusIndex,
+  ReporterRoleKeys,
+  CaseStatus,
 } from "../../solana/lib";
+import { log } from "console";
 
 const chai = require("chai");
 chai.config.truncateThreshold = 0;
@@ -43,36 +53,36 @@ describe("Solana Cli test", function () {
     killValidator();
   });
 
-  // describe("Network authority", function () {
-  //   it("Get authority check", async function () {
-  //     const res = await cli_cmd("get-authority");
-  //     const networkData = await program.getNetwotkData(NETWORK);
+  describe("Network authority", function () {
+    xit("Get authority check", async function () {
+      const res = await cli_cmd("get-authority");
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     checkCommandResult(res, networkData.authority.toString());
-  //   });
+      checkCommandResult(res, networkData.authority.toString());
+    });
 
-  //   it("Set new authority by the program upgrade authority", async function () {
-  //     let wallet = KEYS.authority;
+    xit("Set new authority by the program upgrade authority", async function () {
+      let wallet = KEYS.authority;
 
-  //     await cli_cmd("set-authority", `--address ${wallet.pk}`);
-  //     process.env.ANCHOR_WALLET = wallet.path;
+      await cli_cmd("set-authority", `--address ${wallet.pk}`);
+      process.env.ANCHOR_WALLET = wallet.path;
 
-  //     const networkData = await program.getNetwotkData(NETWORK);
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     expect(networkData.authority.toString()).to.eq(wallet.pk);
-  //   });
+      expect(networkData.authority.toString()).to.eq(wallet.pk);
+    });
 
-  //   it("Set new authority by the current authority", async function () {
-  //     let wallet = KEYS.admin;
+    xit("Set new authority by the current authority", async function () {
+      let wallet = KEYS.admin;
 
-  //     await cli_cmd("set-authority", `--address ${wallet.pk}`);
-  //     process.env.ANCHOR_WALLET = wallet.path;
+      await cli_cmd("set-authority", `--address ${wallet.pk}`);
+      process.env.ANCHOR_WALLET = wallet.path;
 
-  //     const networkData = await program.getNetwotkData(NETWORK);
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     expect(networkData.authority.toString()).to.eq(wallet.pk);
-  //   });
-  // });
+      expect(networkData.authority.toString()).to.eq(wallet.pk);
+    });
+  });
 
   describe("Stake configuration", function () {
     xit("Get stake configuration", async function () {
@@ -134,47 +144,47 @@ describe("Solana Cli test", function () {
     });
   });
 
-  // describe("Reward configuration", function () {
-  //   it("Get reward configuration", async function () {
-  //     const res = await cli_cmd("get-reward-configuration");
-  //     const networkData = await program.getNetwotkData(NETWORK);
+  describe("Reward configuration", function () {
+    xit("Get reward configuration", async function () {
+      const res = await cli_cmd("get-reward-configuration");
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     // TODO: add asset configuration
-  //     const val: RewardConfiguration = {
-  //       token: networkData.rewardMint.toString(),
-  //       addressConfirmationReward:
-  //         networkData.rewardConfiguration.addressConfirmationReward.toString(),
-  //       tracerReward:
-  //         networkData.rewardConfiguration.addressTracerReward.toString(),
-  //     };
+      // TODO: add asset configuration
+      const val: RewardConfiguration = {
+        token: networkData.rewardMint.toString(),
+        addressConfirmationReward:
+          networkData.rewardConfiguration.addressConfirmationReward.toString(),
+        tracerReward:
+          networkData.rewardConfiguration.addressTracerReward.toString(),
+      };
 
-  //     checkCommandResult(res, val);
-  //   });
+      checkCommandResult(res, val);
+    });
 
-  //   it("Update reward configuration", async function () {
-  //     const token = KEYS.token.pk;
-  //     const addressConfirmationReward = 1001;
-  //     const tracerReward = 2002;
+    xit("Update reward configuration", async function () {
+      const token = KEYS.token.pk;
+      const addressConfirmationReward = 1001;
+      const tracerReward = 2002;
 
-  //     await cli_cmd(
-  //       "update-reward-configuration",
-  //       ` --token ${token} \
-  //         --address-confirmation-reward ${addressConfirmationReward} \
-  //         --trace-reward ${tracerReward}`
-  //     );
-  //     const networkData = await program.getNetwotkData(NETWORK);
+      await cli_cmd(
+        "update-reward-configuration",
+        ` --token ${token} \
+          --address-confirmation-reward ${addressConfirmationReward} \
+          --trace-reward ${tracerReward}`
+      );
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     expect(networkData.rewardMint.toString()).to.eq(token);
-  //     expect(
-  //       networkData.rewardConfiguration.addressConfirmationReward.toNumber()
-  //     ).to.eq(addressConfirmationReward);
-  //     expect(
-  //       networkData.rewardConfiguration.addressTracerReward.toNumber()
-  //     ).to.eq(tracerReward);
-  //   });
-  // });
+      expect(networkData.rewardMint.toString()).to.eq(token);
+      expect(
+        networkData.rewardConfiguration.addressConfirmationReward.toNumber()
+      ).to.eq(addressConfirmationReward);
+      expect(
+        networkData.rewardConfiguration.addressTracerReward.toNumber()
+      ).to.eq(tracerReward);
+    });
+  });
 
-  describe("Reporter", function () {
+  describe("Reporter activation", function () {
     xit("Verify that contract has no reporters", async function () {
       const count = await cli_cmd("get-reporter-count");
       checkCommandResult(count, 0);
@@ -183,114 +193,74 @@ describe("Solana Cli test", function () {
       checkCommandResult(reporters, []);
     });
 
-    it("Create authority reporter", async function () {
-      const reporter = REPORTERS.authority;
+    it("Create reporters", async function () {
+      for (const key in REPORTERS) {
+        const reporter = REPORTERS[key];
 
-      await cli_cmd(
-        "create-reporter",
-        `--id ${reporter.id} \
-         --role ${reporter.role} \
-         --account ${reporter.wallet.pk} \
-         --name ${reporter.name} \
-         --url ${reporter.url}`
-      );
+        await cli_cmd(
+          "create-reporter",
+          `--id ${reporter.id} \
+           --role ${reporter.role} \
+           --account ${reporter.wallet.pk} \
+           --name ${reporter.name} \
+           --url ${reporter.url}`
+        );
 
-      const reporterData = await program.getReporterData(NETWORK, reporter.id);
+        const reporterData = await program.getReporterData(
+          NETWORK,
+          reporter.id
+        );
 
-      expect(bnToUuid(reporterData.id)).to.eq(reporter.id);
-      expect(reporterData.account.toString()).to.eq(reporter.wallet.pk);
-      expect(reporterData.role).to.deep.equal(SolReporterRole.Authority);
-      expect(reporterData.status).to.deep.equal(SolReporterStatus.Inactive);
-      expect(reporterData.name).to.eq(reporter.name);
-      expect(reporterData.url).to.eq(reporter.url);
-      expect(reporterData.stake.toString()).to.eq("0");
-      expect(reporterData.unlockTimestamp.toNumber()).to.eq(0);
+        expect(bnToUuid(reporterData.id)).to.eq(reporter.id);
+        expect(reporterData.account.toString()).to.eq(reporter.wallet.pk);
+        expect(reporterData.role).to.deep.equal(
+          ReporterRole[reporter.role as ReporterRoleKeys]
+        );
+        expect(reporterData.status).to.deep.equal(ReporterStatus.Inactive);
+        expect(reporterData.name).to.eq(reporter.name);
+        expect(reporterData.url).to.eq(reporter.url);
+        expect(reporterData.stake.toString()).to.eq("0");
+        expect(reporterData.unlockTimestamp.toNumber()).to.eq(0);
+      }
     });
 
-    xit("Get authority reporter", async function () {
-      const reporter = REPORTERS.authority;
+    xit("Get reporters", async function () {
+      for (const key in REPORTERS) {
+        const reporter = REPORTERS[key];
 
-      const res = await cli_cmd("get-reporter", `--id ${reporter.id}`);
-      const reporterData = await program.getReporterData(NETWORK, reporter.id);
+        const res = await cli_cmd("get-reporter", `--id ${reporter.id}`);
+        const reporterData = await program.getReporterData(
+          NETWORK,
+          reporter.id
+        );
 
-      const val = {
-        id: bnToUuid(reporterData.id),
-        account: reporterData.account.toString(),
-        role: ReporterRoleToString(
-          getReporterRoleIndex(
-            reporterData.role as typeof SolReporterRole
-          ) as ReporterRole
-        ),
-        status: ReporterStatusToString(
-          getReporterStatusIndex(
-            reporterData.status as typeof SolReporterStatus
-          ) as ReporterStatus
-        ),
-        name: reporterData.name.toString(),
-        url: reporterData.url,
-        stake: reporterData.stake.toString(),
-        unlockTimestamp: reporterData.unlockTimestamp.toNumber(),
-      };
+        const val = {
+          id: bnToUuid(reporterData.id),
+          account: reporterData.account.toString(),
+          role: ReporterRoleToString(
+            getReporterRoleIndex(
+              reporterData.role as typeof ReporterRole
+            ) as CliReporterRole
+          ),
+          status: ReporterStatusToString(
+            getReporterStatusIndex(
+              reporterData.status as typeof ReporterStatus
+            ) as CliReporterStatus
+          ),
+          name: reporterData.name.toString(),
+          url: reporterData.url,
+          stake: reporterData.stake.toString(),
+          unlockTimestamp: reporterData.unlockTimestamp.toNumber(),
+        };
 
-      checkCommandResult(res, val);
+        checkCommandResult(res, val);
+      }
     });
 
-    xit("Create publisher reporter", async function () {
-      const reporter = REPORTERS.publisher;
-
-      await cli_cmd(
-        "create-reporter",
-        `--id ${reporter.id} \
-         --role ${reporter.role} \
-         --account ${reporter.wallet.pk} \
-         --name ${reporter.name} \
-         --url ${reporter.url}`
-      );
-
-      const reporterData = await program.getReporterData(NETWORK, reporter.id);
-
-      expect(bnToUuid(reporterData.id)).to.eq(reporter.id);
-      expect(reporterData.account.toString()).to.eq(reporter.wallet.pk);
-      expect(reporterData.role).to.deep.equal(SolReporterRole.Publisher);
-      expect(reporterData.status).to.deep.equal(SolReporterStatus.Inactive);
-      expect(reporterData.name).to.eq(reporter.name);
-      expect(reporterData.url).to.eq(reporter.url);
-      expect(reporterData.stake.toString()).to.eq("0");
-      expect(reporterData.unlockTimestamp.toNumber()).to.eq(0);
-    });
-
-    xit("Get authority reporter", async function () {
-      const reporter = REPORTERS.publisher;
-
-      const res = await cli_cmd("get-reporter", `--id ${reporter.id}`);
-      const reporterData = await program.getReporterData(NETWORK, reporter.id);
-
-      const val = {
-        id: bnToUuid(reporterData.id),
-        account: reporterData.account.toString(),
-        role: ReporterRoleToString(
-          getReporterRoleIndex(
-            reporterData.role as typeof SolReporterRole
-          ) as ReporterRole
-        ),
-        status: ReporterStatusToString(
-          getReporterStatusIndex(
-            reporterData.status as typeof SolReporterStatus
-          ) as ReporterStatus
-        ),
-        name: reporterData.name.toString(),
-        url: reporterData.url,
-        stake: reporterData.stake.toString(),
-        unlockTimestamp: reporterData.unlockTimestamp.toNumber(),
-      };
-
-      checkCommandResult(res, val);
-    });
-
-    xit("Verify reporter count", async function () {
+    it("Verify reporter count", async function () {
       const count = await cli_cmd("get-reporter-count");
 
-      checkCommandResult(count, 2);
+      checkCommandResult(count, Object.keys(REPORTERS).length);
     });
 
     xit("Get all reporters", async function () {
@@ -310,13 +280,13 @@ describe("Solana Cli test", function () {
           account: reporterData.account.toString(),
           role: ReporterRoleToString(
             getReporterRoleIndex(
-              reporterData.role as typeof SolReporterRole
-            ) as ReporterRole
+              reporterData.role as typeof ReporterRole
+            ) as CliReporterRole
           ),
           status: ReporterStatusToString(
             getReporterStatusIndex(
-              reporterData.status as typeof SolReporterStatus
-            ) as ReporterStatus
+              reporterData.status as typeof ReporterStatus
+            ) as CliReporterStatus
           ),
           name: reporterData.name.toString(),
           url: reporterData.url,
@@ -348,15 +318,126 @@ describe("Solana Cli test", function () {
       expect(reporterData.url).to.eq(newUrl);
     });
 
-    it("Activate reporter", async function () {
+    it("Activate reporters", async function () {
+      for (const key in REPORTERS) {
+        const reporter = REPORTERS[key];
+        process.env.ANCHOR_WALLET = reporter.wallet.path;
+
+        await cli_cmd("activate-reporter");
+
+        const reporterData = await program.getReporterData(
+          NETWORK,
+          reporter.id
+        );
+
+        expect(reporterData.status).to.deep.equal(ReporterStatus.Active);
+      }
+    });
+  });
+
+  describe("Case", function () {
+    it("Verify that contract has no cases", async function () {
+      const count = await cli_cmd("get-case-count");
+      checkCommandResult(count, 0);
+
+      const cases = await cli_cmd("get-cases");
+      checkCommandResult(cases, []);
+    });
+
+    it("Create cases", async function () {
       const reporter = REPORTERS.authority;
-      process.env.ANCHOR_WALLET = reporter.wallet.path;
 
-      await cli_cmd("activate-reporter");
+      for (const key in CASES) {
+        const cs = CASES[key];
 
-      const reporterData = await program.getReporterData(NETWORK, reporter.id);
+        await cli_cmd(
+          "create-case",
+          `--id ${cs.id} \
+           --name ${cs.name} \
+           --url ${cs.url}`
+        );
 
-      expect(reporterData.status).to.deep.equal(SolReporterStatus.Active);
+        const caseData = await program.getCaseData(NETWORK, cs.id);
+
+        expect(bnToUuid(caseData.id)).to.eq(cs.id);
+        expect(caseData.name).to.eq(cs.name);
+        expect(caseData.url).to.eq(cs.url);
+        expect(caseData.status).to.deep.equal(CaseStatus.Open);
+      }
+    });
+
+    it("Get cases", async function () {
+      for (const key in CASES) {
+        const cs = CASES[key];
+
+        const res = await cli_cmd("get-case", `--id ${cs.id}`);
+        const caseData = await program.getCaseData(NETWORK, cs.id);
+
+        const val = {
+          id: bnToUuid(caseData.id),
+          name: caseData.name.toString(),
+          url: caseData.url,
+          status: CaseStatusToString(
+            getCaseStatusIndex(
+              caseData.status as typeof CaseStatus
+            ) as CliCaseStatus
+          ),
+        };
+
+        checkCommandResult(res, val);
+      }
+    });
+
+    it("Verify case count", async function () {
+      const count = await cli_cmd("get-case-count");
+
+      checkCommandResult(count, Object.keys(CASES).length);
+    });
+
+    it("Get all cases", async function () {
+      const res = await cli_cmd("get-cases");
+      const val = [];
+
+      for (const key in CASES) {
+        const cs = CASES[key];
+
+        const caseData = await program.getCaseData(NETWORK, cs.id);
+
+        val.push({
+          id: bnToUuid(caseData.id),
+          name: caseData.name.toString(),
+          url: caseData.url,
+          status: CaseStatusToString(
+            getCaseStatusIndex(
+              caseData.status as typeof CaseStatus
+            ) as CliCaseStatus
+          ),
+        });
+      }
+
+      checkCommandResult(res, val);
+    });
+
+    it("Update case", async function () {
+      const cs = CASES.secondCase;
+
+      const newName = "newName";
+      const newUrl = "https://new.case.blockchain";
+      const newStatus = "Closed";
+
+      await cli_cmd(
+        "update-case",
+        `--id ${cs.id} \
+         --name ${newName} \
+         --url ${newUrl} \
+         --status ${newStatus}`
+      );
+
+      const caseData = await program.getCaseData(NETWORK, cs.id);
+
+      expect(caseData.name).to.eq(newName);
+      expect(caseData.url).to.eq(newUrl);
+      expect(caseData.status).to.deep.equal(CaseStatus.Closed);
     });
   });
 });
