@@ -1,8 +1,9 @@
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env,
+    json_types::U128,
     serde::{Deserialize, Serialize},
-    AccountId, Balance,
+    AccountId,
 };
 
 mod v_reward;
@@ -10,8 +11,8 @@ mod v_reward;
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RewardAmounts {
-    address_confirmation: Balance,
-    address_trace: Balance,
+    address_confirmation: U128,
+    address_trace: U128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
@@ -26,8 +27,8 @@ impl Default for RewardConfiguration {
         Self {
             token: env::current_account_id(),
             reward_amounts: RewardAmounts {
-                address_confirmation: Balance::default(),
-                address_trace: Balance::default(),
+                address_confirmation: U128(0),
+                address_trace: U128(0),
             },
         }
     }

@@ -89,7 +89,7 @@ pub struct Contract {
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new() -> Self {
+    pub fn initialize() -> Self {
         Self {
             authority: env::predecessor_account_id(),
             stake_configuration: StakeConfiguration::default(),

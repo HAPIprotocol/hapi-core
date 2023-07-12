@@ -4,17 +4,9 @@ use crate::{Contract, ContractExt, RewardConfiguration, StakeConfiguration, ONLY
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_stake_configuration(&self) -> StakeConfiguration {
-        self.stake_configuration.clone()
-    }
-
     pub fn update_stake_configuration(&mut self, stake_configuration: StakeConfiguration) {
         self.assert_authority();
         self.stake_configuration = stake_configuration;
-    }
-
-    pub fn get_reward_configuration(&self) -> RewardConfiguration {
-        self.reward_configuration.clone()
     }
 
     pub fn update_reward_configuration(&mut self, reward_configuration: RewardConfiguration) {
@@ -26,12 +18,19 @@ impl Contract {
         self.assert_authority();
         self.authority = authority;
     }
+
+    pub fn get_configuration(&self) -> (StakeConfiguration, RewardConfiguration) {
+        (
+            self.stake_configuration.clone(),
+            self.reward_configuration.clone(),
+        )
+    }
 }
 
 impl Contract {
     fn assert_authority(&self) {
         require!(
-            env::predecessor_account_id().ne(&self.authority),
+            env::predecessor_account_id().eq(&self.authority),
             ONLY_AUTHORITY
         );
     }
