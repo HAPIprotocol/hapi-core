@@ -302,6 +302,16 @@ export class HapiCoreProgram {
       })
       .rpc();
 
+    if (token && networkData.stakeMint.equals(PublicKey.default)) {
+      await Token.getOrCreateAssociatedTokenAccount(
+        this.program.provider.connection,
+        ((this.program.provider as AnchorProvider).wallet as NodeWallet).payer,
+        stakeMint,
+        network,
+        true
+      );
+    }
+
     return transactionHash;
   }
 
@@ -404,17 +414,12 @@ export class HapiCoreProgram {
     return transactionHash;
   }
 
-  async activateReporter(
-    networkName: string,
-    // wallet: Signer | Wallet,
-    id: string
-  ) {
+  async activateReporter(networkName: string, id: string) {
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, id);
     const networkData = await this.program.account.network.fetch(network);
 
-    // let signer = wallet as Signer;
-    let signer = (this.program.provider as AnchorProvider).wallet as NodeWallet;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const networkStakeTokenAccount = Token.getAssociatedTokenAddressSync(
       networkData.stakeMint,
@@ -424,13 +429,13 @@ export class HapiCoreProgram {
 
     const reporterStakeTokenAccount = Token.getAssociatedTokenAddressSync(
       networkData.stakeMint,
-      signer.publicKey
+      signer
     );
 
     const transactionHash = await this.program.methods
       .activateReporter()
       .accounts({
-        signer: signer.publicKey,
+        signer: signer,
         network,
         reporter,
         networkStakeTokenAccount,
@@ -442,34 +447,30 @@ export class HapiCoreProgram {
     return transactionHash;
   }
 
-  async deactivateReporter(
-    networkName: string,
-    wallet: Signer | Wallet,
-    id: string
-  ) {
+  async deactivateReporter(networkName: string, id: string) {
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, id);
-    let signer = wallet as Signer;
+
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .deactivateReporter()
       .accounts({
-        signer: signer.publicKey,
+        signer: signer,
         network,
         reporter,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
   }
 
-  async unstake(networkName: string, wallet: Signer | Wallet, id: string) {
+  async unstake(networkName: string, id: string) {
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, id);
     const networkData = await this.program.account.network.fetch(network);
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const networkStakeTokenAccount = Token.getAssociatedTokenAddressSync(
       networkData.stakeMint,
@@ -479,20 +480,19 @@ export class HapiCoreProgram {
 
     const reporterStakeTokenAccount = Token.getAssociatedTokenAddressSync(
       networkData.stakeMint,
-      signer.publicKey
+      signer
     );
 
     const transactionHash = await this.program.methods
       .unstake()
       .accounts({
-        signer: signer.publicKey,
+        signer: signer,
         network,
         reporter,
         networkStakeTokenAccount,
         reporterStakeTokenAccount,
         tokenProgram: Token.TOKEN_PROGRAM_ID,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -503,25 +503,23 @@ export class HapiCoreProgram {
     id: string,
     name: string,
     url: string,
-    wallet: Signer | Wallet,
     reporterId: string
   ) {
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [caseAccount, bump] = this.findCaseAddress(network, id);
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .createCase(uuidToBn(id), name, url, bump)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -531,7 +529,6 @@ export class HapiCoreProgram {
     networkName: string,
     reporterId: string,
     id: string,
-    wallet: Signer | Wallet,
     name?: string,
     url?: string,
     status?: CaseStatusKeys
@@ -547,12 +544,12 @@ export class HapiCoreProgram {
     const caseUrl = url ?? caseData.url;
     const caseName = name ?? caseData.name.toString();
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .updateCase(caseName, caseUrl, caseStatus)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
@@ -578,19 +575,18 @@ export class HapiCoreProgram {
     const [caseAccount] = this.findCaseAddress(network, caseId);
     const [addressAccount, bump] = this.findAddressAddress(network, buf);
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .createAddress([...buf], Category[category], riskScore, bump)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
         address: addressAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -621,19 +617,18 @@ export class HapiCoreProgram {
     const addressCaseId = caseId ?? bnToUuid(addressData.caseId);
     const [caseAccount] = this.findCaseAddress(network, addressCaseId);
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .updateAddress(addressCategory, addressRiskScore)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
         address: addressAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -654,19 +649,18 @@ export class HapiCoreProgram {
       reporterId
     );
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .confirmAddress(bump)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         address: addressAccount,
         confirmation: confirmationAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -693,7 +687,7 @@ export class HapiCoreProgram {
       assetId
     );
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .createAsset(
@@ -704,14 +698,13 @@ export class HapiCoreProgram {
         bump
       )
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
         asset: assetAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -742,19 +735,18 @@ export class HapiCoreProgram {
     const addressCaseId = caseId ?? bnToUuid(assetData.caseId);
     const [caseAccount] = this.findCaseAddress(network, addressCaseId);
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .updateAsset(addressCategory, addressRiskScore)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         case: caseAccount,
         asset: assetAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;
@@ -779,19 +771,18 @@ export class HapiCoreProgram {
       reporterId
     );
 
-    let signer = wallet as Signer;
+    let signer = (this.program.provider as AnchorProvider).publicKey;
 
     const transactionHash = await this.program.methods
       .confirmAsset(bump)
       .accounts({
-        sender: signer.publicKey,
+        sender: signer,
         network,
         reporter,
         asset: assetAccount,
         confirmation: confirmationAccount,
         systemProgram: web3.SystemProgram.programId,
       })
-      .signers([signer])
       .rpc();
 
     return transactionHash;

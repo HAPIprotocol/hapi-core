@@ -1,12 +1,15 @@
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import chalk from "chalk";
+import * as Token from "@solana/spl-token";
+import { Provider, web3 } from "@coral-xyz/anchor";
+import { readFileSync } from "fs";
 
 import { execute_command, KEYS, NETWORK } from "./helpers";
 
 var VALIDATOR: ChildProcessWithoutNullStreams;
 
 // TODO: add custom port
-async function shutDownExisting(display = true) {
+async function shutDownExistingValidator(display = true) {
   const validatorPid = await execute_command("lsof -t -i :8899", true);
 
   if (validatorPid.stdout.length > 0) {
@@ -25,13 +28,7 @@ async function shutDownExisting(display = true) {
   }
 }
 
-export function killValidator() {
-  VALIDATOR.kill();
-}
-
-export async function setup() {
-  await shutDownExisting();
-
+async function startValidator() {
   console.log("==> Initializing solana local validator");
   VALIDATOR = spawn("solana-test-validator", ["-r"]);
 
@@ -42,26 +39,16 @@ export async function setup() {
 
   console.log("==> Waiting for the validator to start");
   await new Promise((resolve) => setTimeout(resolve, 3000));
+}
 
-  console.log("==> Creating token");
-  const token = process.cwd() + "/" + KEYS.token.path;
-  await execute_command(`spl-token create-token ${token}`);
+export function killValidator() {
+  VALIDATOR.kill();
+}
 
-  console.log("==> Preparing wallets");
-  for (const key in KEYS) {
-    const wallet = KEYS[key];
-    process.env.ANCHOR_WALLET = wallet.path;
-
-    await execute_command(`solana airdrop 1000  ${wallet.pk}`);
-    await execute_command(`spl-token create-account ${KEYS.token.pk}`);
-    await execute_command(`spl-token mint ${KEYS.token.pk} 10000`);
-
-    console.log(await execute_command(`spl-token balance ${KEYS.token.pk}`));
-  }
-
+async function prepareValidator() {
   console.log("==> Building and deploying program");
 
-  const wallet = process.cwd() + "/" + KEYS.wallet1.path;
+  const wallet = process.cwd() + "/" + KEYS.admin.path;
   process.env.ANCHOR_WALLET = wallet;
   await execute_command(
     `cd ../solana && anchor build &&  anchor deploy \
@@ -70,4 +57,66 @@ export async function setup() {
 
   console.log("==> Creating network for tests");
   await execute_command(`npm --prefix ../solana run create-network ${NETWORK}`);
+}
+
+export async function setupWallets(provider: Provider) {
+  for (const key in KEYS) {
+    if (key != "token" && key != "program") {
+      const wallet = new web3.PublicKey(KEYS[key].pk);
+
+      await provider.connection.requestAirdrop(
+        wallet,
+        10 * web3.LAMPORTS_PER_SOL
+      );
+    }
+  }
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const payer = web3.Keypair.fromSecretKey(
+    Buffer.from(JSON.parse(readFileSync(KEYS.admin.path, "utf-8")))
+  );
+
+  const tokenKeypair = web3.Keypair.fromSecretKey(
+    Buffer.from(JSON.parse(readFileSync(KEYS.token.path, "utf-8")))
+  );
+
+  console.log("==> Creating token");
+  const mint = await Token.createMint(
+    provider.connection,
+    payer,
+    payer.publicKey,
+    null,
+    9,
+    tokenKeypair
+  );
+
+  console.log("==> Preparing wallets");
+  for (const key in KEYS) {
+    if (key != "token" && key != "program") {
+      const pk = new web3.PublicKey(KEYS[key].pk);
+
+      const tokenAccount = await Token.getOrCreateAssociatedTokenAccount(
+        provider.connection,
+        payer,
+        mint,
+        pk
+      );
+
+      await Token.mintTo(
+        provider.connection,
+        payer as web3.Signer,
+        mint,
+        tokenAccount.address,
+        payer.publicKey,
+        100_000
+      );
+    }
+  }
+}
+
+export async function setup(provider: Provider) {
+  await shutDownExistingValidator();
+  await startValidator();
+  await setupWallets(provider);
+  await prepareValidator();
 }

@@ -278,7 +278,6 @@ export class HapiCoreSolana implements HapiCore {
 
     const transactionHash = await this.contract.activateReporter(
       this.network,
-      // this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -289,7 +288,6 @@ export class HapiCoreSolana implements HapiCore {
     const reporterId = await this.getReporterId();
     const transactionHash = await this.contract.deactivateReporter(
       this.network,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -300,7 +298,6 @@ export class HapiCoreSolana implements HapiCore {
     const reporterId = await this.getReporterId();
     const transactionHash = await this.contract.unstake(
       this.network,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -315,7 +312,6 @@ export class HapiCoreSolana implements HapiCore {
       id,
       name,
       url,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -364,7 +360,6 @@ export class HapiCoreSolana implements HapiCore {
       this.network,
       reporterId,
       id,
-      this.provider.wallet as NodeWallet,
       name,
       url,
       status.toString() as CaseStatusKeys

@@ -31,11 +31,12 @@ chai.config.showDiff = true;
 var expect = chai.expect;
 
 describe("Solana Cli test", function () {
-  process.env.ANCHOR_WALLET = KEYS.wallet1.path;
-  const program = new HapiCoreProgram(KEYS.program.pk);
+  let program: HapiCoreProgram;
 
   before(async function () {
-    await setup();
+    process.env.ANCHOR_WALLET = KEYS.admin.path;
+    program = new HapiCoreProgram(KEYS.program.pk);
+    await setup(program.program.provider);
   });
 
   after(async function () {
@@ -51,7 +52,7 @@ describe("Solana Cli test", function () {
   //   });
 
   //   it("Set new authority by the program upgrade authority", async function () {
-  //     let wallet = KEYS.wallet2;
+  //     let wallet = KEYS.authority;
 
   //     await cli_cmd("set-authority", `--address ${wallet.pk}`);
   //     process.env.ANCHOR_WALLET = wallet.path;
@@ -62,7 +63,7 @@ describe("Solana Cli test", function () {
   //   });
 
   //   it("Set new authority by the current authority", async function () {
-  //     let wallet = KEYS.wallet1;
+  //     let wallet = KEYS.admin;
 
   //     await cli_cmd("set-authority", `--address ${wallet.pk}`);
   //     process.env.ANCHOR_WALLET = wallet.path;
@@ -73,64 +74,65 @@ describe("Solana Cli test", function () {
   //   });
   // });
 
-  // describe("Stake configuration", function () {
-  //   it("Get stake configuration", async function () {
-  //     const res = await cli_cmd("get-stake-configuration");
-  //     const networkData = await program.getNetwotkData(NETWORK);
+  describe("Stake configuration", function () {
+    xit("Get stake configuration", async function () {
+      const res = await cli_cmd("get-stake-configuration");
+      const networkData = await program.getNetwotkData(NETWORK);
 
-  //     const val: StakeConfiguration = {
-  //       token: networkData.stakeMint.toString(),
-  //       unlockDuration:
-  //         networkData.stakeConfiguration.unlockDuration.toNumber(),
-  //       validatorStake:
-  //         networkData.stakeConfiguration.validatorStake.toString(),
-  //       tracerStake: networkData.stakeConfiguration.tracerStake.toString(),
-  //       publisherStake:
-  //         networkData.stakeConfiguration.publisherStake.toString(),
-  //       authorityStake:
-  //         networkData.stakeConfiguration.authorityStake.toString(),
-  //     };
+      const val: StakeConfiguration = {
+        token: networkData.stakeMint.toString(),
+        unlockDuration:
+          networkData.stakeConfiguration.unlockDuration.toNumber(),
+        validatorStake:
+          networkData.stakeConfiguration.validatorStake.toString(),
+        tracerStake: networkData.stakeConfiguration.tracerStake.toString(),
+        publisherStake:
+          networkData.stakeConfiguration.publisherStake.toString(),
+        authorityStake:
+          networkData.stakeConfiguration.authorityStake.toString(),
+      };
 
-  //     checkCommandResult(res, val);
-  //   });
+      checkCommandResult(res, val);
+    });
 
-  //   it("Update stake configuration", async function () {
-  //     const token = KEYS.token.pk;
-  //     const unlockDuration = 123;
-  //     const validatorStake = 1001;
-  //     const tracerStake = 2002;
-  //     const publisherStake = 3003;
-  //     const authorityStake = 4004;
+    it("Update stake configuration", async function () {
+      const token = KEYS.token.pk;
+      const unlockDuration = 123;
+      const validatorStake = 1001;
+      const tracerStake = 2002;
+      const publisherStake = 3003;
+      const authorityStake = 4004;
 
-  //     await cli_cmd(
-  //       "update-stake-configuration",
-  //       ` --token ${token} \
-  //         --unlock-duration ${unlockDuration} \
-  //         --validator-stake ${validatorStake}\
-  //         --tracer-stake ${tracerStake}\
-  //         --publisher-stake ${publisherStake} \
-  //         --authority-stake ${authorityStake}`
-  //     );
-  //     const networkData = await program.getNetwotkData(NETWORK);
+      await cli_cmd(
+        "update-stake-configuration",
+        ` --token ${token} \
+          --unlock-duration ${unlockDuration} \
+          --validator-stake ${validatorStake}\
+          --tracer-stake ${tracerStake}\
+          --publisher-stake ${publisherStake} \
+          --authority-stake ${authorityStake}`
+      );
 
-  //     expect(networkData.stakeMint.toString()).to.eq(token);
-  //     expect(networkData.stakeConfiguration.unlockDuration.toNumber()).to.eq(
-  //       unlockDuration
-  //     );
-  //     expect(networkData.stakeConfiguration.validatorStake.toNumber()).to.eq(
-  //       validatorStake
-  //     );
-  //     expect(networkData.stakeConfiguration.tracerStake.toNumber()).to.eq(
-  //       tracerStake
-  //     );
-  //     expect(networkData.stakeConfiguration.publisherStake.toNumber()).to.eq(
-  //       publisherStake
-  //     );
-  //     expect(networkData.stakeConfiguration.authorityStake.toNumber()).to.eq(
-  //       authorityStake
-  //     );
-  //   });
-  // });
+      const networkData = await program.getNetwotkData(NETWORK);
+
+      expect(networkData.stakeMint.toString()).to.eq(token);
+      expect(networkData.stakeConfiguration.unlockDuration.toNumber()).to.eq(
+        unlockDuration
+      );
+      expect(networkData.stakeConfiguration.validatorStake.toNumber()).to.eq(
+        validatorStake
+      );
+      expect(networkData.stakeConfiguration.tracerStake.toNumber()).to.eq(
+        tracerStake
+      );
+      expect(networkData.stakeConfiguration.publisherStake.toNumber()).to.eq(
+        publisherStake
+      );
+      expect(networkData.stakeConfiguration.authorityStake.toNumber()).to.eq(
+        authorityStake
+      );
+    });
+  });
 
   // describe("Reward configuration", function () {
   //   it("Get reward configuration", async function () {
@@ -350,8 +352,7 @@ describe("Solana Cli test", function () {
       const reporter = REPORTERS.authority;
       process.env.ANCHOR_WALLET = reporter.wallet.path;
 
-      console.log("Activate reporter");
-      console.log(await cli_cmd("activate-reporter"));
+      await cli_cmd("activate-reporter");
 
       const reporterData = await program.getReporterData(NETWORK, reporter.id);
 

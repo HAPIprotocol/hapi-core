@@ -12,15 +12,15 @@ export const NETWORK = "solana";
 const KEYS_PATH = "test/keys";
 
 export const KEYS: Record<string, { pk: string; path: string }> = {
-  wallet1: {
+  admin: {
     pk: "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ",
     path: `${KEYS_PATH}/wallet_1.json`,
   },
-  wallet2: {
+  authority: {
     pk: "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX",
     path: `${KEYS_PATH}/wallet_2.json`,
   },
-  wallet3: {
+  publisher: {
     pk: "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk",
     path: `${KEYS_PATH}/wallet_3.json`,
   },
@@ -48,14 +48,14 @@ export const REPORTERS: Record<
     id: uuidv4(),
     name: "authorityReporter",
     role: "Authority",
-    wallet: KEYS.wallet2,
+    wallet: KEYS.authority,
     url: "https://authority.blockchain",
   },
   publisher: {
     id: uuidv4(),
     name: "publisherReporter",
     role: "Publisher",
-    wallet: KEYS.wallet3,
+    wallet: KEYS.publisher,
     url: "https://publisher.blockchain",
   },
 };
