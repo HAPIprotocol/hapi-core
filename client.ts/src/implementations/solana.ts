@@ -1,5 +1,4 @@
 import { Provider, AnchorProvider, web3 } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 import {
   HapiCoreProgram,
@@ -13,7 +12,9 @@ import {
   ReporterStatus as SolReporterStatus,
   ReporterRole as SolReporterRole,
   CaseStatus as SolCaseStatus,
+  Category as SolCategory,
   getCaseStatusIndex,
+  getCategoryIndex,
 } from "../../../solana/lib";
 
 import {
@@ -32,8 +33,8 @@ import {
   RewardConfiguration,
   StakeConfiguration,
   HapiCoreAddresses,
-  ReporterStatus,
   CaseStatusNames,
+  CategoryNames,
 } from "../interface";
 
 import { CategoryFromString } from "../util";
@@ -339,6 +340,7 @@ export class HapiCoreSolana implements HapiCore {
 
     let res = data.map((acc) => {
       const data = acc.account;
+
       const caseStatus = getCaseStatusIndex(
         data.status as typeof SolCaseStatus
       );
@@ -385,10 +387,9 @@ export class HapiCoreSolana implements HapiCore {
     const transactionHash = await this.contract.createAddress(
       this.network,
       address,
-      category.toString() as CategoryKeys,
+      CategoryNames[category] as CategoryKeys,
       risk,
       caseId,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -398,12 +399,14 @@ export class HapiCoreSolana implements HapiCore {
   async getAddress(address: string): Promise<Address> {
     const data = await this.contract.getAddressData(this.network, address);
 
+    const caseCategory = getCategoryIndex(data.category as typeof SolCategory);
+
     return {
       address: stringFromArray(data.address),
       caseId: bnToUuid(data.caseId),
       reporterId: bnToUuid(data.reporterId),
       risk: data.riskScore,
-      category: CategoryFromString(data.category.toString()),
+      category: caseCategory,
     };
   }
 
@@ -416,13 +419,21 @@ export class HapiCoreSolana implements HapiCore {
   async getAddresses(skip: number, take: number): Promise<Address[]> {
     const data = await this.contract.getAllAddresses(this.network);
 
-    let res = data.map((acc) => ({
-      address: stringFromArray(acc.account.address),
-      caseId: bnToUuid(acc.account.caseId),
-      reporterId: bnToUuid(acc.account.reporterId),
-      risk: acc.account.riskScore,
-      category: CategoryFromString(acc.account.category.toString()),
-    }));
+    let res = data.map((acc) => {
+      const data = acc.account;
+
+      const caseCategory = getCategoryIndex(
+        data.category as typeof SolCategory
+      );
+
+      return {
+        address: stringFromArray(data.address),
+        caseId: bnToUuid(data.caseId),
+        reporterId: bnToUuid(data.reporterId),
+        risk: data.riskScore,
+        category: caseCategory,
+      };
+    });
 
     return res.slice(skip, skip + take);
   }
@@ -438,9 +449,8 @@ export class HapiCoreSolana implements HapiCore {
     const transactionHash = await this.contract.updateAddress(
       this.network,
       address,
-      this.provider.wallet as NodeWallet,
       reporterId,
-      category.toString() as CategoryKeys,
+      CategoryNames[category] as CategoryKeys,
       risk,
       caseId
     );
@@ -455,7 +465,6 @@ export class HapiCoreSolana implements HapiCore {
     const transactionHash = await this.contract.confirmAddress(
       this.network,
       address,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -478,7 +487,6 @@ export class HapiCoreSolana implements HapiCore {
       category.toString() as CategoryKeys,
       risk,
       caseId,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 
@@ -532,7 +540,6 @@ export class HapiCoreSolana implements HapiCore {
       this.network,
       address,
       assetId,
-      this.provider.wallet as NodeWallet,
       reporterId,
       category.toString() as CategoryKeys,
       risk,
@@ -550,7 +557,6 @@ export class HapiCoreSolana implements HapiCore {
       this.network,
       address,
       assetId,
-      this.provider.wallet as NodeWallet,
       reporterId
     );
 

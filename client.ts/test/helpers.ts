@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { encodeAddress, CategoryKeys } from "../../solana/lib";
 
 const chai = require("chai");
 chai.config.truncateThreshold = 0;
@@ -77,6 +78,23 @@ export const CASES: Record<
     id: uuidv4(),
     name: "secondCase",
     url: "https://big2.hack",
+  },
+};
+
+export const ADDRESSES: Record<
+  string,
+  {
+    address: string;
+    caseId: string;
+    category: CategoryKeys;
+    riskScore: number;
+  }
+> = {
+  firstAddr: {
+    address: "0000000000000000000000000000000000000000000000000000000000000001",
+    caseId: CASES.firstCase.id,
+    category: "WalletService",
+    riskScore: 3,
   },
 };
 

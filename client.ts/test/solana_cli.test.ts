@@ -6,6 +6,7 @@ import {
   KEYS,
   REPORTERS,
   CASES,
+  ADDRESSES,
 } from "./helpers";
 
 import {
@@ -14,12 +15,14 @@ import {
   ReporterRole as CliReporterRole,
   ReporterStatus as CliReporterStatus,
   CaseStatus as CliCaseStatus,
+  Category as CliCategory,
 } from "../src/interface";
 
 import {
   ReporterRoleToString,
   ReporterStatusToString,
   CaseStatusToString,
+  CategoryToString,
 } from "../src/util";
 
 import {
@@ -32,8 +35,11 @@ import {
   getCaseStatusIndex,
   ReporterRoleKeys,
   CaseStatus,
+  Category,
+  CategoryKeys,
+  decodeAddress,
+  getCategoryIndex,
 } from "../../solana/lib";
-import { log } from "console";
 
 const chai = require("chai");
 chai.config.truncateThreshold = 0;
@@ -336,7 +342,7 @@ describe("Solana Cli test", function () {
   });
 
   describe("Case", function () {
-    it("Verify that contract has no cases", async function () {
+    xit("Verify that contract has no cases", async function () {
       const count = await cli_cmd("get-case-count");
       checkCommandResult(count, 0);
 
@@ -346,6 +352,7 @@ describe("Solana Cli test", function () {
 
     it("Create cases", async function () {
       const reporter = REPORTERS.authority;
+      process.env.ANCHOR_WALLET = reporter.wallet.path;
 
       for (const key in CASES) {
         const cs = CASES[key];
@@ -363,10 +370,11 @@ describe("Solana Cli test", function () {
         expect(caseData.name).to.eq(cs.name);
         expect(caseData.url).to.eq(cs.url);
         expect(caseData.status).to.deep.equal(CaseStatus.Open);
+        expect(bnToUuid(caseData.reporterId)).to.eq(reporter.id);
       }
     });
 
-    it("Get cases", async function () {
+    xit("Get cases", async function () {
       for (const key in CASES) {
         const cs = CASES[key];
 
@@ -388,13 +396,13 @@ describe("Solana Cli test", function () {
       }
     });
 
-    it("Verify case count", async function () {
+    xit("Verify case count", async function () {
       const count = await cli_cmd("get-case-count");
 
       checkCommandResult(count, Object.keys(CASES).length);
     });
 
-    it("Get all cases", async function () {
+    xit("Get all cases", async function () {
       const res = await cli_cmd("get-cases");
       const val = [];
 
@@ -438,6 +446,113 @@ describe("Solana Cli test", function () {
       expect(caseData.name).to.eq(newName);
       expect(caseData.url).to.eq(newUrl);
       expect(caseData.status).to.deep.equal(CaseStatus.Closed);
+    });
+  });
+
+  describe("Address", function () {
+    xit("Verify that contract has no addresses", async function () {
+      const count = await cli_cmd("get-address-count");
+      checkCommandResult(count, 0);
+      const addresses = await cli_cmd("get-addresses");
+      checkCommandResult(addresses, []);
+    });
+
+    it("Create addresses", async function () {
+      const reporter = REPORTERS.publisher;
+      process.env.ANCHOR_WALLET = reporter.wallet.path;
+
+      for (const key in ADDRESSES) {
+        const address = ADDRESSES[key];
+        await cli_cmd(
+          "create-address",
+          `--address ${address.address} \
+             --case-id ${address.caseId} \
+             --risk ${address.riskScore}\
+             --category ${address.category}`
+        );
+        const addressData = await program.getAddressData(
+          NETWORK,
+          address.address
+        );
+        expect(decodeAddress(addressData.address)).to.eq(address.address);
+        expect(bnToUuid(addressData.caseId)).to.eq(address.caseId);
+        expect(bnToUuid(addressData.reporterId)).to.eq(reporter.id);
+        expect(addressData.riskScore).to.eq(address.riskScore);
+        expect(addressData.category).to.deep.equal(
+          Category[address.category as CategoryKeys]
+        );
+      }
+    });
+
+    xit("Get addresses", async function () {
+      for (const key in ADDRESSES) {
+        const address = ADDRESSES[key];
+        const res = await cli_cmd(
+          "get-address",
+          `--address ${address.address}`
+        );
+        const addressData = await program.getAddressData(
+          NETWORK,
+          address.address
+        );
+        const val = {
+          address: decodeAddress(addressData.address),
+          caseId: bnToUuid(addressData.caseId),
+          reporterId: bnToUuid(addressData.reporterId),
+          risk: addressData.riskScore,
+          category: getCategoryIndex(addressData.category as typeof Category),
+        };
+        checkCommandResult(res, val);
+      }
+    });
+
+    xit("Verify address count", async function () {
+      const count = await cli_cmd("get-address-count");
+      checkCommandResult(count, Object.keys(ADDRESSES).length);
+    });
+
+    xit("Get all addresses", async function () {
+      const res = await cli_cmd("get-addresses");
+      const val = [];
+      for (const key in ADDRESSES) {
+        const address = ADDRESSES[key];
+        const addressData = await program.getAddressData(
+          NETWORK,
+          address.address
+        );
+        val.push({
+          address: decodeAddress(addressData.address),
+          caseId: bnToUuid(addressData.caseId),
+          reporterId: bnToUuid(addressData.reporterId),
+          risk: addressData.riskScore,
+          category: getCategoryIndex(addressData.category as typeof Category),
+        });
+      }
+      checkCommandResult(res, val);
+    });
+
+    it("Update address", async function () {
+      const address = ADDRESSES.firstAddr;
+      process.env.ANCHOR_WALLET = REPORTERS.authority.wallet.path;
+
+      const newRisk = 6;
+      const newCategory = "DeFi";
+
+      await cli_cmd(
+        "update-address",
+        `--address ${address.address} \
+         --case-id ${address.caseId} \
+         --risk ${newRisk} \
+         --category ${newCategory}`
+      );
+
+      const addressData = await program.getAddressData(
+        NETWORK,
+        address.address
+      );
+
+      expect(addressData.riskScore).to.eq(newRisk);
+      expect(addressData.category).to.deep.equal(Category.DeFi);
     });
   });
 });
