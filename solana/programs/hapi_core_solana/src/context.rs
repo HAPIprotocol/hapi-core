@@ -331,7 +331,7 @@ pub struct UpdateCase<'info> {
     #[account(
         owner = id(),
         constraint = (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key()) || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
+            && case.reporter_id == reporter.id) || reporter.role == ReporterRole::Authority @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
@@ -415,7 +415,7 @@ pub struct UpdateAddress<'info> {
         owner = id(),
         constraint = reporter.role == ReporterRole::Authority
             || (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
+            && address.reporter_id == reporter.id) @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],
@@ -574,7 +574,7 @@ pub struct UpdateAsset<'info> {
         owner = id(),
         constraint = reporter.role == ReporterRole::Authority
             || (reporter.role == ReporterRole::Publisher
-            && case.reporter == reporter.key()) @ ErrorCode::Unauthorized,
+            && asset.reporter_id == reporter.id) @ ErrorCode::Unauthorized,
         constraint = reporter.account == sender.key() @ ErrorCode::InvalidReporter,
         constraint = reporter.status == ReporterStatus::Active @ ErrorCode::InvalidReporterStatus,
         seeds = [b"reporter".as_ref(), network.key().as_ref(), &reporter.id.to_be_bytes()],

@@ -1,12 +1,5 @@
-import {
-  Program,
-  web3,
-  BN,
-  Provider,
-  Wallet,
-  AnchorProvider,
-} from "@coral-xyz/anchor";
-import { PublicKey, Signer } from "@solana/web3.js";
+import { Program, web3, BN, Provider, AnchorProvider } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 import * as Token from "@solana/spl-token";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { parse as uuidParse } from "uuid";
@@ -181,8 +174,8 @@ export class HapiCoreProgram {
   }
 
   public async getAddressData(networkName: string, address: Buffer | string) {
-    const addr =
-      typeof address === "string" ? Buffer.from(address, "hex") : address;
+    const addr = typeof address === "string" ? encodeAddress(address) : address;
+
     const [network] = this.findNetworkAddress(networkName);
     const [addressAccount] = this.findAddressAddress(network, addr);
 
@@ -566,10 +559,9 @@ export class HapiCoreProgram {
     category: CategoryKeys,
     riskScore: number,
     caseId: string,
-    wallet: Signer | Wallet,
     reporterId: string
   ) {
-    let buf = Buffer.from(address, "hex");
+    let buf = encodeAddress(address);
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [caseAccount] = this.findCaseAddress(network, caseId);
@@ -595,13 +587,12 @@ export class HapiCoreProgram {
   async updateAddress(
     networkName: string,
     address: string,
-    wallet: Signer | Wallet,
     reporterId: string,
     category?: CategoryKeys,
     riskScore?: number,
     caseId?: string
   ) {
-    let buf = Buffer.from(address, "hex");
+    let buf = encodeAddress(address);
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [addressAccount] = this.findAddressAddress(network, buf);
@@ -637,7 +628,6 @@ export class HapiCoreProgram {
   async confirmAddress(
     networkName: string,
     address: string,
-    wallet: Signer | Wallet,
     reporterId: string
   ) {
     let buf = Buffer.from(address, "hex");
@@ -673,7 +663,6 @@ export class HapiCoreProgram {
     category: CategoryKeys,
     riskScore: number,
     caseId: string,
-    wallet: Signer | Wallet,
     reporterId: string
   ) {
     let assetAddress = Buffer.from(address, "hex");
@@ -714,7 +703,6 @@ export class HapiCoreProgram {
     networkName: string,
     address: string,
     id: string,
-    wallet: Signer | Wallet,
     reporterId: string,
     category?: CategoryKeys,
     riskScore?: number,
@@ -756,7 +744,6 @@ export class HapiCoreProgram {
     networkName: string,
     address: string,
     id: string,
-    wallet: Signer | Wallet,
     reporterId: string
   ) {
     const [network] = this.findNetworkAddress(networkName);
