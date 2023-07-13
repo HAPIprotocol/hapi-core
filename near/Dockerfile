@@ -26,6 +26,5 @@ VOLUME "/output"
 
 # Build the contract when the container is started
 # Removing rlib first to reduce the size of wasm file
-CMD perl -i -pe 's/\["cdylib", "rlib"\]/\["cdylib"\]/' ./contract/Cargo.toml && \
-    cargo build --target wasm32-unknown-unknown --release && \
+CMD cargo build --target wasm32-unknown-unknown --release && \
     cp target/wasm32-unknown-unknown/release/hapi_core_near.wasm /output/hapi_core_near.wasm

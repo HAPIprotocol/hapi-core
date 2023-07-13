@@ -1,9 +1,14 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{collections::UnorderedMap, near_bindgen, AccountId, PanicOnDefault};
+use near_sdk::env;
+use near_sdk::{
+    collections::UnorderedMap, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault,
+};
 
 pub mod address;
 pub mod assets;
 pub mod case;
+pub mod configuration;
+pub mod errors;
 pub mod reporter;
 pub mod reward;
 pub mod stake;
@@ -11,6 +16,7 @@ pub mod stake;
 pub use address::Address;
 pub use assets::{Asset, AssetID};
 pub use case::{Case, CaseId};
+pub use errors::*;
 pub use reporter::{Reporter, ReporterId};
 pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
@@ -59,6 +65,14 @@ pub enum Category {
 
 pub type RiskScore = u8;
 
+#[derive(BorshStorageKey, BorshSerialize)]
+pub(crate) enum StorageKey {
+    Addresses,
+    Assets,
+    Cases,
+    Reporters,
+}
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
@@ -69,4 +83,21 @@ pub struct Contract {
     cases: UnorderedMap<CaseId, Case>,
     addresses: UnorderedMap<AccountId, Address>,
     assets: UnorderedMap<AssetID, Asset>,
+}
+
+// init Contract
+#[near_bindgen]
+impl Contract {
+    #[init]
+    pub fn initialize() -> Self {
+        Self {
+            authority: env::predecessor_account_id(),
+            stake_configuration: StakeConfiguration::default(),
+            reward_configuration: RewardConfiguration::default(),
+            reporters: UnorderedMap::new(StorageKey::Reporters),
+            cases: UnorderedMap::new(StorageKey::Cases),
+            addresses: UnorderedMap::new(StorageKey::Addresses),
+            assets: UnorderedMap::new(StorageKey::Assets),
+        }
+    }
 }
