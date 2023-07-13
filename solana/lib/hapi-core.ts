@@ -189,9 +189,8 @@ export class HapiCoreProgram {
     address: Buffer | string,
     id: Buffer | string
   ) {
-    const addr =
-      typeof address === "string" ? Buffer.from(address, "hex") : address;
-    const assetId = typeof id === "string" ? Buffer.from(id, "hex") : id;
+    const addr = typeof address === "string" ? encodeAddress(address) : address;
+    const assetId = typeof id === "string" ? encodeAddress(id) : id;
     const [network] = this.findNetworkAddress(networkName);
     const [assetAccount] = this.findAssetAddress(network, addr, assetId);
 
@@ -665,8 +664,8 @@ export class HapiCoreProgram {
     caseId: string,
     reporterId: string
   ) {
-    let assetAddress = Buffer.from(address, "hex");
-    let assetId = Buffer.from(id, "hex");
+    let assetAddress = encodeAddress(address);
+    let assetId = encodeAddress(id);
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [caseAccount] = this.findCaseAddress(network, caseId);
@@ -712,8 +711,8 @@ export class HapiCoreProgram {
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [assetAccount] = this.findAssetAddress(
       network,
-      Buffer.from(address, "hex"),
-      Buffer.from(id, "hex")
+      encodeAddress(address),
+      encodeAddress(id)
     );
 
     const assetData = await this.program.account.asset.fetch(assetAccount);

@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { encodeAddress, CategoryKeys } from "../../solana/lib";
+import { log } from "console";
 
 const chai = require("chai");
 chai.config.truncateThreshold = 0;
@@ -92,6 +93,25 @@ export const ADDRESSES: Record<
 > = {
   firstAddr: {
     address: "0000000000000000000000000000000000000000000000000000000000000001",
+    caseId: CASES.firstCase.id,
+    category: "WalletService",
+    riskScore: 3,
+  },
+};
+
+export const ASSETS: Record<
+  string,
+  {
+    address: string;
+    assetId: string;
+    caseId: string;
+    category: CategoryKeys;
+    riskScore: number;
+  }
+> = {
+  firstAsset: {
+    address: "0000000000000000000000000000000000000000000000000000000000000001",
+    assetId: uuidv4(),
     caseId: CASES.firstCase.id,
     category: "WalletService",
     riskScore: 3,

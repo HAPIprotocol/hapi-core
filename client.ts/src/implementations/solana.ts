@@ -15,6 +15,7 @@ import {
   Category as SolCategory,
   getCaseStatusIndex,
   getCategoryIndex,
+  decodeAddress,
 } from "../../../solana/lib";
 
 import {
@@ -346,7 +347,7 @@ export class HapiCoreSolana implements HapiCore {
       );
 
       return {
-        id: bnToUuid(acc.account.id),
+        id: bnToUuid(data.id),
         name: data.name.toString(),
         url: data.url.toString(),
         status: caseStatus,
@@ -399,14 +400,16 @@ export class HapiCoreSolana implements HapiCore {
   async getAddress(address: string): Promise<Address> {
     const data = await this.contract.getAddressData(this.network, address);
 
-    const caseCategory = getCategoryIndex(data.category as typeof SolCategory);
+    const addressCategory = getCategoryIndex(
+      data.category as typeof SolCategory
+    );
 
     return {
-      address: stringFromArray(data.address),
+      address: decodeAddress(data.address),
       caseId: bnToUuid(data.caseId),
       reporterId: bnToUuid(data.reporterId),
       risk: data.riskScore,
-      category: caseCategory,
+      category: addressCategory,
     };
   }
 
@@ -422,16 +425,16 @@ export class HapiCoreSolana implements HapiCore {
     let res = data.map((acc) => {
       const data = acc.account;
 
-      const caseCategory = getCategoryIndex(
+      const addressCategory = getCategoryIndex(
         data.category as typeof SolCategory
       );
 
       return {
-        address: stringFromArray(data.address),
+        address: decodeAddress(data.address),
         caseId: bnToUuid(data.caseId),
         reporterId: bnToUuid(data.reporterId),
         risk: data.riskScore,
-        category: caseCategory,
+        category: addressCategory,
       };
     });
 
@@ -484,7 +487,7 @@ export class HapiCoreSolana implements HapiCore {
       this.network,
       address,
       assetId,
-      category.toString() as CategoryKeys,
+      CategoryNames[category] as CategoryKeys,
       risk,
       caseId,
       reporterId
@@ -494,15 +497,21 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getAsset(address: string, assetId: string): Promise<Asset> {
-    const data = await this.contract.getAddressData(this.network, address);
+    const data = await this.contract.getAssetData(
+      this.network,
+      address,
+      assetId
+    );
+
+    const assetCategory = getCategoryIndex(data.category as typeof SolCategory);
 
     return {
-      address: stringFromArray(data.address),
-      assetId: bnToUuid(data.id),
+      address: decodeAddress(data.address),
+      assetId: decodeAddress(data.id),
       caseId: bnToUuid(data.caseId),
       reporterId: bnToUuid(data.reporterId),
       risk: data.riskScore,
-      category: CategoryFromString(data.category.toString()),
+      category: assetCategory,
     };
   }
 
@@ -513,16 +522,24 @@ export class HapiCoreSolana implements HapiCore {
   }
 
   async getAssets(skip: number, take: number): Promise<Asset[]> {
-    const data = await this.contract.getAllAddresses(this.network);
+    const data = await this.contract.getAllAssets(this.network);
 
-    let res = data.map((acc) => ({
-      address: stringFromArray(acc.account.address),
-      assetId: bnToUuid(acc.account.id),
-      caseId: bnToUuid(acc.account.caseId),
-      reporterId: bnToUuid(acc.account.reporterId),
-      risk: acc.account.riskScore,
-      category: CategoryFromString(acc.account.category.toString()),
-    }));
+    let res = data.map((acc) => {
+      const data = acc.account;
+
+      const assetCategory = getCategoryIndex(
+        data.category as typeof SolCategory
+      );
+
+      return {
+        address: decodeAddress(data.address),
+        assetId: decodeAddress(data.id),
+        caseId: bnToUuid(data.caseId),
+        reporterId: bnToUuid(data.reporterId),
+        risk: data.riskScore,
+        category: assetCategory,
+      };
+    });
 
     return res.slice(skip, skip + take);
   }
@@ -541,7 +558,7 @@ export class HapiCoreSolana implements HapiCore {
       address,
       assetId,
       reporterId,
-      category.toString() as CategoryKeys,
+      CategoryNames[category] as CategoryKeys,
       risk,
       caseId
     );

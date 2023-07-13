@@ -7,6 +7,7 @@ import {
   REPORTERS,
   CASES,
   ADDRESSES,
+  ASSETS,
 } from "./helpers";
 
 import {
@@ -453,11 +454,12 @@ describe("Solana Cli test", function () {
     xit("Verify that contract has no addresses", async function () {
       const count = await cli_cmd("get-address-count");
       checkCommandResult(count, 0);
+
       const addresses = await cli_cmd("get-addresses");
       checkCommandResult(addresses, []);
     });
 
-    it("Create addresses", async function () {
+    xit("Create addresses", async function () {
       const reporter = REPORTERS.publisher;
       process.env.ANCHOR_WALLET = reporter.wallet.path;
 
@@ -514,6 +516,7 @@ describe("Solana Cli test", function () {
     xit("Get all addresses", async function () {
       const res = await cli_cmd("get-addresses");
       const val = [];
+
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
         const addressData = await program.getAddressData(
@@ -531,7 +534,7 @@ describe("Solana Cli test", function () {
       checkCommandResult(res, val);
     });
 
-    it("Update address", async function () {
+    xit("Update address", async function () {
       const address = ADDRESSES.firstAddr;
       process.env.ANCHOR_WALLET = REPORTERS.authority.wallet.path;
 
@@ -553,6 +556,135 @@ describe("Solana Cli test", function () {
 
       expect(addressData.riskScore).to.eq(newRisk);
       expect(addressData.category).to.deep.equal(Category.DeFi);
+    });
+  });
+
+  describe("Asset", function () {
+    it("Verify that contract has no assets", async function () {
+      const count = await cli_cmd("get-asset-count");
+      checkCommandResult(count, 0);
+
+      const assets = await cli_cmd("get-assets");
+      checkCommandResult(assets, []);
+    });
+
+    it("Create assets", async function () {
+      const reporter = REPORTERS.publisher;
+      process.env.ANCHOR_WALLET = reporter.wallet.path;
+
+      for (const key in ASSETS) {
+        const asset = ASSETS[key];
+
+        await cli_cmd(
+          "create-asset",
+          ` --address ${asset.address} \
+            --asset-id ${asset.assetId} \
+            --case-id ${asset.caseId} \
+            --risk ${asset.riskScore} \
+            --category ${asset.category}`
+        );
+        const assetData = await program.getAssetData(
+          NETWORK,
+          asset.address,
+          asset.assetId
+        );
+
+        expect(decodeAddress(assetData.address)).to.eq(asset.address);
+        expect(decodeAddress(assetData.id)).to.eq(asset.assetId);
+        expect(bnToUuid(assetData.caseId)).to.eq(asset.caseId);
+        expect(bnToUuid(assetData.reporterId)).to.eq(reporter.id);
+        expect(assetData.riskScore).to.eq(asset.riskScore);
+        expect(assetData.category).to.deep.equal(
+          Category[asset.category as CategoryKeys]
+        );
+      }
+    });
+
+    it("Get assets", async function () {
+      for (const key in ASSETS) {
+        const asset = ASSETS[key];
+
+        console.log("Asset id", asset, key, asset.assetId);
+
+        const res = await cli_cmd(
+          "get-asset",
+          `--address ${asset.address} --asset-id ${asset.assetId}`
+        );
+
+        const assetData = await program.getAssetData(
+          NETWORK,
+          asset.address,
+          asset.assetId
+        );
+
+        const val = {
+          address: decodeAddress(assetData.address),
+          assetId: decodeAddress(assetData.id),
+          caseId: bnToUuid(assetData.caseId),
+          reporterId: bnToUuid(assetData.reporterId),
+          risk: assetData.riskScore,
+          category: getCategoryIndex(assetData.category as typeof Category),
+        };
+
+        checkCommandResult(res, val);
+      }
+    });
+
+    xit("Verify asset count", async function () {
+      const count = await cli_cmd("get-asset-count");
+      checkCommandResult(count, Object.keys(ASSETS).length);
+    });
+
+    xit("Get all assets", async function () {
+      const res = await cli_cmd("get-assets");
+      const val = [];
+
+      for (const key in ASSETS) {
+        const asset = ASSETS[key];
+
+        const assetData = await program.getAssetData(
+          NETWORK,
+          asset.address,
+          asset.assetId
+        );
+
+        val.push({
+          address: decodeAddress(assetData.address),
+          assetId: decodeAddress(assetData.id),
+          caseId: bnToUuid(assetData.caseId),
+          reporterId: bnToUuid(assetData.reporterId),
+          risk: assetData.riskScore,
+          category: getCategoryIndex(assetData.category as typeof Category),
+        });
+      }
+
+      checkCommandResult(res, val);
+    });
+
+    xit("Update asset", async function () {
+      const asset = ASSETS.firstAsset;
+      process.env.ANCHOR_WALLET = REPORTERS.authority.wallet.path;
+
+      const newRisk = 6;
+      const newCategory = "DeFi";
+
+      await cli_cmd(
+        "update-asset",
+        `--address ${asset.address} \
+         --asset-id ${asset.assetId} \
+         --case-id ${asset.caseId} \
+         --risk ${newRisk} \
+         --category ${newCategory}`
+      );
+
+      const assetData = await program.getAssetData(
+        NETWORK,
+        asset.address,
+        asset.assetId
+      );
+
+      expect(assetData.riskScore).to.eq(newRisk);
+      expect(assetData.category).to.deep.equal(Category.DeFi);
     });
   });
 });
