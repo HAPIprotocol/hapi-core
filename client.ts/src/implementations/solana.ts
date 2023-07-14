@@ -6,7 +6,6 @@ import {
   CaseStatusKeys,
   CategoryKeys,
   bnToUuid,
-  stringFromArray,
   getReporterRoleIndex,
   getReporterStatusIndex,
   ReporterStatus as SolReporterStatus,

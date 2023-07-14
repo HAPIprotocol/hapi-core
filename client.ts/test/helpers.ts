@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { encodeAddress, CategoryKeys } from "../../solana/lib";
-import { log } from "console";
+import { CategoryKeys } from "../../solana/lib";
 
 const chai = require("chai");
 chai.config.truncateThreshold = 0;
@@ -129,10 +128,6 @@ export async function execute_command(command: string, ignoreError = false) {
   } catch (error) {
     if (!ignoreError) {
       throw new Error(`Command execution error. Command: ${command}, ${error}`);
-      // console.log(
-      //   chalk.red(`Command execution error. Command: ${command}, ${error}`)
-      // );
-      // process.exit(1);
     }
     return { stdout: "", stderr: "" };
   }
@@ -144,19 +139,24 @@ export async function cli_cmd(command: string, arg = "") {
   );
 
   if (stderr.length > 0) {
-    // console.log(chalk.red(`Error stream: ${stderr}`));
-    // process.exit(1);
-
     throw new Error(`Error stream: ${stderr}`);
   }
 
   return stdout;
 }
 
-export function checkCommandResult<Type>(res: string, val: Type) {
+export function checkCommandResult<Type>(
+  res: string,
+  val: Type,
+  toBeEqual = true
+) {
   const parsedObject: Type = JSON.parse(
     res.substring(res.indexOf("{")).replace(/'/g, '"')
   ).data;
 
-  expect(parsedObject).to.deep.equal(val);
+  if (toBeEqual) {
+    expect(parsedObject).to.deep.equal(val);
+  } else {
+    expect(parsedObject).to.deep.contain(val);
+  }
 }

@@ -1,4 +1,5 @@
 import { setup, killValidator } from "./setup";
+
 import {
   cli_cmd,
   checkCommandResult,
@@ -16,14 +17,12 @@ import {
   ReporterRole as CliReporterRole,
   ReporterStatus as CliReporterStatus,
   CaseStatus as CliCaseStatus,
-  Category as CliCategory,
 } from "../src/interface";
 
 import {
   ReporterRoleToString,
   ReporterStatusToString,
   CaseStatusToString,
-  CategoryToString,
 } from "../src/util";
 
 import {
@@ -61,14 +60,14 @@ describe("Solana Cli test", function () {
   });
 
   describe("Network authority", function () {
-    xit("Get authority check", async function () {
+    it("Get authority check", async function () {
       const res = await cli_cmd("get-authority");
       const networkData = await program.getNetwotkData(NETWORK);
 
       checkCommandResult(res, networkData.authority.toString());
     });
 
-    xit("Set new authority by the program upgrade authority", async function () {
+    it("Set new authority by the program upgrade authority", async function () {
       let wallet = KEYS.authority;
 
       await cli_cmd("set-authority", `--address ${wallet.pk}`);
@@ -79,7 +78,7 @@ describe("Solana Cli test", function () {
       expect(networkData.authority.toString()).to.eq(wallet.pk);
     });
 
-    xit("Set new authority by the current authority", async function () {
+    it("Set new authority by the current authority", async function () {
       let wallet = KEYS.admin;
 
       await cli_cmd("set-authority", `--address ${wallet.pk}`);
@@ -92,7 +91,7 @@ describe("Solana Cli test", function () {
   });
 
   describe("Stake configuration", function () {
-    xit("Get stake configuration", async function () {
+    it("Get stake configuration", async function () {
       const res = await cli_cmd("get-stake-configuration");
       const networkData = await program.getNetwotkData(NETWORK);
 
@@ -114,7 +113,7 @@ describe("Solana Cli test", function () {
 
     it("Update stake configuration", async function () {
       const token = KEYS.token.pk;
-      const unlockDuration = 123;
+      const unlockDuration = 1;
       const validatorStake = 1001;
       const tracerStake = 2002;
       const publisherStake = 3003;
@@ -152,7 +151,7 @@ describe("Solana Cli test", function () {
   });
 
   describe("Reward configuration", function () {
-    xit("Get reward configuration", async function () {
+    it("Get reward configuration", async function () {
       const res = await cli_cmd("get-reward-configuration");
       const networkData = await program.getNetwotkData(NETWORK);
 
@@ -168,7 +167,7 @@ describe("Solana Cli test", function () {
       checkCommandResult(res, val);
     });
 
-    xit("Update reward configuration", async function () {
+    it("Update reward configuration", async function () {
       const token = KEYS.token.pk;
       const addressConfirmationReward = 1001;
       const tracerReward = 2002;
@@ -192,7 +191,7 @@ describe("Solana Cli test", function () {
   });
 
   describe("Reporter activation", function () {
-    xit("Verify that contract has no reporters", async function () {
+    it("Verify that contract has no reporters", async function () {
       const count = await cli_cmd("get-reporter-count");
       checkCommandResult(count, 0);
 
@@ -231,7 +230,7 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Get reporters", async function () {
+    it("Get reporters", async function () {
       for (const key in REPORTERS) {
         const reporter = REPORTERS[key];
 
@@ -270,9 +269,8 @@ describe("Solana Cli test", function () {
       checkCommandResult(count, Object.keys(REPORTERS).length);
     });
 
-    xit("Get all reporters", async function () {
+    it("Get all reporters", async function () {
       const res = await cli_cmd("get-reporters");
-      const val = [];
 
       for (const key in REPORTERS) {
         const reporter = REPORTERS[key];
@@ -282,7 +280,7 @@ describe("Solana Cli test", function () {
           reporter.id
         );
 
-        val.push({
+        const val = {
           id: bnToUuid(reporterData.id),
           account: reporterData.account.toString(),
           role: ReporterRoleToString(
@@ -299,13 +297,13 @@ describe("Solana Cli test", function () {
           url: reporterData.url,
           stake: reporterData.stake.toString(),
           unlockTimestamp: reporterData.unlockTimestamp.toNumber(),
-        });
-      }
+        };
 
-      checkCommandResult(res, val);
+        checkCommandResult(res, val, false);
+      }
     });
 
-    xit("Update reporter", async function () {
+    it("Update reporter", async function () {
       const reporter = REPORTERS.authority;
       const newName = "newName";
       const newUrl = "https://new.authority.blockchain";
@@ -338,12 +336,13 @@ describe("Solana Cli test", function () {
         );
 
         expect(reporterData.status).to.deep.equal(ReporterStatus.Active);
+        expect(reporterData.stake).to.not.eq(0);
       }
     });
   });
 
   describe("Case", function () {
-    xit("Verify that contract has no cases", async function () {
+    it("Verify that contract has no cases", async function () {
       const count = await cli_cmd("get-case-count");
       checkCommandResult(count, 0);
 
@@ -375,7 +374,7 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Get cases", async function () {
+    it("Get cases", async function () {
       for (const key in CASES) {
         const cs = CASES[key];
 
@@ -397,22 +396,21 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Verify case count", async function () {
+    it("Verify case count", async function () {
       const count = await cli_cmd("get-case-count");
 
       checkCommandResult(count, Object.keys(CASES).length);
     });
 
-    xit("Get all cases", async function () {
+    it("Get all cases", async function () {
       const res = await cli_cmd("get-cases");
-      const val = [];
 
       for (const key in CASES) {
         const cs = CASES[key];
 
         const caseData = await program.getCaseData(NETWORK, cs.id);
 
-        val.push({
+        const val = {
           id: bnToUuid(caseData.id),
           name: caseData.name.toString(),
           url: caseData.url,
@@ -421,10 +419,10 @@ describe("Solana Cli test", function () {
               caseData.status as typeof CaseStatus
             ) as CliCaseStatus
           ),
-        });
-      }
+        };
 
-      checkCommandResult(res, val);
+        checkCommandResult(res, val, false);
+      }
     });
 
     it("Update case", async function () {
@@ -451,7 +449,7 @@ describe("Solana Cli test", function () {
   });
 
   describe("Address", function () {
-    xit("Verify that contract has no addresses", async function () {
+    it("Verify that contract has no addresses", async function () {
       const count = await cli_cmd("get-address-count");
       checkCommandResult(count, 0);
 
@@ -459,7 +457,7 @@ describe("Solana Cli test", function () {
       checkCommandResult(addresses, []);
     });
 
-    xit("Create addresses", async function () {
+    it("Create addresses", async function () {
       const reporter = REPORTERS.publisher;
       process.env.ANCHOR_WALLET = reporter.wallet.path;
 
@@ -486,7 +484,7 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Get addresses", async function () {
+    it("Get addresses", async function () {
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
         const res = await cli_cmd(
@@ -508,14 +506,13 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Verify address count", async function () {
+    it("Verify address count", async function () {
       const count = await cli_cmd("get-address-count");
       checkCommandResult(count, Object.keys(ADDRESSES).length);
     });
 
-    xit("Get all addresses", async function () {
+    it("Get all addresses", async function () {
       const res = await cli_cmd("get-addresses");
-      const val = [];
 
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
@@ -523,18 +520,20 @@ describe("Solana Cli test", function () {
           NETWORK,
           address.address
         );
-        val.push({
+
+        const val = {
           address: decodeAddress(addressData.address),
           caseId: bnToUuid(addressData.caseId),
           reporterId: bnToUuid(addressData.reporterId),
           risk: addressData.riskScore,
           category: getCategoryIndex(addressData.category as typeof Category),
-        });
+        };
+
+        checkCommandResult(res, val, false);
       }
-      checkCommandResult(res, val);
     });
 
-    xit("Update address", async function () {
+    it("Update address", async function () {
       const address = ADDRESSES.firstAddr;
       process.env.ANCHOR_WALLET = REPORTERS.authority.wallet.path;
 
@@ -604,8 +603,6 @@ describe("Solana Cli test", function () {
       for (const key in ASSETS) {
         const asset = ASSETS[key];
 
-        console.log("Asset id", asset, key, asset.assetId);
-
         const res = await cli_cmd(
           "get-asset",
           `--address ${asset.address} --asset-id ${asset.assetId}`
@@ -630,14 +627,13 @@ describe("Solana Cli test", function () {
       }
     });
 
-    xit("Verify asset count", async function () {
+    it("Verify asset count", async function () {
       const count = await cli_cmd("get-asset-count");
       checkCommandResult(count, Object.keys(ASSETS).length);
     });
 
-    xit("Get all assets", async function () {
+    it("Get all assets", async function () {
       const res = await cli_cmd("get-assets");
-      const val = [];
 
       for (const key in ASSETS) {
         const asset = ASSETS[key];
@@ -648,20 +644,20 @@ describe("Solana Cli test", function () {
           asset.assetId
         );
 
-        val.push({
+        const val = {
           address: decodeAddress(assetData.address),
           assetId: decodeAddress(assetData.id),
           caseId: bnToUuid(assetData.caseId),
           reporterId: bnToUuid(assetData.reporterId),
           risk: assetData.riskScore,
           category: getCategoryIndex(assetData.category as typeof Category),
-        });
-      }
+        };
 
-      checkCommandResult(res, val);
+        checkCommandResult(res, val, false);
+      }
     });
 
-    xit("Update asset", async function () {
+    it("Update asset", async function () {
       const asset = ASSETS.firstAsset;
       process.env.ANCHOR_WALLET = REPORTERS.authority.wallet.path;
 
@@ -685,6 +681,43 @@ describe("Solana Cli test", function () {
 
       expect(assetData.riskScore).to.eq(newRisk);
       expect(assetData.category).to.deep.equal(Category.DeFi);
+    });
+  });
+
+  describe("Reporter deactivation", function () {
+    it("Activate reporters", async function () {
+      for (const key in REPORTERS) {
+        const reporter = REPORTERS[key];
+        process.env.ANCHOR_WALLET = reporter.wallet.path;
+
+        await cli_cmd("deactivate-reporter");
+
+        const reporterData = await program.getReporterData(
+          NETWORK,
+          reporter.id
+        );
+
+        expect(reporterData.status).to.deep.equal(ReporterStatus.Unstaking);
+      }
+    });
+
+    it("Unstake", async function () {
+      for (const key in REPORTERS) {
+        const reporter = REPORTERS[key];
+        process.env.ANCHOR_WALLET = reporter.wallet.path;
+
+        await cli_cmd("unstake-reporter");
+
+        const reporterData = await program.getReporterData(
+          NETWORK,
+          reporter.id
+        );
+
+        expect(reporterData.status).to.deep.equal(ReporterStatus.Inactive);
+        expect(reporterData.stake.toNumber()).to.eq(0);
+
+        //TODO: check reporter balance
+      }
     });
   });
 });

@@ -848,7 +848,7 @@ async function updateAddress(setup: Setup, argv: any) {
 async function getAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
-  printResult(await hapiCore.getAsset(argv.address, argv.id), argv.output);
+  printResult(await hapiCore.getAsset(argv.address, argv.assetId), argv.output);
 }
 
 async function getAssetCount(setup: Setup, argv: any) {
