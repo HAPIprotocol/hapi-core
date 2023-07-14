@@ -26,6 +26,10 @@ const config: HardhatUserConfig = {
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`,
     },
+    linea: {
+      url: `https://linea-mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+      chainId: 59144,
+    }
   },
   gasReporter: {
     currency: "ETH",
