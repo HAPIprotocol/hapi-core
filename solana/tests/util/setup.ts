@@ -244,7 +244,7 @@ export async function setupReporters(
     await stakeToken.getTokenAccount(reporter.keypair.publicKey);
     await stakeToken.transfer(null, reporter.keypair.publicKey, 1_000_000);
 
-    await program.activateReporter(network_name, reporter.keypair, reporter.id);
+    await program.activateReporter(network_name, reporter.id, reporter.keypair);
   }
 }
 
@@ -265,8 +265,8 @@ export async function setupCases(
         cs.id,
         cs.name,
         cs.url,
-        reporter.keypair,
-        reporter.id
+        reporter.id,
+        reporter.keypair
       )
     );
   }

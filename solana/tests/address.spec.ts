@@ -639,7 +639,7 @@ describe("HapiCore Address", () => {
       const address = ADDRESSES.secondAddress;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporter = REPORTERS.publisher;
+      const reporter = REPORTERS.authority;
       const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id

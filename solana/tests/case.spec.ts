@@ -284,7 +284,7 @@ describe("HapiCore Case", () => {
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
-      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.reporterId).toEqual(uuidToBn(reporter.id));
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
         caseAccount
@@ -331,7 +331,7 @@ describe("HapiCore Case", () => {
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
-      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.reporterId).toEqual(uuidToBn(reporter.id));
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
         caseAccount

@@ -15,6 +15,7 @@ import {
   uuidToBn,
   bufferFromString,
 } from "../lib";
+import { log } from "console";
 
 describe("HapiCore Reporter", () => {
   const program = new HapiCoreProgram(
@@ -778,6 +779,20 @@ describe("HapiCore Reporter", () => {
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
 
+      const reporterBalanceAfter = await stakeToken.getBalance(
+        reporter.keypair.publicKey
+      );
+
+      const networkBalanceAfter = await stakeToken.getBalance(
+        networkAccount,
+        true
+      );
+
+      expect(
+        networkBalanceAfter.eq(network.stakeConfiguration.publisherStake)
+      ).toBeTruthy();
+      expect(reporterBalanceAfter.isZero()).toBeTruthy();
+
       expect(
         fetchedReporterAccount.stake.eq(
           network.stakeConfiguration.publisherStake
@@ -808,7 +823,7 @@ describe("HapiCore Reporter", () => {
       await stakeToken.transfer(
         null,
         reporter.keypair.publicKey,
-        network.stakeConfiguration.publisherStake.toNumber()
+        network.stakeConfiguration.tracerStake.toNumber()
       );
 
       await program.program.methods
@@ -826,6 +841,21 @@ describe("HapiCore Reporter", () => {
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
+
+      const reporterBalanceAfter = await stakeToken.getBalance(
+        reporter.keypair.publicKey
+      );
+
+      const networkBalanceAfter = await stakeToken.getBalance(
+        networkAccount,
+        true
+      );
+
+      expect(
+        networkBalanceAfter.eq(network.stakeConfiguration.tracerStake)
+      ).toBeTruthy();
+
+      expect(reporterBalanceAfter.isZero()).toBeTruthy();
 
       expect(
         fetchedReporterAccount.stake.eq(network.stakeConfiguration.tracerStake)
@@ -849,12 +879,6 @@ describe("HapiCore Reporter", () => {
 
       const reporterStakeTokenAccount = await stakeToken.getTokenAccount(
         reporter.keypair.publicKey
-      );
-
-      await stakeToken.transfer(
-        null,
-        reporter.keypair.publicKey,
-        network.stakeConfiguration.publisherStake.toNumber()
       );
 
       await expectThrowError(
@@ -1078,6 +1102,23 @@ describe("HapiCore Reporter", () => {
 
       const fetchedReporterAccount =
         await program.program.account.reporter.fetch(reporterAccount);
+
+      const reporterBalanceAfter = await stakeToken.getBalance(
+        reporter.keypair.publicKey
+      );
+
+      const networkBalanceAfter = await stakeToken.getBalance(
+        networkAccount,
+        true
+      );
+
+      expect(
+        reporterBalanceAfter.eq(
+          NETWORKS[mainNetwork].stakeConfiguration.publisherStake
+        )
+      ).toBeTruthy();
+
+      expect(networkBalanceAfter.isZero()).toBeTruthy();
 
       expect(fetchedReporterAccount.stake.isZero()).toBeTruthy();
       expect(fetchedReporterAccount.status).toEqual(ReporterStatus.Inactive);

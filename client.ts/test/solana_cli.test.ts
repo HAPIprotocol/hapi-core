@@ -155,7 +155,6 @@ describe("Solana Cli test", function () {
       const res = await cli_cmd("get-reward-configuration");
       const networkData = await program.getNetwotkData(NETWORK);
 
-      // TODO: add asset configuration
       const val: RewardConfiguration = {
         token: networkData.rewardMint.toString(),
         addressConfirmationReward:
