@@ -136,15 +136,19 @@ export class HapiCoreSolana implements HapiCore {
   async updateRewardConfiguration(
     token?: string,
     addressConfirmationReward?: string,
-    addresstraceReward?: string
+    addressTracerReward?: string,
+    assetConfirmationReward?: string,
+    assetTracerReward?: string
   ): Promise<Result> {
     let rewardToken = token ? new web3.PublicKey(token) : undefined;
 
     const transactionHash = await this.contract.updateRewardConfiguration(
       this.network,
       rewardToken,
-      addresstraceReward,
-      addressConfirmationReward
+      addressTracerReward,
+      addressConfirmationReward,
+      assetTracerReward,
+      assetConfirmationReward
     );
 
     return { transactionHash };

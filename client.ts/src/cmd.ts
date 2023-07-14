@@ -105,10 +105,20 @@ yargs(hideBin(process.argv))
         demandOption: true,
         description: "Address confirmation reward amount",
       },
-      "trace-reward": {
+      "address-tracer-reward": {
         string: true,
         demandOption: true,
-        description: "Trace reward amount",
+        description: "Address trace reward amount",
+      },
+      "asset-confirmation-reward": {
+        string: true,
+        demandOption: true,
+        description: "Asset confirmation reward amount",
+      },
+      "asset-tracer-reward": {
+        string: true,
+        demandOption: true,
+        description: "Asset trace reward amount",
       },
     },
     cmdWrapper(updateRewardConfiguration)
@@ -681,7 +691,9 @@ async function updateRewardConfiguration(setup: Setup, argv: any) {
     await hapiCore.updateRewardConfiguration(
       argv.token,
       argv.addressConfirmationReward,
-      argv.traceReward
+      argv.addressTracerReward,
+      argv.assetConfirmationReward,
+      argv.assetTracerReward
     ),
     argv.output
   );

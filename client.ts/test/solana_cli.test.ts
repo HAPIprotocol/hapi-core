@@ -170,14 +170,19 @@ describe("Solana Cli test", function () {
     it("Update reward configuration", async function () {
       const token = KEYS.token.pk;
       const addressConfirmationReward = 1001;
-      const tracerReward = 2002;
+      const addressTracerReward = 2002;
+      const assetConfirmationReward = 1001;
+      const assetTracerReward = 2002;
 
       await cli_cmd(
         "update-reward-configuration",
         ` --token ${token} \
           --address-confirmation-reward ${addressConfirmationReward} \
-          --trace-reward ${tracerReward}`
+          --address-tracer-reward ${addressTracerReward} \
+          --asset-confirmation-reward ${assetConfirmationReward} \
+          --asset-tracer-reward ${assetTracerReward}`
       );
+
       const networkData = await program.getNetwotkData(NETWORK);
 
       expect(networkData.rewardMint.toString()).to.eq(token);
@@ -186,7 +191,13 @@ describe("Solana Cli test", function () {
       ).to.eq(addressConfirmationReward);
       expect(
         networkData.rewardConfiguration.addressTracerReward.toNumber()
-      ).to.eq(tracerReward);
+      ).to.eq(addressTracerReward);
+      expect(
+        networkData.rewardConfiguration.assetConfirmationReward.toNumber()
+      ).to.eq(assetConfirmationReward);
+      expect(
+        networkData.rewardConfiguration.assetTracerReward.toNumber()
+      ).to.eq(assetTracerReward);
     });
   });
 
@@ -748,8 +759,6 @@ describe("Solana Cli test", function () {
 
         expect(reporterData.status).to.deep.equal(ReporterStatus.Inactive);
         expect(reporterData.stake.toNumber()).to.eq(0);
-
-        //TODO: check reporter balance
       }
     });
   });

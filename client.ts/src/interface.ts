@@ -203,7 +203,9 @@ export interface HapiCore {
   updateRewardConfiguration(
     token: Addr,
     addressConfirmationReward: Amount,
-    traceReward: Amount
+    addressTracerReward: Amount,
+    assetConfirmationReward: Amount,
+    assetTracerReward: Amount
   ): Promise<Result>;
 
   /// Returns the reward configuration

@@ -54,7 +54,9 @@ export class HapiCoreNear implements HapiCore {
   async updateRewardConfiguration(
     token: string,
     addressConfirmationReward: string,
-    traceReward: string
+    addressTracerReward: string,
+    assetConfirmationReward: string,
+    assetTracerReward: string
   ): Promise<Result> {
     throw new Error("Method not implemented.");
   }

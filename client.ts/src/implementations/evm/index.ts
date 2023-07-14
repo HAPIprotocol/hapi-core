@@ -117,16 +117,19 @@ export class HapiCoreEvm implements HapiCore {
   async updateRewardConfiguration(
     token: Addr,
     addressConfirmationReward: Amount,
-    traceReward: Amount
+    addressTracerReward: Amount,
+    assetConfirmationReward: Amount,
+    assetTracerReward: Amount
   ): Promise<Result> {
     if (!this.signer) {
       throw new Error("Signer is required to call this method");
     }
 
+    // TODO: update contract methods to update assetConfirmationReward and assetTracerReward
     const tx = await this.contract.updateRewardConfiguration(
       token,
       addressConfirmationReward,
-      traceReward
+      addressTracerReward
     );
     return { transactionHash: tx.hash };
   }
@@ -406,6 +409,7 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAddress(address: Addr): Promise<Result> {
+    //TODO: implement
     throw new Error("Method not implemented.");
   }
 
@@ -481,6 +485,7 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAsset(address: string, assetId: string): Promise<Result> {
+    //TODO: implement
     throw new Error("Method not implemented.");
   }
 }
