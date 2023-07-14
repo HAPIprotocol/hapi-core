@@ -460,7 +460,6 @@ export class HapiCoreSolana implements HapiCore {
     return { transactionHash };
   }
 
-  // TODO: this method is absent in interface
   async confirmAddress(address: string): Promise<Result> {
     const reporterId = await this.getReporterId();
 
@@ -565,7 +564,6 @@ export class HapiCoreSolana implements HapiCore {
     return { transactionHash };
   }
 
-  // TODO: this method is absent in interface
   async confirmAsset(address: string, assetId: string): Promise<Result> {
     const reporterId = await this.getReporterId();
 

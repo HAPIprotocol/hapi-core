@@ -405,6 +405,10 @@ export class HapiCoreEvm implements HapiCore {
     return { transactionHash: tx.hash };
   }
 
+  async confirmAddress(address: Addr): Promise<Result> {
+    throw new Error("Method not implemented.");
+  }
+
   async createAsset(
     address: Addr,
     assetId: string,
@@ -474,5 +478,9 @@ export class HapiCoreEvm implements HapiCore {
       category.toString()
     );
     return { transactionHash: tx.hash };
+  }
+
+  async confirmAsset(address: string, assetId: string): Promise<Result> {
+    throw new Error("Method not implemented.");
   }
 }

@@ -290,6 +290,9 @@ export interface HapiCore {
     category: Category
   ): Promise<Result>;
 
+  /// Confirm address
+  confirmAddress(address: Addr): Promise<Result>;
+
   /// Create a new asset
   createAsset(
     address: Addr,
@@ -316,4 +319,7 @@ export interface HapiCore {
     risk: number,
     category: Category
   ): Promise<Result>;
+
+  /// Confirm asset
+  confirmAsset(address: Addr, assetId: string): Promise<Result>;
 }

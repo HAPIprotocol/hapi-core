@@ -414,6 +414,18 @@ yargs(hideBin(process.argv))
     cmdWrapper(updateAddress)
   )
   .command(
+    "confirm-address",
+    "Confirm address",
+    {
+      address: {
+        string: true,
+        demandOption: true,
+        description: "Address",
+      },
+    },
+    cmdWrapper(confirmAddress)
+  )
+  .command(
     "get-asset",
     "Get asset",
     {
@@ -517,6 +529,23 @@ yargs(hideBin(process.argv))
       },
     },
     cmdWrapper(updateAsset)
+  )
+  .command(
+    "confirm-asset",
+    "Confirm asset",
+    {
+      address: {
+        string: true,
+        demandOption: true,
+        description: "Address",
+      },
+      assetId: {
+        string: true,
+        demandOption: true,
+        description: "Asset ID",
+      },
+    },
+    cmdWrapper(confirmAsset)
   )
   .option("network", {
     global: true,
@@ -845,6 +874,12 @@ async function updateAddress(setup: Setup, argv: any) {
   );
 }
 
+async function confirmAddress(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  printResult(await hapiCore.confirmAddress(argv.address), argv.output);
+}
+
 async function getAsset(setup: Setup, argv: any) {
   const { hapiCore } = setup;
 
@@ -889,6 +924,15 @@ async function updateAsset(setup: Setup, argv: any) {
       argv.risk,
       CategoryFromString(argv.category)
     ),
+    argv.output
+  );
+}
+
+async function confirmAsset(setup: Setup, argv: any) {
+  const { hapiCore } = setup;
+
+  printResult(
+    await hapiCore.confirmAsset(argv.address, argv.assetId),
     argv.output
   );
 }
