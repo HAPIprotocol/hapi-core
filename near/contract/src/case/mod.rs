@@ -3,6 +3,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use crate::ReporterId;
 
 mod v_case;
+pub use v_case::VCase;
 
 pub type CaseId = String;
 

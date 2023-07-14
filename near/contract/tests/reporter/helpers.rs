@@ -1,19 +1,11 @@
 use near_sdk::{
-    borsh::{self, BorshDeserialize, BorshSerialize},
     json_types::U128,
     serde::{Deserialize, Serialize},
     AccountId, Timestamp,
 };
-
-mod management;
-mod v_reporter;
-mod view;
-
-pub use v_reporter::VReporter;
-
 pub type ReporterId = String;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Role {
     Validator,
@@ -23,7 +15,7 @@ pub enum Role {
     Appraiser,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, PartialEq)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum ReporterStatus {
     Inactive,
@@ -31,7 +23,7 @@ pub enum ReporterStatus {
     Unstaking,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Reporter {
     pub id: ReporterId,
@@ -42,10 +34,4 @@ pub struct Reporter {
     pub stake: U128,
     pub url: String,
     pub unlock_timestamp: Timestamp,
-}
-
-impl Reporter {
-    pub fn is_active(&self) -> bool {
-        self.status == ReporterStatus::Active
-    }
 }

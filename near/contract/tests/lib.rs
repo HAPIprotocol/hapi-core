@@ -1,11 +1,12 @@
 use near_sdk::serde_json::json;
 use workspaces::{network::Sandbox, Account, AccountId, Contract, Worker};
 
-mod utils;
-pub use utils::*;
-
 mod configuration;
-mod errors;
+pub mod errors;
+mod reporter;
+mod utils;
+pub use errors::*;
+pub use utils::*;
 
 pub const SHOW_LOGS: bool = false;
 pub const SHOW_DEFAULT_OUTPUT: bool = false;

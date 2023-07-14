@@ -6,8 +6,6 @@ use near_sdk::{
     AccountId,
 };
 
-mod v_reward;
-
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RewardAmounts {
@@ -31,5 +29,19 @@ impl Default for RewardConfiguration {
                 address_trace: U128(0),
             },
         }
+    }
+}
+
+impl RewardConfiguration {
+    pub fn get_confirmation_reward(&self) -> U128 {
+        self.reward_amounts.address_confirmation
+    }
+
+    pub fn get_trace_reward(&self) -> U128 {
+        self.reward_amounts.address_trace
+    }
+
+    pub fn get_token(&self) -> AccountId {
+        self.token.clone()
     }
 }

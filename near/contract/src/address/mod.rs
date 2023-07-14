@@ -6,6 +6,9 @@ use near_sdk::{
 
 use crate::{CaseId, Category, ReporterId, RiskScore};
 
+mod v_address;
+pub use v_address::VAddress;
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Address {
     address: AccountId,
