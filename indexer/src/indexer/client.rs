@@ -1,24 +1,33 @@
 use {
     anyhow::Result,
-    ethers::providers::{Http, Provider},
+    hapi_core::{HapiCoreEvm, HapiCoreNetwork, HapiCoreOptions},
 };
 
-use super::Network;
-
-#[derive(Debug)]
 pub(crate) enum IndexerClient {
-    Ethers(Provider<Http>),
+    Evm(HapiCoreEvm),
     Near,
     Solana,
 }
 
 impl IndexerClient {
-    pub fn new(network: Network, rpc_node_url: &str) -> Result<Self> {
+    pub fn new(
+        network: HapiCoreNetwork,
+        rpc_node_url: &str,
+        contract_address: &str,
+    ) -> Result<Self> {
         match network {
-            Network::Ethereum => Ok(Self::Ethers(Provider::<Http>::try_from(rpc_node_url)?)),
-            Network::Near => Ok(Self::Near),
-            Network::Solana => Ok(Self::Solana),
-            _ => Err(anyhow::anyhow!("Invalid network: {network:?}")),
+            HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc | HapiCoreNetwork::Sepolia => {
+                let cli = HapiCoreEvm::new(HapiCoreOptions {
+                    provider_url: rpc_node_url.to_string(),
+                    contract_address: contract_address.to_string(),
+                    private_key: None,
+                    chain_id: None,
+                })?;
+
+                Ok(Self::Evm(cli))
+            }
+            HapiCoreNetwork::Near => Ok(Self::Near),
+            HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => Ok(Self::Solana),
         }
     }
 }

@@ -3,7 +3,7 @@ use ethers::{
     prelude::{abigen, SignerMiddleware},
     providers::{Http, Provider as EthersProvider},
     signers::{LocalWallet, Signer as EthersSigner},
-    types::Address as EthAddress,
+    types::{Address as EthAddress, H256},
 };
 use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
@@ -47,9 +47,16 @@ impl HapiCoreEvm {
         let provider = Provider::try_from(options.provider_url.as_str())
             .map_err(|e| ClientError::UrlParseError(format!("`provider-url`: {e}")))?;
 
-        let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
-            .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
-            .with_chain_id(options.chain_id.unwrap_or(31337_u64));
+        let signer = LocalWallet::from_str(
+            options
+                .private_key
+                .unwrap_or(
+                    "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                )
+                .as_str(),
+        )
+        .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
+        .with_chain_id(options.chain_id.unwrap_or(31337_u64));
 
         let client = Signer::new(provider.clone(), signer.clone());
 
@@ -69,6 +76,14 @@ impl HapiCoreEvm {
             contract,
             client,
         })
+    }
+
+    pub fn get_event_name_from_signature(&self, signature: H256) -> Option<String> {
+        self.contract
+            .abi()
+            .events()
+            .find(|e| e.signature() == signature)
+            .map(|e| e.name.to_string())
     }
 }
 

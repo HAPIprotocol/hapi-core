@@ -1,7 +1,15 @@
-use std::str::FromStr;
+use {
+    serde::{
+        de::{self, Visitor},
+        Deserializer,
+    },
+    std::{fmt, str::FromStr},
+};
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone)]
 pub enum HapiCoreNetwork {
+    #[default]
+    Sepolia,
     Ethereum,
     Bsc,
     Solana,
@@ -10,28 +18,37 @@ pub enum HapiCoreNetwork {
 }
 
 impl FromStr for HapiCoreNetwork {
-    type Err = ();
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "sepolia" => Ok(Self::Sepolia),
             "ethereum" => Ok(Self::Ethereum),
             "bsc" => Ok(Self::Bsc),
             "solana" => Ok(Self::Solana),
             "bitcoin" => Ok(Self::Bitcoin),
             "near" => Ok(Self::Near),
-            _ => Err(()),
+            _ => Err(anyhow::anyhow!("Invalid network: {}", s)),
         }
     }
 }
 
-impl std::fmt::Debug for HapiCoreNetwork {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Ethereum => write!(f, "ethereum"),
-            Self::Bsc => write!(f, "bsc"),
-            Self::Solana => write!(f, "solana"),
-            Self::Bitcoin => write!(f, "bitcoin"),
-            Self::Near => write!(f, "near"),
-        }
+struct HapiCoreNetworkVisitor;
+
+impl<'de> Visitor<'de> for HapiCoreNetworkVisitor {
+    type Value = HapiCoreNetwork;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a valid string for HapiCoreNetwork")
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<HapiCoreNetwork, E> {
+        HapiCoreNetwork::from_str(value).map_err(E::custom)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for HapiCoreNetwork {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_str(HapiCoreNetworkVisitor)
     }
 }

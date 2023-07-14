@@ -30,11 +30,15 @@ macro_rules! assert_tx_output {
 
         assert!(is_tx_match(&value), "transaction hash expected");
 
-        value
+        let tx = value
             .get("tx")
             .and_then(serde_json::Value::as_str)
             .map(|s| s.to_owned())
-            .expect("`tx` key not found or not a string")
+            .expect("`tx` key not found or not a string");
+
+        println!("tx: {}", tx);
+
+        tx
     }};
 }
 
