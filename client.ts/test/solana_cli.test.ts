@@ -458,7 +458,7 @@ describe("Solana Cli test", function () {
     });
 
     it("Create addresses", async function () {
-      const reporter = REPORTERS.publisher;
+      const reporter = REPORTERS.authority;
       process.env.ANCHOR_WALLET = reporter.wallet.path;
 
       for (const key in ADDRESSES) {
@@ -556,6 +556,20 @@ describe("Solana Cli test", function () {
       expect(addressData.riskScore).to.eq(newRisk);
       expect(addressData.category).to.deep.equal(Category.DeFi);
     });
+
+    it("Confirm address", async function () {
+      const address = ADDRESSES.firstAddr;
+      process.env.ANCHOR_WALLET = REPORTERS.publisher.wallet.path;
+
+      await cli_cmd("confirm-address", `--address ${address.address}`);
+
+      const addressData = await program.getAddressData(
+        NETWORK,
+        address.address
+      );
+
+      expect(addressData.confirmations).to.eq(1);
+    });
   });
 
   describe("Asset", function () {
@@ -568,7 +582,7 @@ describe("Solana Cli test", function () {
     });
 
     it("Create assets", async function () {
-      const reporter = REPORTERS.publisher;
+      const reporter = REPORTERS.authority;
       process.env.ANCHOR_WALLET = reporter.wallet.path;
 
       for (const key in ASSETS) {
@@ -681,6 +695,25 @@ describe("Solana Cli test", function () {
 
       expect(assetData.riskScore).to.eq(newRisk);
       expect(assetData.category).to.deep.equal(Category.DeFi);
+    });
+
+    it("Confirm asset", async function () {
+      const asset = ASSETS.firstAsset;
+      process.env.ANCHOR_WALLET = REPORTERS.publisher.wallet.path;
+
+      await cli_cmd(
+        "confirm-asset",
+        `--address ${asset.address} \
+         --asset-id ${asset.assetId}`
+      );
+
+      const assetData = await program.getAssetData(
+        NETWORK,
+        asset.address,
+        asset.assetId
+      );
+
+      expect(assetData.confirmations).to.eq(1);
     });
   });
 
