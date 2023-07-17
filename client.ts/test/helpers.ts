@@ -2,9 +2,12 @@ import { v4 as uuidv4 } from "uuid";
 import { CategoryKeys } from "../../solana/lib";
 
 const chai = require("chai");
-chai.config.truncateThreshold = 0;
-chai.config.showDiff = true;
-var expect = chai.expect;
+export var expect = chai.expect;
+
+export function setupChai() {
+  chai.config.truncateThreshold = 0;
+  chai.config.showDiff = true;
+}
 
 const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
@@ -12,25 +15,25 @@ const exec = util.promisify(require("node:child_process").exec);
 export const NETWORK = "solana";
 const KEYS_PATH = "test/keys";
 
-export const KEYS: Record<string, { pk: string; path: string }> = {
+export const KEYS: Record<string, { pubkey: string; path: string }> = {
   admin: {
-    pk: "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ",
+    pubkey: "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ",
     path: `${KEYS_PATH}/wallet_1.json`,
   },
   authority: {
-    pk: "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX",
+    pubkey: "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX",
     path: `${KEYS_PATH}/wallet_2.json`,
   },
   publisher: {
-    pk: "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk",
+    pubkey: "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk",
     path: `${KEYS_PATH}/wallet_3.json`,
   },
   token: {
-    pk: "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC",
+    pubkey: "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC",
     path: `${KEYS_PATH}/token.json`,
   },
   program: {
-    pk: "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk",
+    pubkey: "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk",
     path: `../solana/tests/test_keypair.json`,
   },
 };
@@ -41,7 +44,7 @@ export const REPORTERS: Record<
     id: string;
     name: string;
     role: string;
-    wallet: { pk: string; path: string };
+    wallet: { pubkey: string; path: string };
     url: string;
   }
 > = {
@@ -117,8 +120,8 @@ export const ASSETS: Record<
   },
 };
 
-const ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" \
-              --contract-address ${KEYS.program.pk} --output json`;
+const BASE_ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" \
+              --contract-address ${KEYS.program.pubkey} --output json`;
 
 export async function execute_command(command: string, ignoreError = false) {
   try {
@@ -126,16 +129,21 @@ export async function execute_command(command: string, ignoreError = false) {
 
     return { stdout, stderr };
   } catch (error) {
+    const msg = `Command execution error. Command: ${command}, ${error}`;
+
     if (!ignoreError) {
-      throw new Error(`Command execution error. Command: ${command}, ${error}`);
+      throw new Error(msg);
     }
-    return { stdout: "", stderr: "" };
+    return {
+      stdout: "",
+      stderr: msg,
+    };
   }
 }
 
-export async function cli_cmd(command: string, arg = "") {
+export async function cli_cmd(command: string, args = "") {
   const { stdout, stderr } = await execute_command(
-    `npm run cmd ${command} ${ARGS} ${arg}`
+    `npm run cmd ${command} ${BASE_ARGS} ${args}`
   );
 
   if (stderr.length > 0) {
@@ -145,16 +153,21 @@ export async function cli_cmd(command: string, arg = "") {
   return stdout;
 }
 
+export enum CommandCheck {
+  ToBeEqual,
+  ToContain,
+}
+
 export function checkCommandResult<Type>(
   res: string,
   val: Type,
-  toBeEqual = true
+  check = CommandCheck.ToBeEqual
 ) {
   const parsedObject: Type = JSON.parse(
     res.substring(res.indexOf("{")).replace(/'/g, '"')
   ).data;
 
-  if (toBeEqual) {
+  if (check == CommandCheck.ToBeEqual) {
     expect(parsedObject).to.deep.equal(val);
   } else {
     expect(parsedObject).to.deep.contain(val);

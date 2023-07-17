@@ -6,11 +6,14 @@ import { readFileSync } from "fs";
 
 import { execute_command, KEYS, NETWORK } from "./helpers";
 
-var VALIDATOR: ChildProcessWithoutNullStreams;
+let VALIDATOR: ChildProcessWithoutNullStreams;
+const VALIDATOR_PORT = 8899;
 
-// TODO: add custom port
 async function shutDownExistingValidator(display = true) {
-  const validatorPid = await execute_command("lsof -t -i :8899", true);
+  const validatorPid = await execute_command(
+    `lsof -t -i :${VALIDATOR_PORT}`,
+    true
+  );
 
   if (validatorPid.stdout.length > 0) {
     const pid = parseInt(validatorPid.stdout);
@@ -18,13 +21,14 @@ async function shutDownExistingValidator(display = true) {
     if (display)
       console.log(
         chalk.yellow(
-          `Warning: port 8899 is already in use. Kill the process with ${pid} pid`
+          `Warning: port ${VALIDATOR_PORT} is already in use. Kill the process with ${pid} pid`
         )
       );
 
     process.kill(pid);
+
+    while ((await execute_command(`ps -p ${pid}`, true)).stderr.length == 0) {}
     if (display) console.log(chalk.green(`Process with ${pid} pid was killed`));
-    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 
@@ -38,7 +42,11 @@ async function startValidator() {
   });
 
   console.log("==> Waiting for the validator to start");
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  while (
+    (await execute_command(`lsof -t -i :${VALIDATOR_PORT}`, true)).stdout
+      .length == 0
+  ) {}
 }
 
 export function killValidator() {
@@ -48,10 +56,16 @@ export function killValidator() {
 async function prepareValidator() {
   console.log("==> Building and deploying program");
 
-  const wallet = process.cwd() + "/" + KEYS.admin.path;
+  const root = (
+    await execute_command("git rev-parse --show-toplevel")
+  ).stdout.trim();
+
+  const wallet = root + "/client.ts/" + KEYS.admin.path;
+  const programDir = root + "/solana";
+
   process.env.ANCHOR_WALLET = wallet;
   await execute_command(
-    `cd ../solana && anchor deploy \
+    `cd ${programDir} && anchor deploy \
     --program-keypair ${KEYS.program.path} --provider.wallet ${wallet}`
   );
 
@@ -62,7 +76,7 @@ async function prepareValidator() {
 export async function setupWallets(provider: Provider) {
   for (const key in KEYS) {
     if (key != "token" && key != "program") {
-      const wallet = new web3.PublicKey(KEYS[key].pk);
+      const wallet = new web3.PublicKey(KEYS[key].pubkey);
 
       await provider.connection.requestAirdrop(
         wallet,
@@ -93,13 +107,13 @@ export async function setupWallets(provider: Provider) {
   console.log("==> Preparing wallets");
   for (const key in KEYS) {
     if (key != "token" && key != "program") {
-      const pk = new web3.PublicKey(KEYS[key].pk);
+      const pubkey = new web3.PublicKey(KEYS[key].pubkey);
 
       const tokenAccount = await Token.getOrCreateAssociatedTokenAccount(
         provider.connection,
         payer,
         mint,
-        pk
+        pubkey
       );
 
       await Token.mintTo(

@@ -9,6 +9,9 @@ import {
   CASES,
   ADDRESSES,
   ASSETS,
+  setupChai,
+  expect,
+  CommandCheck,
 } from "./helpers";
 
 import {
@@ -41,17 +44,13 @@ import {
   getCategoryIndex,
 } from "../../solana/lib";
 
-const chai = require("chai");
-chai.config.truncateThreshold = 0;
-chai.config.showDiff = true;
-var expect = chai.expect;
-
 describe("Solana Cli test", function () {
+  setupChai();
   let program: HapiCoreProgram;
 
   before(async function () {
     process.env.ANCHOR_WALLET = KEYS.admin.path;
-    program = new HapiCoreProgram(KEYS.program.pk);
+    program = new HapiCoreProgram(KEYS.program.pubkey);
     await setup(program.program.provider);
   });
 
@@ -70,23 +69,23 @@ describe("Solana Cli test", function () {
     it("Set new authority by the program upgrade authority", async function () {
       let wallet = KEYS.authority;
 
-      await cli_cmd("set-authority", `--address ${wallet.pk}`);
+      await cli_cmd("set-authority", `--address ${wallet.pubkey}`);
       process.env.ANCHOR_WALLET = wallet.path;
 
       const networkData = await program.getNetwotkData(NETWORK);
 
-      expect(networkData.authority.toString()).to.eq(wallet.pk);
+      expect(networkData.authority.toString()).to.eq(wallet.pubkey);
     });
 
     it("Set new authority by the current authority", async function () {
       let wallet = KEYS.admin;
 
-      await cli_cmd("set-authority", `--address ${wallet.pk}`);
+      await cli_cmd("set-authority", `--address ${wallet.pubkey}`);
       process.env.ANCHOR_WALLET = wallet.path;
 
       const networkData = await program.getNetwotkData(NETWORK);
 
-      expect(networkData.authority.toString()).to.eq(wallet.pk);
+      expect(networkData.authority.toString()).to.eq(wallet.pubkey);
     });
   });
 
@@ -112,7 +111,7 @@ describe("Solana Cli test", function () {
     });
 
     it("Update stake configuration", async function () {
-      const token = KEYS.token.pk;
+      const token = KEYS.token.pubkey;
       const unlockDuration = 1;
       const validatorStake = 1001;
       const tracerStake = 2002;
@@ -167,7 +166,7 @@ describe("Solana Cli test", function () {
     });
 
     it("Update reward configuration", async function () {
-      const token = KEYS.token.pk;
+      const token = KEYS.token.pubkey;
       const addressConfirmationReward = 1001;
       const addressTracerReward = 2002;
       const assetConfirmationReward = 1001;
@@ -217,7 +216,7 @@ describe("Solana Cli test", function () {
           "create-reporter",
           `--id ${reporter.id} \
            --role ${reporter.role} \
-           --account ${reporter.wallet.pk} \
+           --account ${reporter.wallet.pubkey} \
            --name ${reporter.name} \
            --url ${reporter.url}`
         );
@@ -228,7 +227,7 @@ describe("Solana Cli test", function () {
         );
 
         expect(bnToUuid(reporterData.id)).to.eq(reporter.id);
-        expect(reporterData.account.toString()).to.eq(reporter.wallet.pk);
+        expect(reporterData.account.toString()).to.eq(reporter.wallet.pubkey);
         expect(reporterData.role).to.deep.equal(
           ReporterRole[reporter.role as ReporterRoleKeys]
         );
@@ -309,7 +308,7 @@ describe("Solana Cli test", function () {
           unlockTimestamp: reporterData.unlockTimestamp.toNumber(),
         };
 
-        checkCommandResult(res, val, false);
+        checkCommandResult(res, val, CommandCheck.ToContain);
       }
     });
 
@@ -322,7 +321,7 @@ describe("Solana Cli test", function () {
         "update-reporter",
         `--id ${reporter.id} \
          --role ${reporter.role} \
-         --account ${reporter.wallet.pk} \
+         --account ${reporter.wallet.pubkey} \
          --name ${newName} \
          --url ${newUrl}`
       );
@@ -431,7 +430,7 @@ describe("Solana Cli test", function () {
           ),
         };
 
-        checkCommandResult(res, val, false);
+        checkCommandResult(res, val, CommandCheck.ToContain);
       }
     });
 
@@ -539,7 +538,7 @@ describe("Solana Cli test", function () {
           category: getCategoryIndex(addressData.category as typeof Category),
         };
 
-        checkCommandResult(res, val, false);
+        checkCommandResult(res, val, CommandCheck.ToContain);
       }
     });
 
@@ -677,7 +676,7 @@ describe("Solana Cli test", function () {
           category: getCategoryIndex(assetData.category as typeof Category),
         };
 
-        checkCommandResult(res, val, false);
+        checkCommandResult(res, val, CommandCheck.ToContain);
       }
     });
 

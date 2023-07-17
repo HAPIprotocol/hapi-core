@@ -409,7 +409,6 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAddress(address: Addr): Promise<Result> {
-    //TODO: implement
     throw new Error("Method not implemented.");
   }
 
@@ -485,7 +484,6 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAsset(address: string, assetId: string): Promise<Result> {
-    //TODO: implement
     throw new Error("Method not implemented.");
   }
 }
