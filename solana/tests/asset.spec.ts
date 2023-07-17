@@ -12,6 +12,7 @@ import {
   setupNetworks,
   setupReporters,
   setupCases,
+  HAPI_CORE_TEST_ID,
 } from "./util/setup";
 
 import {
@@ -24,9 +25,7 @@ import {
 } from "../lib";
 
 describe("HapiCoreAsset ", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);

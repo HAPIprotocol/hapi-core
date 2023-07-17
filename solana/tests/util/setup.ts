@@ -13,6 +13,8 @@ import {
 
 import { TestToken } from "./token";
 
+export const HAPI_CORE_TEST_ID = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
+
 export type Network = {
   name: string;
   stakeConfiguration: stakeConfiguration;
@@ -238,7 +240,7 @@ export async function setupReporters(
 
     await program.program.provider.connection.requestAirdrop(
       reporter.keypair.publicKey,
-      100_000_000
+      web3.LAMPORTS_PER_SOL
     );
 
     await stakeToken.getTokenAccount(reporter.keypair.publicKey);

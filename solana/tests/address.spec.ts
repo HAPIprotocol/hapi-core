@@ -12,6 +12,7 @@ import {
   setupNetworks,
   setupReporters,
   setupCases,
+  HAPI_CORE_TEST_ID,
 } from "./util/setup";
 
 import {
@@ -24,9 +25,7 @@ import {
 } from "../lib";
 
 describe("HapiCore Address", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -967,8 +966,7 @@ describe("HapiCore Address", () => {
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
+        .rpc();
 
       const fetchedConfirmationAccount =
         await program.program.account.confirmation.fetch(confirmationAccount);
@@ -1037,8 +1035,7 @@ describe("HapiCore Address", () => {
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
+        .rpc();
 
       const fetchedConfirmationAccount =
         await program.program.account.confirmation.fetch(confirmationAccount);

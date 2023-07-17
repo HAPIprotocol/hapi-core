@@ -5,7 +5,12 @@ import { v1 as uuidv1 } from "uuid";
 import { TestToken } from "./util/token";
 import { expectThrowError } from "./util/console";
 import { programError } from "./util/error";
-import { getReporters, getNetworks, setupNetworks } from "./util/setup";
+import {
+  getReporters,
+  getNetworks,
+  setupNetworks,
+  HAPI_CORE_TEST_ID,
+} from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
@@ -15,12 +20,9 @@ import {
   uuidToBn,
   bufferFromString,
 } from "../lib";
-import { log } from "console";
 
 describe("HapiCore Reporter", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -46,7 +48,7 @@ describe("HapiCore Reporter", () => {
 
     await provider.connection.requestAirdrop(
       another_authority.publicKey,
-      10_000_000
+      web3.LAMPORTS_PER_SOL
     );
 
     NETWORKS[mainNetwork].stakeConfiguration.unlockDuration = new BN(1);

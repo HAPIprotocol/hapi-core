@@ -51,7 +51,7 @@ async function prepareValidator() {
   const wallet = process.cwd() + "/" + KEYS.admin.path;
   process.env.ANCHOR_WALLET = wallet;
   await execute_command(
-    `cd ../solana && anchor build &&  anchor deploy \
+    `cd ../solana && anchor deploy \
     --program-keypair ${KEYS.program.path} --provider.wallet ${wallet}`
   );
 

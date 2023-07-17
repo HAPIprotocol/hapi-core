@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "cmd": "ts-node src/cmd",
-    "test": "echo \"Info: only solana test specified\" && mocha --timeout 25000 --require ts-node/register ./test/*.test.ts"
+    "test": "echo \"Info: only solana test specified\" && mocha --timeout 20000 --require ts-node/register ./test/*.test.ts"
   },
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
