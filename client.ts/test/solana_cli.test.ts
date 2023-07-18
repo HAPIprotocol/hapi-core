@@ -60,7 +60,7 @@ describe("Solana Cli test", function () {
 
   describe("Network authority", function () {
     it("Get authority check", async function () {
-      const res = await cli_cmd("get-authority --");
+      const res = await cli_cmd("get-authority");
       const networkData = await program.getNetwotkData(NETWORK);
 
       checkCommandResult(res, networkData.authority.toString());
@@ -69,7 +69,7 @@ describe("Solana Cli test", function () {
     it("Set new authority by the program upgrade authority", async function () {
       let wallet = KEYS.authority;
 
-      await cli_cmd(`set-authority -- --address ${wallet.pubkey}`);
+      await cli_cmd(`set-authority --address ${wallet.pubkey}`);
       process.env.ANCHOR_WALLET = wallet.path;
 
       const networkData = await program.getNetwotkData(NETWORK);
@@ -80,7 +80,7 @@ describe("Solana Cli test", function () {
     it("Set new authority by the current authority", async function () {
       let wallet = KEYS.admin;
 
-      await cli_cmd(`set-authority -- --address ${wallet.pubkey}`);
+      await cli_cmd(`set-authority --address ${wallet.pubkey}`);
       process.env.ANCHOR_WALLET = wallet.path;
 
       const networkData = await program.getNetwotkData(NETWORK);
@@ -91,7 +91,7 @@ describe("Solana Cli test", function () {
 
   describe("Stake configuration", function () {
     it("Get stake configuration", async function () {
-      const res = await cli_cmd("get-stake-configuration --");
+      const res = await cli_cmd("get-stake-configuration");
       const networkData = await program.getNetwotkData(NETWORK);
 
       const val: StakeConfiguration = {
@@ -119,7 +119,7 @@ describe("Solana Cli test", function () {
       const authorityStake = 4004;
 
       await cli_cmd(
-        `update-stake-configuration -- \
+        `update-stake-configuration \
          --token ${token} \
          --unlock-duration ${unlockDuration} \
          --validator-stake ${validatorStake}\
@@ -151,7 +151,7 @@ describe("Solana Cli test", function () {
 
   describe("Reward configuration", function () {
     it("Get reward configuration", async function () {
-      const res = await cli_cmd("get-reward-configuration --");
+      const res = await cli_cmd("get-reward-configuration");
       const networkData = await program.getNetwotkData(NETWORK);
 
       const val: RewardConfiguration = {
@@ -173,7 +173,7 @@ describe("Solana Cli test", function () {
       const assetTracerReward = 2002;
 
       await cli_cmd(
-        `update-reward-configuration -- \
+        `update-reward-configuration \
          --token ${token} \
          --address-confirmation-reward ${addressConfirmationReward} \
          --address-tracer-reward ${addressTracerReward} \
@@ -201,10 +201,10 @@ describe("Solana Cli test", function () {
 
   describe("Reporter activation", function () {
     it("Verify that contract has no reporters", async function () {
-      const count = await cli_cmd("get-reporter-count --");
+      const count = await cli_cmd("get-reporter-count");
       checkCommandResult(count, 0);
 
-      const reporters = await cli_cmd("get-reporters --");
+      const reporters = await cli_cmd("get-reporters");
       checkCommandResult(reporters, []);
     });
 
@@ -213,7 +213,7 @@ describe("Solana Cli test", function () {
         const reporter = REPORTERS[key];
 
         await cli_cmd(
-          `create-reporter -- \
+          `create-reporter \
            --id ${reporter.id} \
            --role ${reporter.role} \
            --account ${reporter.wallet.pubkey} \
@@ -243,7 +243,7 @@ describe("Solana Cli test", function () {
       for (const key in REPORTERS) {
         const reporter = REPORTERS[key];
 
-        const res = await cli_cmd(`get-reporter -- --id ${reporter.id}`);
+        const res = await cli_cmd(`get-reporter --id ${reporter.id}`);
         const reporterData = await program.getReporterData(
           NETWORK,
           reporter.id
@@ -273,13 +273,13 @@ describe("Solana Cli test", function () {
     });
 
     it("Verify reporter count", async function () {
-      const count = await cli_cmd("get-reporter-count --");
+      const count = await cli_cmd("get-reporter-count");
 
       checkCommandResult(count, Object.keys(REPORTERS).length);
     });
 
     it("Get all reporters", async function () {
-      const res = await cli_cmd("get-reporters --");
+      const res = await cli_cmd("get-reporters");
 
       for (const key in REPORTERS) {
         const reporter = REPORTERS[key];
@@ -318,7 +318,7 @@ describe("Solana Cli test", function () {
       const newUrl = "https://new.authority.blockchain";
 
       await cli_cmd(
-        `update-reporter -- \
+        `update-reporter \
          --id ${reporter.id} \
          --role ${reporter.role} \
          --account ${reporter.wallet.pubkey} \
@@ -337,7 +337,7 @@ describe("Solana Cli test", function () {
         const reporter = REPORTERS[key];
         process.env.ANCHOR_WALLET = reporter.wallet.path;
 
-        await cli_cmd("activate-reporter --");
+        await cli_cmd("activate-reporter");
 
         const reporterData = await program.getReporterData(
           NETWORK,
@@ -352,10 +352,10 @@ describe("Solana Cli test", function () {
 
   describe("Case", function () {
     it("Verify that contract has no cases", async function () {
-      const count = await cli_cmd("get-case-count --");
+      const count = await cli_cmd("get-case-count");
       checkCommandResult(count, 0);
 
-      const cases = await cli_cmd("get-cases --");
+      const cases = await cli_cmd("get-cases");
       checkCommandResult(cases, []);
     });
 
@@ -367,7 +367,7 @@ describe("Solana Cli test", function () {
         const cs = CASES[key];
 
         await cli_cmd(
-          `create-case -- \
+          `create-case \
            --id ${cs.id} \
            --name ${cs.name} \
            --url ${cs.url}`
@@ -387,7 +387,7 @@ describe("Solana Cli test", function () {
       for (const key in CASES) {
         const cs = CASES[key];
 
-        const res = await cli_cmd(`get-case -- --id ${cs.id}`);
+        const res = await cli_cmd(`get-case --id ${cs.id}`);
         const caseData = await program.getCaseData(NETWORK, cs.id);
 
         const val = {
@@ -406,13 +406,13 @@ describe("Solana Cli test", function () {
     });
 
     it("Verify case count", async function () {
-      const count = await cli_cmd("get-case-count --");
+      const count = await cli_cmd("get-case-count");
 
       checkCommandResult(count, Object.keys(CASES).length);
     });
 
     it("Get all cases", async function () {
-      const res = await cli_cmd("get-cases --");
+      const res = await cli_cmd("get-cases");
 
       for (const key in CASES) {
         const cs = CASES[key];
@@ -442,7 +442,7 @@ describe("Solana Cli test", function () {
       const newStatus = "Closed";
 
       await cli_cmd(
-        `update-case -- \
+        `update-case \
          --id ${cs.id} \
          --name ${newName} \
          --url ${newUrl} \
@@ -459,10 +459,10 @@ describe("Solana Cli test", function () {
 
   describe("Address", function () {
     it("Verify that contract has no addresses", async function () {
-      const count = await cli_cmd("get-address-count --");
+      const count = await cli_cmd("get-address-count");
       checkCommandResult(count, 0);
 
-      const addresses = await cli_cmd("get-addresses --");
+      const addresses = await cli_cmd("get-addresses");
       checkCommandResult(addresses, []);
     });
 
@@ -473,7 +473,7 @@ describe("Solana Cli test", function () {
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
         await cli_cmd(
-          `create-address -- \
+          `create-address \
            --address ${address.address} \
            --case-id ${address.caseId} \
            --risk ${address.riskScore}\
@@ -497,7 +497,7 @@ describe("Solana Cli test", function () {
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
         const res = await cli_cmd(
-          `get-address -- \
+          `get-address \
           --address ${address.address}`
         );
         const addressData = await program.getAddressData(
@@ -516,12 +516,12 @@ describe("Solana Cli test", function () {
     });
 
     it("Verify address count", async function () {
-      const count = await cli_cmd("get-address-count --");
+      const count = await cli_cmd("get-address-count");
       checkCommandResult(count, Object.keys(ADDRESSES).length);
     });
 
     it("Get all addresses", async function () {
-      const res = await cli_cmd("get-addresses --");
+      const res = await cli_cmd("get-addresses");
 
       for (const key in ADDRESSES) {
         const address = ADDRESSES[key];
@@ -550,7 +550,7 @@ describe("Solana Cli test", function () {
       const newCategory = "DeFi";
 
       await cli_cmd(
-        `update-address -- \
+        `update-address \
          --address ${address.address} \
          --case-id ${address.caseId} \
          --risk ${newRisk} \
@@ -570,7 +570,7 @@ describe("Solana Cli test", function () {
       const address = ADDRESSES.firstAddr;
       process.env.ANCHOR_WALLET = REPORTERS.publisher.wallet.path;
 
-      await cli_cmd(`confirm-address -- --address ${address.address}`);
+      await cli_cmd(`confirm-address --address ${address.address}`);
 
       const addressData = await program.getAddressData(
         NETWORK,
@@ -583,10 +583,10 @@ describe("Solana Cli test", function () {
 
   describe("Asset", function () {
     it("Verify that contract has no assets", async function () {
-      const count = await cli_cmd("get-asset-count --");
+      const count = await cli_cmd("get-asset-count");
       checkCommandResult(count, 0);
 
-      const assets = await cli_cmd("get-assets --");
+      const assets = await cli_cmd("get-assets");
       checkCommandResult(assets, []);
     });
 
@@ -598,7 +598,7 @@ describe("Solana Cli test", function () {
         const asset = ASSETS[key];
 
         await cli_cmd(
-          `create-asset -- \
+          `create-asset \
            --address ${asset.address} \
            --asset-id ${asset.assetId} \
            --case-id ${asset.caseId} \
@@ -627,7 +627,7 @@ describe("Solana Cli test", function () {
         const asset = ASSETS[key];
 
         const res = await cli_cmd(
-          `get-asset -- \
+          `get-asset \
            --address ${asset.address} \
            --asset-id ${asset.assetId}`
         );
@@ -652,12 +652,12 @@ describe("Solana Cli test", function () {
     });
 
     it("Verify asset count", async function () {
-      const count = await cli_cmd("get-asset-count --");
+      const count = await cli_cmd("get-asset-count");
       checkCommandResult(count, Object.keys(ASSETS).length);
     });
 
     it("Get all assets", async function () {
-      const res = await cli_cmd("get-assets --");
+      const res = await cli_cmd("get-assets");
 
       for (const key in ASSETS) {
         const asset = ASSETS[key];
@@ -689,7 +689,7 @@ describe("Solana Cli test", function () {
       const newCategory = "DeFi";
 
       await cli_cmd(
-        `update-asset -- \
+        `update-asset \
          --address ${asset.address} \
          --asset-id ${asset.assetId} \
          --case-id ${asset.caseId} \
@@ -712,7 +712,7 @@ describe("Solana Cli test", function () {
       process.env.ANCHOR_WALLET = REPORTERS.publisher.wallet.path;
 
       await cli_cmd(
-        `confirm-asset -- \
+        `confirm-asset \
          --address ${asset.address} \
          --asset-id ${asset.assetId}`
       );
@@ -733,7 +733,7 @@ describe("Solana Cli test", function () {
         const reporter = REPORTERS[key];
         process.env.ANCHOR_WALLET = reporter.wallet.path;
 
-        await cli_cmd("deactivate-reporter --");
+        await cli_cmd("deactivate-reporter");
 
         const reporterData = await program.getReporterData(
           NETWORK,
@@ -749,7 +749,7 @@ describe("Solana Cli test", function () {
         const reporter = REPORTERS[key];
         process.env.ANCHOR_WALLET = reporter.wallet.path;
 
-        await cli_cmd("unstake-reporter --");
+        await cli_cmd("unstake-reporter");
 
         const reporterData = await program.getReporterData(
           NETWORK,

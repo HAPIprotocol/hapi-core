@@ -144,7 +144,7 @@ export async function execute_command(command: string, ignoreError = false) {
 
 export async function cli_cmd(command: string) {
   const { stdout, stderr } = await execute_command(
-    `npm run cmd ${command} ${BASE_ARGS}`
+    `npm run cmd -- ${command} ${BASE_ARGS}`
   );
 
   if (stderr.length > 0) {
