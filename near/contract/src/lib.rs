@@ -1,7 +1,7 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::env;
 use near_sdk::{
-    collections::UnorderedMap, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault,
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    collections::UnorderedMap,
+    env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault,
 };
 
 pub mod address;

@@ -1,11 +1,13 @@
-pub const ONLY_AUTHORITY: &str = "Only authority can call this method";
+use near_sdk::serde_json::json;
 
-use crate::*;
+use crate::{utils::CallExecutionDetailsExtension, TestContext};
+
+pub const ERROR_ONLY_AUTHORITY: &str = "Only authority can call this method";
 
 // All methods must be called not from owner.
 
 #[tokio::test]
-async fn owner_methods() -> anyhow::Result<()> {
+async fn owner_methods() {
     let context = TestContext::new().await;
 
     //  update stake configuration(fail)
@@ -15,7 +17,7 @@ async fn owner_methods() -> anyhow::Result<()> {
         .args_json(json!({"stake_configuration":context.get_stake_configuration().await}))
         .transact()
         .await
-        .assert_failure("update stake configuration", ONLY_AUTHORITY);
+        .assert_failure("update stake configuration", ERROR_ONLY_AUTHORITY);
 
     //  update reward configuration(fail)
     context
@@ -24,7 +26,7 @@ async fn owner_methods() -> anyhow::Result<()> {
         .args_json(json!({"reward_configuration":context.get_reward_configuration().await}))
         .transact()
         .await
-        .assert_failure("update reward configuration", ONLY_AUTHORITY);
+        .assert_failure("update reward configuration", ERROR_ONLY_AUTHORITY);
 
     // set authority(fail)
     context
@@ -33,7 +35,5 @@ async fn owner_methods() -> anyhow::Result<()> {
         .args_json(json!({"authority": context.user_1.id()}))
         .transact()
         .await
-        .assert_failure("set authority", ONLY_AUTHORITY);
-
-    Ok(())
+        .assert_failure("set authority", ERROR_ONLY_AUTHORITY);
 }

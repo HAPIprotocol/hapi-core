@@ -11,7 +11,7 @@ use crate::{ONE_TGAS, SHOW_DEFAULT_OUTPUT, SHOW_LOGS};
 /* VIEW EXTENSION */
 /* ************** */
 pub trait ViewResultDetailsExtension {
-    fn get_result<T: DeserializeOwned>(self, action: &str) -> T;
+    fn parse<T: DeserializeOwned>(self, action: &str) -> T;
 }
 
 pub trait ViewResultDetailsHelper {
@@ -19,7 +19,7 @@ pub trait ViewResultDetailsHelper {
 }
 
 impl ViewResultDetailsExtension for workspaces::Result<ViewResultDetails> {
-    fn get_result<T: DeserializeOwned>(self, action: &str) -> T {
+    fn parse<T: DeserializeOwned>(self, action: &str) -> T {
         match self {
             Ok(this) => {
                 if SHOW_DEFAULT_OUTPUT {

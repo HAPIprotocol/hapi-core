@@ -1,11 +1,14 @@
-use crate::*;
+use crate::{
+    utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
+    TestContext,
+};
+use near_sdk::serde_json::json;
 
 mod helpers;
-
 use helpers::*;
 
 #[tokio::test]
-async fn test_configuration() -> anyhow::Result<()> {
+async fn test_configuration() {
     let context = TestContext::new().await;
 
     context
@@ -30,7 +33,7 @@ async fn test_configuration() -> anyhow::Result<()> {
             .authority
             .view(&context.contract.id(), "get_configuration")
             .await
-            .get_result("get_configuration");
+            .parse("get_configuration");
 
     assert_eq!(
         stake_configuration.token, context.stake_token.id,
@@ -63,6 +66,4 @@ async fn test_configuration() -> anyhow::Result<()> {
         .transact()
         .await
         .assert_success("set authority");
-
-    Ok(())
 }

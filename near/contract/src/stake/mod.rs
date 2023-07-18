@@ -22,7 +22,7 @@ pub struct StakeAmounts {
 pub struct StakeConfiguration {
     /// address of the stake token mint contract
     token: AccountId,
-    /// duration of reporter suspension before the stake can be withdrawn
+    /// duration of reporter suspension before the stake can be withdrawn, in seconds
     unlock_duration: Timestamp,
     /// stake amounts for respective reporter types
     stake_amounts: StakeAmounts,

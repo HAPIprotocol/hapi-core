@@ -1,8 +1,11 @@
+use super::{
+    CallExecutionDetailsExtension, GasExtension, U128Extension, ViewResultDetailsExtension,
+};
 use near_contract_standards::storage_management::StorageBalanceBounds;
 use near_sdk::{json_types::U128, serde_json::json, ONE_YOCTO};
-use workspaces::result::ExecutionFinalResult;
+use workspaces::{result::ExecutionFinalResult, AccountId, Contract};
 
-use crate::*;
+use crate::TestContext;
 
 pub const TOKEN: &[u8] = include_bytes!("../../../res/fungible_token.wasm");
 
@@ -59,7 +62,7 @@ impl TestContext {
             .contract
             .view("storage_balance_bounds")
             .await
-            .get_result("storage balance bounds")
+            .parse("storage balance bounds")
     }
 
     pub async fn ft_transfer(
@@ -107,6 +110,6 @@ impl TestContext {
             .view("ft_balance_of")
             .args_json(json!({ "account_id": account_id }))
             .await
-            .get_result("get token balance")
+            .parse("get token balance")
     }
 }
