@@ -13,28 +13,29 @@ const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 
 export const NETWORK = "solana";
-const KEYS_PATH = "test/keys";
+const ZERO_ADDRESS =
+  "000000000000000000000000000000000000000000000000000000000000000";
 
 export const KEYS: Record<string, { pubkey: string; path: string }> = {
   admin: {
     pubkey: "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ",
-    path: `${KEYS_PATH}/wallet_1.json`,
+    path: `${__dirname}/keys/wallet_1.json`,
   },
   authority: {
     pubkey: "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX",
-    path: `${KEYS_PATH}/wallet_2.json`,
+    path: `${__dirname}/keys/wallet_2.json`,
   },
   publisher: {
     pubkey: "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk",
-    path: `${KEYS_PATH}/wallet_3.json`,
+    path: `${__dirname}/keys/wallet_3.json`,
   },
   token: {
     pubkey: "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC",
-    path: `${KEYS_PATH}/token.json`,
+    path: `${__dirname}/keys/token.json`,
   },
   program: {
     pubkey: "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk",
-    path: `../solana/tests/test_keypair.json`,
+    path: `${__dirname}/../../solana/tests/test_keypair.json`,
   },
 };
 
@@ -94,7 +95,7 @@ export const ADDRESSES: Record<
   }
 > = {
   firstAddr: {
-    address: "0000000000000000000000000000000000000000000000000000000000000001",
+    address: ZERO_ADDRESS,
     caseId: CASES.firstCase.id,
     category: "WalletService",
     riskScore: 3,
@@ -112,7 +113,7 @@ export const ASSETS: Record<
   }
 > = {
   firstAsset: {
-    address: "0000000000000000000000000000000000000000000000000000000000000001",
+    address: ZERO_ADDRESS,
     assetId: uuidv4(),
     caseId: CASES.firstCase.id,
     category: "WalletService",
@@ -120,7 +121,7 @@ export const ASSETS: Record<
   },
 };
 
-const BASE_ARGS = `-- --network ${NETWORK} --provider-url "http://localhost:8899" \
+const BASE_ARGS = `--network ${NETWORK} --provider-url "http://localhost:8899" \
               --contract-address ${KEYS.program.pubkey} --output json`;
 
 export async function execute_command(command: string, ignoreError = false) {
@@ -141,9 +142,9 @@ export async function execute_command(command: string, ignoreError = false) {
   }
 }
 
-export async function cli_cmd(command: string, args = "") {
+export async function cli_cmd(command: string) {
   const { stdout, stderr } = await execute_command(
-    `npm run cmd ${command} ${BASE_ARGS} ${args}`
+    `npm run cmd ${command} ${BASE_ARGS}`
   );
 
   if (stderr.length > 0) {

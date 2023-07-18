@@ -27,7 +27,9 @@ async function shutDownExistingValidator(display = true) {
 
     process.kill(pid);
 
-    while ((await execute_command(`ps -p ${pid}`, true)).stderr.length == 0) {}
+    while ((await execute_command(`ps -p ${pid}`, true)).stderr.length == 0) {
+      await delay(100);
+    }
     if (display) console.log(chalk.green(`Process with ${pid} pid was killed`));
   }
 }
@@ -46,7 +48,9 @@ async function startValidator() {
   while (
     (await execute_command(`lsof -t -i :${VALIDATOR_PORT}`, true)).stdout
       .length == 0
-  ) {}
+  ) {
+    await delay(100);
+  }
 }
 
 export function killValidator() {
@@ -56,12 +60,8 @@ export function killValidator() {
 async function prepareValidator() {
   console.log("==> Building and deploying program");
 
-  const root = (
-    await execute_command("git rev-parse --show-toplevel")
-  ).stdout.trim();
-
-  const wallet = root + "/client.ts/" + KEYS.admin.path;
-  const programDir = root + "/solana";
+  const wallet = KEYS.admin.path;
+  const programDir = __dirname + "/../../solana";
 
   process.env.ANCHOR_WALLET = wallet;
   await execute_command(
@@ -126,6 +126,10 @@ export async function setupWallets(provider: Provider) {
       );
     }
   }
+}
+
+async function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function setup(provider: Provider) {
