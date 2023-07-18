@@ -8,9 +8,12 @@ import {
   HapiCoreProgram,
   ReporterRoleKeys,
   CategoryKeys,
+  encodeAddress,
 } from "../../lib";
 
 import { TestToken } from "./token";
+
+export const HAPI_CORE_TEST_ID = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
 
 export type Network = {
   name: string;
@@ -138,25 +141,22 @@ export function getCases() {
 export function getAddresses() {
   const cases: Record<string, Address> = {
     firstAddress: {
-      address: Buffer.from(
-        "0000000000000000000000000000000000000000000000000000000000000001",
-        "hex"
+      address: encodeAddress(
+        "0000000000000000000000000000000000000000000000000000000000000001"
       ),
       category: "WalletService",
       riskScore: 3,
     },
     secondAddress: {
-      address: Buffer.from(
-        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
-        "hex"
+      address: encodeAddress(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
       ),
       category: "Mixer",
       riskScore: 6,
     },
     thirdAddress: {
-      address: Buffer.from(
-        "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de",
-        "hex"
+      address: encodeAddress(
+        "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
       ),
       category: "Sanctions",
       riskScore: 10,
@@ -169,26 +169,24 @@ export function getAddresses() {
 export function getAssets() {
   const cases: Record<string, Asset> = {
     firstAsset: {
-      address: Buffer.from("0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832", "hex"),
-      id: Buffer.from(uuidv4(), "hex"),
+      address: encodeAddress("0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832"),
+      id: encodeAddress(uuidv4()),
       category: "WalletService",
       riskScore: 3,
     },
     secondAsset: {
-      address: Buffer.from(
-        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94",
-        "hex"
+      address: encodeAddress(
+        "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
       ),
-      id: Buffer.from(uuidv4(), "hex"),
+      id: encodeAddress(uuidv4()),
       category: "Mixer",
       riskScore: 6,
     },
     thirdAsset: {
-      address: Buffer.from(
-        "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de",
-        "hex"
+      address: encodeAddress(
+        "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
       ),
-      id: Buffer.from(uuidv4(), "hex"),
+      id: encodeAddress(uuidv4()),
       category: "Sanctions",
       riskScore: 10,
     },
@@ -242,13 +240,13 @@ export async function setupReporters(
 
     await program.program.provider.connection.requestAirdrop(
       reporter.keypair.publicKey,
-      100_000_000
+      web3.LAMPORTS_PER_SOL
     );
 
     await stakeToken.getTokenAccount(reporter.keypair.publicKey);
     await stakeToken.transfer(null, reporter.keypair.publicKey, 1_000_000);
 
-    await program.activateReporter(network_name, reporter.keypair, reporter.id);
+    await program.activateReporter(network_name, reporter.id, reporter.keypair);
   }
 }
 
@@ -269,8 +267,8 @@ export async function setupCases(
         cs.id,
         cs.name,
         cs.url,
-        reporter.keypair,
-        reporter.id
+        reporter.id,
+        reporter.keypair
       )
     );
   }

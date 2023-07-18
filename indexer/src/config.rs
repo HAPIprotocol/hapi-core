@@ -1,11 +1,11 @@
+use hapi_core::HapiCoreNetwork;
+
 use {
     config::{Config, ConfigError, File, FileFormat},
     serde::Deserialize,
     serde_with::{serde_as, DurationMilliSeconds},
     std::{env, time::Duration},
 };
-
-use crate::indexer::Network;
 
 pub const CONFIG_PATH: &str = "configuration.toml";
 pub const SECRET_PATH: &str = "secret.toml";
@@ -32,8 +32,7 @@ pub(crate) struct Configuration {
 #[derive(Default, Deserialize, Clone)]
 pub(crate) struct IndexerConfiguration {
     /// The network to use
-    #[serde(deserialize_with = "Network::deserialize")]
-    pub network: Network,
+    pub network: HapiCoreNetwork,
 
     /// The RPC node URL
     pub rpc_node_url: String,
@@ -45,6 +44,10 @@ pub(crate) struct IndexerConfiguration {
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     #[serde(default = "default_wait_tick")]
     pub wait_interval_ms: Duration,
+
+    /// The file to persist the indexer state in
+    #[serde(default = "default_state_file")]
+    pub state_file: String,
 }
 
 fn default_is_json_logging() -> bool {
@@ -61,6 +64,10 @@ fn default_listener() -> String {
 
 fn default_wait_tick() -> Duration {
     Duration::from_millis(1000)
+}
+
+fn default_state_file() -> String {
+    String::from("data/state.json")
 }
 
 pub(crate) fn get_configuration() -> Result<Configuration, ConfigError> {

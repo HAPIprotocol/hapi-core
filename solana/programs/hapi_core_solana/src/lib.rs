@@ -262,7 +262,7 @@ pub mod hapi_core_solana {
         case.id = case_id;
         case.name = name;
         case.network = ctx.accounts.network.key();
-        case.reporter = ctx.accounts.reporter.key();
+        case.reporter_id = ctx.accounts.reporter.id;
         case.status = CaseStatus::Open;
         case.url = url;
         case.version = Case::VERSION;

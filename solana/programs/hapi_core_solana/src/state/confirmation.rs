@@ -15,7 +15,7 @@ pub struct Confirmation {
     /// Confirmed account public key
     pub account: Pubkey,
 
-    /// Case UUID
+    /// Reporter UUID
     pub reporter_id: u128,
 }
 

@@ -54,7 +54,9 @@ export class HapiCoreNear implements HapiCore {
   async updateRewardConfiguration(
     token: string,
     addressConfirmationReward: string,
-    traceReward: string
+    addressTracerReward: string,
+    assetConfirmationReward: string,
+    assetTracerReward: string
   ): Promise<Result> {
     throw new Error("Method not implemented.");
   }
@@ -162,6 +164,10 @@ export class HapiCoreNear implements HapiCore {
     throw new Error("Method not implemented.");
   }
 
+  async confirmAddress(address: Addr): Promise<Result> {
+    throw new Error("Method not implemented.");
+  }
+
   async createAsset(
     address: string,
     assetId: string,
@@ -191,6 +197,10 @@ export class HapiCoreNear implements HapiCore {
     risk: number,
     category: Category
   ): Promise<Result> {
+    throw new Error("Method not implemented.");
+  }
+
+  async confirmAsset(address: string, assetId: string): Promise<Result> {
     throw new Error("Method not implemented.");
   }
 }

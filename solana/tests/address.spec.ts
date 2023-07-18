@@ -12,21 +12,20 @@ import {
   setupNetworks,
   setupReporters,
   setupCases,
+  HAPI_CORE_TEST_ID,
 } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
   HapiCoreProgram,
-  padBuffer,
   Category,
   uuidToBn,
   CaseStatus,
+  decodeAddress,
 } from "../lib";
 
 describe("HapiCore Address", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -247,8 +246,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
@@ -313,8 +312,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
@@ -379,8 +378,8 @@ describe("HapiCore Address", () => {
       ).toBeTruthy();
       expect(fetchedAddressAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAddressAccount.address)).toEqual(
-        padBuffer(address.address, 64)
+      expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
+        decodeAddress(address.address)
       );
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
@@ -639,7 +638,7 @@ describe("HapiCore Address", () => {
       const address = ADDRESSES.secondAddress;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporter = REPORTERS.publisher;
+      const reporter = REPORTERS.authority;
       const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id
@@ -967,8 +966,7 @@ describe("HapiCore Address", () => {
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
+        .rpc();
 
       const fetchedConfirmationAccount =
         await program.program.account.confirmation.fetch(confirmationAccount);
@@ -1037,8 +1035,7 @@ describe("HapiCore Address", () => {
           systemProgram: web3.SystemProgram.programId,
         })
         .signers([reporter.keypair])
-        .rpc(),
-        programError("Unauthorized");
+        .rpc();
 
       const fetchedConfirmationAccount =
         await program.program.account.confirmation.fetch(confirmationAccount);
