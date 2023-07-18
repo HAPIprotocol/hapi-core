@@ -1,6 +1,7 @@
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    AccountId, Balance, Timestamp,
+    json_types::U128,
+    AccountId, Timestamp,
 };
 
 mod v_reporter;
@@ -30,7 +31,7 @@ pub struct Reporter {
     pub name: String,
     pub role: Role,
     pub status: ReporterStatus,
-    pub stake: Balance,
+    pub stake: U128,
     pub url: String,
     pub unlock_timestamp: Timestamp,
 }
