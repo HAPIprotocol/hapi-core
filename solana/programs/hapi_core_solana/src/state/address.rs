@@ -24,7 +24,7 @@ pub struct Address {
     /// Case UUID
     pub case_id: u128,
 
-    /// Case UUID
+    /// Reporter UUID
     pub reporter_id: u128,
 
     /// Confirmation count for this address

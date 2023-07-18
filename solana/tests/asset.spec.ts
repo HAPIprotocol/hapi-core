@@ -12,21 +12,20 @@ import {
   setupNetworks,
   setupReporters,
   setupCases,
+  HAPI_CORE_TEST_ID,
 } from "./util/setup";
 
 import {
   ACCOUNT_SIZE,
   HapiCoreProgram,
-  padBuffer,
   Category,
   uuidToBn,
   CaseStatus,
+  decodeAddress,
 } from "../lib";
 
 describe("HapiCoreAsset ", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -253,11 +252,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
@@ -322,11 +321,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
@@ -391,11 +390,11 @@ describe("HapiCoreAsset ", () => {
       ).toBeTruthy();
       expect(fetchedAssetAccount.confirmations).toEqual(0);
 
-      expect(Buffer.from(fetchedAssetAccount.address)).toEqual(
-        padBuffer(asset.address, 64)
+      expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
+        decodeAddress(asset.address)
       );
-      expect(Buffer.from(fetchedAssetAccount.id as number[])).toEqual(
-        padBuffer(asset.id, 64)
+      expect(decodeAddress(fetchedAssetAccount.id as number[])).toEqual(
+        decodeAddress(asset.id)
       );
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
@@ -661,7 +660,7 @@ describe("HapiCoreAsset ", () => {
       const asset = ASSETS.secondAsset;
       const [networkAccount] = program.findNetworkAddress(mainNetwork);
 
-      const reporter = REPORTERS.publisher;
+      const reporter = REPORTERS.authority;
       const [reporterAccount] = program.findReporterAddress(
         networkAccount,
         reporter.id

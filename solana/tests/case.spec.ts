@@ -11,6 +11,7 @@ import {
   setupNetworks,
   setupReporters,
   getCases,
+  HAPI_CORE_TEST_ID,
 } from "./util/setup";
 
 import {
@@ -22,9 +23,7 @@ import {
 } from "../lib";
 
 describe("HapiCore Case", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -284,7 +283,7 @@ describe("HapiCore Case", () => {
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
-      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.reporterId).toEqual(uuidToBn(reporter.id));
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
         caseAccount
@@ -331,7 +330,7 @@ describe("HapiCore Case", () => {
       expect(fetchedCaseAccount.url).toEqual(cs.url);
       expect(fetchedCaseAccount.network).toEqual(networkAccount);
       expect(fetchedCaseAccount.status).toEqual(CaseStatus.Open);
-      expect(fetchedCaseAccount.reporter).toEqual(reporterAccount);
+      expect(fetchedCaseAccount.reporterId).toEqual(uuidToBn(reporter.id));
 
       const caseInfo = await provider.connection.getAccountInfoAndContext(
         caseAccount

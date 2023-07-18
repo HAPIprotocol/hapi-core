@@ -4,6 +4,15 @@ import {
   SolanaConnectionOptions,
 } from "./implementations";
 
+export const CommandOutputNames = ["Plain", "Json"];
+
+export enum CommandOutput {
+  Plain = "plain",
+  Json = "json",
+}
+
+export const CommandOutputs = [CommandOutput.Plain, CommandOutput.Json];
+
 export enum HapiCoreNetwork {
   Ethereum = "ethereum",
   BSC = "bsc",
@@ -194,7 +203,9 @@ export interface HapiCore {
   updateRewardConfiguration(
     token: Addr,
     addressConfirmationReward: Amount,
-    traceReward: Amount
+    addressTracerReward: Amount,
+    assetConfirmationReward: Amount,
+    assetTracerReward: Amount
   ): Promise<Result>;
 
   /// Returns the reward configuration
@@ -281,6 +292,9 @@ export interface HapiCore {
     category: Category
   ): Promise<Result>;
 
+  /// Confirm address
+  confirmAddress(address: Addr): Promise<Result>;
+
   /// Create a new asset
   createAsset(
     address: Addr,
@@ -307,4 +321,7 @@ export interface HapiCore {
     risk: number,
     category: Category
   ): Promise<Result>;
+
+  /// Confirm asset
+  confirmAsset(address: Addr, assetId: string): Promise<Result>;
 }

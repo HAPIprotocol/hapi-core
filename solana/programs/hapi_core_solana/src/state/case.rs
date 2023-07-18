@@ -18,8 +18,8 @@ pub struct Case {
     /// Short case description
     pub name: String,
 
-    /// Case reporter's account
-    pub reporter: Pubkey,
+    /// Reporter UUID
+    pub reporter_id: u128,
 
     /// Case status
     pub status: CaseStatus,

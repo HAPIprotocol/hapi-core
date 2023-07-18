@@ -119,12 +119,16 @@ export class TestToken {
     );
   }
 
-  async getBalance(account: web3.PublicKey): Promise<BN> {
+  async getBalance(
+    account: web3.PublicKey,
+    allowOwnerOffCurve = false
+  ): Promise<BN> {
     const tokenAccount = await Token.getOrCreateAssociatedTokenAccount(
       this.provider.connection,
       this.payer,
       this.token,
-      account
+      account,
+      allowOwnerOffCurve
     );
 
     const { value } = await this.provider.connection.getTokenAccountBalance(

@@ -29,7 +29,8 @@
         "build": "tsc && rollup -c",
         "prepublishOnly": "yarn run build",
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+        "create-network": "ts-node scripts/create-network"
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.27.0",
@@ -40,6 +41,8 @@
         "@types/node": "^20.1.7",
         "@types/uuid": "^9.0.2",
         "bn.js": "^5.2.1",
+        "chalk": "4.1.2",
+        "dotenv": "^16.3.1",
         "eip55": "^2.1.0",
         "jest": "^29.3.1",
         "rimraf": "^5.0.0",

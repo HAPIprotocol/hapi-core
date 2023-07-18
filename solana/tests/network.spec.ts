@@ -5,12 +5,11 @@ import { expectThrowError } from "./util/console";
 
 import { ACCOUNT_SIZE, bufferFromString, HapiCoreProgram } from "../lib";
 import { programError } from "./util/error";
+import { HAPI_CORE_TEST_ID } from "./util/setup";
 import { PublicKey } from "@solana/web3.js";
 
 describe("HapiCore Network", () => {
-  const program = new HapiCoreProgram(
-    new web3.PublicKey("FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk")
-  );
+  const program = new HapiCoreProgram(new web3.PublicKey(HAPI_CORE_TEST_ID));
 
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -40,7 +39,7 @@ describe("HapiCore Network", () => {
     wait.push(
       provider.connection.requestAirdrop(
         another_authority.publicKey,
-        10_000_000
+        web3.LAMPORTS_PER_SOL
       )
     );
 
@@ -496,26 +495,7 @@ describe("HapiCore Network", () => {
       );
     });
 
-    it("fail - same authority", async () => {
-      const [networkAccount] = program.findNetworkAddress(networkName);
-
-      await expectThrowError(
-        () =>
-          program.program.methods
-            .setAuthority()
-            .accounts({
-              authority: authority.publicKey,
-              newAuthority: authority.publicKey,
-              network: networkAccount,
-              programAccount: program.programId,
-              programData: programDataAddress,
-            })
-            .rpc(),
-        programError("AuthorityMismatch")
-      );
-    });
-
-    it("success - program update authority signer", async () => {
+    it("success - update authority", async () => {
       const [networkAccount] = program.findNetworkAddress(networkName);
 
       await program.program.methods
@@ -538,19 +518,42 @@ describe("HapiCore Network", () => {
       );
     });
 
-    it("success - network authority signer", async () => {
+    it("success - new network authority as signer", async () => {
       const [networkAccount] = program.findNetworkAddress(networkName);
+
+      const somebody = web3.Keypair.generate();
 
       await program.program.methods
         .setAuthority()
         .accounts({
           authority: another_authority.publicKey,
-          newAuthority: authority.publicKey,
+          newAuthority: somebody.publicKey,
           network: networkAccount,
           programAccount: program.programId,
           programData: programDataAddress,
         })
         .signers([another_authority])
+        .rpc();
+
+      const fetchedNetworkAccount = await program.program.account.network.fetch(
+        networkAccount
+      );
+
+      expect(fetchedNetworkAccount.authority).toEqual(somebody.publicKey);
+    });
+
+    it("success - program upgrade authority as signer", async () => {
+      const [networkAccount] = program.findNetworkAddress(networkName);
+
+      await program.program.methods
+        .setAuthority()
+        .accounts({
+          authority: authority.publicKey,
+          newAuthority: authority.publicKey,
+          network: networkAccount,
+          programAccount: program.programId,
+          programData: programDataAddress,
+        })
         .rpc();
 
       const fetchedNetworkAccount = await program.program.account.network.fetch(
