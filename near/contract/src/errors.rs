@@ -8,3 +8,8 @@ pub const ERROR_INVALID_STAKE_AMOUNT: &str = "Invalid stake amount";
 pub const ERROR_REPORTER_IS_ACTIVE: &str = "Reporter is active";
 pub const ERROR_REPORTER_IS_INACTIVE: &str = "Reporter is inactive";
 pub const ERROR_UNLOCK_DURATION_NOT_PASSED: &str = "Unlock duration not passed";
+
+// Case errors
+pub const ERROR_INVALID_ROLE: &str = "Invalid role";
+pub const ERROR_LONG_NAME: &str = "Name is too long";
+pub const ERROR_CASE_NOT_FOUND: &str = "Case not found";
