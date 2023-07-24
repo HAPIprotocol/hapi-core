@@ -7,7 +7,7 @@ use near_sdk::{
 
 use workspaces::AccountId;
 
-use crate::TestContext;
+use crate::context::TestContext;
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -40,29 +40,20 @@ pub struct RewardConfiguration {
     pub reward_amounts: RewardAmounts,
 }
 
+pub const UNLOCK_DURATION: u64 = 60; // in seconds
+pub const STAKE_AMOUNTS: StakeAmounts = StakeAmounts {
+    validator: U128(30),
+    tracer: U128(20),
+    publisher: U128(10),
+    authority: U128(50),
+};
+
 impl TestContext {
     pub async fn get_stake_configuration(&self) -> StakeConfiguration {
-        json!({
-            "stake_configuration": {
-                "token": self.stake_token.id,
-                "unlock_duration": 60,
-                "stake_amounts": {
-                    "validator": "30",
-                    "tracer": "20",
-                    "publisher": "10",
-                    "authority": "50"
-                }
-            }
-        });
         StakeConfiguration {
             token: self.stake_token.id.clone(),
-            unlock_duration: 60,
-            stake_amounts: StakeAmounts {
-                validator: 30.into(),
-                tracer: 20.into(),
-                publisher: 10.into(),
-                authority: 50.into(),
-            },
+            unlock_duration: UNLOCK_DURATION,
+            stake_amounts: STAKE_AMOUNTS,
         }
     }
 

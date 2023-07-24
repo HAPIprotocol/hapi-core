@@ -1,6 +1,9 @@
 use near_sdk::{env, near_bindgen, require, AccountId};
 
-use crate::{Contract, ContractExt, RewardConfiguration, StakeConfiguration, ERROR_ONLY_AUTHORITY};
+use crate::{
+    reward::RewardConfiguration, stake::StakeConfiguration, Contract, ContractExt,
+    ERROR_ONLY_AUTHORITY,
+};
 
 #[near_bindgen]
 impl Contract {
@@ -28,7 +31,7 @@ impl Contract {
 }
 
 impl Contract {
-    fn assert_authority(&self) {
+    pub(crate) fn assert_authority(&self) {
         require!(
             env::predecessor_account_id().eq(&self.authority),
             ERROR_ONLY_AUTHORITY

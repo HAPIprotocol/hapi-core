@@ -1,11 +1,12 @@
 use crate::{
+    context::TestContext,
+    errors::ERROR_ONLY_AUTHORITY,
     utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
-    TestContext,
 };
 use near_sdk::serde_json::json;
 
 mod helpers;
-use helpers::*;
+pub use helpers::*;
 
 #[tokio::test]
 async fn test_configuration() {
@@ -66,4 +67,38 @@ async fn test_configuration() {
         .transact()
         .await
         .assert_success("set authority");
+}
+
+// All methods must be called not from authority.
+
+#[tokio::test]
+async fn authority_methods() {
+    let context = TestContext::new().await;
+
+    //  update stake configuration(fail)
+    context
+        .user_1
+        .call(&context.contract.id(), "update_stake_configuration")
+        .args_json(json!({"stake_configuration":context.get_stake_configuration().await}))
+        .transact()
+        .await
+        .assert_failure("update stake configuration", ERROR_ONLY_AUTHORITY);
+
+    //  update reward configuration(fail)
+    context
+        .user_1
+        .call(&context.contract.id(), "update_reward_configuration")
+        .args_json(json!({"reward_configuration":context.get_reward_configuration().await}))
+        .transact()
+        .await
+        .assert_failure("update reward configuration", ERROR_ONLY_AUTHORITY);
+
+    // set authority(fail)
+    context
+        .user_1
+        .call(&context.contract.id(), "set_authority")
+        .args_json(json!({"authority": context.user_1.id()}))
+        .transact()
+        .await
+        .assert_failure("set authority", ERROR_ONLY_AUTHORITY);
 }

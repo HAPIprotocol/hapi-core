@@ -16,6 +16,9 @@ For building in docker use `build_docker.sh` script located in **near** folder.
 export NEAR_ENV=testnet
 export AUTHORITY_ID=authority.near
 export CONTRACT_ID=contract.near
+export REPORTER_ID=reporter.near
+export STAKE_TOKEN=stake.near
+export REWARD_TOKEN=reward.near
 ```
 
 ### For creating the new account for deploying contract use next command
@@ -28,4 +31,103 @@ near create-account $CONTRACT_ID --masterAccount $AUTHORITY_ID --initialBalance 
 
 ```bash
 near deploy $CONTRACT_ID --wasmFile=res/hapi_core_near_release.wasm
+```
+
+## View methods
+
+## Get configuration
+
+Returns a tuple of Stake and Reward configurations.
+
+```bash
+near view $CONTRACT_ID get_configuration '{}'
+```
+
+### Get reporter
+
+```bash
+near view $CONTRACT_ID get_reporter '{"id": "UUID"}'
+```
+
+### Get reporters
+
+```bash
+near view $CONTRACT_ID get_reporters '{"take": 10, "skip": 0}'
+```
+
+### Get reporters count
+
+```bash
+near view $CONTRACT_ID get_reporters_count '{}'
+```
+
+### Get reporter by account
+
+```bash
+near view $CONTRACT_ID get_reporter_by_account '{"account_id": "'$REPORTER_ID'"}'
+```
+
+## Contract configuration
+
+### Set authority
+
+Callable from authority only.
+
+```bash
+near call $CONTRACT_ID set_authority '{"authority": "'$AUTHORITY_ID'"}' --accountId $AUTHORITY_ID
+```
+
+### Update stake configuration
+
+Callable from authority only.
+
+```bash
+near call $CONTRACT_ID update_stake_config '{"stake_configuration": {"token": "'$STAKE_TOKEN'", "unlock_duration": 420, "stake_amounts": {"validator": "5", "tracer": "10", "publisher": "15", "authority": "20"}}}' --accountId $AUTHORITY_ID
+```
+
+### Update reward configuration
+
+Callable from authority only.
+
+```bash
+near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "reward_amounts": {"address_confirmation": "4", "address_trace": "20"}}}' --accountId $AUTHORITY_ID
+```
+
+## Reporter management
+
+### Create reporter
+
+Callable from authority only.
+
+```bash
+near call $CONTRACT_ID create_reporter '{"id": "", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
+```
+
+### Update reporter
+
+Callable from authority only.
+
+```bash
+near call $CONTRACT_ID update_reporter '{"id": "", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
+```
+
+### Activate reporter
+
+```bash
+near call $STAKE_TOKEN ft_transfer_call '{"receiver_id": "'$CONTRACT_ID'", "amount": "1000000", "msg": "", "memo": ""}' --account_id $REPORTER_ID --depositYocto 1 --gas=100000000000000```
+
+### Deactivate reporter
+
+Callable from reporter for itself only.
+
+```bash
+near call $CONTRACT_ID deactivate_reporter '{}' --accountId $REPORTER_ID
+```
+
+### Unstake
+
+Callable from reporter for itself only.
+
+```bash
+near call $CONTRACT_ID unstake '{}' --accountId $REPORTER_ID --gas=60000000000000
 ```

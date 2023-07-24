@@ -76,4 +76,8 @@ impl TestContext {
 
         this
     }
+
+    pub async fn fast_forward(&self, seconds: u64) {
+        assert!(self.worker.fast_forward(seconds).await.is_ok());
+    }
 }

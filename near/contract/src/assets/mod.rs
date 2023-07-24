@@ -7,6 +7,7 @@ use near_sdk::{
 use crate::{CaseId, Category, ReporterId, RiskScore};
 
 mod v_asset;
+pub use v_asset::VAsset;
 
 pub type AssetID = String;
 
