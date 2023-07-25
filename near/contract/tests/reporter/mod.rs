@@ -8,7 +8,7 @@ use crate::{
 use near_sdk::serde_json::json;
 
 mod helpers;
-use helpers::{Reporter, ReporterStatus, Role};
+pub use helpers::{Reporter, ReporterId, ReporterStatus, Role};
 use uuid::Uuid;
 
 #[tokio::test]

@@ -1,6 +1,6 @@
 use crate::{
-    reporter::Role, utils::MAX_NAME_LENGTH, Contract, ContractExt, ERROR_CASE_NOT_FOUND,
-    ERROR_INVALID_ROLE, ERROR_LONG_NAME, ERROR_REPORTER_IS_INACTIVE,
+    reporter::Role, utils::MAX_NAME_LENGTH, Contract, ContractExt, ERROR_CASE_ALREADY_EXISTS,
+    ERROR_CASE_NOT_FOUND, ERROR_INVALID_ROLE, ERROR_LONG_NAME, ERROR_REPORTER_IS_INACTIVE,
 };
 use near_sdk::{env, near_bindgen, require};
 
@@ -21,6 +21,8 @@ impl Contract {
                 env::panic_str(ERROR_INVALID_ROLE);
             }
         }
+
+        require!(self.cases.get(&id).is_none(), ERROR_CASE_ALREADY_EXISTS);
 
         let case = Case {
             id: id.clone(),

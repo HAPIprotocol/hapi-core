@@ -13,3 +13,4 @@ pub const ERROR_UNLOCK_DURATION_NOT_PASSED: &str = "Unlock duration not passed";
 pub const ERROR_INVALID_ROLE: &str = "Invalid role";
 pub const ERROR_LONG_NAME: &str = "Name is too long";
 pub const ERROR_CASE_NOT_FOUND: &str = "Case not found";
+pub const ERROR_CASE_ALREADY_EXISTS: &str = "Case already exists";
