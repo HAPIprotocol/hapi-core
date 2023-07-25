@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "types": [
+      "jest"
+    ],
+    "lib": [
+      "es2017"
+    ],
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "outDir": "out-tsc",
+    "rootDir": "./"
+  }
+}

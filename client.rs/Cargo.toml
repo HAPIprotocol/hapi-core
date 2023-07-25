@@ -1,0 +1,27 @@
+[package]
+name = "hapi-core-cli"
+authors = ["HAPI"]
+version = "0.1.0"
+edition = "2021"
+description = "Rust Client for HAPI Protocol contracts"
+
+[lib]
+crate-type = ["lib"]
+name = "hapi_core"
+
+[dependencies]
+async-trait = "0.1"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+anyhow = { version = "1" }
+clap = { version = "4", features = ["env"] }
+regex = "1"
+serde = "1"
+serde_json = "1"
+uuid = "1"
+
+# EVM dependencies
+ethers = "2"
+ethers-providers = "2"
+ethers-signers = "2"
+ethers-contract = "2"

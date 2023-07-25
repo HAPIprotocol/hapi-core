@@ -1,0 +1,24 @@
+[package]
+name = "hapi-core-near"
+authors = ["HAPI"]
+version = "0.1.0"
+edition = "2021"
+
+readme = "README.md"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+near-sdk = { version = "4.1.1" }
+near-contract-standards = "4.1.1"
+
+[dev-dependencies]
+uuid= { version = "1.4.0", features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]}
+workspaces = "0.7.0"
+tokio = { version = "1.29.1", features = ["full"] }
+anyhow = "1.0.71"
