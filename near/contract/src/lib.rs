@@ -12,7 +12,7 @@ pub mod errors;
 pub mod reporter;
 pub mod reward;
 pub mod stake;
-pub mod token_trasnferer;
+pub mod token_transferer;
 pub mod utils;
 
 pub use address::VAddress;

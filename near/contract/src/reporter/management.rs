@@ -6,8 +6,9 @@ use near_sdk::{
 
 use super::{Reporter, ReporterId, ReporterStatus, Role};
 use crate::{
-    Contract, ContractExt, TimestampExtension, ERROR_REPORTER_EXISTS, ERROR_REPORTER_IS_ACTIVE,
-    ERROR_REPORTER_IS_INACTIVE, ERROR_REPORTER_NOT_FOUND, ERROR_UNLOCK_DURATION_NOT_PASSED,
+    utils::MAX_NAME_LENGTH, Contract, ContractExt, TimestampExtension, ERROR_LONG_NAME,
+    ERROR_REPORTER_EXISTS, ERROR_REPORTER_IS_ACTIVE, ERROR_REPORTER_IS_INACTIVE,
+    ERROR_REPORTER_NOT_FOUND, ERROR_UNLOCK_DURATION_NOT_PASSED,
 };
 
 #[near_bindgen]
@@ -21,6 +22,8 @@ impl Contract {
         url: String,
     ) {
         self.assert_authority();
+
+        require!(name.len() <= MAX_NAME_LENGTH, ERROR_LONG_NAME);
 
         require!(self.reporters.get(&id).is_none(), ERROR_REPORTER_EXISTS);
         require!(
@@ -53,15 +56,27 @@ impl Contract {
     ) {
         self.assert_authority();
 
+        require!(name.len() <= MAX_NAME_LENGTH, ERROR_LONG_NAME);
+
         let mut reporter: Reporter = self
             .reporters
             .get(&id)
             .expect(ERROR_REPORTER_NOT_FOUND)
             .into();
-        reporter.account_id = account_id;
+
+        if reporter.account_id != account_id {
+            self.reporters_by_account
+                .remove(&reporter.account_id)
+                .expect(ERROR_REPORTER_NOT_FOUND);
+
+            reporter.account_id = account_id;
+            self.reporters_by_account.insert(&reporter.account_id, &id);
+        }
+
         reporter.name = name;
         reporter.role = role;
         reporter.url = url;
+
         self.reporters
             .insert(&reporter.id.clone(), &reporter.into());
     }

@@ -44,7 +44,6 @@ impl FungibleTokenReceiver for Contract {
     }
 }
 
-// #[near_bindgen]
 impl Contract {
     pub(crate) fn transfer_stake(
         &mut self,

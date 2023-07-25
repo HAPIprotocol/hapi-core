@@ -61,7 +61,7 @@ impl StakeConfiguration {
             Role::Authority => self.stake_amounts.authority.0,
             Role::Appraiser => 0,
         };
-        require!(amount.0 >= stake, ERROR_INVALID_STAKE_AMOUNT)
+        require!(amount.0 == stake, ERROR_INVALID_STAKE_AMOUNT)
     }
 
     pub fn assert_token_valid(&self) {

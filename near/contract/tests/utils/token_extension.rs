@@ -94,7 +94,7 @@ impl TestContext {
             .call(&token.id, "ft_transfer_call")
             .args_json(json!({
                 "receiver_id": self.contract.id(),
-                "amount": amount.to_decimals(token.decimals).to_string(),
+                "amount": amount.to_string(),
                 "msg": format!("")
             }))
             .deposit(ONE_YOCTO)
