@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-use crate::Case;
+use super::Case;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum VCase {

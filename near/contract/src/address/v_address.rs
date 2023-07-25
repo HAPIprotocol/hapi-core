@@ -1,6 +1,9 @@
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+
+use super::Address;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub enum VAddress{
+pub enum VAddress {
     Current(Address),
 }
 
@@ -17,5 +20,3 @@ impl From<VAddress> for Address {
         }
     }
 }
-
-

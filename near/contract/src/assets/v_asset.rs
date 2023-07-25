@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-use crate::Asset;
+use super::Asset;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum VAsset {

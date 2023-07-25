@@ -1,10 +1,11 @@
-pub mod context;
-pub mod utils;
-pub use context::*;
-pub use utils::*;
-
 mod configuration;
-mod errors;
+pub mod context;
+pub mod errors;
+mod reporter;
+mod utils;
+pub use configuration::*;
+pub use errors::*;
+pub use utils::*;
 
 pub const SHOW_LOGS: bool = false;
 pub const SHOW_DEFAULT_OUTPUT: bool = false;

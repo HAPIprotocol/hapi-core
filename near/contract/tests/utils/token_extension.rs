@@ -5,7 +5,7 @@ use near_contract_standards::storage_management::StorageBalanceBounds;
 use near_sdk::{json_types::U128, serde_json::json, ONE_YOCTO};
 use workspaces::{result::ExecutionFinalResult, AccountId, Contract};
 
-use crate::TestContext;
+use crate::context::TestContext;
 
 pub const TOKEN: &[u8] = include_bytes!("../../../res/fungible_token.wasm");
 
@@ -89,17 +89,16 @@ impl TestContext {
         sender: &workspaces::Account,
         token: &Token,
         amount: u128,
-        sale_id: u64,
     ) -> Result<ExecutionFinalResult, workspaces::error::Error> {
         sender
             .call(&token.id, "ft_transfer_call")
             .args_json(json!({
                 "receiver_id": self.contract.id(),
-                "amount": amount.to_decimals(token.decimals).to_string(),
-                "msg": format!("{{\"sale_id\":{}}}", sale_id)
+                "amount": amount.to_string(),
+                "msg": format!("")
             }))
             .deposit(ONE_YOCTO)
-            .gas(100.to_tgas())
+            .gas(60.to_tgas())
             .transact()
             .await
     }

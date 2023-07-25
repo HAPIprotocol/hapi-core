@@ -1,6 +1,6 @@
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    collections::UnorderedMap,
+    collections::{LookupMap, UnorderedMap},
     env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault,
 };
 
@@ -12,14 +12,17 @@ pub mod errors;
 pub mod reporter;
 pub mod reward;
 pub mod stake;
+pub mod token_transferer;
+pub mod utils;
 
-pub use address::Address;
-pub use assets::{Asset, AssetID};
-pub use case::{Case, CaseId};
+pub use address::VAddress;
+pub use assets::{AssetID, VAsset};
+pub use case::{CaseId, VCase};
 pub use errors::*;
-pub use reporter::{Reporter, ReporterId};
+pub use reporter::{ReporterId, VReporter};
 pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
+pub use utils::TimestampExtension;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum Category {
@@ -71,6 +74,7 @@ pub(crate) enum StorageKey {
     Assets,
     Cases,
     Reporters,
+    ReportersByAccount,
 }
 
 #[near_bindgen]
@@ -79,10 +83,11 @@ pub struct Contract {
     authority: AccountId,
     stake_configuration: StakeConfiguration,
     reward_configuration: RewardConfiguration,
-    reporters: UnorderedMap<ReporterId, Reporter>,
-    cases: UnorderedMap<CaseId, Case>,
-    addresses: UnorderedMap<AccountId, Address>,
-    assets: UnorderedMap<AssetID, Asset>,
+    reporters: UnorderedMap<ReporterId, VReporter>,
+    cases: UnorderedMap<CaseId, VCase>,
+    addresses: UnorderedMap<AccountId, VAddress>,
+    assets: UnorderedMap<AssetID, VAsset>,
+    reporters_by_account: LookupMap<AccountId, ReporterId>,
 }
 
 // init Contract
@@ -98,6 +103,7 @@ impl Contract {
             cases: UnorderedMap::new(StorageKey::Cases),
             addresses: UnorderedMap::new(StorageKey::Addresses),
             assets: UnorderedMap::new(StorageKey::Assets),
+            reporters_by_account: LookupMap::new(StorageKey::ReportersByAccount),
         }
     }
 }
