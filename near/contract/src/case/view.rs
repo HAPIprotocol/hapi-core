@@ -17,7 +17,7 @@ impl Contract {
             .collect()
     }
 
-    pub fn get_cases_count(&self) -> u64 {
+    pub fn get_case_count(&self) -> u64 {
         self.cases.len()
     }
 }
