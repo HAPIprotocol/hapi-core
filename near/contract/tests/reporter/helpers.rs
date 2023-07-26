@@ -1,8 +1,13 @@
+use crate::{utils::CallExecutionDetailsExtension, STAKE_AMOUNTS};
 use near_sdk::{
     json_types::U128,
     serde::{Deserialize, Serialize},
+    serde_json::json,
     AccountId, Timestamp,
 };
+use workspaces::Account;
+
+use crate::context::TestContext;
 pub type ReporterId = String;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -34,4 +39,30 @@ pub struct Reporter {
     pub stake: U128,
     pub url: String,
     pub unlock_timestamp: Timestamp,
+}
+
+impl TestContext {
+    pub async fn prepare_reporter(&self, id: uuid::Uuid, account: &Account, role: Role) {
+        let (role_str, amount) = match role {
+            Role::Validator => ("Validator", STAKE_AMOUNTS.validator),
+            Role::Tracer => ("Tracer", STAKE_AMOUNTS.tracer),
+            Role::Publisher => ("Publisher", STAKE_AMOUNTS.publisher),
+            Role::Authority => ("Authority", STAKE_AMOUNTS.authority),
+            Role::Appraiser => ("Appraiser", U128(0)),
+        };
+
+        self
+        .authority
+        .call(&self.contract.id(), "create_reporter")
+        .args_json(json!({"id": id.to_string(), "account_id": account.id(), "name": role_str, "role": role_str, "url": role_str.to_lowercase() + ".com"}))
+        .transact()
+        .await
+        .assert_success("create reporter");
+
+        if amount.0 > 0 {
+            self.ft_transfer_call(account, &self.stake_token, amount.0)
+                .await
+                .assert_success("activate reporter");
+        }
+    }
 }

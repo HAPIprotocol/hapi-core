@@ -1,7 +1,9 @@
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     collections::{LookupMap, UnorderedMap},
-    env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault,
+    env, near_bindgen,
+    serde::{Deserialize, Serialize},
+    AccountId, BorshStorageKey, PanicOnDefault,
 };
 
 pub mod address;
@@ -24,7 +26,8 @@ pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
 pub use utils::TimestampExtension;
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub enum Category {
     // HAPI returns 'None' when address wasn't find in database
     None,
@@ -75,6 +78,7 @@ pub(crate) enum StorageKey {
     Cases,
     Reporters,
     ReportersByAccount,
+    Confirmations { address: AccountId },
 }
 
 #[near_bindgen]

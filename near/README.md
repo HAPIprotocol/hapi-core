@@ -58,13 +58,57 @@ near view $CONTRACT_ID get_reporters '{"take": 10, "skip": 0}'
 ### Get reporters count
 
 ```bash
-near view $CONTRACT_ID get_reporters_count '{}'
+near view $CONTRACT_ID get_reporter_count '{}'
 ```
 
 ### Get reporter by account
 
 ```bash
 near view $CONTRACT_ID get_reporter_by_account '{"account_id": "'$REPORTER_ID'"}'
+```
+
+### Get case
+
+Returns a Case structure.
+
+```bash
+near view $CONTRACT_ID get_case '{"id": "UUID"}'
+```
+
+### Get cases
+
+Returns a vector of Case structures.
+
+```bash
+near view $CONTRACT_ID get_cases '{"take": 10, "skip": 0}'
+```
+
+### Get case count
+
+```bash
+near view $CONTRACT_ID get_case_count '{}'
+```
+
+### Get address
+
+Returns an AddressView structure.
+
+```bash
+near view $CONTRACT_ID get_address '{"address": "address.near"}'
+```
+
+### Get addresses
+
+Returns a vector of AddressView structures.
+
+```bash
+near view $CONTRACT_ID get_addresses '{"take": 10, "skip": 0}'
+```
+
+### Get address count
+
+```bash
+near view $CONTRACT_ID get_address_count '{}'
 ```
 
 ## Contract configuration
@@ -114,7 +158,8 @@ near call $CONTRACT_ID update_reporter '{"id": "", "account_id": "'$REPORTER_ID'
 ### Activate reporter
 
 ```bash
-near call $STAKE_TOKEN ft_transfer_call '{"receiver_id": "'$CONTRACT_ID'", "amount": "1000000", "msg": "", "memo": ""}' --account_id $REPORTER_ID --depositYocto 1 --gas=100000000000000```
+near call $STAKE_TOKEN ft_transfer_call '{"receiver_id": "'$CONTRACT_ID'", "amount": "1000000", "msg": "", "memo": ""}' --account_id $REPORTER_ID --depositYocto 1 --gas=100000000000000
+```
 
 ### Deactivate reporter
 
@@ -130,4 +175,38 @@ Callable from reporter for itself only.
 
 ```bash
 near call $CONTRACT_ID unstake '{}' --accountId $REPORTER_ID --gas=60000000000000
+```
+
+## Case management
+
+### Create case
+
+```bash
+near call $CONTRACT_ID create_case '{"id": "UUID", "name", "Case", "url": "case.com"}' --accountId $REPORTER_ID
+```
+
+### Update case
+
+```bash
+near call $CONTRACT_ID update_case '{"id": "UUID", "name", "Case", "status":"Closed", "url": "case.com"}' --accountId $REPORTER_ID
+```
+
+## Address management
+
+### Create address
+
+```bash
+near call $CONTRACT_ID create_address '{"address": "address.near", "category": "Scam", "risk_score": 5 "case_id": "UUID"}' --accountId $REPORTER_ID
+```
+
+### Update address
+
+```bash
+near call $CONTRACT_ID update_address '{"address": "address.near", "category": "Scam", "risk_score": 5 "case_id": "UUID"}' --accountId $REPORTER_ID
+```
+
+### Confirm address
+
+```bash
+near call $CONTRACT_ID confirm_address '{"address": "address.near"}' --accountId $REPORTER_ID
 ```
