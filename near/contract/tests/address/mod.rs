@@ -1,14 +1,15 @@
-mod helpers;
+use near_sdk::serde_json::json;
+use uuid::Uuid;
+
 use crate::{
     context::TestContext,
     reporter::Role,
     utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
     ERROR_CASE_NOT_FOUND,
 };
-use helpers::{Address, Category};
-use near_sdk::serde_json::json;
 
-use uuid::Uuid;
+mod helpers;
+use helpers::{Address, Category};
 
 #[tokio::test]
 async fn test_address() {

@@ -57,7 +57,7 @@ impl Contract {
         risk_score: RiskScore,
         case_id: CaseId,
     ) {
-        let address_entity = self.get_address_internal(address.clone());
+        let address_entity = self.get_address_internal(&address);
 
         let reporter = self.get_reporter_by_account(env::predecessor_account_id());
 
@@ -77,7 +77,7 @@ impl Contract {
         require!(self.cases.get(&case_id).is_some(), ERROR_CASE_NOT_FOUND);
         require!(risk_score <= MAX_RISK_SCORE, ERROR_INVALID_RISK_SCORE);
 
-        let mut address_entity: Address = self.get_address_internal(address.clone());
+        let mut address_entity: Address = self.get_address_internal(&address);
 
         address_entity.category = category;
         address_entity.risk_score = risk_score;
@@ -96,7 +96,7 @@ impl Contract {
             _ => env::panic_str(ERROR_INVALID_ROLE),
         }
 
-        let mut address_entity: Address = self.get_address_internal(address.clone());
+        let mut address_entity: Address = self.get_address_internal(&address);
 
         require!(
             address_entity.confirmations.insert(&reporter.id),

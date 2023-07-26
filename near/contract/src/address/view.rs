@@ -36,9 +36,9 @@ impl From<VAddress> for AddressView {
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_address(&self, address: AccountId) -> AddressView {
+    pub fn get_address(&self, address: &AccountId) -> AddressView {
         self.addresses
-            .get(&address)
+            .get(address)
             .expect(ERROR_ADDRESS_NOT_FOUND)
             .into()
     }
@@ -58,9 +58,9 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_address_internal(&self, address: AccountId) -> Address {
+    pub fn get_address_internal(&self, address: &AccountId) -> Address {
         self.addresses
-            .get(&address)
+            .get(address)
             .expect(ERROR_ADDRESS_NOT_FOUND)
             .into()
     }
