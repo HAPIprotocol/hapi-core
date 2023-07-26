@@ -14,3 +14,9 @@ pub const ERROR_INVALID_ROLE: &str = "Invalid role";
 pub const ERROR_LONG_NAME: &str = "Name is too long";
 pub const ERROR_CASE_NOT_FOUND: &str = "Case not found";
 pub const ERROR_CASE_ALREADY_EXISTS: &str = "Case already exists";
+
+// Address errors
+pub const ERROR_INVALID_RISK_SCORE: &str = "Invalid risk score";
+pub const ERROR_ADDRESS_NOT_FOUND: &str = "Address not found";
+pub const ERROR_ALREADY_CONFIRMED: &str = "Already confirmed";
+pub const ERROR_ADDRESS_ALREADY_EXISTS: &str = "Address already exists";
