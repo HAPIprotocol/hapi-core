@@ -1,9 +1,11 @@
 use crate::{
     context::TestContext,
+    reporter::Role,
     utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
-    ERROR_CASE_ALREADY_EXISTS, ERROR_INVALID_ROLE, STAKE_AMOUNTS,
+    ERROR_CASE_ALREADY_EXISTS, ERROR_INVALID_ROLE,
 };
 mod helpers;
+pub use helpers::CaseId;
 use helpers::{Case, CaseStatus};
 use near_sdk::serde_json::json;
 use uuid::Uuid;
@@ -27,21 +29,8 @@ async fn test_case() {
         .assert_success("update stake configuration");
 
     context
-        .authority
-        .call(&context.contract.id(), "create_reporter")
-        .args_json(json!({"id": publisher_id.to_string(), "account_id": context.user_1.id(), "name": "reporter", "role": "Publisher", "url": "reporter.com"}))
-        .transact()
-        .await
-        .assert_success("create reporter");
-
-    context
-        .ft_transfer_call(
-            &context.user_1,
-            &context.stake_token,
-            STAKE_AMOUNTS.publisher.0,
-        )
-        .await
-        .assert_success("activate reporter");
+        .prepare_reporter(publisher_id, &context.user_1, Role::Publisher)
+        .await;
 
     // create case
     context
@@ -107,7 +96,7 @@ async fn test_case() {
     // check number of cases
     let number_of_cases: u64 = context
         .user_1
-        .view(&context.contract.id(), "get_cases_count")
+        .view(&context.contract.id(), "get_case_count")
         .args_json(json!({}))
         .await
         .parse("get cases count");
@@ -124,21 +113,8 @@ async fn test_case() {
         .assert_success("update stake configuration");
 
     context
-    .authority
-    .call(&context.contract.id(), "create_reporter")
-    .args_json(json!({"id": tracer_id.to_string(), "account_id": context.user_2.id(), "name": "tracer", "role": "Tracer", "url": "tracer.com"}))
-    .transact()
-    .await
-    .assert_success("create tracer");
-
-    context
-        .ft_transfer_call(
-            &context.user_2,
-            &context.stake_token,
-            STAKE_AMOUNTS.tracer.0,
-        )
-        .await
-        .assert_success("activate tracer");
+        .prepare_reporter(tracer_id, &context.user_2, Role::Tracer)
+        .await;
 
     // create case
     context

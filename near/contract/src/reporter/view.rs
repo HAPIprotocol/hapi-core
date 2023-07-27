@@ -21,7 +21,7 @@ impl Contract {
             .collect()
     }
 
-    pub fn get_reporters_count(&self) -> u64 {
+    pub fn get_reporter_count(&self) -> u64 {
         self.reporters.len()
     }
 
