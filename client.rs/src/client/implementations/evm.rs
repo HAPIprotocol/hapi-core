@@ -1,9 +1,10 @@
 use async_trait::async_trait;
 use ethers::{
+    abi::Token,
     prelude::{abigen, SignerMiddleware},
     providers::{Http, Provider as EthersProvider},
     signers::{LocalWallet, Signer as EthersSigner},
-    types::{Address as EthAddress, H256},
+    types::Address as EthAddress,
 };
 use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
@@ -35,6 +36,19 @@ abigen!(
 pub(super) type Provider = EthersProvider<Http>;
 pub(super) type Signer = SignerMiddleware<Provider, LocalWallet>;
 
+const ZERO_PK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
+
+pub struct LogHeader {
+    pub name: String,
+    pub tokens: Vec<Token>,
+}
+
+impl LogHeader {
+    pub fn to_ref(&self) -> (&str, &[Token]) {
+        (self.name.as_str(), self.tokens.as_slice())
+    }
+}
+
 pub struct HapiCoreEvm {
     pub provider: Provider,
     pub signer: LocalWallet,
@@ -47,16 +61,10 @@ impl HapiCoreEvm {
         let provider = Provider::try_from(options.provider_url.as_str())
             .map_err(|e| ClientError::UrlParseError(format!("`provider-url`: {e}")))?;
 
-        let signer = LocalWallet::from_str(
-            options
-                .private_key
-                .unwrap_or(
-                    "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
-                )
-                .as_str(),
-        )
-        .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
-        .with_chain_id(options.chain_id.unwrap_or(31337_u64));
+        let signer =
+            LocalWallet::from_str(options.private_key.unwrap_or(ZERO_PK.to_string()).as_str())
+                .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
+                .with_chain_id(options.chain_id.unwrap_or(31337_u64));
 
         let client = Signer::new(provider.clone(), signer.clone());
 
@@ -78,12 +86,29 @@ impl HapiCoreEvm {
         })
     }
 
-    pub fn get_event_name_from_signature(&self, signature: H256) -> Option<String> {
-        self.contract
+    pub fn decode_event(&self, log: &ethers::types::Log) -> Result<LogHeader> {
+        let signature = log.topics.first().ok_or(ClientError::Ethers(format!(
+            "failed to decode event: no topics in log: {log:?}",
+        )))?;
+
+        let name = self
+            .contract
             .abi()
             .events()
-            .find(|e| e.signature() == signature)
+            .find(|e| e.signature() == *signature)
             .map(|e| e.name.to_string())
+            .ok_or(ClientError::Ethers(format!(
+                "failed to decode event: no event with signature `{signature}`",
+            )))?;
+
+        let tokens = self
+            .contract
+            .decode_event_raw(&name, log.topics.clone(), log.data.clone())
+            .map_err(|error| {
+                ClientError::Ethers(format!("failed to decode event `{name}`: {error}"))
+            })?;
+
+        Ok(LogHeader { name, tokens })
     }
 }
 
