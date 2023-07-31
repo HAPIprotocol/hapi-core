@@ -1,10 +1,13 @@
-use serde::Serialize;
-use std::str::FromStr;
+use serde::{de, Deserialize, Serialize};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 use uuid::Uuid;
 
 use super::{amount::Amount, result::ClientError};
 
-#[derive(Default, Clone, PartialEq, Debug, Serialize)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum ReporterRole {
     #[default]
     Validator = 0,
@@ -13,8 +16,21 @@ pub enum ReporterRole {
     Authority = 3,
 }
 
-impl std::fmt::Display for ReporterRole {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Serialize for ReporterRole {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for ReporterRole {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl Display for ReporterRole {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{}",
@@ -58,7 +74,7 @@ impl TryFrom<u8> for ReporterRole {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Debug, Serialize)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum ReporterStatus {
     #[default]
     Inactive = 0,
@@ -66,8 +82,21 @@ pub enum ReporterStatus {
     Unstaking = 2,
 }
 
-impl std::fmt::Display for ReporterStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Serialize for ReporterStatus {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for ReporterStatus {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl Display for ReporterStatus {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{}",
@@ -124,9 +153,8 @@ pub struct UpdateReporterInput {
     pub url: String,
 }
 
-#[derive(Default, Clone, Debug, Serialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Reporter {
-    #[serde(with = "super::uuid")]
     pub id: Uuid,
     pub account: String,
     pub role: ReporterRole,

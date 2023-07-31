@@ -1,14 +1,27 @@
-use serde::Serialize;
+use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
 use uuid::Uuid;
 
 use super::result::ClientError;
 
-#[derive(Default, Clone, PartialEq, Debug, Serialize)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum CaseStatus {
     #[default]
     Closed = 0,
     Open = 1,
+}
+
+impl Serialize for CaseStatus {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for CaseStatus {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(de::Error::custom)
+    }
 }
 
 impl std::fmt::Display for CaseStatus {
@@ -63,9 +76,8 @@ pub struct UpdateCaseInput {
     pub status: CaseStatus,
 }
 
-#[derive(Default, Clone, Debug, Serialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Case {
-    #[serde(with = "super::uuid")]
     pub id: Uuid,
     pub name: String,
     pub url: String,

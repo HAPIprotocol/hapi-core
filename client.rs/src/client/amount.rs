@@ -1,13 +1,22 @@
 use ethers::types::U256;
-use serde::Serialize;
+use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, PartialOrd, Eq)]
 pub struct Amount(U256);
 
 impl Serialize for Amount {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Amount {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        U256::from_dec_str(&s)
+            .map(Amount)
+            .map_err(de::Error::custom)
     }
 }
 

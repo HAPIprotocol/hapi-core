@@ -12,6 +12,7 @@ pub(crate) mod client;
 pub(crate) mod jobs;
 pub(crate) mod logic;
 pub(crate) mod persistence;
+pub(crate) mod push;
 pub(crate) mod server;
 pub(crate) mod state;
 
