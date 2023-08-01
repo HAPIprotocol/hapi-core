@@ -37,6 +37,7 @@ pub(super) type Provider = EthersProvider<Http>;
 pub(super) type Signer = SignerMiddleware<Provider, LocalWallet>;
 
 const ZERO_PK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
+const LOCAL_CHAIN_ID: u64 = 31337;
 
 pub struct LogHeader {
     pub name: String,
@@ -64,7 +65,7 @@ impl HapiCoreEvm {
         let signer =
             LocalWallet::from_str(options.private_key.unwrap_or(ZERO_PK.to_string()).as_str())
                 .map_err(|e| ClientError::Ethers(format!("`private-key`: {e}")))?
-                .with_chain_id(options.chain_id.unwrap_or(31337_u64));
+                .with_chain_id(options.chain_id.unwrap_or(LOCAL_CHAIN_ID));
 
         let client = Signer::new(provider.clone(), signer.clone());
 
