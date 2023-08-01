@@ -153,7 +153,7 @@ pub struct UpdateReporterInput {
     pub url: String,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Reporter {
     pub id: Uuid,
     pub account: String,

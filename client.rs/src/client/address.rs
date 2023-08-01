@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::category::Category;
@@ -17,7 +17,7 @@ pub struct UpdateAddressInput {
     pub category: Category,
 }
 
-#[derive(Default, Clone, Debug, Serialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Address {
     pub address: String,
     pub case_id: Uuid,

@@ -45,4 +45,10 @@ pub(crate) struct Indexer {
 
     /// The file to persist the indexer state in
     state_file: PathBuf,
+
+    /// The HTTP client to use for webhooks
+    web_client: reqwest::Client,
+
+    /// The URL to send webhooks to
+    webhook_url: String,
 }

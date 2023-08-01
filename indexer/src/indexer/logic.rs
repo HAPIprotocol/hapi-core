@@ -30,6 +30,8 @@ impl Indexer {
             jobs: VecDeque::new(),
             client: IndexerClient::new(cfg.network, &cfg.rpc_node_url, &cfg.contract_address)?,
             state_file: PathBuf::from(cfg.state_file),
+            web_client: reqwest::Client::new(),
+            webhook_url: cfg.webhook_url,
         })
     }
 

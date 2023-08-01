@@ -1,36 +1,36 @@
+use anyhow::Result;
 use serde::{de, Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
     str::FromStr,
 };
-use uuid::Uuid;
 
-use hapi_core::{
-    client::{
-        case::CaseStatus,
-        category::Category,
-        reporter::{ReporterRole, ReporterStatus},
-    },
-    Amount,
-};
+use hapi_core::client::{address::Address, asset::Asset, case::Case, reporter::Reporter};
 
+use super::Indexer;
+
+/// Webhook payload
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct PushPayload {
-    event: PushEvent,
-    mode: PushMode,
-    data: PushData,
+pub struct PushPayload {
+    pub event: PushEvent,
+    pub data: PushData,
 }
 
+/// Event data
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct PushEvent {
-    name: PushEventName,
-    tx_hash: String,
-    tx_index: u64,
-    timestamp: String,
+pub struct PushEvent {
+    /// Event name
+    pub name: PushEventName,
+    /// Hash of the transaction
+    pub tx_hash: String,
+    /// Index of the event in a transaction (for multi-instruction transactions, i.e. Solana)
+    pub tx_index: u64,
+    /// Timestamp of the transaction block
+    pub timestamp: u64,
 }
 
 #[derive(Debug, PartialEq)]
-enum PushEventName {
+pub enum PushEventName {
     Initialize,
     SetAuthority,
     UpdateStakeConfiguration,
@@ -114,85 +114,54 @@ impl FromStr for PushEventName {
     }
 }
 
-#[derive(Debug, PartialEq)]
-enum PushMode {
-    Create,
-    Update,
-}
-
-impl Serialize for PushMode {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_str(&self.to_string())
-    }
-}
-
-impl<'de> Deserialize<'de> for PushMode {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(de::Error::custom)
-    }
-}
-
-impl Display for PushMode {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match self {
-            Self::Create => write!(f, "create"),
-            Self::Update => write!(f, "update"),
-        }
-    }
-}
-
-impl FromStr for PushMode {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "create" => Ok(Self::Create),
-            "update" => Ok(Self::Update),
-            _ => Err(anyhow::anyhow!("invalid push mode")),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-enum PushData {
-    Address {
-        address: String,
-        category: Category,
-        risk_score: u8,
-        case_id: Uuid,
-        reporter_id: Uuid,
-        confirmations: u64,
-    },
-    Asset {
-        address: String,
-        asset_id: String,
-        category: Category,
-        risk_score: u8,
-        case_id: Uuid,
-        reporter_id: Uuid,
-        confirmations: u64,
-    },
-    Case {
-        id: Uuid,
-        name: String,
-        url: String,
-        status: CaseStatus,
-    },
-    Reporter {
-        id: Uuid,
-        account: String,
-        role: ReporterRole,
-        status: ReporterStatus,
-        name: String,
-        url: String,
-        stake: Amount,
-        unlock_timestamp: u64,
-    },
+pub enum PushData {
+    Address(Address),
+    Asset(Asset),
+    Case(Case),
+    Reporter(Reporter),
+}
+
+impl From<Address> for PushData {
+    fn from(address: Address) -> Self {
+        Self::Address(address)
+    }
+}
+
+impl From<Asset> for PushData {
+    fn from(asset: Asset) -> Self {
+        Self::Asset(asset)
+    }
+}
+
+impl From<Case> for PushData {
+    fn from(case: Case) -> Self {
+        Self::Case(case)
+    }
+}
+
+impl From<Reporter> for PushData {
+    fn from(reporter: Reporter) -> Self {
+        Self::Reporter(reporter)
+    }
+}
+
+impl Indexer {
+    pub(crate) async fn send_webhook(&self, payload: &PushPayload) -> Result<()> {
+        self.web_client
+            .post(&self.webhook_url)
+            .json(payload)
+            .send()
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use hapi_core::client::{address::Address, category::Category};
+
     use super::*;
 
     #[test]
@@ -204,17 +173,15 @@ mod tests {
                 tx_hash: "acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f"
                     .to_string(),
                 tx_index: 0,
-                timestamp: "2022-01-01T00:00:00Z".to_string(),
+                timestamp: 1690888679,
             },
-            mode: PushMode::Create,
-            data: PushData::Address {
+            data: PushData::Address(Address {
                 address: "0x922ffdfcb57de5dd6f641f275e98b684ce5576a3".to_string(),
                 case_id: uuid::uuid!("de1659f2-b802-49ee-98dd-6e4ce0453067"),
                 reporter_id: uuid::uuid!("1466cf4f-1d71-4153-b9ad-4a9c1b48101e"),
                 category: Category::None,
-                risk_score: 0,
-                confirmations: 0,
-            },
+                risk: 0,
+            }),
         };
 
         // Serialize the PushPayload to JSON
@@ -222,7 +189,7 @@ mod tests {
 
         assert_eq!(
             json,
-            r#"{"event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":"2022-01-01T00:00:00Z"},"entity":"address","mode":"create","data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","category":"None","risk_score":0,"case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","confirmations":0}}}"#
+            r#"{"event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":"2022-01-01T00:00:00Z"},"data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","risk":0,"category":"none"}}}"#
         );
 
         // Deserialize the JSON back into a PushPayload

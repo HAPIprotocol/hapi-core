@@ -37,6 +37,9 @@ pub(crate) struct IndexerConfiguration {
     /// The RPC node URL
     pub rpc_node_url: String,
 
+    /// URL to send webhooks to
+    pub webhook_url: String,
+
     /// The HAPI Core contract address
     pub contract_address: String,
 

@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use super::category::Category;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct AssetId(U256);
 
 impl Serialize for AssetId {
@@ -77,7 +77,7 @@ pub struct UpdateAssetInput {
     pub category: Category,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Asset {
     pub address: String,
     pub asset_id: AssetId,

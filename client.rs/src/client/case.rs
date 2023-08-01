@@ -76,7 +76,7 @@ pub struct UpdateCaseInput {
     pub status: CaseStatus,
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Case {
     pub id: Uuid,
     pub name: String,
