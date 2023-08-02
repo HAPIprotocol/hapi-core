@@ -30,10 +30,22 @@ near create-account $CONTRACT_ID --masterAccount $AUTHORITY_ID --initialBalance 
 ### Deploy contract
 
 ```bash
-near deploy $CONTRACT_ID --wasmFile=res/hapi_core_near_release.wasm
+near deploy $CONTRACT_ID --wasmFile=res/hapi_core_near.wasm
+```
+
+### Initialize contract
+
+```bash
+near call $CONTRACT_ID initialize '{}' --accountId $AUTHORITY_ID
 ```
 
 ## View methods
+
+### Get authority
+
+```bash
+near view $CONTRACT_ID get_authority '{}'
+```
 
 ## Get configuration
 

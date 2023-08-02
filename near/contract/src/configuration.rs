@@ -28,6 +28,10 @@ impl Contract {
             self.reward_configuration.clone(),
         )
     }
+
+    pub fn get_authority(&self) -> AccountId {
+        self.authority.clone()
+    }
 }
 
 impl Contract {
