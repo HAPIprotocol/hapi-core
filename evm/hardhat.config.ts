@@ -1,6 +1,7 @@
 import { HardhatUserConfig, task } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
+import "@nomicfoundation/hardhat-toolbox";
+import { Contract } from "ethers";
 
 const HARDHAT_NETWORK = process.env.HARDHAT_NETWORK || "hardhat";
 const HARDHAT_LOCALHOST_URL =
@@ -8,6 +9,9 @@ const HARDHAT_LOCALHOST_URL =
 
 const config: HardhatUserConfig = {
   defaultNetwork: HARDHAT_NETWORK,
+  typechain: {
+    target: "ethers-v6",
+  },
   solidity: {
     version: "0.8.18",
     settings: {
@@ -20,12 +24,15 @@ const config: HardhatUserConfig = {
   networks: {
     localhost: {
       url: HARDHAT_LOCALHOST_URL,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : undefined,
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : undefined,
     },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : undefined,
     },
     linea: {
       url: `https://linea-mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
@@ -53,41 +60,43 @@ function forceSignerGasPrice(hre: any, signer: any, gwei: string) {
 
 task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
   try {
-    const pk = process.env.PRIVATE_KEY;
+    const [signer] = await hre.ethers.getSigners();
 
-    if (!pk) {
-      throw new Error("No private key provided (use PRIVATE_KEY env var)");
+    if (!signer) {
+      throw new Error("No signer found");
+    } else {
+      console.log(`Using wallet: ${signer.address}`);
     }
 
-    const wallet = new hre.ethers.Wallet(pk, hre.ethers.provider);
+    console.log(`Using wallet: ${signer.address}`);
 
-    console.log(`Using wallet: ${wallet.address}`);
-
-    let network = await hre.ethers.provider.getNetwork();
+    const network = await hre.ethers.provider.getNetwork();
 
     console.log(`Deploying to '${network.name}' (${network.chainId})`);
 
-    const HapiCore = await hre.ethers.getContractFactory("HapiCore", wallet);
+    const HapiCore = await hre.ethers.getContractFactory("HapiCore", signer);
 
     const gasPrice = process.env.GAS_PRICE_GWEI;
     if (gasPrice) {
       console.log(`Enforcing gas price: ${gasPrice} Gwei`);
-      forceSignerGasPrice(hre, HapiCore.signer, gasPrice);
+      forceSignerGasPrice(hre, await hre.ethers.provider.getSigner(), gasPrice);
     }
 
-    const contract = await hre.upgrades.deployProxy(HapiCore, [], {
+    const contract = (await hre.upgrades.deployProxy(HapiCore as any, [], {
       initializer: "initialize",
       pollingInterval: Number(process.env.DEPLOY_POLLING_INTERVAL) || 10000,
       timeout: Number(process.env.DEPLOY_TIMEOUT) || 3600000,
-    });
+    })) as Contract;
 
-    await contract.deployed();
+    await contract.waitForDeployment();
+
+    const contractAddress = await contract.getAddress();
 
     const adminAddress = await hre.upgrades.erc1967.getAdminAddress(
-      contract.address
+      contractAddress
     );
     const implementationAddress =
-      await hre.upgrades.erc1967.getImplementationAddress(contract.address);
+      await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
 
     console.log(`HAPI Core deployed`, {
       contract: contract.address,
@@ -103,34 +112,34 @@ task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
 task("deploy-test-token", "Deploys the HAPI Test Token contract").setAction(
   async (_, hre) => {
     try {
-      const pk = process.env.PRIVATE_KEY;
+      const [signer] = await hre.ethers.getSigners();
 
-      if (!pk) {
-        throw new Error("No private key provided (use PRIVATE_KEY env var)");
+      if (!signer) {
+        throw new Error("No signer found");
+      } else {
+        console.log(`Using wallet: ${signer.address}`);
       }
 
-      const wallet = new hre.ethers.Wallet(pk, hre.ethers.provider);
+      console.log(`Using wallet: ${signer.address}`);
 
-      console.log(`Using wallet: ${wallet.address}`);
-
-      let network = await hre.ethers.provider.getNetwork();
+      const network = await hre.ethers.provider.getNetwork();
 
       console.log(`Deploying to '${network.name}' (${network.chainId})`);
 
-      const TestToken = await hre.ethers.getContractFactory("Token", wallet);
+      const TestToken = await hre.ethers.getContractFactory("Token", signer);
 
       const gasPrice = process.env.GAS_PRICE_GWEI;
       if (gasPrice) {
         console.log(`Enforcing gas price: ${gasPrice} Gwei`);
-        forceSignerGasPrice(hre, TestToken.signer, gasPrice);
+        forceSignerGasPrice(hre, signer, gasPrice);
       }
 
       const contract = await TestToken.deploy();
 
-      await contract.deployed();
+      await contract.waitForDeployment();
 
       console.log(`HAPI Test Token deployed`, {
-        contract: contract.address,
+        contract: await contract.getAddress(),
       });
     } catch (error) {
       console.error(`${error}`);
@@ -143,6 +152,14 @@ task("upgrade", "Upgrades the HAPI Core contract")
   .addParam("address", "Contract address")
   .setAction(async (args, hre) => {
     try {
+      let [signer] = await hre.ethers.getSigners();
+
+      if (!signer) {
+        throw new Error("No signer found");
+      } else {
+        console.log(`Using wallet: ${signer.address}`);
+      }
+
       let network = await hre.ethers.provider.getNetwork();
 
       console.log(`Deploying to '${network.name}' (${network.chainId})`);
@@ -152,18 +169,23 @@ task("upgrade", "Upgrades the HAPI Core contract")
       const gasPrice = process.env.GAS_PRICE_GWEI;
       if (gasPrice) {
         console.log(`Enforcing gas price: ${gasPrice} Gwei`);
-        forceSignerGasPrice(hre, HapiCore.signer, gasPrice);
+        forceSignerGasPrice(hre, signer, gasPrice);
       }
 
-      const contract = await hre.upgrades.upgradeProxy(args.address, HapiCore);
+      // await hre.upgrades.forceImport(args.address, HapiCore as any);
 
-      await contract.deployed();
+      const contract = await hre.upgrades.upgradeProxy(
+        args.address,
+        HapiCore as any
+      );
+
+      let contractAddress = await contract.getAddress();
 
       const adminAddress = await hre.upgrades.erc1967.getAdminAddress(
-        contract.address
+        contractAddress
       );
       const implementationAddress =
-        await hre.upgrades.erc1967.getImplementationAddress(contract.address);
+        await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
 
       console.log(`HAPI Core upgraded`, {
         contract: contract.address,

@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { BigNumber, constants } from "ethers";
 
 import { fixtureWithReporters } from "../setup";
 import { Category, randomId } from "../util";
@@ -23,7 +22,7 @@ describe("HapiCore: Asset", function () {
 
     const asset = {
       addr: "0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832",
-      assetId: BigNumber.from(1),
+      assetId: BigInt(1),
       caseId: case1.id,
       reporterId: reporters.publisher.id,
       risk: 5,
@@ -86,7 +85,7 @@ describe("HapiCore: Asset", function () {
 
     const asset = {
       addr: "0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832",
-      assetId: BigNumber.from(1),
+      assetId: BigInt(1),
       caseId: case1.id,
       reporterId: reporters.publisher.id,
       risk: 5,
@@ -94,10 +93,10 @@ describe("HapiCore: Asset", function () {
     };
 
     expect(await hapiCore.getAsset(asset.addr, asset.assetId)).to.deep.equal([
-      constants.AddressZero,
-      BigNumber.from(0),
-      constants.HashZero,
-      constants.HashZero,
+      "0x0000000000000000000000000000000000000000",
+      BigInt(0),
+      "0000000000000000000000000000000000000000000000000000000000000000",
+      "0000000000000000000000000000000000000000000000000000000000000000",
       0,
       0,
       0,
@@ -132,7 +131,7 @@ describe("HapiCore: Asset", function () {
 
     const asset = {
       addr: "0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832",
-      assetId: BigNumber.from(1),
+      assetId: BigInt(1),
       caseId: case1.id,
       reporterId: reporters.publisher.id,
       risk: 5,
@@ -188,7 +187,7 @@ describe("HapiCore: Asset", function () {
     };
     const asset = {
       addr: "0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832",
-      assetId: BigNumber.from(1),
+      assetId: BigInt(1),
       caseId: case1.id,
       reporterId: reporters.publisher.id,
       risk: 5,

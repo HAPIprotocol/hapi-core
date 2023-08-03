@@ -3,17 +3,20 @@ import { ethers, upgrades } from "hardhat";
 import { HapiCore } from "../typechain-types";
 import { IERC20 } from "../typechain-types";
 import { ReporterRole, randomId } from "./util";
+import { BaseContract, ContractFactory } from "ethers";
 
-export async function setupContract(): Promise<{ hapiCore: HapiCore }> {
-  const HapiCore = await ethers.getContractFactory("HapiCore");
+export async function setupContract(): Promise<{ hapiCore: HapiCore, contractAddress: string }> {
+  const HapiCoreFactory = await ethers.getContractFactory("HapiCore");
 
-  const contract = await upgrades.deployProxy(HapiCore, [], {
+  const contract = await upgrades.deployProxy(HapiCoreFactory as any, [], {
     initializer: "initialize",
   });
 
-  await contract.deployed();
+  await contract.waitForDeployment();
 
-  return { hapiCore: contract as HapiCore };
+  const contractAddress = contract.target.toString();
+
+  return { hapiCore: contract as unknown as BaseContract & HapiCore, contractAddress };
 }
 
 export async function basicFixture() {
@@ -41,6 +44,8 @@ export async function fixtureWithToken() {
   };
 
   const token = (await ethers.deployContract("Token")) as IERC20;
+  await token.waitForDeployment();
+
   await Promise.all([
     token.transfer(authority.address, cfg.AUTHORITY_STAKE * 2),
     token.transfer(publisher.address, cfg.PUBLISHER_STAKE * 2),
@@ -48,7 +53,7 @@ export async function fixtureWithToken() {
     token.transfer(tracer.address, cfg.TRACER_STAKE * 2),
     token.transfer(nobody.address, 10000),
     setup.hapiCore.updateStakeConfiguration(
-      token.address,
+      token.target.toString(),
       cfg.UNLOCK_DURATION,
       cfg.VALIDATOR_STAKE,
       cfg.TRACER_STAKE,
@@ -101,6 +106,8 @@ export async function fixtureWithReporters() {
     },
   };
 
+  let contractAddress = await hapiCore.waitForDeployment();
+
   await Promise.all([
     hapiCore.createReporter(
       reporters.authority.id,
@@ -132,16 +139,16 @@ export async function fixtureWithReporters() {
     ),
     token
       .connect(wallets.authority)
-      .approve(hapiCore.address, cfg.AUTHORITY_STAKE),
+      .approve(contractAddress, cfg.AUTHORITY_STAKE),
     token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE),
+      .approve(contractAddress, cfg.PUBLISHER_STAKE),
     token
       .connect(wallets.validator)
-      .approve(hapiCore.address, cfg.VALIDATOR_STAKE),
+      .approve(contractAddress, cfg.VALIDATOR_STAKE),
       token
       .connect(wallets.tracer)
-      .approve(hapiCore.address, cfg.TRACER_STAKE),
+      .approve(contractAddress, cfg.TRACER_STAKE),
   ]);
 
   await Promise.all([

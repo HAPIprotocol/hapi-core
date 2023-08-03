@@ -41,7 +41,7 @@ describe("HapiCore: Address", function () {
       .to.emit(hapiCore, "AddressCreated")
       .withArgs(address.addr, address.risk, address.category);
 
-    expect(await hapiCore.getAddress(address.addr)).to.deep.equal([
+    expect(await hapiCore.getFunction("getAddress")(address.addr)).to.deep.equal([
       address.addr,
       address.caseId,
       address.reporterId,
@@ -68,7 +68,7 @@ describe("HapiCore: Address", function () {
     const { hapiCore } = await loadFixture(fixtureWithReporters);
 
     expect(
-      await hapiCore.getAddress("0x9DDE9F8b85e4c4278545549e4eDF2E3E9d2c890E")
+      await hapiCore.getFunction("getAddress")("0x9DDE9F8b85e4c4278545549e4eDF2E3E9d2c890E")
     ).to.deep.equal([
       "0x0000000000000000000000000000000000000000",
       0,
@@ -129,7 +129,7 @@ describe("HapiCore: Address", function () {
       .to.emit(hapiCore, "AddressUpdated")
       .withArgs(address.addr, 10, Category.ChildAbuse);
 
-    expect(await hapiCore.getAddress(address.addr)).to.deep.equal([
+    expect(await hapiCore.getFunction("getAddress")(address.addr)).to.deep.equal([
       address.addr,
       address.caseId,
       address.reporterId,

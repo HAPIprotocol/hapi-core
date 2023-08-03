@@ -1,8 +1,14 @@
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
+import { randomBytes } from "ethers";
+
+function uint8ArrayToBigInt(array: Uint8Array) {
+  let hex = [...array]
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  return BigInt('0x' + hex);
+}
 
 export function randomId() {
-  return BigNumber.from(ethers.utils.randomBytes(16));
+  return uint8ArrayToBigInt(randomBytes(16));
 }
 
 export enum ReporterRole {
