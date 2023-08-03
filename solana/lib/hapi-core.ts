@@ -32,9 +32,9 @@ export function encodeAddress(address: string): Buffer {
   return padBuffer(Buffer.from(address), 64);
 }
 
-export function decodeAddress(address: Buffer | Uint8Array | number[]): string {
+export function decodeAddress(address: BN | Buffer | Uint8Array | number[]): string {
   if (!(address instanceof Buffer)) {
-    address = Buffer.from(address);
+    address = Buffer.from(address instanceof BN ? address.toArray() : address);
   }
 
   return address.filter((b) => b).toString();

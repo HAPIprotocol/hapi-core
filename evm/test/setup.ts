@@ -1,9 +1,8 @@
 import { ethers, upgrades } from "hardhat";
+import { BaseContract } from "ethers";
 
-import { HapiCore } from "../typechain-types";
-import { IERC20 } from "../typechain-types";
+import { HapiCore, IERC20 } from "../typechain-types";
 import { ReporterRole, randomId } from "./util";
-import { BaseContract, ContractFactory } from "ethers";
 
 export async function setupContract(): Promise<{ hapiCore: HapiCore, contractAddress: string }> {
   const HapiCoreFactory = await ethers.getContractFactory("HapiCore");
@@ -106,7 +105,7 @@ export async function fixtureWithReporters() {
     },
   };
 
-  let contractAddress = await hapiCore.waitForDeployment();
+  let contractAddress = (await hapiCore.waitForDeployment()).target;
 
   await Promise.all([
     hapiCore.createReporter(

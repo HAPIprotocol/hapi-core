@@ -1,6 +1,4 @@
-import { Contract } from "@ethersproject/contracts";
-import type { Provider } from "@ethersproject/providers";
-import type { Signer } from "@ethersproject/abstract-signer";
+import { Signer, Provider, Contract } from "ethers";
 
 export function getTokenContract(
   tokenAddress: string,
