@@ -10,4 +10,3 @@ pub mod network;
 pub mod reporter;
 pub mod result;
 pub mod token;
-mod uuid;

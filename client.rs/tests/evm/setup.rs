@@ -7,11 +7,9 @@ use std::{
     ffi::OsStr,
     process::{Command, Stdio},
     str::FromStr,
-    thread::sleep,
-    time::Duration,
 };
 
-use super::fixtures::*;
+use super::{fixtures::*, util::wait_for_port};
 
 pub struct Setup {
     pub token_contract: String,
@@ -83,7 +81,7 @@ impl Setup {
             .expect("Failed to execute command");
 
         println!("==> Waiting for the node to start [{port}]");
-        sleep(Duration::from_millis(1000));
+        wait_for_port(port);
 
         println!("==> Deploying the contract [{port}]");
         ensure_cmd(
