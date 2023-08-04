@@ -58,7 +58,7 @@ near view $CONTRACT_ID get_configuration '{}'
 ### Get reporter
 
 ```bash
-near view $CONTRACT_ID get_reporter '{"id": "UUID"}'
+near view $CONTRACT_ID get_reporter '{"id": "42"}'
 ```
 
 ### Get reporters
@@ -156,7 +156,7 @@ near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"t
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID create_reporter '{"id": "", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID create_reporter '{"id": "42", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
 ```
 
 ### Update reporter
@@ -164,7 +164,7 @@ near call $CONTRACT_ID create_reporter '{"id": "", "account_id": "'$REPORTER_ID'
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID update_reporter '{"id": "", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID update_reporter '{"id": "42", "account_id": "'$REPORTER_ID'", "name": "reporter", "role": "Publisher", "url": "reporter.com"}' --accountId $AUTHORITY_ID
 ```
 
 ### Activate reporter
@@ -194,13 +194,13 @@ near call $CONTRACT_ID unstake '{}' --accountId $REPORTER_ID --gas=6000000000000
 ### Create case
 
 ```bash
-near call $CONTRACT_ID create_case '{"id": "UUID", "name", "Case", "url": "case.com"}' --accountId $REPORTER_ID
+near call $CONTRACT_ID create_case '{"id": "42", "name": "Case", "url": "case.com"}' --accountId $REPORTER_ID
 ```
 
 ### Update case
 
 ```bash
-near call $CONTRACT_ID update_case '{"id": "UUID", "name", "Case", "status":"Closed", "url": "case.com"}' --accountId $REPORTER_ID
+near call $CONTRACT_ID update_case '{"id": "42", "name": "Case", "status":"Closed", "url": "case.com"}' --accountId $REPORTER_ID
 ```
 
 ## Address management
@@ -208,13 +208,13 @@ near call $CONTRACT_ID update_case '{"id": "UUID", "name", "Case", "status":"Clo
 ### Create address
 
 ```bash
-near call $CONTRACT_ID create_address '{"address": "address.near", "category": "Scam", "risk_score": 5 "case_id": "UUID"}' --accountId $REPORTER_ID
+near call $CONTRACT_ID create_address '{"address": "address.near", "category": "Scam", "risk_score": 5, "case_id": "UUID"}' --accountId $REPORTER_ID
 ```
 
 ### Update address
 
 ```bash
-near call $CONTRACT_ID update_address '{"address": "address.near", "category": "Scam", "risk_score": 5 "case_id": "UUID"}' --accountId $REPORTER_ID
+near call $CONTRACT_ID update_address '{"address": "address.near", "category": "Scam", "risk_score": 5, "case_id": "UUID"}' --accountId $REPORTER_ID
 ```
 
 ### Confirm address
