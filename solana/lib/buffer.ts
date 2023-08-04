@@ -83,8 +83,8 @@ export function uuidToBn(id: string): BN {
   return new BN(uuidParse(id), "be");
 }
 
-export function bnToUuid(id: BN): string {
-  const buf = id.toArray("be");
+export function bnToUuid(id: BN | number[]): string {
+  const buf = id instanceof Array ? id : id.toArray("be");
 
   if (buf.length != 16) {
     throw RangeError("Invalid UUID");

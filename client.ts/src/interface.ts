@@ -51,6 +51,21 @@ export enum ReporterRole {
   Authority = 3,
 }
 
+export function intoReporterRole(value: bigint): ReporterRole {
+  switch (value) {
+    case BigInt(0):
+      return ReporterRole.Validator;
+    case BigInt(1):
+      return ReporterRole.Tracer;
+    case BigInt(2):
+      return ReporterRole.Publisher;
+    case BigInt(3):
+      return ReporterRole.Authority;
+    default:
+      throw new Error(`Unsupported reporter role: ${value}`);
+  }
+}
+
 export const ReporterRoleNames = [
   "Validator",
   "Tracer",
@@ -64,11 +79,35 @@ export enum ReporterStatus {
   Unstaking = 2,
 }
 
+export function intoReporterStatus(value: bigint): ReporterStatus {
+  switch (value) {
+    case BigInt(0):
+      return ReporterStatus.Inactive;
+    case BigInt(1):
+      return ReporterStatus.Active;
+    case BigInt(2):
+      return ReporterStatus.Unstaking;
+    default:
+      throw new Error(`Unsupported reporter status: ${value}`);
+  }
+}
+
 export const ReporterStatusNames = ["Inactive", "Active", "Unstaking"];
 
 export enum CaseStatus {
   Closed = 0,
   Open = 1,
+}
+
+export function intoCaseStatus(value: bigint): CaseStatus {
+  switch (value) {
+    case BigInt(0):
+      return CaseStatus.Closed;
+    case BigInt(1):
+      return CaseStatus.Open;
+    default:
+      throw new Error(`Unsupported case status: ${value}`);
+  }
 }
 
 export const CaseStatusNames = ["Closed", "Open"];
@@ -95,6 +134,55 @@ export enum Category {
   ChildAbuse = 18,
   Hacker = 19,
   HighRiskJurisdiction = 20,
+}
+
+export function intoCategory(value: bigint): Category {
+  switch (value) {
+    case BigInt(0):
+      return Category.None;
+    case BigInt(1):
+      return Category.WalletService;
+    case BigInt(2):
+      return Category.MerchantService;
+    case BigInt(3):
+      return Category.MiningPool;
+    case BigInt(4):
+      return Category.Exchange;
+    case BigInt(5):
+      return Category.DeFi;
+    case BigInt(6):
+      return Category.OTCBroker;
+    case BigInt(7):
+      return Category.ATM;
+    case BigInt(8):
+      return Category.Gambling;
+    case BigInt(9):
+      return Category.IllicitOrganization;
+    case BigInt(10):
+      return Category.Mixer;
+    case BigInt(11):
+      return Category.DarknetService;
+    case BigInt(12):
+      return Category.Scam;
+    case BigInt(13):
+      return Category.Ransomware;
+    case BigInt(14):
+      return Category.Theft;
+    case BigInt(15):
+      return Category.Counterfeit;
+    case BigInt(16):
+      return Category.TerroristFinancing;
+    case BigInt(17):
+      return Category.Sanctions;
+    case BigInt(18):
+      return Category.ChildAbuse;
+    case BigInt(19):
+      return Category.Hacker;
+    case BigInt(20):
+      return Category.HighRiskJurisdiction;
+    default:
+      throw new Error(`Unsupported category: ${value}`);
+  }
 }
 
 export const CategoryNames = [
