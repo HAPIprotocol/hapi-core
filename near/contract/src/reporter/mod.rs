@@ -11,7 +11,9 @@ mod view;
 
 pub use v_reporter::VReporter;
 
-pub type ReporterId = String;
+use crate::utils::UUID;
+
+pub type ReporterId = UUID;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

@@ -25,7 +25,7 @@ impl Contract {
         require!(self.cases.get(&id).is_none(), ERROR_CASE_ALREADY_EXISTS);
 
         let case = Case {
-            id: id.clone(),
+            id,
             name,
             reporter_id: reporter.id,
             status: CaseStatus::Open,

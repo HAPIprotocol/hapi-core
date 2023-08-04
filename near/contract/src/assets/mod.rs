@@ -4,12 +4,12 @@ use near_sdk::{
     AccountId,
 };
 
-use crate::{CaseId, Category, ReporterId, RiskScore};
+use crate::{utils::UUID, CaseId, Category, ReporterId, RiskScore};
 
 mod v_asset;
 pub use v_asset::VAsset;
 
-pub type AssetID = String;
+pub type AssetId = UUID;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Asset {

@@ -3,14 +3,14 @@ use near_sdk::{
     serde::{Deserialize, Serialize},
 };
 
-use crate::ReporterId;
+use crate::{utils::UUID, ReporterId};
 
 mod management;
 mod v_case;
 mod view;
 pub use v_case::VCase;
 
-pub type CaseId = String;
+pub type CaseId = UUID;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

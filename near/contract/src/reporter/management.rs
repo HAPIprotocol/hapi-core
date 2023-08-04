@@ -32,7 +32,7 @@ impl Contract {
         );
 
         let reporter = Reporter {
-            id: id.clone(),
+            id,
             account_id: account_id.clone(),
             name,
             role,
