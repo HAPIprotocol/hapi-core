@@ -172,7 +172,9 @@ task("upgrade", "Upgrades the HAPI Core contract")
         forceSignerGasPrice(hre, signer, gasPrice);
       }
 
-      // await hre.upgrades.forceImport(args.address, HapiCore as any);
+      if (!!process.env.FORCE_IMPORT) {
+        await hre.upgrades.forceImport(args.address, HapiCore as any);
+      }
 
       const contract = await hre.upgrades.upgradeProxy(
         args.address,
