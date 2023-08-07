@@ -6,7 +6,7 @@ import { ReporterRole, ReporterStatus, randomId } from "../util";
 
 describe("HapiCore: Reporter staking", function () {
   it("Should stake for a reporter", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -35,7 +35,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     expect(await hapiCore.connect(wallets.publisher).activateReporter())
       .to.emit(hapiCore, "ReporterActivated")
@@ -54,11 +54,11 @@ describe("HapiCore: Reporter staking", function () {
 
     const balanceAfter = await token.balanceOf(wallets.publisher.address);
 
-    expect(balanceBefore.sub(balanceAfter)).to.equal(cfg.PUBLISHER_STAKE);
+    expect(balanceBefore - balanceAfter).to.equal(cfg.PUBLISHER_STAKE);
   });
 
   it("Should not stake for a reporter if not enough balance", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -92,7 +92,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await expect(
       hapiCore.connect(wallets.publisher).activateReporter()
@@ -100,7 +100,7 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not be able to activate someone else's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -122,7 +122,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.nobody)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await expect(
       hapiCore.connect(wallets.nobody).activateReporter()
@@ -130,7 +130,7 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should deactivate a reporter", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -152,7 +152,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await hapiCore.connect(wallets.publisher).activateReporter();
 
@@ -184,7 +184,7 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not be able to deactivate someone else's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -206,13 +206,13 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await hapiCore.connect(wallets.publisher).activateReporter();
 
     await token
       .connect(wallets.nobody)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await expect(
       hapiCore.connect(wallets.nobody).deactivateReporter()
@@ -220,7 +220,7 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should be able to unstake tokens after unlock duration", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -244,7 +244,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await hapiCore.connect(wallets.publisher).activateReporter();
 
@@ -273,7 +273,7 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not be able to unstake other's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg } = await loadFixture(
+    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
       fixtureWithToken
     );
 
@@ -297,7 +297,7 @@ describe("HapiCore: Reporter staking", function () {
 
     await token
       .connect(wallets.publisher)
-      .approve(hapiCore.address, cfg.PUBLISHER_STAKE);
+      .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
     await hapiCore.connect(wallets.publisher).activateReporter();
 
@@ -311,6 +311,6 @@ describe("HapiCore: Reporter staking", function () {
 
     const balanceAfter = await token.balanceOf(wallets.publisher.address);
 
-    expect(balanceBefore.sub(balanceAfter)).to.equal(cfg.PUBLISHER_STAKE);
+    expect(balanceBefore - balanceAfter).to.equal(cfg.PUBLISHER_STAKE);
   });
 });

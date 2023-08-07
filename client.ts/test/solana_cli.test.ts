@@ -248,7 +248,6 @@ describe("Solana Cli test", function () {
           NETWORK,
           reporter.id
         );
-
         const val = {
           id: bnToUuid(reporterData.id),
           account: reporterData.account.toString(),

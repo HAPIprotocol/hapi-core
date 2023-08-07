@@ -5,7 +5,6 @@ import {
   ReporterRole,
   ReporterStatus,
 } from "./interface";
-import { BigNumber } from "@ethersproject/bignumber";
 
 export function uuidToBigInt(input: string): BigInt {
   uuid.parse(input);
@@ -16,7 +15,7 @@ export function uuidToBigNumberish(input: string): string {
   return uuidToBigInt(input).toString();
 }
 
-export function bigIntToUuid(bigInt: BigInt | string | any) {
+export function intoUuid(bigInt: BigInt | string | any) {
   // Convert input to BigInt if necessary
   if (typeof bigInt === "string") {
     bigInt = BigInt(bigInt);

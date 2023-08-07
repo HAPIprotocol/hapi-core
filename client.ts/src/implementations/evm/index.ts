@@ -1,8 +1,6 @@
-import { JsonRpcProvider, Provider } from "@ethersproject/providers";
-import { Wallet } from "@ethersproject/wallet";
-import type { Signer } from "@ethersproject/abstract-signer";
+import { Contract, ContractFactory, JsonRpcProvider, Provider, Signer, Wallet } from "ethers";
 
-import * as typechain from "hapi-core-evm/typechain-types";
+const HapiCoreAbi = import("../../../../evm/artifacts/contracts/HapiCore.sol/HapiCore.json");
 
 import {
   Addr,
@@ -21,8 +19,12 @@ import {
   RewardConfiguration,
   StakeConfiguration,
   Uuid,
+  intoCaseStatus,
+  intoCategory,
+  intoReporterRole,
+  intoReporterStatus,
 } from "../../interface";
-import { bigIntToUuid, uuidToBigNumberish } from "../../util";
+import { intoUuid, uuidToBigNumberish } from "../../util";
 import { getTokenContract } from "./token";
 import { ReporterRoleToString } from "../../util";
 
@@ -39,7 +41,7 @@ export interface EvmProviderOptions {
 }
 
 export class HapiCoreEvm implements HapiCore {
-  private contract: typechain.HapiCore;
+  private contract: Contract;
   private provider: Provider;
   private signer?: Signer;
 
@@ -60,10 +62,11 @@ export class HapiCoreEvm implements HapiCore {
     this.provider = options.provider as Provider;
     this.signer = options.signer as Signer;
 
-    this.contract = typechain.HapiCore__factory.connect(
-      options.address || HapiCoreAddresses[options.network],
+    let factory = ContractFactory.fromSolidity(HapiCoreAbi).connect(
       options.signer || (options.provider as Provider)
     );
+
+    this.contract = factory.attach(options.address || HapiCoreAddresses[options.network]);
   }
 
   async setAuthority(address: Addr): Promise<Result> {
@@ -106,7 +109,7 @@ export class HapiCoreEvm implements HapiCore {
     const stakeConfiguration = await this.contract.stakeConfiguration();
     return {
       token: stakeConfiguration.token,
-      unlockDuration: stakeConfiguration.unlock_duration.toNumber(),
+      unlockDuration: Number(stakeConfiguration.unlock_duration),
       validatorStake: stakeConfiguration.validator_stake.toString(),
       tracerStake: stakeConfiguration.tracer_stake.toString(),
       publisherStake: stakeConfiguration.publisher_stake.toString(),
@@ -169,33 +172,34 @@ export class HapiCoreEvm implements HapiCore {
   async getReporter(id: Uuid): Promise<Reporter> {
     const reporter = await this.contract.getReporter(uuidToBigNumberish(id));
     return {
-      id: bigIntToUuid(reporter.id),
+      id: intoUuid(reporter.id),
       account: reporter.account,
-      role: reporter.role,
-      status: reporter.status,
+      role: intoReporterRole(reporter.role),
+      status: intoReporterStatus(reporter.status),
       name: reporter.name,
       url: reporter.url,
       stake: reporter.stake.toString(),
-      unlockTimestamp: reporter.unlock_timestamp.toNumber(),
+      unlockTimestamp: Number(reporter.unlock_timestamp),
     };
   }
 
   async getReporterCount(): Promise<number> {
     const count = await this.contract.getReporterCount();
-    return count.toNumber();
+    return Number(count);
   }
 
   async getReporters(skip: number, take: number): Promise<Reporter[]> {
     const reporters = await this.contract.getReporters(skip, take);
+
     return reporters.map((r) => ({
-      id: bigIntToUuid(r.id),
+      id: intoUuid(r.id),
       account: r.account,
-      role: r.role,
-      status: r.status,
+      role: intoReporterRole(r.role),
+      status: intoReporterStatus(r.status),
       name: r.name,
       url: r.url,
       stake: r.stake.toString(),
-      unlockTimestamp: r.unlock_timestamp.toNumber(),
+      unlockTimestamp: Number(r.unlock_timestamp),
     }));
   }
 
@@ -237,10 +241,10 @@ export class HapiCoreEvm implements HapiCore {
     console.log("Reporter ID:", id);
 
     const reporter = await this.contract.getReporter(id);
-    console.log("Role:", ReporterRoleToString(reporter.role));
+    console.log("Role:", ReporterRoleToString(intoReporterRole(reporter.role)));
 
     let stakeAmount;
-    switch (reporter.role) {
+    switch (intoReporterRole(reporter.role)) {
       case ReporterRole.Validator:
         stakeAmount = stakeConfiguration.validator_stake;
         break;
@@ -260,7 +264,7 @@ export class HapiCoreEvm implements HapiCore {
     console.log("Stake amount:", stakeAmount.toString());
 
     await stakeToken.approve(
-      this.contract.address,
+      this.contract.target,
       stakeConfiguration.authority_stake
     );
 
@@ -302,25 +306,25 @@ export class HapiCoreEvm implements HapiCore {
   async getCase(id: Uuid): Promise<Case> {
     const c = await this.contract.getCase(uuidToBigNumberish(id));
     return {
-      id: bigIntToUuid(c.id),
+      id: intoUuid(c.id),
       name: c.name,
       url: c.url,
-      status: c.status,
+      status: intoCaseStatus(c.status),
     };
   }
 
   async getCaseCount(): Promise<number> {
     const count = await this.contract.getCaseCount();
-    return count.toNumber();
+    return Number(count);
   }
 
   async getCases(skip: number, take: number): Promise<Case[]> {
     const cases = await this.contract.getCases(skip, take);
     return cases.map((c) => ({
-      id: bigIntToUuid(c.id),
+      id: intoUuid(c.id),
       name: c.name,
       url: c.url,
-      status: c.status,
+      status: intoCaseStatus(c.status),
     }));
   }
 
@@ -363,29 +367,29 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async getAddress(address: Addr): Promise<Address> {
-    const a = await this.contract.getAddress(address);
+    const a = await this.contract.getFunction("getAddress")(address);
     return {
       address: a.addr.toString(),
-      caseId: bigIntToUuid(a.case_id),
-      reporterId: bigIntToUuid(a.reporter_id),
-      risk: a.risk,
-      category: a.category,
+      caseId: intoUuid(a.case_id),
+      reporterId: intoUuid(a.reporter_id),
+      risk: Number(a.risk),
+      category: intoCategory(a.category),
     };
   }
 
   async getAddressCount(): Promise<number> {
     const count = await this.contract.getAddressCount();
-    return count.toNumber();
+    return Number(count);
   }
 
   async getAddresses(skip: number, take: number): Promise<Address[]> {
     const addresses = await this.contract.getAddresses(skip, take);
     return addresses.map((a) => ({
       address: a.addr.toString(),
-      caseId: bigIntToUuid(a.case_id),
-      reporterId: bigIntToUuid(a.reporter_id),
-      risk: a.risk,
-      category: a.category,
+      caseId: intoUuid(a.case_id),
+      reporterId: intoUuid(a.reporter_id),
+      risk: Number(a.risk),
+      category: intoCategory(a.category),
     }));
   }
 
@@ -438,16 +442,16 @@ export class HapiCoreEvm implements HapiCore {
     return {
       address: a.addr.toString(),
       assetId: a.asset_id.toString(),
-      caseId: bigIntToUuid(a.case_id),
+      caseId: intoUuid(a.case_id),
       reporterId: a.reporter_id.toString(),
-      risk: a.risk,
-      category: a.category,
+      risk: Number(a.risk),
+      category: intoCategory(a.category),
     };
   }
 
   async getAssetCount(): Promise<number> {
     const count = await this.contract.getAssetCount();
-    return count.toNumber();
+    return Number(count);
   }
 
   async getAssets(skip: number, take: number): Promise<Asset[]> {
@@ -455,10 +459,10 @@ export class HapiCoreEvm implements HapiCore {
     return assets.map((a) => ({
       address: a.addr.toString(),
       assetId: a.asset_id.toString(),
-      caseId: bigIntToUuid(a.case_id),
-      reporterId: bigIntToUuid(a.reporter_id),
-      risk: a.risk,
-      category: a.category,
+      caseId: intoUuid(a.case_id),
+      reporterId: intoUuid(a.reporter_id),
+      risk: Number(a.risk),
+      category: intoCategory(a.category),
     }));
   }
 

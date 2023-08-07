@@ -1,4 +1,4 @@
 /target
 /data
-configuration.toml
-secret.toml
+/configuration.toml
+/secret.toml

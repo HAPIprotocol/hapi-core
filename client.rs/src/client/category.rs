@@ -1,10 +1,13 @@
 use anyhow::anyhow;
-use serde::Serialize;
-use std::str::FromStr;
+use serde::{de, Deserialize, Serialize};
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 use super::result::ClientError;
 
-#[derive(Default, Clone, PartialEq, Debug, Serialize)]
+#[derive(Default, Clone, PartialEq, Debug)]
 pub enum Category {
     #[default]
     None = 0,
@@ -30,8 +33,21 @@ pub enum Category {
     HighRiskJurisdiction = 20,
 }
 
-impl std::fmt::Display for Category {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Serialize for Category {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Category {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl Display for Category {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{}",

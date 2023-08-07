@@ -15,7 +15,7 @@ use crate::{
     Amount,
 };
 
-use super::{error::map_ethers_error, Provider, Signer};
+use super::{error::map_ethers_error, Provider, Signer, LOCAL_CHAIN_ID};
 
 abigen!(
     TOKEN_CONTRACT,
@@ -33,7 +33,7 @@ impl TokenContractEvm {
 
         let signer = LocalWallet::from_str(options.private_key.unwrap_or_default().as_str())
             .map_err(|e| ClientError::Ethers(format!("`private_key`: {e}")))?
-            .with_chain_id(options.chain_id.unwrap_or(31337_u64));
+            .with_chain_id(options.chain_id.unwrap_or(LOCAL_CHAIN_ID));
 
         let client = Signer::new(provider, signer);
 

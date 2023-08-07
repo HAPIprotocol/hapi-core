@@ -1,16 +1,25 @@
 use ethers::types::U256;
-use serde::Serialize;
+use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
 use uuid::Uuid;
 
 use super::category::Category;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct AssetId(U256);
 
 impl Serialize for AssetId {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for AssetId {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        U256::from_dec_str(&s)
+            .map(AssetId)
+            .map_err(de::Error::custom)
     }
 }
 
@@ -68,13 +77,11 @@ pub struct UpdateAssetInput {
     pub category: Category,
 }
 
-#[derive(Default, Clone, Debug, Serialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Asset {
     pub address: String,
     pub asset_id: AssetId,
-    #[serde(with = "super::uuid")]
     pub case_id: Uuid,
-    #[serde(with = "super::uuid")]
     pub reporter_id: Uuid,
     pub risk: u8,
     pub category: Category,
