@@ -8,7 +8,7 @@ use near_sdk::{
 use workspaces::Account;
 
 use crate::context::TestContext;
-pub type ReporterId = String;
+pub type ReporterId = U128;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
@@ -42,7 +42,7 @@ pub struct Reporter {
 }
 
 impl TestContext {
-    pub async fn prepare_reporter(&self, id: uuid::Uuid, account: &Account, role: Role) {
+    pub async fn prepare_reporter(&self, id: U128, account: &Account, role: Role) {
         let (role_str, amount) = match role {
             Role::Validator => ("Validator", STAKE_AMOUNTS.validator),
             Role::Tracer => ("Tracer", STAKE_AMOUNTS.tracer),
@@ -51,13 +51,12 @@ impl TestContext {
             Role::Appraiser => ("Appraiser", U128(0)),
         };
 
-        self
-        .authority
-        .call(&self.contract.id(), "create_reporter")
-        .args_json(json!({"id": id.to_string(), "account_id": account.id(), "name": role_str, "role": role_str, "url": role_str.to_lowercase() + ".com"}))
-        .transact()
-        .await
-        .assert_success("create reporter");
+        self.authority
+            .call(&self.contract.id(), "create_reporter")
+            .args_json(json!({"id": id, "account_id": account.id(), "name": role_str, "role": role_str, "url": role_str.to_lowercase() + ".com"}))
+            .transact()
+            .await
+            .assert_success("create reporter");
 
         if amount.0 > 0 {
             self.ft_transfer_call(account, &self.stake_token, amount.0)

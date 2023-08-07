@@ -1,7 +1,7 @@
 use crate::reporter::ReporterId;
-use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::{serde::{Deserialize, Serialize}, json_types::U128};
 
-pub type CaseId = String;
+pub type CaseId = U128;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]

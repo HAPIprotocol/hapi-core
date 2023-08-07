@@ -1,4 +1,4 @@
-use near_sdk::serde_json::json;
+use near_sdk::{serde_json::json, json_types::U128};
 use uuid::Uuid;
 
 use crate::{
@@ -15,10 +15,10 @@ use helpers::{Address, Category};
 async fn test_address() {
     let context = TestContext::new().await;
 
-    let validator_id = Uuid::new_v4();
-    let tracer_id = Uuid::new_v4();
-    let authority_id = Uuid::new_v4();
-    let case_id = Uuid::new_v4();
+    let validator_id = U128(Uuid::new_v4().as_u128());
+    let tracer_id = U128(Uuid::new_v4().as_u128());
+    let authority_id = U128(Uuid::new_v4().as_u128());
+    let case_id = U128(Uuid::new_v4().as_u128());
 
     // prepare reporter(Publisher)
     context
@@ -29,37 +29,47 @@ async fn test_address() {
         .await
         .assert_success("update stake configuration");
 
+    println!("log 1/3");
+
     context
         .prepare_reporter(tracer_id, &context.user_1, Role::Tracer)
         .await;
+
+    println!("log 1");
 
     // create address without existed case
     context
         .user_1
         .call(&context.contract.id(), "create_address")
-        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 1, "case_id": case_id.to_string(), "reporter_id": tracer_id.to_string()}))
+        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
         .transact()
         .await
         .assert_failure("create address", ERROR_CASE_NOT_FOUND);
+
+    println!("log 2");
 
     context
         .prepare_reporter(authority_id, &context.authority, Role::Authority)
         .await;
 
+    println!("log 3");
+
     // create case
     context
         .authority
         .call(&context.contract.id(), "create_case")
-        .args_json(json!({"id": case_id.to_string(), "name": "case", "url": "case.com"}))
+        .args_json(json!({"id": case_id, "name": "case", "url": "case.com"}))
         .transact()
         .await
         .assert_success("create case");
+
+    println!("log 4");
 
     // create address
     context
         .user_1
         .call(&context.contract.id(), "create_address")
-        .args_json(json!({"address": "test.near", "category": "TerroristFinancing", "risk_score": 1, "case_id": case_id.to_string(), "reporter_id": tracer_id.to_string()}))
+        .args_json(json!({"address": "test.near", "category": "TerroristFinancing", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
         .transact()
         .await
         .assert_success("create address");
@@ -92,7 +102,7 @@ async fn test_address() {
     context
         .authority
         .call(&context.contract.id(), "update_address")
-        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 5, "case_id": case_id.to_string()}))
+        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 5, "case_id": case_id}))
         .transact()
         .await
         .assert_success("update address");
