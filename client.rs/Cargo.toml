@@ -19,6 +19,7 @@ regex = "1.9.1"
 serde = "1.0.177"
 serde_json = "1.0.104"
 uuid = { version = "1.4.1", features = ["serde"] }
+dirs = "5.0.1"
 
 # EVM dependencies
 ethers = "2.0.8"
