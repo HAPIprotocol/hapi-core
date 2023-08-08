@@ -29,13 +29,9 @@ async fn test_address() {
         .await
         .assert_success("update stake configuration");
 
-    println!("log 1/3");
-
     context
         .prepare_reporter(tracer_id, &context.user_1, Role::Tracer)
         .await;
-
-    println!("log 1");
 
     // create address without existed case
     context
@@ -46,13 +42,9 @@ async fn test_address() {
         .await
         .assert_failure("create address", ERROR_CASE_NOT_FOUND);
 
-    println!("log 2");
-
     context
         .prepare_reporter(authority_id, &context.authority, Role::Authority)
         .await;
-
-    println!("log 3");
 
     // create case
     context
@@ -62,8 +54,6 @@ async fn test_address() {
         .transact()
         .await
         .assert_success("create case");
-
-    println!("log 4");
 
     // create address
     context
