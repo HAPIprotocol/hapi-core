@@ -1,11 +1,13 @@
 use async_trait::async_trait;
 
 use super::{
-    address::{Address, CreateAddressInput, UpdateAddressInput},
-    asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
-    case::{Case, CreateCaseInput, UpdateCaseInput},
     configuration::{RewardConfiguration, StakeConfiguration},
-    reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
+    entities::{
+        address::{Address, CreateAddressInput, UpdateAddressInput},
+        asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+        case::{Case, CreateCaseInput, UpdateCaseInput},
+        reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
+    },
     result::{Result, Tx},
 };
 

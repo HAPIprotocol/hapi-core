@@ -2,15 +2,12 @@ use ethers::utils::to_checksum;
 use uuid::Uuid;
 
 use crate::client::{
-    address::Address,
-    asset::Asset,
-    case::Case,
     configuration::{RewardConfiguration, StakeConfiguration},
-    reporter::Reporter,
+    entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
     result::{ClientError, Result},
 };
 
-use super::hapi_core_contract;
+use super::client::hapi_core_contract;
 
 impl From<hapi_core_contract::StakeConfiguration> for StakeConfiguration {
     fn from(config: hapi_core_contract::StakeConfiguration) -> Self {
