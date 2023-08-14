@@ -2,6 +2,7 @@ use serde_json::json;
 use std::{thread::sleep, time::Duration};
 
 mod assert;
+mod cmd_utils;
 mod evm;
 
 use evm::{

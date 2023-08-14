@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use super::result::ClientError;
+use crate::client::result::ClientError;
 
 #[derive(Default, Clone, PartialEq, Debug)]
 pub enum Category {

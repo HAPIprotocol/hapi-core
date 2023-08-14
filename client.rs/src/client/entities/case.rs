@@ -2,7 +2,7 @@ use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
 use uuid::Uuid;
 
-use super::result::ClientError;
+use crate::client::result::ClientError;
 
 #[derive(Default, Clone, PartialEq, Debug)]
 pub enum CaseStatus {

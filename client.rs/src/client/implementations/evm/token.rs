@@ -15,7 +15,12 @@ use crate::{
     Amount,
 };
 
-use super::{error::map_ethers_error, Provider, Signer, LOCAL_CHAIN_ID};
+use super::{
+    client::{Provider, Signer},
+    error::map_ethers_error,
+};
+
+use super::client::LOCAL_CHAIN_ID;
 
 abigen!(
     TOKEN_CONTRACT,
