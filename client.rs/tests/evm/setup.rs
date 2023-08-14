@@ -10,7 +10,7 @@ use std::{
 };
 
 use super::{fixtures::*, util::wait_for_port};
-use crate::cmd_utils::*;
+use crate::cmd_utils::{ensure_cmd, wrap_cmd, CmdOutput};
 
 pub struct Setup {
     pub token_contract: String,
