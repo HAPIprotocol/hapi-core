@@ -29,12 +29,20 @@ async fn test_configuration() {
         .assert_success("update reward configuration");
 
     // view configuration
-    let (stake_configuration, reward_configuration): (StakeConfiguration, RewardConfiguration) =
+    let stake_configuration:StakeConfiguration =
         context
             .authority
-            .view(&context.contract.id(), "get_configuration")
+            .view(&context.contract.id(), "get_stake_configuration")
             .await
-            .parse("get_configuration");
+            .parse("get_stake_configuration");
+
+    let reward_configuration:RewardConfiguration =
+        context
+            .authority
+            .view(&context.contract.id(), "get_reward_configuration")
+            .await
+            .parse("get_reward_configuration");
+
 
     assert_eq!(
         stake_configuration.token, context.stake_token.id,
@@ -67,6 +75,19 @@ async fn test_configuration() {
         .transact()
         .await
         .assert_success("set authority");
+
+    // check authority
+    let authority: String = context
+        .authority
+        .view(&context.contract.id(), "get_authority")
+        .await
+        .parse("get_authority");
+
+    assert_eq!(
+        authority,
+        context.user_1.id().to_string(),
+        "wrong authority"
+    );
 }
 
 // All methods must be called not from authority.

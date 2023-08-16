@@ -47,12 +47,20 @@ near call $CONTRACT_ID initialize '{}' --accountId $AUTHORITY_ID
 near view $CONTRACT_ID get_authority '{}'
 ```
 
-## Get configuration
+## Get stake configuration
 
-Returns a tuple of Stake and Reward configurations.
+Returns a structure of Stake configuration.
 
 ```bash
-near view $CONTRACT_ID get_configuration '{}'
+near view $CONTRACT_ID get_stake_configuration '{}'
+```
+
+## Get reward configuration
+
+Returns a structure of Reward configuration.
+
+```bash
+near view $CONTRACT_ID get_reward_configuration '{}'
 ```
 
 ### Get reporter

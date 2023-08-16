@@ -22,11 +22,12 @@ impl Contract {
         self.authority = authority;
     }
 
-    pub fn get_configuration(&self) -> (StakeConfiguration, RewardConfiguration) {
-        (
-            self.stake_configuration.clone(),
-            self.reward_configuration.clone(),
-        )
+    pub fn get_stake_configuration(&self) -> StakeConfiguration {
+        self.stake_configuration.clone()
+    }
+
+    pub fn get_reward_configuration(&self) -> RewardConfiguration {
+        self.reward_configuration.clone()
     }
 
     pub fn get_authority(&self) -> AccountId {

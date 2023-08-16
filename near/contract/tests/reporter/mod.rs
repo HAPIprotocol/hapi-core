@@ -5,7 +5,7 @@ use crate::{
     U128Extension, ERROR_REPORTER_IS_ACTIVE, ERROR_REPORTER_IS_INACTIVE,
     ERROR_UNLOCK_DURATION_NOT_PASSED, INITIAL_USER_BALANCE, STAKE_AMOUNTS, UNLOCK_DURATION,
 };
-use near_sdk::{serde_json::json, json_types::U128};
+use near_sdk::{json_types::U128, serde_json::json};
 
 mod helpers;
 pub use helpers::{Reporter, ReporterId, ReporterStatus, Role};

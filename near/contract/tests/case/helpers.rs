@@ -1,5 +1,8 @@
 use crate::reporter::ReporterId;
-use near_sdk::{serde::{Deserialize, Serialize}, json_types::U128};
+use near_sdk::{
+    json_types::U128,
+    serde::{Deserialize, Serialize},
+};
 
 pub type CaseId = U128;
 
