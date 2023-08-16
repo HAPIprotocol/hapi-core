@@ -29,20 +29,17 @@ async fn test_configuration() {
         .assert_success("update reward configuration");
 
     // view configuration
-    let stake_configuration:StakeConfiguration =
-        context
-            .authority
-            .view(&context.contract.id(), "get_stake_configuration")
-            .await
-            .parse("get_stake_configuration");
+    let stake_configuration: StakeConfiguration = context
+        .authority
+        .view(&context.contract.id(), "get_stake_configuration")
+        .await
+        .parse("get_stake_configuration");
 
-    let reward_configuration:RewardConfiguration =
-        context
-            .authority
-            .view(&context.contract.id(), "get_reward_configuration")
-            .await
-            .parse("get_reward_configuration");
-
+    let reward_configuration: RewardConfiguration = context
+        .authority
+        .view(&context.contract.id(), "get_reward_configuration")
+        .await
+        .parse("get_reward_configuration");
 
     assert_eq!(
         stake_configuration.token, context.stake_token.id,
