@@ -1,4 +1,16 @@
+use anchor_client::{
+    solana_sdk::{
+        pubkey::Pubkey,
+        signature::{read_keypair_file, Keypair},
+    },
+    Client, Cluster, Program,
+};
+use solana_cli_config::{Config, CONFIG_FILE};
+
 use async_trait::async_trait;
+use std::{str::FromStr, sync::Arc};
+
+use hapi_core_solana::Network;
 
 use crate::{
     client::{
@@ -9,17 +21,49 @@ use crate::{
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
-        result::{Result, Tx},
+        interface::HapiCoreOptions,
+        result::{ClientError, Result, Tx},
         token::TokenContract,
     },
     Amount, HapiCore,
 };
 
-pub struct HapiCoreSolana {}
+use super::utils::get_network;
+
+pub struct HapiCoreSolana {
+    contract: Program<Arc<Keypair>>,
+    network: Pubkey,
+}
 
 impl HapiCoreSolana {
-    pub fn new() -> Result<Self> {
-        Ok(Self {})
+    pub fn new(options: HapiCoreOptions) -> Result<Self> {
+        let program_id = options.contract_address.parse::<Pubkey>().map_err(|e| {
+            ClientError::SolanaAddressParseError(format!("`contract-address`: {e}"))
+        })?;
+
+        let cluster = Cluster::from_str(&options.provider_url)
+            .map_err(|e| ClientError::UrlParseError(format!("`provider-url`: {e}")))?;
+
+        let signer = if let Some(pk) = options.private_key {
+            Keypair::from_base58_string(&pk)
+        } else {
+            let default_config = CONFIG_FILE
+                .as_ref()
+                .ok_or(ClientError::AbsentDefaultConfig)?;
+
+            let cli_config = Config::load(default_config)
+                .map_err(|e| ClientError::UnableToLoadConfig(e.to_string()))?;
+
+            read_keypair_file(cli_config.keypair_path)
+                .map_err(|e| ClientError::SolanaKeypairFile(format!("`keypair-path`: {e}")))?
+        };
+
+        let client = Client::new(cluster, Arc::new(signer));
+        let contract = client.program(program_id)?;
+
+        let network = get_network(&options.network.to_string(), &program_id)?;
+
+        Ok(Self { contract, network })
     }
 }
 
@@ -32,7 +76,9 @@ impl HapiCore for HapiCoreSolana {
         unimplemented!()
     }
     async fn get_authority(&self) -> Result<String> {
-        unimplemented!()
+        let data = self.contract.account::<Network>(self.network).await?;
+
+        return Ok(data.authority.to_string());
     }
 
     async fn update_stake_configuration(&self, _configuration: StakeConfiguration) -> Result<Tx> {

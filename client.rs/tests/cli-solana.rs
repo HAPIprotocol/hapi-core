@@ -12,7 +12,7 @@ use solana::{fixtures::*, setup::Setup};
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_cli_works() {
     println!("Running solana-cli tests");
-    let t = Setup::new();
+    let t = Setup::new().await;
 
     let admin = t.data.get_wallet("admin").keypair.pubkey().to_string();
 

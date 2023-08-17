@@ -8,7 +8,7 @@ use std::{
 use anchor_client::solana_sdk::transaction::Transaction;
 use anchor_client::solana_sdk::{program_pack::Pack, signature::Keypair};
 use anchor_client::{
-    solana_client::rpc_client::RpcClient,
+    solana_client::nonblocking::rpc_client::RpcClient,
     solana_sdk::native_token::LAMPORTS_PER_SOL,
     solana_sdk::pubkey::Pubkey,
     solana_sdk::{
@@ -25,12 +25,10 @@ use spl_token::instruction::{initialize_mint, mint_to};
 use super::fixtures::*;
 use crate::cmd_utils::*;
 
-const VALIDATOR_PORT: u16 = 8899;
-const PROGRAM_NAME: &str = "hapi_core_solana";
-
 pub struct Setup {
     pub data: TestData,
     cli: RpcClient,
+    provider_url: String,
 }
 
 fn get_validator_pid() -> Option<u32> {
@@ -90,51 +88,57 @@ fn start_validator() {
 }
 
 impl Setup {
-    pub fn new() -> Setup {
+    pub async fn new() -> Setup {
         let data = TestData::default();
         shut_down_existing_validator();
         start_validator();
 
-        let cli = RpcClient::new(format!("http://localhost:{VALIDATOR_PORT}"));
+        let provider_url = format!("http://localhost:{VALIDATOR_PORT}");
+        let cli = RpcClient::new(provider_url.clone());
 
-        let setup = Self { cli, data };
-        setup.setup_wallets();
+        let setup = Self {
+            data,
+            cli,
+            provider_url,
+        };
+        setup.setup_wallets().await;
         setup.prepare_validator();
 
         setup
     }
 
-    fn airdrop(&self, wallet: &Pubkey) {
+    async fn airdrop(&self, wallet: &Pubkey) {
         let amount = LAMPORTS_PER_SOL * 10;
 
         self.cli
             .request_airdrop(&wallet, amount)
+            .await
             .expect("Failed to airdrop");
 
         loop {
-            if self.cli.get_balance(&wallet).unwrap() >= amount {
+            if self.cli.get_balance(&wallet).await.unwrap() >= amount {
                 break;
             }
             sleep(Duration::from_millis(100));
         }
     }
 
-    fn setup_wallets(&self) {
+    async fn setup_wallets(&self) {
         println!("==> Creating mint account");
         let payer = &self.data.get_wallet("admin").keypair;
 
-        self.airdrop(&payer.pubkey());
-        self.create_mint();
+        self.airdrop(&payer.pubkey()).await;
+        // self.create_mint();
 
         println!("==> Preparing wallets");
-        for (key, wallet) in &self.data.wallets {
-            if !key.eq(&"mint") {
-                let owner_keypair = &wallet.keypair;
+        // for (key, wallet) in &self.data.wallets {
+        //     if !key.eq(&"mint") {
+        //         let owner_keypair = &wallet.keypair;
 
-                self.airdrop(&owner_keypair.pubkey());
-                self.create_ata(owner_keypair);
-            }
-        }
+        //         self.airdrop(&owner_keypair.pubkey()).await;
+        //         self.create_ata(owner_keypair);
+        //     }
+        // }
     }
 
     fn prepare_validator(&self) {
@@ -175,7 +179,7 @@ impl Setup {
         println!("==> Successful setup");
     }
 
-    fn create_acc_instruction(
+    async fn create_acc_instruction(
         &self,
         account_keypair: &Keypair,
         payer_keypair: &Keypair,
@@ -187,6 +191,7 @@ impl Setup {
         let mint_account_rent = self
             .cli
             .get_minimum_balance_for_rent_exemption(size)
+            .await
             .unwrap();
 
         create_account(
@@ -198,17 +203,19 @@ impl Setup {
         )
     }
 
-    fn create_mint(&self) {
+    async fn create_mint(&self) {
         let mint_account_keypair = &self.data.get_wallet("mint").keypair;
         let payer_account_keypair = &self.data.get_wallet("admin").keypair;
         let mint_account_pubkey = mint_account_keypair.pubkey();
         let payer_account_pubkey = payer_account_keypair.pubkey();
 
-        let create_account_instruction = self.create_acc_instruction(
-            &mint_account_keypair,
-            &payer_account_keypair,
-            spl_token::state::Mint::LEN,
-        );
+        let create_account_instruction = self
+            .create_acc_instruction(
+                &mint_account_keypair,
+                &payer_account_keypair,
+                spl_token::state::Mint::LEN,
+            )
+            .await;
 
         let initialize_mint_instruction = initialize_mint(
             &spl_token::id(),
@@ -219,7 +226,7 @@ impl Setup {
         )
         .unwrap();
 
-        let recent_blockhash = self.cli.get_latest_blockhash().unwrap();
+        let recent_blockhash = self.cli.get_latest_blockhash().await.unwrap();
 
         let transaction = Transaction::new_signed_with_payer(
             &vec![create_account_instruction, initialize_mint_instruction],
@@ -230,15 +237,16 @@ impl Setup {
 
         self.cli
             .send_and_confirm_transaction_with_spinner(&transaction)
+            .await
             .expect("Failed to create mint");
     }
 
-    fn create_ata(&self, owner_keypair: &Keypair) {
+    async fn create_ata(&self, owner_keypair: &Keypair) {
         let mint_address = &self.data.get_wallet("mint").keypair.pubkey();
         let payer_account = &self.data.get_wallet("admin").keypair;
         let owner_pubkey = owner_keypair.pubkey();
 
-        let recent_blockhash = self.cli.get_latest_blockhash().unwrap();
+        let recent_blockhash = self.cli.get_latest_blockhash().await.unwrap();
 
         let create_ata_instruction =
             create_associated_token_account(&owner_pubkey, &owner_pubkey, mint_address);
@@ -252,6 +260,7 @@ impl Setup {
 
         self.cli
             .send_and_confirm_transaction_with_spinner(&create_ata_tx)
+            .await
             .expect("Failed to create ATA");
 
         // TODO: fix this
@@ -284,26 +293,18 @@ impl Setup {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        // let token = self.token_contract.clone();
-        // let contract_address = self.contract_address.clone();
-        // let network = self.network.clone();
-        // let provider_url = self.provider_url.clone();
+        let contract_address = HAPI_CORE_PROGRAM_ID.to_string();
+        let network = NETWORK.to_string();
+        let provider_url = self.provider_url.clone();
 
-        // wrap_cmd(
-        //     Command::new("./target/debug/hapi-core-cli")
-        //         .args(args)
-        //         .env("OUTPUT", "json")
-        //         .env("TOKEN_CONTRACT", token)
-        //         .env("CONTRACT_ADDRESS", contract_address)
-        //         .env("NETWORK", network)
-        //         .env("PROVIDER_URL", provider_url),
-        // )
-
-        Ok(CmdOutput {
-            success: true,
-            stdout: "".to_string(),
-            stderr: "".to_string(),
-        })
+        wrap_cmd(
+            Command::new("./target/debug/hapi-core-cli")
+                .args(args)
+                .env("OUTPUT", "json")
+                .env("CONTRACT_ADDRESS", contract_address)
+                .env("NETWORK", network)
+                .env("PROVIDER_URL", provider_url),
+        )
     }
 
     pub fn print(&self, message: &str) {

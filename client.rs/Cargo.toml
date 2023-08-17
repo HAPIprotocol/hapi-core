@@ -27,11 +27,13 @@ ethers-signers = "2.0.8"
 ethers-contract = "2.0.8"
 
 # Solana dependencies
-anchor-client = { git = "https://github.com/hlgltvnnk/anchor.git", branch = "update-dependencies", feature = [
+anchor-client = { git = "https://github.com/hlgltvnnk/anchor.git", branch = "update-dependencies", features = [
     "async",
 ] }
 solana-cli-config = { git = "https://github.com/hlgltvnnk/solana.git", branch = "update-dependencies" }
-
+hapi_core_solana = { path = "../solana/programs/hapi_core_solana", features = [
+    "no-entrypoint",
+] }
 
 [dev-dependencies]
 spl-associated-token-account = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }

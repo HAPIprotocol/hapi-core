@@ -7,7 +7,16 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{address::*, asset::*, case::*, confirmation::*, network::*, reporter::*, utils::*};
+use state::{confirmation::*, network::*, reporter::*, utils::*};
+
+pub use state::{
+    address::Address,
+    asset::Asset,
+    case::{Case, CaseStatus},
+    network::{Network, RewardConfiguration, StakeConfiguration},
+    reporter::{ReporterRole, ReporterStatus},
+    utils::Category,
+};
 
 const UUID_VERSION: usize = 4;
 
