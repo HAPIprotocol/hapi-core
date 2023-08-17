@@ -146,7 +146,7 @@ near call $CONTRACT_ID set_authority '{"authority": "'$AUTHORITY_ID'"}' --accoun
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID update_stake_config '{"stake_configuration": {"token": "'$STAKE_TOKEN'", "unlock_duration": 420, "stake_amounts": {"validator": "5", "tracer": "10", "publisher": "15", "authority": "20"}}}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID update_stake_configuration '{"stake_configuration": {"token": "'$STAKE_TOKEN'", "unlock_duration": 420, "validator_stake": "5", "tracer_stake": "10", "publisher_stake": "15", "authority_stake": "20"}}' --accountId $AUTHORITY_ID
 ```
 
 ### Update reward configuration
@@ -154,7 +154,7 @@ near call $CONTRACT_ID update_stake_config '{"stake_configuration": {"token": "'
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "reward_amounts": {"address_confirmation": "4", "address_trace": "20"}}}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "address_confirmation_reward": "4", "tracer_reward": "20"}}' --accountId $AUTHORITY_ID
 ```
 
 ## Reporter management

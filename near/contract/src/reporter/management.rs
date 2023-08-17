@@ -115,7 +115,7 @@ impl Contract {
         self.transfer_stake(
             reporter.account_id.clone(),
             reporter.stake,
-            self.stake_configuration.get_token(),
+            self.stake_configuration.get_token().clone(),
         );
 
         reporter.status = ReporterStatus::Inactive;

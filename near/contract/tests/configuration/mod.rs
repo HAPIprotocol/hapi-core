@@ -46,22 +46,17 @@ async fn test_configuration() {
         "wrong stake token"
     );
     assert_eq!(
-        stake_configuration.stake_amounts.validator,
-        context
-            .get_stake_configuration()
-            .await
-            .stake_amounts
-            .validator,
+        stake_configuration.validator_stake,
+        context.get_stake_configuration().await.validator_stake,
         "wrong validator stake amount"
     );
     assert_eq!(reward_configuration.token, context.reward_token.id);
     assert_eq!(
-        reward_configuration.reward_amounts.address_confirmation,
+        reward_configuration.address_confirmation_reward,
         context
             .get_reward_configuration()
             .await
-            .reward_amounts
-            .address_confirmation,
+            .address_confirmation_reward,
         "wrong address confirmation reward amount"
     );
 

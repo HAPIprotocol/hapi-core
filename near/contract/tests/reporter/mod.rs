@@ -3,7 +3,7 @@ use crate::{
     errors::ERROR_REPORTER_NOT_FOUND,
     utils::{CallExecutionDetailsExtension, GasExtension, ViewResultDetailsExtension},
     U128Extension, ERROR_REPORTER_IS_ACTIVE, ERROR_REPORTER_IS_INACTIVE,
-    ERROR_UNLOCK_DURATION_NOT_PASSED, INITIAL_USER_BALANCE, STAKE_AMOUNTS, UNLOCK_DURATION,
+    ERROR_UNLOCK_DURATION_NOT_PASSED, INITIAL_USER_BALANCE, PUBLISHER_STAKE, UNLOCK_DURATION,
 };
 use near_sdk::{json_types::U128, serde_json::json};
 
@@ -56,11 +56,7 @@ async fn test_reporter() {
 
     // activate reporter
     context
-        .ft_transfer_call(
-            &context.user_1,
-            &context.stake_token,
-            STAKE_AMOUNTS.publisher.0,
-        )
+        .ft_transfer_call(&context.user_1, &context.stake_token, PUBLISHER_STAKE)
         .await
         .assert_success("activate reporter");
 

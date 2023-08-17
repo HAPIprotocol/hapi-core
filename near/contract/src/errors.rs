@@ -9,6 +9,7 @@ pub const ERROR_REPORTER_IS_ACTIVE: &str = "Reporter is active";
 pub const ERROR_REPORTER_IS_INACTIVE: &str = "Reporter is inactive";
 pub const ERROR_UNLOCK_DURATION_NOT_PASSED: &str = "Unlock duration not passed";
 pub const ERROR_LONG_NAME: &str = "Name is too long";
+pub const ERROR_CHANGE_TOKEN: &str = "Token cannot be changed";
 
 // Case errors
 pub const ERROR_INVALID_ROLE: &str = "Invalid role";
@@ -20,3 +21,7 @@ pub const ERROR_INVALID_RISK_SCORE: &str = "Invalid risk score";
 pub const ERROR_ADDRESS_NOT_FOUND: &str = "Address not found";
 pub const ERROR_ALREADY_CONFIRMED: &str = "Already confirmed";
 pub const ERROR_ADDRESS_ALREADY_EXISTS: &str = "Address already exists";
+
+// Configuration errors
+pub const ERROR_STAKE_CONFIGURATION_NOT_SET: &str = "Stake configuration is not set";
+pub const ERROR_REWARD_CONFIGURATION_NOT_SET: &str = "Reward configuration is not set";
