@@ -35,10 +35,10 @@ impl Display for ReporterRole {
             f,
             "{}",
             match self {
-                ReporterRole::Validator => "validator",
-                ReporterRole::Tracer => "tracer",
-                ReporterRole::Publisher => "publisher",
-                ReporterRole::Authority => "authority",
+                ReporterRole::Validator => "Validator",
+                ReporterRole::Tracer => "Tracer",
+                ReporterRole::Publisher => "Publisher",
+                ReporterRole::Authority => "Authority",
             }
         )
     }
@@ -49,10 +49,10 @@ impl FromStr for ReporterRole {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "validator" => Ok(Self::Validator),
-            "tracer" => Ok(Self::Tracer),
-            "publisher" => Ok(Self::Publisher),
-            "authority" => Ok(Self::Authority),
+            "Validator" => Ok(Self::Validator),
+            "Tracer" => Ok(Self::Tracer),
+            "Publisher" => Ok(Self::Publisher),
+            "Authority" => Ok(Self::Authority),
             _ => Err(anyhow::anyhow!("invalid reporter role")),
         }
     }

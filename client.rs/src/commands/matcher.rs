@@ -54,6 +54,15 @@ pub(crate) fn matcher() -> ArgMatches {
                 .help("[OPTIONAL] Chain ID for EVM-based networks"),
         )
         .arg(
+            Arg::new("account-id")
+                .global(true)
+                .long("account-id")
+                .value_name("ACCOUNT_ID")
+                .env("ACCOUNT_ID")
+                .required(false)
+                .help("[OPTIONAL] Account ID for NEAR network"),
+        )
+        .arg(
             Arg::new("output")
                 .global(true)
                 .short('o')
@@ -187,7 +196,7 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .index(3)
                                 .required(true)
                                 .help("Reporter role")
-                                .value_parser(["validator", "tracer", "publisher", "authority"]),
+                                .value_parser(["Validator", "Tracer", "Publisher", "Authority"]),
                         )
                         .arg(
                             Arg::new("name")
@@ -227,7 +236,7 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .index(3)
                                 .required(true)
                                 .help("Reporter role")
-                                .value_parser(["validator", "tracer", "publisher", "authority"]),
+                                .value_parser(["Validator", "Tracer", "Publisher", "Authority"]),
                         )
                         .arg(
                             Arg::new("name")

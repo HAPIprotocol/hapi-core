@@ -124,7 +124,7 @@ async fn evm_works() {
         "create",
         REPORTER_UUID_1,
         PUBLIC_KEY_1,
-        "authority",
+        "Authority",
         "HAPI Authority",
         "https://hapi.one/reporter/authority",
     ]));
@@ -135,7 +135,7 @@ async fn evm_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": to_checksum(PUBLIC_KEY_1),
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
@@ -202,7 +202,7 @@ async fn evm_works() {
         "create",
         REPORTER_UUID_2,
         PUBLIC_KEY_2,
-        "publisher",
+        "Publisher",
         "HAPI Publisher",
         "https://hapi.one/reporter/publisher",
     ]));
@@ -213,7 +213,7 @@ async fn evm_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_2,
             "account": to_checksum(PUBLIC_KEY_2),
-            "role": "publisher",
+            "role": "Publisher",
             "name": "HAPI Publisher",
             "url": "https://hapi.one/reporter/publisher",
             "stake": "0",
@@ -249,7 +249,7 @@ async fn evm_works() {
             {
                 "id": REPORTER_UUID_1,
                 "account": to_checksum(PUBLIC_KEY_1),
-                "role": "authority",
+                "role": "Authority",
                 "name": "HAPI Authority",
                 "url": "https://hapi.one/reporter/authority",
                 "stake": authority_stake.to_string(),
@@ -259,7 +259,7 @@ async fn evm_works() {
             {
                 "id": REPORTER_UUID_2,
                 "account": to_checksum(PUBLIC_KEY_2),
-                "role": "publisher",
+                "role": "Publisher",
                 "name": "HAPI Publisher",
                 "url": "https://hapi.one/reporter/publisher",
                 "stake": publisher_stake.to_string(),
@@ -424,7 +424,7 @@ async fn evm_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": to_checksum(PUBLIC_KEY_1),
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": authority_stake.to_string(),
@@ -450,7 +450,7 @@ async fn evm_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": to_checksum(PUBLIC_KEY_1),
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
@@ -465,7 +465,7 @@ async fn evm_works() {
         "update",
         REPORTER_UUID_2,
         PUBLIC_KEY_2,
-        "publisher",
+        "Publisher",
         "HAPI Publisher+",
         "https://hapi.one/reporter/new_publisher",
     ]));
@@ -476,7 +476,7 @@ async fn evm_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_2,
             "account": to_checksum(PUBLIC_KEY_2),
-            "role": "publisher",
+            "role": "Publisher",
             "name": "HAPI Publisher+",
             "url": "https://hapi.one/reporter/new_publisher",
             "stake": "12",
