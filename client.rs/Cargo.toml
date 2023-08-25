@@ -38,4 +38,5 @@ hapi_core_solana = { path = "../solana/programs/hapi_core_solana", features = [
 [dev-dependencies]
 spl-associated-token-account = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
 spl-token = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
+bs58 = "0.5.0"
 # spl-token = "3"

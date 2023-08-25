@@ -8,7 +8,9 @@ use std::{
 use anchor_client::solana_sdk::transaction::Transaction;
 use anchor_client::solana_sdk::{program_pack::Pack, signature::Keypair};
 use anchor_client::{
-    solana_client::nonblocking::rpc_client::RpcClient,
+    solana_client::{
+        client_error::ClientErrorKind, nonblocking::rpc_client::RpcClient, rpc_request::RpcError,
+    },
     solana_sdk::native_token::LAMPORTS_PER_SOL,
     solana_sdk::pubkey::Pubkey,
     solana_sdk::{
@@ -17,74 +19,20 @@ use anchor_client::{
     },
 };
 
+use hapi_core::client::implementations::solana::get_network_account;
+
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
 use spl_token::solana_program::instruction::Instruction;
 
 use spl_token::instruction::{initialize_mint, mint_to};
 
-use super::fixtures::*;
+use super::{fixtures::*, validator_utils::*};
 use crate::cmd_utils::*;
 
 pub struct Setup {
     pub data: TestData,
     cli: RpcClient,
     provider_url: String,
-}
-
-fn get_validator_pid() -> Option<u32> {
-    Command::new("lsof")
-        .args(["-t", "-i", &format!(":{VALIDATOR_PORT}")])
-        .output()
-        .expect("Failed to execute command")
-        .stdout
-        .iter()
-        .map(|&x| x as char)
-        .collect::<String>()
-        .trim()
-        .parse()
-        .ok()
-}
-
-fn shut_down_existing_validator() {
-    if let Some(pid) = get_validator_pid() {
-        println!("==> Killing the node: {pid} [{VALIDATOR_PORT}]");
-        ensure_cmd(
-            Command::new("kill")
-                .args(["-9", &pid.to_string()])
-                .stderr(Stdio::null()),
-        )
-        .unwrap();
-
-        println!("==> Waiting for the node to shut down [{VALIDATOR_PORT}]");
-        loop {
-            if get_validator_pid().is_none() {
-                println!("==> Node shut down [{VALIDATOR_PORT}]");
-                break;
-            }
-
-            sleep(Duration::from_millis(100));
-        }
-    }
-}
-
-fn start_validator() {
-    println!("==> Starting the validator [{VALIDATOR_PORT}]");
-    Command::new("solana-test-validator")
-        .args(["-r"])
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Failed to execute command");
-
-    println!("==> Waiting for the validator to start");
-
-    loop {
-        if let Some(pid) = get_validator_pid() {
-            println!("==> Validator started [{VALIDATOR_PORT}] with pid: {pid}");
-            break;
-        }
-
-        sleep(Duration::from_millis(100));
-    }
 }
 
 impl Setup {
@@ -102,7 +50,7 @@ impl Setup {
             provider_url,
         };
         setup.setup_wallets().await;
-        setup.prepare_validator();
+        setup.prepare_validator().await;
 
         setup
     }
@@ -128,20 +76,20 @@ impl Setup {
         let payer = &self.data.get_wallet("admin").keypair;
 
         self.airdrop(&payer.pubkey()).await;
-        // self.create_mint();
+        // self.create_mint().await;
 
         println!("==> Preparing wallets");
-        // for (key, wallet) in &self.data.wallets {
-        //     if !key.eq(&"mint") {
-        //         let owner_keypair = &wallet.keypair;
+        for (key, wallet) in &self.data.wallets {
+            if !key.eq(&"mint") {
+                let owner_keypair = &wallet.keypair;
 
-        //         self.airdrop(&owner_keypair.pubkey()).await;
-        //         self.create_ata(owner_keypair);
-        //     }
-        // }
+                self.airdrop(&owner_keypair.pubkey()).await;
+                // self.create_ata(owner_keypair).await;
+            }
+        }
     }
 
-    fn prepare_validator(&self) {
+    async fn prepare_validator(&self) {
         println!("==> Deploying the contract");
 
         let program_dir = &self.data.program_dir;
@@ -175,6 +123,28 @@ impl Setup {
                 .current_dir(program_dir),
         )
         .unwrap();
+
+        let program_id = HAPI_CORE_PROGRAM_ID
+            .parse::<Pubkey>()
+            .expect("Invalid program id");
+        let network_account = get_network_account(NETWORK, &program_id).expect("Invalid network");
+
+        loop {
+            match self.cli.get_account(&network_account).await {
+                Ok(_) => {
+                    println!("==> Network created");
+                    break;
+                }
+                Err(e) => {
+                    if let ClientErrorKind::RpcError(RpcError::ForUser(_)) = *e.kind() {
+                        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                        continue;
+                    } else {
+                        panic!("{}", e);
+                    }
+                }
+            }
+        }
 
         println!("==> Successful setup");
     }
@@ -305,6 +275,18 @@ impl Setup {
                 .env("NETWORK", network)
                 .env("PROVIDER_URL", provider_url),
         )
+    }
+
+    pub fn is_tx_match(value: &serde_json::Value) -> bool {
+        let signature = value
+            .get("tx")
+            .expect("`tx` key not found")
+            .as_str()
+            .expect("`tx` is not a string");
+
+        bs58::decode(signature)
+            .into_vec()
+            .is_ok_and(|s| s.len() == 64)
     }
 
     pub fn print(&self, message: &str) {

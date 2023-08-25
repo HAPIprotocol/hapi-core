@@ -1,7 +1,7 @@
 use anchor_client::{
     solana_sdk::{
         pubkey::Pubkey,
-        signature::{read_keypair_file, Keypair},
+        signature::{read_keypair_file, Keypair, Signer},
     },
     Client, Cluster, Program,
 };
@@ -10,7 +10,7 @@ use solana_cli_config::{Config, CONFIG_FILE};
 use async_trait::async_trait;
 use std::{str::FromStr, sync::Arc};
 
-use hapi_core_solana::Network;
+use hapi_core_solana::{accounts, instruction, Network};
 
 use crate::{
     client::{
@@ -28,7 +28,7 @@ use crate::{
     Amount, HapiCore,
 };
 
-use super::utils::get_network;
+use super::utils::{get_network_account, get_program_data_account};
 
 pub struct HapiCoreSolana {
     contract: Program<Arc<Keypair>>,
@@ -61,24 +61,52 @@ impl HapiCoreSolana {
         let client = Client::new(cluster, Arc::new(signer));
         let contract = client.program(program_id)?;
 
-        let network = get_network(&options.network.to_string(), &program_id)?;
+        let network = get_network_account(&options.network.to_string(), &program_id)?;
 
         Ok(Self { contract, network })
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HapiCore for HapiCoreSolana {
-    fn is_valid_address(&self, _address: &str) -> Result<()> {
-        unimplemented!()
+    fn is_valid_address(&self, address: &str) -> Result<()> {
+        address
+            .parse::<Pubkey>()
+            .map_err(|e| ClientError::SolanaAddressParseError(e.to_string()))?;
+
+        Ok(())
     }
-    async fn set_authority(&self, _address: &str) -> Result<Tx> {
-        unimplemented!()
+
+    async fn set_authority(&self, address: &str) -> Result<Tx> {
+        let network_data = self.contract.account::<Network>(self.network).await?;
+
+        let new_authority = Pubkey::from_str(address)
+            .map_err(|e| ClientError::SolanaAddressParseError(format!("`new-authority`: {e}")))?;
+        let program_account = self.contract.id();
+        let program_data = get_program_data_account(&program_account)?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::SetAuthority {
+                authority: network_data.authority,
+                network: self.network,
+                new_authority,
+                program_account,
+                program_data,
+            })
+            .args(instruction::SetAuthority)
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
+
     async fn get_authority(&self) -> Result<String> {
         let data = self.contract.account::<Network>(self.network).await?;
 
-        return Ok(data.authority.to_string());
+        Ok(data.authority.to_string())
     }
 
     async fn update_stake_configuration(&self, _configuration: StakeConfiguration) -> Result<Tx> {

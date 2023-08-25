@@ -29,7 +29,7 @@ pub enum ClientError {
     UnableToLoadConfig(String),
     #[error("Unable to read keypair file: {0}")]
     SolanaKeypairFile(String),
-    #[error("Unable to initialize client: {0}")]
+    #[error("Solana Rpc error: {0}")]
     SolanaRpcError(#[from] anchor_client::ClientError),
 }
 

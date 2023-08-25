@@ -8,3 +8,6 @@ pub use client::{
     },
     interface::{HapiCore, HapiCoreOptions},
 };
+
+#[cfg(test)]
+pub use client::implementations::solana::get_network_account;

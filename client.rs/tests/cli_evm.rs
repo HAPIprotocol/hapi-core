@@ -5,11 +5,7 @@ mod assert;
 mod cmd_utils;
 mod evm;
 
-use evm::{
-    fixtures::*,
-    setup::Setup,
-    util::{is_tx_match, to_checksum},
-};
+use evm::{fixtures::*, setup::Setup, util::to_checksum};
 
 #[tokio::test]
 async fn evm_works() {

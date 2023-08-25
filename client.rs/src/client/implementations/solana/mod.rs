@@ -3,4 +3,4 @@ mod client;
 mod utils;
 
 pub use client::{HapiCoreSolana, TokenContractSolana};
-// pub use result::SolanaClientError;
+pub use utils::get_network_account;

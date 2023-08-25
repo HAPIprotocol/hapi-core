@@ -28,7 +28,7 @@ macro_rules! assert_tx_output {
         let value =
             serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
 
-        assert!(is_tx_match(&value), "transaction hash expected");
+        assert!(Setup::is_tx_match(&value), "transaction hash expected");
 
         let tx = value
             .get("tx")
