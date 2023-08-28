@@ -193,11 +193,12 @@ impl HapiCore for HapiCoreEvm {
             .parse()
             .map_err(|e| ClientError::EthAddressParse(format!("`token`: {e}")))?;
 
+        //TODO: update asset rewards
         handle_send!(
             self.contract.update_reward_configuration(
                 token,
                 configuration.address_confirmation_reward.into(),
-                configuration.tracer_reward.into(),
+                configuration.address_tracer_reward.into(),
             ),
             "update_reward_configuration"
         )

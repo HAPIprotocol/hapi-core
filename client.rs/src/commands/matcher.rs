@@ -152,11 +152,25 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Address confirmation reward"),
                         )
                         .arg(
-                            Arg::new("tracer-reward")
-                                .value_name("TRACER_REWARD")
+                            Arg::new("address-tracer-reward")
+                                .value_name("ADDRESS_TRACER_REWARD")
                                 .index(3)
                                 .required(true)
-                                .help("Tracer reward"),
+                                .help("Address tracer reward"),
+                        )
+                        .arg(
+                            Arg::new("asset-confirmation-reward")
+                                .value_name("ASSET_CONFIRMATION_REWARD")
+                                .index(4)
+                                .required(true)
+                                .help("Asset confirmation reward"),
+                        )
+                        .arg(
+                            Arg::new("asset-tracer-reward")
+                                .value_name("ASSET_TRACER_REWARD")
+                                .index(5)
+                                .required(true)
+                                .help("Asset tracer reward"),
                         ),
                 ),
         )

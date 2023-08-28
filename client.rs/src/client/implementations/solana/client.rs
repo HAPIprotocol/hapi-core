@@ -109,18 +109,101 @@ impl HapiCore for HapiCoreSolana {
         Ok(data.authority.to_string())
     }
 
-    async fn update_stake_configuration(&self, _configuration: StakeConfiguration) -> Result<Tx> {
-        unimplemented!()
-    }
-    async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
-        unimplemented!()
+    async fn update_stake_configuration(&self, configuration: StakeConfiguration) -> Result<Tx> {
+        let network_data = self.contract.account::<Network>(self.network).await?;
+
+        let stake_mint = Pubkey::from_str(&configuration.token)
+            .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
+
+        let stake_configuration = hapi_core_solana::StakeConfiguration {
+            unlock_duration: configuration.unlock_duration.into(),
+            validator_stake: configuration.validator_stake.into(),
+            tracer_stake: configuration.tracer_stake.into(),
+            publisher_stake: configuration.publisher_stake.into(),
+            authority_stake: configuration.authority_stake.into(),
+            // Appraiser stake is used only in solana
+            appraiser_stake: network_data.stake_configuration.appraiser_stake.into(),
+        };
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateStakeConfiguration {
+                authority: network_data.authority,
+                network: self.network,
+                stake_mint,
+            })
+            .args(instruction::UpdateStakeConfiguration {
+                stake_configuration,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
 
-    async fn update_reward_configuration(&self, _configuration: RewardConfiguration) -> Result<Tx> {
-        unimplemented!()
+    async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
+        let data = self.contract.account::<Network>(self.network).await?;
+
+        let res = StakeConfiguration {
+            token: data.stake_mint.to_string(),
+            unlock_duration: data.stake_configuration.unlock_duration,
+            validator_stake: data.stake_configuration.validator_stake.into(),
+            tracer_stake: data.stake_configuration.tracer_stake.into(),
+            publisher_stake: data.stake_configuration.publisher_stake.into(),
+            authority_stake: data.stake_configuration.authority_stake.into(),
+        };
+
+        Ok(res)
     }
+
+    async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
+        let network_data = self.contract.account::<Network>(self.network).await?;
+
+        let reward_mint = Pubkey::from_str(&configuration.token)
+            .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
+
+        let reward_configuration = hapi_core_solana::RewardConfiguration {
+            address_confirmation_reward: configuration.address_confirmation_reward.into(),
+            address_tracer_reward: configuration.address_tracer_reward.into(),
+            asset_confirmation_reward: configuration.asset_confirmation_reward.into(),
+            asset_tracer_reward: configuration.asset_tracer_reward.into(),
+        };
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateRewardConfiguration {
+                authority: network_data.authority,
+                network: self.network,
+                reward_mint,
+            })
+            .args(instruction::UpdateRewardConfiguration {
+                reward_configuration,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
+    }
+
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
-        unimplemented!()
+        let data = self.contract.account::<Network>(self.network).await?;
+
+        let res: RewardConfiguration = RewardConfiguration {
+            token: data.reward_mint.to_string(),
+            address_confirmation_reward: data
+                .reward_configuration
+                .address_confirmation_reward
+                .into(),
+            address_tracer_reward: data.reward_configuration.address_tracer_reward.into(),
+            asset_confirmation_reward: data.reward_configuration.asset_confirmation_reward.into(),
+            asset_tracer_reward: data.reward_configuration.asset_tracer_reward.into(),
+        };
+
+        Ok(res)
     }
 
     async fn create_reporter(&self, _input: CreateReporterInput) -> Result<Tx> {

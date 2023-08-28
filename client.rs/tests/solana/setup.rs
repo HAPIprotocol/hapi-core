@@ -76,7 +76,7 @@ impl Setup {
         let payer = &self.data.get_wallet("admin").keypair;
 
         self.airdrop(&payer.pubkey()).await;
-        // self.create_mint().await;
+        self.create_mint().await;
 
         println!("==> Preparing wallets");
         for (key, wallet) in &self.data.wallets {

@@ -8,10 +8,10 @@ pub const NETWORK: &str = "solana";
 
 pub const PROGRAM_NAME: &str = "hapi_core_solana";
 pub const PROGRAM_DIR: &str = "../solana";
-pub const KEYS_DIR: &str = "tests/solana/keys";
-
 pub const HAPI_CORE_PROGRAM_ID: &str = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
 pub const HAPI_CORE_KEYPAIR: &str = "tests/test_keypair.json";
+
+pub const KEYS_DIR: &str = "tests/solana/keys";
 
 // pub const MINT_PUBKEY: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
 pub const MINT_KEYPAIR: &str = "token.json";
