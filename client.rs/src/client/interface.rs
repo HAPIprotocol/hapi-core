@@ -56,4 +56,5 @@ pub struct HapiCoreOptions {
     pub contract_address: String,
     pub private_key: Option<String>,
     pub chain_id: Option<u64>,
+    pub account_id: Option<String>,
 }
