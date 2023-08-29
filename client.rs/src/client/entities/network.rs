@@ -39,7 +39,7 @@ impl fmt::Display for HapiCoreNetwork {
         match self {
             HapiCoreNetwork::Sepolia => write!(f, "sepolia"),
             HapiCoreNetwork::Ethereum => write!(f, "ethereum"),
-            HapiCoreNetwork::Bsc => write!(f, "Bsc"),
+            HapiCoreNetwork::Bsc => write!(f, "bsc"),
             HapiCoreNetwork::Solana => write!(f, "solana"),
             HapiCoreNetwork::Bitcoin => write!(f, "bitcoin"),
             HapiCoreNetwork::Near => write!(f, "near"),

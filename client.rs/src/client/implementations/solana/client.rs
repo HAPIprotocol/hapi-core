@@ -2,6 +2,7 @@ use anchor_client::{
     solana_sdk::{
         pubkey::Pubkey,
         signature::{read_keypair_file, Keypair, Signer},
+        system_program,
     },
     Client, Cluster, Program,
 };
@@ -9,8 +10,11 @@ use solana_cli_config::{Config, CONFIG_FILE};
 
 use async_trait::async_trait;
 use std::{str::FromStr, sync::Arc};
+use uuid::Uuid;
 
-use hapi_core_solana::{accounts, instruction, Network};
+use hapi_core_solana::{
+    accounts, instruction, Network as SolanaNetwork, Reporter as SolanaReporter, ReporterRole,
+};
 
 use crate::{
     client::{
@@ -28,7 +32,10 @@ use crate::{
     Amount, HapiCore,
 };
 
-use super::utils::{get_network_account, get_program_data_account};
+use super::{
+    conversion::*,
+    utils::{get_network_account, get_program_data_account, get_reporter_account},
+};
 
 pub struct HapiCoreSolana {
     contract: Program<Arc<Keypair>>,
@@ -61,7 +68,7 @@ impl HapiCoreSolana {
         let client = Client::new(cluster, Arc::new(signer));
         let contract = client.program(program_id)?;
 
-        let network = get_network_account(&options.network.to_string(), &program_id)?;
+        let network = get_network_account(&options.network.to_string(), &program_id)?.0;
 
         Ok(Self { contract, network })
     }
@@ -78,8 +85,6 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn set_authority(&self, address: &str) -> Result<Tx> {
-        let network_data = self.contract.account::<Network>(self.network).await?;
-
         let new_authority = Pubkey::from_str(address)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`new-authority`: {e}")))?;
         let program_account = self.contract.id();
@@ -89,7 +94,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::SetAuthority {
-                authority: network_data.authority,
+                authority: self.contract.payer(),
                 network: self.network,
                 new_authority,
                 program_account,
@@ -104,13 +109,13 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_authority(&self) -> Result<String> {
-        let data = self.contract.account::<Network>(self.network).await?;
+        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
 
         Ok(data.authority.to_string())
     }
 
     async fn update_stake_configuration(&self, configuration: StakeConfiguration) -> Result<Tx> {
-        let network_data = self.contract.account::<Network>(self.network).await?;
+        let network_data = self.contract.account::<SolanaNetwork>(self.network).await?;
 
         let stake_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
@@ -121,7 +126,7 @@ impl HapiCore for HapiCoreSolana {
             tracer_stake: configuration.tracer_stake.into(),
             publisher_stake: configuration.publisher_stake.into(),
             authority_stake: configuration.authority_stake.into(),
-            // Appraiser stake is used only in solana
+            // TODO: add appraiser stake
             appraiser_stake: network_data.stake_configuration.appraiser_stake.into(),
         };
 
@@ -144,7 +149,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
-        let data = self.contract.account::<Network>(self.network).await?;
+        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
 
         let res = StakeConfiguration {
             token: data.stake_mint.to_string(),
@@ -159,8 +164,6 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
-        let network_data = self.contract.account::<Network>(self.network).await?;
-
         let reward_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
@@ -175,7 +178,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::UpdateRewardConfiguration {
-                authority: network_data.authority,
+                authority: self.contract.payer(),
                 network: self.network,
                 reward_mint,
             })
@@ -190,7 +193,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
-        let data = self.contract.account::<Network>(self.network).await?;
+        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
 
         let res: RewardConfiguration = RewardConfiguration {
             token: data.reward_mint.to_string(),
@@ -206,14 +209,44 @@ impl HapiCore for HapiCoreSolana {
         Ok(res)
     }
 
-    async fn create_reporter(&self, _input: CreateReporterInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_reporter(&self, input: CreateReporterInput) -> Result<Tx> {
+        let (reporter, bump) = get_reporter_account(input.id, &self.network, &self.contract.id())?;
+        let account = Pubkey::from_str(&input.account)
+            .map_err(|e| ClientError::SolanaAddressParseError(format!("`account`: {e}")))?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::CreateReporter {
+                authority: self.contract.payer(),
+                network: self.network,
+                reporter,
+                system_program: system_program::id(),
+            })
+            .args(instruction::CreateReporter {
+                reporter_id: input.id.as_u128(),
+                account,
+                name: input.name,
+                role: ReporterRole::from(input.role),
+                url: input.url,
+                bump,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
+
     async fn update_reporter(&self, _input: UpdateReporterInput) -> Result<Tx> {
         unimplemented!()
     }
-    async fn get_reporter(&self, _id: &str) -> Result<Reporter> {
-        unimplemented!()
+    async fn get_reporter(&self, id: &str) -> Result<Reporter> {
+        let reporter =
+            get_reporter_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
+        let data = self.contract.account::<SolanaReporter>(reporter).await?;
+
+        Reporter::try_from(data)
     }
     async fn get_reporter_count(&self) -> Result<u64> {
         unimplemented!()

@@ -1,5 +1,6 @@
 mod client;
 // pub mod result;
+mod conversion;
 mod utils;
 
 pub use client::{HapiCoreSolana, TokenContractSolana};

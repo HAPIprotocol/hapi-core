@@ -127,7 +127,9 @@ impl Setup {
         let program_id = HAPI_CORE_PROGRAM_ID
             .parse::<Pubkey>()
             .expect("Invalid program id");
-        let network_account = get_network_account(NETWORK, &program_id).expect("Invalid network");
+        let network_account = get_network_account(NETWORK, &program_id)
+            .expect("Invalid network")
+            .0;
 
         loop {
             match self.cli.get_account(&network_account).await {

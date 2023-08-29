@@ -14,7 +14,7 @@ pub use state::{
     asset::Asset,
     case::{Case, CaseStatus},
     network::{Network, RewardConfiguration, StakeConfiguration},
-    reporter::{ReporterRole, ReporterStatus},
+    reporter::{Reporter, ReporterRole, ReporterStatus},
     utils::Category,
 };
 

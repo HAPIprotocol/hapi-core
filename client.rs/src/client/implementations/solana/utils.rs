@@ -1,13 +1,31 @@
 use anchor_client::solana_sdk::pubkey::Pubkey;
 use std::{io::Write, str::FromStr};
+use uuid::Uuid;
 
 use crate::client::result::{ClientError, Result};
 
 /// Returns network PDA address
-pub fn get_network_account(network_name: &str, program_id: &Pubkey) -> Result<Pubkey> {
+pub fn get_reporter_account(
+    reporter_id: Uuid,
+    network: &Pubkey,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8)> {
+    let id = reporter_id.as_bytes();
+
+    Ok(Pubkey::find_program_address(
+        &[b"reporter", network.as_ref(), id],
+        program_id,
+    ))
+}
+
+/// Returns network PDA address
+pub fn get_network_account(network_name: &str, program_id: &Pubkey) -> Result<(Pubkey, u8)> {
     let name = &byte_array_from_str(network_name)?;
 
-    Ok(Pubkey::find_program_address(&[b"network", name.as_ref()], program_id).0)
+    Ok(Pubkey::find_program_address(
+        &[b"network", name.as_ref()],
+        program_id,
+    ))
 }
 
 /// Returns program data account

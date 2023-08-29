@@ -18,9 +18,11 @@ pub const MINT_KEYPAIR: &str = "token.json";
 
 // pub const ADMIN_PUBKEY: &str = "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ";
 pub const ADMIN_KEYPAIR: &str = "wallet_1.json";
+pub const ADMIN_UUID: &str = "0ca77383-0d2a-4090-98c9-31b69e105b12";
 
 // pub const AUTHORITY_PUBKEY: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
 pub const AUTHORITY_KEYPAIR: &str = "wallet_2.json";
+pub const AUTHORITY_UUID: &str = "2ef0a8f9-66c8-4be2-981a-b9236bb43f61";
 
 // pub const PUBLISHER_PUBKEY: &str = "5L6h3A2TgUF7DuUky55cCkVdBY9Dvd7rjELVD23reoKk";
 pub const PUBLISHER_KEYPAIR: &str = "wallet_3.json";
