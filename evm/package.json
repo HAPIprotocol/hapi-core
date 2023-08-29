@@ -13,13 +13,13 @@
   "author": "HAPI Protocol <devs@hapi.one>",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
-    "@openzeppelin/hardhat-upgrades": "^2.0.2",
-    "ethers": "^6.7.0",
-    "hardhat": "^2.17.1"
+    "@openzeppelin/hardhat-upgrades": "^2.2.1",
+    "ethers": "^6.7.1",
+    "hardhat": "^2.17.2"
   }
 }
