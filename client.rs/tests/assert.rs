@@ -54,3 +54,19 @@ macro_rules! assert_error_output {
         assert_eq!(output.stderr, $err_val, "correct error message expected");
     };
 }
+
+#[macro_export]
+macro_rules! assert_error_output_contains {
+    ($output:expr, $err_val:expr) => {
+        let output = $output.unwrap_or_else(|e| panic!("{}", e));
+
+        if output.success {
+            panic!("Expected command error: {:?}", output);
+        }
+
+        assert!(
+            output.stderr.contains($err_val),
+            "correct error message expected. Got: {}", output.stderr
+        );
+    };
+}
