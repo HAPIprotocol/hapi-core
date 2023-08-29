@@ -2,11 +2,14 @@ use serde_json::json;
 use std::{thread::sleep, time::Duration};
 
 mod assert;
+mod evm;
 mod near;
+
+use evm::fixtures::REPORTER_UUID_1;
 
 use near::setup::Setup;
 
-// use evm::util::{is_tx_match, to_checksum};
+use near::util::is_tx_match;
 
 #[tokio::test]
 async fn near_works() {
@@ -26,124 +29,140 @@ async fn near_works() {
         json!({ "authority": t.contract_address })
     );
 
-    // t.print("Assign authority to a new address");
-    // assert_tx_output!(t.exec(["authority", "set", PUBLIC_KEY_2]));
+    t.print("Assign authority to a new address");
+    assert_tx_output!(t.exec([
+        "authority",
+        "set",
+        &t.reporter.account_id,
+        "--account-id",
+        &t.contract_address
+    ]));
 
-    // t.print("Make sure that authority has changed");
-    // assert_json_output!(
-    //     t.exec(["authority", "get"]),
-    //     json!({ "authority": PUBLIC_KEY_2 })
-    // );
+    sleep(Duration::from_secs(1));
 
-    // t.print("Use the private key of the new authority to change the authority back");
-    // assert_tx_output!(t.exec([
-    //     "authority",
-    //     "set",
-    //     PUBLIC_KEY_1,
-    //     "--private-key",
-    //     PRIVATE_KEY_2,
-    // ]));
+    t.print("Make sure that authority has changed");
+    assert_json_output!(
+        t.exec(["authority", "get"]),
+        json!({ "authority": t.reporter.account_id })
+    );
 
-    // t.print("Make sure that authority has changed back");
-    // assert_json_output!(
-    //     t.exec(["authority", "get"]),
-    //     json!({ "authority": PUBLIC_KEY_1 })
-    // );
+    t.print("Use the private key of the new authority to change the authority back");
+    assert_tx_output!(t.exec([
+        "authority",
+        "set",
+        &t.contract_address,
+        "--account-id",
+        &t.reporter.account_id,
+        "--private-key",
+        &t.reporter.secret_key,
+    ]));
 
-    // t.print("Check that initial stake configuration is empty");
-    // assert_error_output!(
-    //     t.exec(["configuration", "get-stake"]),
-    //     "Error: Ethers error: `stake_configuration` reverted with: Stake configuration is not set"
-    // );
+    sleep(Duration::from_secs(1));
 
-    // t.print("Update stake configuration");
-    // assert_tx_output!(t.exec([
-    //     "configuration",
-    //     "update-stake",
-    //     &t.token_contract,
-    //     &unlock_duration.to_string(),
-    //     &validator_stake.to_string(),
-    //     &tracer_stake.to_string(),
-    //     &publisher_stake.to_string(),
-    //     &authority_stake.to_string(),
-    // ]));
+    t.print("Make sure that authority has changed back");
+    assert_json_output!(
+        t.exec(["authority", "get"]),
+        json!({ "authority": t.contract_address })
+    );
 
-    // t.print("Make sure that the new stake configuration is applied");
-    // assert_json_output!(
-    //     t.exec(["configuration", "get-stake"]),
-    //     json!({
-    //         "configuration": {
-    //             "token": t.token_contract,
-    //             "unlock_duration": unlock_duration,
-    //             "validator_stake": validator_stake.to_string(),
-    //             "tracer_stake": tracer_stake.to_string(),
-    //             "publisher_stake": publisher_stake.to_string(),
-    //             "authority_stake": authority_stake.to_string()
-    //         }
-    //     })
-    // );
+    t.print("Check that initial stake configuration is empty");
+    assert_error_output_contains!(
+        t.exec(["configuration", "get-stake"]),
+        "Stake configuration is not set"
+    );
 
-    // t.print("Check that initial reward configuration is empty");
-    // assert_error_output!(
-    //     t.exec(["configuration", "get-reward"]),
-    //     "Error: Ethers error: `reward_configuration` reverted with: Reward configuration is not set"
-    // );
+    t.print("Update stake configuration");
+    assert_tx_output!(t.exec([
+        "configuration",
+        "update-stake",
+        &t.token_contract,
+        &unlock_duration.to_string(),
+        &validator_stake.to_string(),
+        &tracer_stake.to_string(),
+        &publisher_stake.to_string(),
+        &authority_stake.to_string(),
+    ]));
 
-    // t.print("Update reward configuration");
-    // assert_tx_output!(t.exec([
-    //     "configuration",
-    //     "update-reward",
-    //     &t.token_contract,
-    //     &address_confirmation_reward.to_string(),
-    //     &tracer_reward.to_string(),
-    // ]));
+    sleep(Duration::from_secs(3));
 
-    // t.print("Make sure that the new reward configuration is applied");
-    // assert_json_output!(
-    //     t.exec(["configuration", "get-reward"]),
-    //     json!({
-    //         "configuration": {
-    //             "token": t.token_contract,
-    //             "address_confirmation_reward": address_confirmation_reward.to_string(),
-    //             "tracer_reward": tracer_reward.to_string()
-    //         }
-    //     })
-    // );
+    t.print("Make sure that the new stake configuration is applied");
+    assert_json_output!(
+        t.exec(["configuration", "get-stake"]),
+        json!({
+            "configuration": {
+                "token": t.token_contract,
+                "unlock_duration": unlock_duration,
+                "validator_stake": validator_stake.to_string(),
+                "tracer_stake": tracer_stake.to_string(),
+                "publisher_stake": publisher_stake.to_string(),
+                "authority_stake": authority_stake.to_string()
+            }
+        })
+    );
 
-    // t.print("Make sure that the reporter 1 does not exist yet");
-    // assert_error_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
-    //     "Error: Ethers error: `get_reporter` reverted with: Reporter does not exist"
-    // );
+    t.print("Check that initial reward configuration is empty");
+    assert_error_output_contains!(
+        t.exec(["configuration", "get-reward"]),
+        "Reward configuration is not set"
+    );
 
-    // t.print("Create authority reporter");
-    // assert_tx_output!(t.exec([
-    //     "reporter",
-    //     "create",
-    //     REPORTER_UUID_1,
-    //     PUBLIC_KEY_1,
-    //     "authority",
-    //     "HAPI Authority",
-    //     "https://hapi.one/reporter/authority",
-    // ]));
+    t.print("Update reward configuration");
+    assert_tx_output!(t.exec([
+        "configuration",
+        "update-reward",
+        &t.token_contract,
+        &address_confirmation_reward.to_string(),
+        &tracer_reward.to_string(),
+    ]));
 
-    // t.print("Check that the authority reporter has been created");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
-    //     json!({ "reporter": {
-    //         "id": REPORTER_UUID_1,
-    //         "account": to_checksum(PUBLIC_KEY_1),
-    //         "role": "authority",
-    //         "name": "HAPI Authority",
-    //         "url": "https://hapi.one/reporter/authority",
-    //         "stake": "0",
-    //         "status": "inactive",
-    //         "unlock_timestamp": 0
-    //     }})
-    // );
+    sleep(Duration::from_secs(3));
 
-    // t.print("Make sure that reporter counter has increased");
-    // assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 1 }));
+    t.print("Make sure that the new reward configuration is applied");
+    assert_json_output!(
+        t.exec(["configuration", "get-reward"]),
+        json!({
+            "configuration": {
+                "token": t.token_contract,
+                "address_confirmation_reward": address_confirmation_reward.to_string(),
+                "tracer_reward": tracer_reward.to_string()
+            }
+        })
+    );
+
+    t.print("Make sure that the reporter 1 does not exist yet");
+    assert_error_output_contains!(
+        t.exec(["reporter", "get", REPORTER_UUID_1]),
+        "Reporter not found"
+    );
+
+    t.print("Create authority reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "create",
+        REPORTER_UUID_1,
+        &t.contract_address,
+        "Authority",
+        "HAPI Authority",
+        "https://hapi.one/reporter/authority",
+    ]));
+
+    t.print("Check that the authority reporter has been created");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_1]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_1,
+            "account": &t.contract_address,
+            "role": "Authority",
+            "name": "HAPI Authority",
+            "url": "https://hapi.one/reporter/authority",
+            "stake": "0",
+            "status": "inactive",
+            "unlock_timestamp": 0
+        }})
+    );
+
+    t.print("Make sure that reporter counter has increased");
+    assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 1 }));
 
     // t.print("Try to activate the authority reporter without allowance");
     // assert_error_output!(

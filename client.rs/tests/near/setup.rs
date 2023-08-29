@@ -1,6 +1,7 @@
 use dirs;
 
 use std::{
+    env,
     ffi::OsStr,
     process::{Command, Output},
     thread,
@@ -9,11 +10,16 @@ use std::{
 
 use super::util::wait_for_port;
 
+pub struct Account {
+    pub account_id: String,
+    pub secret_key: String,
+}
+
 pub struct Setup {
     pub token_contract: String,
     pub contract_address: String,
-    port: u16,
-    network: String,
+    pub reporter: Account,
+    pub network: String,
     provider_url: String,
 }
 
@@ -111,21 +117,20 @@ impl Setup {
         let token_account = create_account("token");
         let reporter_account = create_account("reporter");
 
+        let hapi_pk = get_secret_key(&hapi_account);
+        let reporter_pk = get_secret_key(&reporter_account);
+
+        env::set_var("PRIVATE_KEY", hapi_pk);
+        env::set_var("ACCOUNT_ID", hapi_account.clone());
+
         println!("==> Deploying contracts");
 
-        let output = Command::new("near")
-            .args([
-                "deploy",
-                "--accountId",
-                &hapi_account,
-                "--wasmFile=../near/res/hapi_core_near.wasm",
-            ])
-            .output()
-            .expect("Failed to execute command");
-
-        for line in output.stderr.iter() {
-            print!("{}", *line as char);
-        }
+        exec_near_cmd([
+            "deploy",
+            "--accountId",
+            &hapi_account,
+            "--wasmFile=../near/res/hapi_core_near.wasm",
+        ]);
 
         exec_near_cmd([
             "call",
@@ -184,9 +189,12 @@ impl Setup {
         Setup {
             token_contract: token_account,
             contract_address: hapi_account,
+            reporter: Account {
+                account_id: reporter_account,
+                secret_key: reporter_pk,
+            },
             network: "near".to_string(),
             provider_url: format!("http://127.0.0.1:{PORT}"),
-            port: PORT,
         }
     }
 
@@ -310,4 +318,16 @@ where
     assert!(output.status.success(), "Failed to build near cmd");
 
     output
+}
+
+fn get_secret_key(account_name: &String) -> String {
+    let home_dir = dirs::home_dir().expect("Unable to get home directory");
+
+    let target_path = home_dir
+        .join(".near-credentials")
+        .join("local")
+        .join(format!("{account_name}.json"));
+
+    let pk = near_crypto::InMemorySigner::from_file(&target_path).expect("Failed to read key file");
+    pk.secret_key.to_string()
 }

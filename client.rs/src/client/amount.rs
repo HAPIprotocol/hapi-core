@@ -1,6 +1,7 @@
 use ethers::types::U256;
 use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
+use near_sdk::json_types::U128;
 
 #[derive(Default, Clone, Debug, PartialEq, PartialOrd, Eq)]
 pub struct Amount(U256);
@@ -35,6 +36,12 @@ impl From<U256> for Amount {
 impl From<u64> for Amount {
     fn from(value: u64) -> Self {
         Self(value.into())
+    }
+}
+
+impl From<U128> for Amount {
+    fn from(value: U128) -> Self {
+        Self(value.0.into())
     }
 }
 

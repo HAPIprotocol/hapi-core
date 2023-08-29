@@ -15,7 +15,7 @@ use crate::utils::UUID;
 
 pub type ReporterId = UUID;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Role {
     Validator,
@@ -25,7 +25,7 @@ pub enum Role {
     Appraiser,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum ReporterStatus {
     Inactive,
@@ -33,7 +33,7 @@ pub enum ReporterStatus {
     Unstaking,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Reporter {
     pub id: ReporterId,

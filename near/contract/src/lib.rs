@@ -21,7 +21,7 @@ pub use address::VAddress;
 pub use assets::{AssetId, VAsset};
 pub use case::{CaseId, VCase};
 pub use errors::*;
-pub use reporter::{ReporterId, VReporter};
+pub use reporter::{ReporterId, VReporter, Reporter};
 pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
 pub use utils::TimestampExtension;
