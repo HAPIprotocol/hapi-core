@@ -5,7 +5,7 @@ use std::{
 };
 use uuid::Uuid;
 
-use super::{amount::Amount, result::ClientError};
+use crate::client::{amount::Amount, result::ClientError};
 
 #[derive(Default, Clone, PartialEq, Debug)]
 pub enum ReporterRole {

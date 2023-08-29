@@ -25,8 +25,12 @@ macro_rules! assert_tx_output {
             panic!("Expected command success: {:?}", output);
         }
 
-        let value =
-            serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
+        let value = serde_json::from_str::<serde_json::Value>(&output.stdout).unwrap_or_else(|e| {
+            panic!(
+                "json parse error: {}\n\nstdout:\n{}\n\nstderr:\n{}",
+                e, output.stdout, output.stderr
+            )
+        });
 
         assert!(is_tx_match(&value), "transaction hash expected");
 

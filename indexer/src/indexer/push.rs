@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use hapi_core::client::{address::Address, asset::Asset, case::Case, reporter::Reporter};
+use hapi_core::client::entities::{address::Address, asset::Asset, case::Case, reporter::Reporter};
 
 use super::Indexer;
 
@@ -160,7 +160,7 @@ impl Indexer {
 
 #[cfg(test)]
 mod tests {
-    use hapi_core::client::{address::Address, category::Category};
+    use hapi_core::client::entities::{address::Address, category::Category};
 
     use super::*;
 

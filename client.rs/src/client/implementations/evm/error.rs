@@ -7,18 +7,26 @@ pub(super) fn map_ethers_error<M: ethers_providers::Middleware>(
     e: ContractError<M>,
 ) -> ClientError {
     match e {
-        // TODO: get rid of black magic parsing
-        ContractError::Revert(e) => {
-            let e = if e.len() > 64 { &e[64..] } else { &e };
-
-            ClientError::Ethers(format!(
+        ContractError::Revert(e) => match e {
+            _ if e.is_empty() => {
+                ClientError::Ethers(format!("`{caller}` reverted with empty message"))
+            }
+            // TODO: get rid of black magic parsing
+            _ if e.len() > 64 => ClientError::Ethers(format!(
                 "`{caller}` reverted with: {}",
-                String::from_utf8_lossy(e)
+                String::from_utf8_lossy(&e[64..])
                     .chars()
                     .filter(|c| !c.is_control())
                     .collect::<String>()
-            ))
-        }
+            )),
+            e => ClientError::Ethers(format!(
+                "`{caller}` reverted with: {}",
+                String::from_utf8_lossy(&e)
+                    .chars()
+                    .filter(|c| !c.is_control())
+                    .collect::<String>()
+            )),
+        },
         _ => ClientError::Ethers(format!("`{caller}` failed: {e}")),
     }
 }

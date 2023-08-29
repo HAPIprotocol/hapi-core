@@ -2,27 +2,29 @@ use async_trait::async_trait;
 
 use crate::{
     client::{
-        address::{Address, CreateAddressInput, UpdateAddressInput},
-        asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
-        case::{Case, CreateCaseInput, UpdateCaseInput},
         configuration::{RewardConfiguration, StakeConfiguration},
-        reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
+        entities::{
+            address::{Address, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            case::{Case, CreateCaseInput, UpdateCaseInput},
+            reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
+        },
         result::{Result, Tx},
         token::TokenContract,
     },
     Amount, HapiCore,
 };
 
-pub struct HapiCoreSolana {}
+pub struct HapiCoreNear {}
 
-impl HapiCoreSolana {
+impl HapiCoreNear {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
 }
 
 #[async_trait]
-impl HapiCore for HapiCoreSolana {
+impl HapiCore for HapiCoreNear {
     fn is_valid_address(&self, _address: &str) -> Result<()> {
         unimplemented!()
     }
@@ -122,16 +124,16 @@ impl HapiCore for HapiCoreSolana {
     }
 }
 
-pub struct TokenContractSolana {}
+pub struct TokenContractNear {}
 
-impl TokenContractSolana {
+impl TokenContractNear {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
 }
 
 #[async_trait]
-impl TokenContract for TokenContractSolana {
+impl TokenContract for TokenContractNear {
     fn is_approve_needed(&self) -> bool {
         false
     }

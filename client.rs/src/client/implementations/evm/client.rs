@@ -11,22 +11,20 @@ use uuid::Uuid;
 
 use crate::{
     client::{
-        address::{Address, CreateAddressInput, UpdateAddressInput},
-        asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
-        case::{Case, CreateCaseInput, UpdateCaseInput},
         configuration::{RewardConfiguration, StakeConfiguration},
+        entities::{
+            address::{Address, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            case::{Case, CreateCaseInput, UpdateCaseInput},
+            reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
+        },
         interface::HapiCoreOptions,
-        reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         result::{ClientError, Result, Tx},
     },
     HapiCore,
 };
 
-mod conversion;
-mod error;
-pub mod token;
-
-use error::map_ethers_error;
+use super::error::map_ethers_error;
 
 abigen!(
     HAPI_CORE_CONTRACT,
@@ -37,7 +35,7 @@ pub(super) type Provider = EthersProvider<Http>;
 pub(super) type Signer = SignerMiddleware<Provider, LocalWallet>;
 
 const ZERO_PK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
-const LOCAL_CHAIN_ID: u64 = 31337;
+pub(crate) const LOCAL_CHAIN_ID: u64 = 31337;
 
 pub struct LogHeader {
     pub name: String,
