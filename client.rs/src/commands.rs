@@ -4,11 +4,13 @@ use serde_json::json;
 
 use hapi_core::{
     client::{
-        address::{CreateAddressInput, UpdateAddressInput},
-        asset::{CreateAssetInput, UpdateAssetInput},
-        case::{CreateCaseInput, UpdateCaseInput},
         configuration::{RewardConfiguration, StakeConfiguration},
-        reporter::{CreateReporterInput, UpdateReporterInput},
+        entities::{
+            address::{CreateAddressInput, UpdateAddressInput},
+            asset::{CreateAssetInput, UpdateAssetInput},
+            case::{CreateCaseInput, UpdateCaseInput},
+            reporter::{CreateReporterInput, UpdateReporterInput},
+        },
     },
     Amount,
 };
