@@ -177,8 +177,34 @@ async fn solana_cli_works() {
         }})
     );
 
-    // t.print("Make sure that reporter counter has increased");
-    // assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 1 }));
+    t.print("Update authority reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "update",
+        ADMIN_UUID,
+        &admin_pubkey,
+        "authority",
+        "Updated HAPI Authority",
+        "https://hapi.one/reporter/new_authority",
+    ]));
+
+    t.print("Check that the authority reporter has been updated");
+    assert_json_output!(
+        t.exec(["reporter", "get", ADMIN_UUID]),
+        json!({ "reporter": {
+            "id": ADMIN_UUID,
+            "account": admin_pubkey,
+            "role": "authority",
+            "name": "Updated HAPI Authority",
+            "url": "https://hapi.one/reporter/new_authority",
+            "stake": "0",
+            "status": "inactive",
+            "unlock_timestamp": 0
+        }})
+    );
+
+    t.print("Make sure that reporter counter has increased");
+    assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 1 }));
 
     // t.print("Try to activate the authority reporter without allowance");
     // assert_error_output!(

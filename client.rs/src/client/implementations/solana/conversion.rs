@@ -1,4 +1,3 @@
-use ethers::utils::to_checksum;
 use uuid::Uuid;
 
 use crate::client::{

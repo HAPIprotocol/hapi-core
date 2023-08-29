@@ -7,7 +7,7 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{confirmation::*, network::*, reporter::*, utils::*};
+use state::{confirmation::*, utils::*};
 
 pub use state::{
     address::Address,

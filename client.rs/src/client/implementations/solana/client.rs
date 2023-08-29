@@ -26,7 +26,7 @@ use crate::{
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
         interface::HapiCoreOptions,
-        result::{ClientError, Result, Tx},
+        result::{self, ClientError, Result, Tx},
         token::TokenContract,
     },
     Amount, HapiCore,
@@ -238,9 +238,32 @@ impl HapiCore for HapiCoreSolana {
         Ok(Tx { hash })
     }
 
-    async fn update_reporter(&self, _input: UpdateReporterInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
+        let reporter = get_reporter_account(input.id, &self.network, &self.contract.id())?.0;
+        let account = Pubkey::from_str(&input.account)
+            .map_err(|e| ClientError::SolanaAddressParseError(format!("`account`: {e}")))?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateReporter {
+                authority: self.contract.payer(),
+                network: self.network,
+                reporter,
+            })
+            .args(instruction::UpdateReporter {
+                account,
+                name: input.name,
+                role: ReporterRole::from(input.role),
+                url: input.url,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
+
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
         let reporter =
             get_reporter_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
@@ -248,11 +271,26 @@ impl HapiCore for HapiCoreSolana {
 
         Reporter::try_from(data)
     }
+
     async fn get_reporter_count(&self) -> Result<u64> {
-        unimplemented!()
+        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+
+        Ok(data
+            .iter()
+            .filter(|(_, reporter)| reporter.network == self.network)
+            .count() as u64)
     }
+
     async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        unimplemented!()
+        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+        let mut result = vec![];
+
+        for (_, reporter) in data {
+            if reporter.network == self.network {}
+            result.push(Reporter::try_from(reporter)?);
+        }
+
+        Ok(result)
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
