@@ -90,12 +90,12 @@ impl TokenContract for TokenContractEvm {
             .approve(spender, amount.into())
             .send()
             .await
-            .map_err(|e| ClientError::Ethers(format!("`transfer` failed: {e}")))?
+            .map_err(|e| ClientError::Ethers(format!("`approve` failed: {e}")))?
             .await?
             .map_or_else(
                 || {
                     Err(ClientError::Ethers(
-                        "`transfer` failed: no receipt".to_string(),
+                        "`approve` failed: no receipt".to_string(),
                     ))
                 },
                 |receipt| {
