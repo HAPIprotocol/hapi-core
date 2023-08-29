@@ -68,8 +68,6 @@ task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
       console.log(`Using wallet: ${signer.address}`);
     }
 
-    console.log(`Using wallet: ${signer.address}`);
-
     const network = await hre.ethers.provider.getNetwork();
 
     console.log(`Deploying to '${network.name}' (${network.chainId})`);
@@ -99,7 +97,7 @@ task("deploy", "Deploys the HAPI Core contract").setAction(async (_, hre) => {
       await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
 
     console.log(`HAPI Core deployed`, {
-      contract: contract.address,
+      contract: contractAddress,
       admin: adminAddress,
       implementation: implementationAddress,
     });
