@@ -157,10 +157,10 @@ async fn evm_works() {
     t.print("Check authority's token balance");
     let json = assert_json_output!(
         t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
-        json!({ "balance": "1000000000" })
+        json!({ "balance": "1000000000000000000000000" })
     );
 
-    let authority_balance = json["balance"].as_str().unwrap().parse::<u64>().unwrap();
+    let authority_balance = json["balance"].as_str().unwrap().parse::<u128>().unwrap();
 
     t.print("Establish token allowance from authority to activate the reporter account");
     assert_tx_output!(t.exec([
