@@ -1,7 +1,7 @@
 use ethers::types::U256;
+use near_sdk::json_types::U128;
 use serde::{de, Deserialize, Serialize};
 use std::str::FromStr;
-use near_sdk::json_types::U128;
 
 #[derive(Default, Clone, Debug, PartialEq, PartialOrd, Eq)]
 pub struct Amount(U256);

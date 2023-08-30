@@ -10,8 +10,6 @@ use serde::Deserialize;
 use tokio::time;
 use uuid::Uuid;
 
-mod conversion;
-
 use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},

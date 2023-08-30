@@ -1,8 +1,7 @@
-
-use hapi_core_near::Reporter as NearReporter;
-use crate::client::reporter::Reporter;
+use crate::client::entities::reporter::Reporter;
 use crate::client::result::ClientError;
 use crate::client::result::Result;
+use hapi_core_near::Reporter as NearReporter;
 
 use uuid::Uuid;
 
