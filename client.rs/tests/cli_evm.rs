@@ -3,8 +3,10 @@ use std::{thread::sleep, time::Duration};
 
 mod assert;
 mod cmd_utils;
+mod common_fixtures;
 mod evm;
 
+use common_fixtures::*;
 use evm::{
     fixtures::*,
     setup::Setup,

@@ -2,13 +2,12 @@ use serde_json::json;
 use std::{thread::sleep, time::Duration};
 
 mod assert;
-mod evm;
+mod cmd_utils;
+mod common_fixtures;
 mod near;
 
-use evm::fixtures::REPORTER_UUID_1;
-
+use common_fixtures::*;
 use near::setup::Setup;
-
 use near::util::is_tx_match;
 
 #[tokio::test]

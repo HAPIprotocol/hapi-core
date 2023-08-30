@@ -70,7 +70,8 @@ macro_rules! assert_error_output_contains {
 
         assert!(
             output.stderr.contains($err_val),
-            "correct error message expected. Got: {}", output.stderr
+            "correct error message expected. Got: {}",
+            output.stderr
         );
     };
 }

@@ -9,6 +9,7 @@ use std::{
 };
 
 use super::util::wait_for_port;
+use crate::cmd_utils::{wrap_cmd, CmdOutput};
 
 pub struct Account {
     pub account_id: String,
@@ -21,13 +22,6 @@ pub struct Setup {
     pub reporter: Account,
     pub network: String,
     provider_url: String,
-}
-
-#[derive(Debug)]
-pub struct CmdOutput {
-    pub success: bool,
-    pub stdout: String,
-    pub stderr: String,
 }
 
 impl Default for Setup {
@@ -222,29 +216,6 @@ impl Setup {
                 .env("PROVIDER_URL", provider_url),
         )
     }
-}
-
-fn wrap_cmd(command: &mut Command) -> anyhow::Result<CmdOutput> {
-    let output = command.output()?;
-
-    println!(
-        "Exec: {} {}",
-        command.get_program().to_string_lossy(),
-        command
-            .get_args()
-            .map(|s| format!("\"{}\"", s.to_string_lossy()))
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    Ok(CmdOutput {
-        success: output.status.success(),
-        stdout: stdout.trim().to_owned(),
-        stderr: stderr.trim().to_owned(),
-    })
 }
 
 fn create_account(account: &str) -> String {
