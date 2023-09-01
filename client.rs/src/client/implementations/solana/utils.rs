@@ -1,8 +1,28 @@
-use anchor_client::solana_sdk::pubkey::Pubkey;
 use std::{io::Write, str::FromStr};
 use uuid::Uuid;
 
+use anchor_client::solana_sdk::{
+    pubkey::Pubkey,
+    signature::{read_keypair_file, Keypair},
+};
+use solana_cli_config::{Config, CONFIG_FILE};
+
 use crate::client::result::{ClientError, Result};
+
+pub fn get_signer(private_key: Option<String>) -> Result<Keypair> {
+    if let Some(pk) = private_key {
+        return Ok(Keypair::from_base58_string(&pk));
+    }
+    let default_config = CONFIG_FILE
+        .as_ref()
+        .ok_or(ClientError::AbsentDefaultConfig)?;
+
+    let cli_config =
+        Config::load(default_config).map_err(|e| ClientError::UnableToLoadConfig(e.to_string()))?;
+
+    read_keypair_file(cli_config.keypair_path)
+        .map_err(|e| ClientError::SolanaKeypairFile(format!("`keypair-path`: {e}")))
+}
 
 /// Returns network PDA address
 pub fn get_reporter_account(

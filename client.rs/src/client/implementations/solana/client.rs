@@ -1,16 +1,19 @@
-use anchor_client::{
-    solana_sdk::{
-        pubkey::Pubkey,
-        signature::{read_keypair_file, Keypair, Signer},
-        system_program,
-    },
-    Client, Cluster, Program,
-};
-use solana_cli_config::{Config, CONFIG_FILE};
-
 use async_trait::async_trait;
 use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
+
+use anchor_client::{
+    solana_sdk::{
+        pubkey::Pubkey,
+        signature::{Keypair, Signer},
+        system_program,
+        transaction::Transaction,
+    },
+    Client, Cluster, Program,
+};
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
 
 use hapi_core_solana::{
     accounts, instruction, Network as SolanaNetwork, Reporter as SolanaReporter, ReporterRole,
@@ -26,20 +29,19 @@ use crate::{
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
         interface::HapiCoreOptions,
-        result::{self, ClientError, Result, Tx},
-        token::TokenContract,
+        result::{ClientError, Result, Tx},
     },
-    Amount, HapiCore,
+    HapiCore,
 };
 
-use super::{
-    conversion::*,
-    utils::{get_network_account, get_program_data_account, get_reporter_account},
+use super::utils::{
+    get_network_account, get_program_data_account, get_reporter_account, get_signer,
 };
 
 pub struct HapiCoreSolana {
     contract: Program<Arc<Keypair>>,
     network: Pubkey,
+    signer: Arc<Keypair>,
 }
 
 impl HapiCoreSolana {
@@ -51,26 +53,53 @@ impl HapiCoreSolana {
         let cluster = Cluster::from_str(&options.provider_url)
             .map_err(|e| ClientError::UrlParseError(format!("`provider-url`: {e}")))?;
 
-        let signer = if let Some(pk) = options.private_key {
-            Keypair::from_base58_string(&pk)
-        } else {
-            let default_config = CONFIG_FILE
-                .as_ref()
-                .ok_or(ClientError::AbsentDefaultConfig)?;
+        let signer = Arc::new(get_signer(options.private_key)?);
 
-            let cli_config = Config::load(default_config)
-                .map_err(|e| ClientError::UnableToLoadConfig(e.to_string()))?;
-
-            read_keypair_file(cli_config.keypair_path)
-                .map_err(|e| ClientError::SolanaKeypairFile(format!("`keypair-path`: {e}")))?
-        };
-
-        let client = Client::new(cluster, Arc::new(signer));
+        let client = Client::new(cluster, signer.clone());
         let contract = client.program(program_id)?;
 
         let network = get_network_account(&options.network.to_string(), &program_id)?.0;
 
-        Ok(Self { contract, network })
+        Ok(Self {
+            contract,
+            network,
+            signer,
+        })
+    }
+
+    async fn get_reporter(&self) -> Result<(Pubkey, SolanaReporter)> {
+        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+
+        let reporter = data
+            .iter()
+            .find(|(_, reporter)| reporter.account == self.signer.pubkey())
+            .ok_or(ClientError::InvalidReporter)?;
+
+        Ok(reporter.clone())
+    }
+
+    async fn create_network_ata(&self, token: &Pubkey) -> Result<()> {
+        let cli = self.contract.async_rpc();
+        let recent_blockhash = cli.get_latest_blockhash().await.unwrap();
+
+        let create_ata_instruction = create_associated_token_account(
+            &self.signer.pubkey(),
+            &self.network,
+            token,
+            &spl_token::id(),
+        );
+
+        let create_ata_tx = Transaction::new_signed_with_payer(
+            &[create_ata_instruction],
+            Some(&self.signer.pubkey()),
+            &[&self.signer],
+            recent_blockhash,
+        );
+
+        cli.send_and_confirm_transaction_with_spinner(&create_ata_tx)
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -94,7 +123,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::SetAuthority {
-                authority: self.contract.payer(),
+                authority: self.signer.pubkey(),
                 network: self.network,
                 new_authority,
                 program_account,
@@ -121,13 +150,13 @@ impl HapiCore for HapiCoreSolana {
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
         let stake_configuration = hapi_core_solana::StakeConfiguration {
-            unlock_duration: configuration.unlock_duration.into(),
+            unlock_duration: configuration.unlock_duration,
             validator_stake: configuration.validator_stake.into(),
             tracer_stake: configuration.tracer_stake.into(),
             publisher_stake: configuration.publisher_stake.into(),
             authority_stake: configuration.authority_stake.into(),
             // TODO: add appraiser stake
-            appraiser_stake: network_data.stake_configuration.appraiser_stake.into(),
+            appraiser_stake: network_data.stake_configuration.appraiser_stake,
         };
 
         let hash = self
@@ -144,6 +173,10 @@ impl HapiCore for HapiCoreSolana {
             .send()
             .await?
             .to_string();
+
+        if !network_data.stake_mint.eq(&stake_mint) {
+            self.create_network_ata(&stake_mint).await?;
+        }
 
         Ok(Tx { hash })
     }
@@ -164,6 +197,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
+        let network_data = self.contract.account::<SolanaNetwork>(self.network).await?;
         let reward_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
@@ -178,7 +212,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::UpdateRewardConfiguration {
-                authority: self.contract.payer(),
+                authority: self.signer.pubkey(),
                 network: self.network,
                 reward_mint,
             })
@@ -188,6 +222,10 @@ impl HapiCore for HapiCoreSolana {
             .send()
             .await?
             .to_string();
+
+        if !network_data.reward_mint.eq(&reward_mint) {
+            self.create_network_ata(&reward_mint).await?;
+        }
 
         Ok(Tx { hash })
     }
@@ -218,7 +256,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::CreateReporter {
-                authority: self.contract.payer(),
+                authority: self.signer.pubkey(),
                 network: self.network,
                 reporter,
                 system_program: system_program::id(),
@@ -247,7 +285,7 @@ impl HapiCore for HapiCoreSolana {
             .contract
             .request()
             .accounts(accounts::UpdateReporter {
-                authority: self.contract.payer(),
+                authority: self.signer.pubkey(),
                 network: self.network,
                 reporter,
             })
@@ -294,13 +332,78 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let (reporter_pubkey, reporter) = self.get_reporter().await?;
+        let network = self.contract.account::<SolanaNetwork>(self.network).await?;
+
+        let network_stake_token_account =
+            get_associated_token_address(&self.network, &network.stake_mint);
+        let reporter_stake_token_account =
+            get_associated_token_address(&reporter.account, &network.stake_mint);
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::ActivateReporter {
+                signer: self.signer.pubkey(),
+                network: self.network,
+                reporter: reporter_pubkey,
+                network_stake_token_account,
+                reporter_stake_token_account,
+                token_program: spl_token::id(),
+            })
+            .args(instruction::ActivateReporter)
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
+
     async fn deactivate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let (reporter_pubkey, _) = self.get_reporter().await?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::DeactivateReporter {
+                signer: self.signer.pubkey(),
+                network: self.network,
+                reporter: reporter_pubkey,
+            })
+            .args(instruction::DeactivateReporter)
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
+
     async fn unstake_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let (reporter_pubkey, reporter) = self.get_reporter().await?;
+        let network = self.contract.account::<SolanaNetwork>(self.network).await?;
+
+        let network_stake_token_account =
+            get_associated_token_address(&self.network, &network.stake_mint);
+        let reporter_stake_token_account =
+            get_associated_token_address(&reporter.account, &network.stake_mint);
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::Unstake {
+                signer: self.signer.pubkey(),
+                network: self.network,
+                reporter: reporter_pubkey,
+                network_stake_token_account,
+                reporter_stake_token_account,
+                token_program: spl_token::id(),
+            })
+            .args(instruction::Unstake)
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
 
     async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
@@ -349,32 +452,5 @@ impl HapiCore for HapiCoreSolana {
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
         unimplemented!()
-    }
-}
-
-pub struct TokenContractSolana {}
-
-impl TokenContractSolana {
-    pub fn new() -> Result<Self> {
-        Ok(Self {})
-    }
-}
-
-#[async_trait]
-impl TokenContract for TokenContractSolana {
-    fn is_approve_needed(&self) -> bool {
-        false
-    }
-
-    async fn transfer(&self, _to: &str, _amount: Amount) -> Result<Tx> {
-        unimplemented!("`transfer` is not implemented for Near");
-    }
-
-    async fn approve(&self, _spender: &str, _amount: Amount) -> Result<Tx> {
-        unimplemented!("`approve` is not implemented for Near");
-    }
-
-    async fn balance(&self, _addr: &str) -> Result<Amount> {
-        unimplemented!("`balance` is not implemented for Near");
     }
 }

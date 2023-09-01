@@ -1,43 +1,53 @@
-use std::{
-    ffi::OsStr,
-    process::{Command, Stdio},
-    thread::sleep,
-    time::Duration,
-};
+use std::{ffi::OsStr, process::Command, thread::sleep, time::Duration};
 
-use anchor_client::solana_sdk::transaction::Transaction;
-use anchor_client::solana_sdk::{program_pack::Pack, signature::Keypair};
 use anchor_client::{
     solana_client::{
         client_error::ClientErrorKind, nonblocking::rpc_client::RpcClient, rpc_request::RpcError,
     },
-    solana_sdk::native_token::LAMPORTS_PER_SOL,
-    solana_sdk::pubkey::Pubkey,
     solana_sdk::{
-        signature::Signer,
-        system_instruction::{create_account, create_account_with_seed},
+        native_token::LAMPORTS_PER_SOL,
+        program_pack::Pack,
+        pubkey::Pubkey,
+        signature::{read_keypair_file, Keypair, Signer},
+        system_instruction::create_account,
+        transaction::Transaction,
     },
 };
 
 use hapi_core::client::implementations::solana::get_network_account;
-
-use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
-use spl_token::solana_program::instruction::Instruction;
-
-use spl_token::instruction::{initialize_mint, mint_to};
+use spl_associated_token_account::{
+    get_associated_token_address, instruction::create_associated_token_account,
+};
+use spl_token::{
+    instruction::{initialize_mint, mint_to},
+    solana_program::instruction::Instruction,
+};
 
 use super::{fixtures::*, validator_utils::*};
 use crate::cmd_utils::*;
 
 pub struct Setup {
-    pub data: TestData,
+    pub authority: Keypair,
+    pub publisher: Keypair,
+    pub mint: Keypair,
     cli: RpcClient,
     provider_url: String,
 }
 
 impl Setup {
     pub async fn new() -> Setup {
-        let data = TestData::default();
+        let dir = std::env::current_dir()
+            .expect("Unable to detect directory")
+            .to_string_lossy()
+            .to_string();
+
+        let authority = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, AUTHORITY_KEYPAIR))
+            .expect("Invalid keypair");
+        let publisher = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, PUBLISHER_KEYPAIR))
+            .expect("Invalid keypair");
+        let mint = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, MINT_KEYPAIR))
+            .expect("Invalid keypair");
+
         shut_down_existing_validator();
         start_validator();
 
@@ -45,12 +55,16 @@ impl Setup {
         let cli = RpcClient::new(provider_url.clone());
 
         let setup = Self {
-            data,
+            authority,
+            publisher,
+            mint,
             cli,
             provider_url,
         };
+
         setup.setup_wallets().await;
-        setup.prepare_validator().await;
+        prepare_validator(&dir).await;
+        setup.check_validator_setup().await;
 
         setup
     }
@@ -72,58 +86,18 @@ impl Setup {
     }
 
     async fn setup_wallets(&self) {
-        println!("==> Creating mint account");
-        let payer = &self.data.get_wallet("admin").keypair;
+        self.airdrop(&self.authority.pubkey()).await;
+        self.airdrop(&self.publisher.pubkey()).await;
 
-        self.airdrop(&payer.pubkey()).await;
+        println!("==> Creating mint account");
         self.create_mint().await;
 
         println!("==> Preparing wallets");
-        for (key, wallet) in &self.data.wallets {
-            if !key.eq(&"mint") {
-                let owner_keypair = &wallet.keypair;
-
-                self.airdrop(&owner_keypair.pubkey()).await;
-                // self.create_ata(owner_keypair).await;
-            }
-        }
+        self.create_ata(&self.authority).await;
+        self.create_ata(&self.publisher).await;
     }
 
-    async fn prepare_validator(&self) {
-        println!("==> Deploying the contract");
-
-        let program_dir = &self.data.program_dir;
-        let admin_keypair = &self.data.get_wallet("admin").path;
-        let program_keypair = &self.data.program_keypair_path;
-
-        ensure_cmd(
-            Command::new("anchor")
-                .args([
-                    "deploy",
-                    "--program-keypair",
-                    program_keypair,
-                    "--provider.wallet",
-                    &admin_keypair,
-                    "--program-name",
-                    PROGRAM_NAME,
-                ])
-                .env("ANCHOR_WALLET", admin_keypair)
-                .stdout(Stdio::null())
-                .current_dir(program_dir),
-        )
-        .unwrap();
-
-        println!("==> Creating network for tests");
-
-        ensure_cmd(
-            Command::new("npm")
-                .args(["run", "create-network", NETWORK])
-                .stdout(Stdio::null())
-                .env("ANCHOR_WALLET", admin_keypair)
-                .current_dir(program_dir),
-        )
-        .unwrap();
-
+    async fn check_validator_setup(&self) {
         let program_id = HAPI_CORE_PROGRAM_ID
             .parse::<Pubkey>()
             .expect("Invalid program id");
@@ -176,23 +150,15 @@ impl Setup {
     }
 
     async fn create_mint(&self) {
-        let mint_account_keypair = &self.data.get_wallet("mint").keypair;
-        let payer_account_keypair = &self.data.get_wallet("admin").keypair;
-        let mint_account_pubkey = mint_account_keypair.pubkey();
-        let payer_account_pubkey = payer_account_keypair.pubkey();
-
+        let payer_address = self.authority.pubkey();
         let create_account_instruction = self
-            .create_acc_instruction(
-                &mint_account_keypair,
-                &payer_account_keypair,
-                spl_token::state::Mint::LEN,
-            )
+            .create_acc_instruction(&self.mint, &self.authority, spl_token::state::Mint::LEN)
             .await;
 
         let initialize_mint_instruction = initialize_mint(
             &spl_token::id(),
-            &mint_account_pubkey,
-            &payer_account_pubkey,
+            &self.mint.pubkey(),
+            &payer_address,
             None,
             9,
         )
@@ -202,8 +168,8 @@ impl Setup {
 
         let transaction = Transaction::new_signed_with_payer(
             &vec![create_account_instruction, initialize_mint_instruction],
-            Some(&payer_account_pubkey),
-            &[payer_account_keypair, mint_account_keypair],
+            Some(&payer_address),
+            &[&self.authority, &self.mint],
             recent_blockhash,
         );
 
@@ -214,14 +180,17 @@ impl Setup {
     }
 
     async fn create_ata(&self, owner_keypair: &Keypair) {
-        let mint_address = &self.data.get_wallet("mint").keypair.pubkey();
-        let payer_account = &self.data.get_wallet("admin").keypair;
+        let mint_address = self.mint.pubkey();
+        let payer_address = self.authority.pubkey();
         let owner_pubkey = owner_keypair.pubkey();
-
         let recent_blockhash = self.cli.get_latest_blockhash().await.unwrap();
 
-        let create_ata_instruction =
-            create_associated_token_account(&owner_pubkey, &owner_pubkey, mint_address);
+        let create_ata_instruction = create_associated_token_account(
+            &owner_pubkey,
+            &owner_pubkey,
+            &mint_address,
+            &spl_token::id(),
+        );
 
         let create_ata_tx = Transaction::new_signed_with_payer(
             &[create_ata_instruction],
@@ -230,34 +199,35 @@ impl Setup {
             recent_blockhash,
         );
 
+        let ata = get_associated_token_address(&owner_pubkey, &mint_address);
+        println!("==> Creating and minting to ATA: {}", ata);
+
         self.cli
             .send_and_confirm_transaction_with_spinner(&create_ata_tx)
             .await
             .expect("Failed to create ATA");
 
-        // TODO: fix this
-        // let ata = get_associated_token_address(&owner_pubkey, mint_address);
+        let mint_instruction = mint_to(
+            &spl_token::id(),
+            &mint_address,
+            &ata,
+            &payer_address,
+            &[&payer_address],
+            1_000_000_000,
+        )
+        .unwrap();
 
-        // let mint_instruction = mint_to(
-        //     &spl_token::id(),
-        //     &mint_address,
-        //     &ata,
-        //     &owner_pubkey,
-        //     &[&payer_account.pubkey()],
-        //     100_000,
-        // )
-        // .unwrap();
+        let mint_transaction = Transaction::new_signed_with_payer(
+            &[mint_instruction],
+            Some(&payer_address),
+            &[&self.authority],
+            recent_blockhash,
+        );
 
-        // let mint_transaction = Transaction::new_signed_with_payer(
-        //     &[mint_instruction],
-        //     Some(&payer_account.pubkey()),
-        //     &[payer_account],
-        //     recent_blockhash,
-        // );
-
-        // rpc_client
-        //     .send_and_confirm_transaction_with_spinner(&mint_transaction)
-        //     .expect("Failed to mint to ATA");
+        self.cli
+            .send_and_confirm_transaction_with_spinner(&mint_transaction)
+            .await
+            .expect("Failed to mint to ATA");
     }
 
     pub fn exec<I, S>(&self, args: I) -> anyhow::Result<CmdOutput>

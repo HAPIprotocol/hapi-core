@@ -29,8 +29,19 @@ pub enum ClientError {
     UnableToLoadConfig(String),
     #[error("Unable to read keypair file: {0}")]
     SolanaKeypairFile(String),
+    #[error("Anchor Rpc error: {0}")]
+    AnchorRpcError(#[from] anchor_client::ClientError),
     #[error("Solana Rpc error: {0}")]
-    SolanaRpcError(#[from] anchor_client::ClientError),
+    SolanaRpcError(#[from] anchor_client::solana_client::client_error::ClientError),
+    #[error("This owner has no token account")]
+    AbsentTokenAccount,
+    #[error("Solana token error: {0}")]
+    SolanaTokenError(#[from] anchor_client::solana_sdk::program_error::ProgramError),
+
+    #[error("Failed to parse balance: {0}")]
+    FailedToParseBalance(String),
+    #[error("The reporter does not exist")]
+    InvalidReporter,
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;

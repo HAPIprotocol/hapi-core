@@ -13,7 +13,6 @@ impl From<ReporterRole> for SolanaReporterRole {
             ReporterRole::Tracer => SolanaReporterRole::Tracer,
             ReporterRole::Publisher => SolanaReporterRole::Publisher,
             ReporterRole::Authority => SolanaReporterRole::Authority,
-            _ => panic!("Invalid value for ReporterRole"),
         }
     }
 }

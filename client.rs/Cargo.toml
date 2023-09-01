@@ -34,9 +34,9 @@ solana-cli-config = { git = "https://github.com/hlgltvnnk/solana.git", branch = 
 hapi_core_solana = { path = "../solana/programs/hapi_core_solana", features = [
     "no-entrypoint",
 ] }
-
-[dev-dependencies]
 spl-associated-token-account = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
 spl-token = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
+
+[dev-dependencies]
 bs58 = "0.5.0"
 # spl-token = "3"

@@ -62,3 +62,39 @@ pub fn start_validator() {
         sleep(Duration::from_millis(100));
     }
 }
+
+pub async fn prepare_validator(current_dir: &str) {
+    let program_dir = format!("{}/{}", current_dir, PROGRAM_DIR);
+    let admin_keypair = format!("{}/{}/{}", current_dir, KEYS_DIR, AUTHORITY_KEYPAIR);
+    let program_keypair = format!("{}/{}/{}", current_dir, PROGRAM_DIR, HAPI_CORE_KEYPAIR);
+
+    println!("==> Deploying the contract");
+
+    ensure_cmd(
+        Command::new("anchor")
+            .args([
+                "deploy",
+                "--program-keypair",
+                &program_keypair,
+                "--provider.wallet",
+                &admin_keypair,
+                "--program-name",
+                PROGRAM_NAME,
+            ])
+            .env("ANCHOR_WALLET", &admin_keypair)
+            .stdout(Stdio::null())
+            .current_dir(&program_dir),
+    )
+    .unwrap();
+
+    println!("==> Creating network for tests");
+
+    ensure_cmd(
+        Command::new("npm")
+            .args(["run", "create-network", NETWORK])
+            .stdout(Stdio::null())
+            .env("ANCHOR_WALLET", &admin_keypair)
+            .current_dir(&program_dir),
+    )
+    .unwrap();
+}
