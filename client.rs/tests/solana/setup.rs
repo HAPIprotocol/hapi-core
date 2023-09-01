@@ -29,7 +29,8 @@ use crate::cmd_utils::*;
 pub struct Setup {
     pub authority: Keypair,
     pub publisher: Keypair,
-    pub mint: Keypair,
+    pub stake_mint: Keypair,
+    pub reward_mint: Keypair,
     cli: RpcClient,
     provider_url: String,
 }
@@ -45,8 +46,11 @@ impl Setup {
             .expect("Invalid keypair");
         let publisher = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, PUBLISHER_KEYPAIR))
             .expect("Invalid keypair");
-        let mint = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, MINT_KEYPAIR))
+        let stake_mint = read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, STAKE_MINT_KEYPAIR))
             .expect("Invalid keypair");
+        let reward_mint =
+            read_keypair_file(format!("{}/{}/{}", dir, KEYS_DIR, REWAED_MINT_KEYPAIR))
+                .expect("Invalid keypair");
 
         shut_down_existing_validator();
         start_validator();
@@ -57,7 +61,8 @@ impl Setup {
         let setup = Self {
             authority,
             publisher,
-            mint,
+            stake_mint,
+            reward_mint,
             cli,
             provider_url,
         };
@@ -89,12 +94,15 @@ impl Setup {
         self.airdrop(&self.authority.pubkey()).await;
         self.airdrop(&self.publisher.pubkey()).await;
 
-        println!("==> Creating mint account");
-        self.create_mint().await;
+        println!("==> Creating mint accounts");
+        self.create_mint(&self.stake_mint).await;
+        self.create_mint(&self.reward_mint).await;
 
         println!("==> Preparing wallets");
-        self.create_ata(&self.authority).await;
-        self.create_ata(&self.publisher).await;
+        self.create_ata(&self.authority, &self.stake_mint.pubkey())
+            .await;
+        self.create_ata(&self.publisher, &self.stake_mint.pubkey())
+            .await;
     }
 
     async fn check_validator_setup(&self) {
@@ -149,27 +157,21 @@ impl Setup {
         )
     }
 
-    async fn create_mint(&self) {
+    async fn create_mint(&self, mint: &Keypair) {
         let payer_address = self.authority.pubkey();
         let create_account_instruction = self
-            .create_acc_instruction(&self.mint, &self.authority, spl_token::state::Mint::LEN)
+            .create_acc_instruction(&mint, &self.authority, spl_token::state::Mint::LEN)
             .await;
 
-        let initialize_mint_instruction = initialize_mint(
-            &spl_token::id(),
-            &self.mint.pubkey(),
-            &payer_address,
-            None,
-            9,
-        )
-        .unwrap();
+        let initialize_mint_instruction =
+            initialize_mint(&spl_token::id(), &mint.pubkey(), &payer_address, None, 9).unwrap();
 
         let recent_blockhash = self.cli.get_latest_blockhash().await.unwrap();
 
         let transaction = Transaction::new_signed_with_payer(
             &vec![create_account_instruction, initialize_mint_instruction],
             Some(&payer_address),
-            &[&self.authority, &self.mint],
+            &[&self.authority, &mint],
             recent_blockhash,
         );
 
@@ -179,8 +181,7 @@ impl Setup {
             .expect("Failed to create mint");
     }
 
-    async fn create_ata(&self, owner_keypair: &Keypair) {
-        let mint_address = self.mint.pubkey();
+    async fn create_ata(&self, owner_keypair: &Keypair, mint_address: &Pubkey) {
         let payer_address = self.authority.pubkey();
         let owner_pubkey = owner_keypair.pubkey();
         let recent_blockhash = self.cli.get_latest_blockhash().await.unwrap();
@@ -188,7 +189,7 @@ impl Setup {
         let create_ata_instruction = create_associated_token_account(
             &owner_pubkey,
             &owner_pubkey,
-            &mint_address,
+            mint_address,
             &spl_token::id(),
         );
 
@@ -199,7 +200,7 @@ impl Setup {
             recent_blockhash,
         );
 
-        let ata = get_associated_token_address(&owner_pubkey, &mint_address);
+        let ata = get_associated_token_address(&owner_pubkey, mint_address);
         println!("==> Creating and minting to ATA: {}", ata);
 
         self.cli
@@ -209,7 +210,7 @@ impl Setup {
 
         let mint_instruction = mint_to(
             &spl_token::id(),
-            &mint_address,
+            mint_address,
             &ata,
             &payer_address,
             &[&payer_address],

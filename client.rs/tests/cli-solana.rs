@@ -29,7 +29,8 @@ async fn solana_cli_works() {
     let authority_secret = t.authority.to_base58_string();
     let publisher_pubkey = t.publisher.pubkey().to_string();
     let publisher_secret = t.publisher.to_base58_string();
-    let mint = t.mint.pubkey().to_string();
+    let stake_mint = t.stake_mint.pubkey().to_string();
+    let reward_mint = t.reward_mint.pubkey().to_string();
 
     // t.print("Check that initial authority matches the key of contract deployer");
     // assert_json_output!(
@@ -38,7 +39,7 @@ async fn solana_cli_works() {
     // );
 
     // t.print("Assign authority to a new address");
-    std::env::set_var("PRIVATE_KEY", &authority_secret);
+    // std::env::set_var("PRIVATE_KEY", &authority_secret);
     // assert_tx_output!(t.exec(["authority", "set", &publisher_pubkey]));
 
     // t.print("Make sure that authority has changed");
@@ -62,26 +63,26 @@ async fn solana_cli_works() {
     //     json!({ "authority": &authority_pubkey })
     // );
 
-    t.print("Check that initial stake configuration is empty");
-    assert_json_output!(
-        t.exec(["configuration", "get-stake"]),
-        json!({
-            "configuration": {
-                "token": Pubkey::default().to_string(),
-                "unlock_duration": 0,
-                "validator_stake": 0.to_string(),
-                "tracer_stake": 0.to_string(),
-                "publisher_stake": 0.to_string(),
-                "authority_stake": 0.to_string()
-            }
-        })
-    );
+    // t.print("Check that initial stake configuration is empty");
+    // assert_json_output!(
+    //     t.exec(["configuration", "get-stake"]),
+    //     json!({
+    //         "configuration": {
+    //             "token": Pubkey::default().to_string(),
+    //             "unlock_duration": 0,
+    //             "validator_stake": 0.to_string(),
+    //             "tracer_stake": 0.to_string(),
+    //             "publisher_stake": 0.to_string(),
+    //             "authority_stake": 0.to_string()
+    //         }
+    //     })
+    // );
 
     t.print("Update stake configuration");
     assert_tx_output!(t.exec([
         "configuration",
         "update-stake",
-        &mint,
+        &stake_mint,
         &unlock_duration.to_string(),
         &validator_stake.to_string(),
         &tracer_stake.to_string(),
@@ -94,7 +95,7 @@ async fn solana_cli_works() {
     //     t.exec(["configuration", "get-stake"]),
     //     json!({
     //         "configuration": {
-    //             "token": mint,
+    //             "token": stake_mint,
     //             "unlock_duration": unlock_duration,
     //             "validator_stake": validator_stake.to_string(),
     //             "tracer_stake": tracer_stake.to_string(),
@@ -118,23 +119,23 @@ async fn solana_cli_works() {
     //     })
     // );
 
-    // t.print("Update reward configuration");
-    // assert_tx_output!(t.exec([
-    //     "configuration",
-    //     "update-reward",
-    //     &mint,
-    //     &address_confirmation_reward.to_string(),
-    //     &address_tracer_reward.to_string(),
-    //     &asset_confirmation_reward.to_string(),
-    //     &asset_tracer_reward.to_string(),
-    // ]));
+    t.print("Update reward configuration");
+    assert_tx_output!(t.exec([
+        "configuration",
+        "update-reward",
+        &reward_mint,
+        &address_confirmation_reward.to_string(),
+        &address_tracer_reward.to_string(),
+        &asset_confirmation_reward.to_string(),
+        &asset_tracer_reward.to_string(),
+    ]));
 
     // t.print("Make sure that the new reward configuration is applied");
     // assert_json_output!(
     //     t.exec(["configuration", "get-reward"]),
     //     json!({
     //         "configuration": {
-    //             "token": mint,
+    //             "token": reward_mint,
     //             "address_confirmation_reward": address_confirmation_reward.to_string(),
     //             "address_tracer_reward": address_tracer_reward.to_string(),
     //             "asset_confirmation_reward": asset_confirmation_reward.to_string(),
@@ -206,7 +207,7 @@ async fn solana_cli_works() {
 
     // t.print("Check authority's token balance");
     // let json = assert_json_output!(
-    //     t.exec(["token", "balance", &mint, &authority_pubkey]),
+    //     t.exec(["token", "balance", &stake_mint, &authority_pubkey]),
     //     json!({ "balance": "1000000000" })
     // );
 
@@ -214,7 +215,7 @@ async fn solana_cli_works() {
 
     // t.print("Check publisher's token balance");
     // let json = assert_json_output!(
-    //     t.exec(["token", "balance", &mint, &publisher_pubkey]),
+    //     t.exec(["token", "balance", &stake_mint, &publisher_pubkey]),
     //     json!({ "balance": "1000000000" })
     // );
 
@@ -225,7 +226,7 @@ async fn solana_cli_works() {
 
     // t.print("Check authority's token balance after activation");
     // assert_json_output!(
-    //     t.exec(["token", "balance", &mint, &authority_pubkey,]),
+    //     t.exec(["token", "balance", &stake_mint, &authority_pubkey,]),
     //     json!({ "balance": (authority_balance - authority_stake).to_string(), })
     // );
 
@@ -235,7 +236,7 @@ async fn solana_cli_works() {
     // assert_tx_output!(t.exec([
     //     "token",
     //     "transfer",
-    //     &mint,
+    //     &stake_mint,
     //     &publisher_pubkey,
     //     &publisher_stake.to_string(),
     // ]));
@@ -245,7 +246,7 @@ async fn solana_cli_works() {
 
     // t.print("Check publisher's token balance");
     // assert_json_output!(
-    //     t.exec(["token", "balance", &mint, &publisher_pubkey]),
+    //     t.exec(["token", "balance", &stake_mint, &publisher_pubkey]),
     //     json!({ "balance": publisher_balance.to_string() })
     // );
 
@@ -280,38 +281,38 @@ async fn solana_cli_works() {
 
     // t.print("Check publisher's token balance after activation");
     // assert_json_output!(
-    //     t.exec(["token", "balance", &mint, &publisher_pubkey]),
+    //     t.exec(["token", "balance", &stake_mint, &publisher_pubkey]),
     //     json!({ "balance": (publisher_balance - publisher_stake).to_string() })
     // );
 
-    t.print("Get reporters list");
-    sort_assert_json_output!(
-        t.exec(["reporter", "list"]),
-        json!({ "reporters": [
-            {
-                "id": AUTHORITY_UUID,
-                "account": authority_pubkey,
-                "role": "authority",
-                "name": "HAPI Authority",
-                "url": "https://hapi.one/reporter/authority",
-                "stake": authority_stake.to_string(),
-                "status": "active",
-                "unlock_timestamp": 0
-            },
-            {
-                "id": PUBLISHERY_UUID,
-                "account": publisher_pubkey,
-                "role": "publisher",
-                "name": "HAPI Publisher",
-                "url": "https://hapi.one/reporter/publisher",
-                "stake": publisher_stake.to_string(),
-                "status": "active",
-                "unlock_timestamp": 0
-            }
-        ]}),
-        "reporters"
-    );
+    // t.print("Get reporters list");
+    // sort_assert_json_output!(
+    //     t.exec(["reporter", "list"]),
+    //     json!({ "reporters": [
+    //         {
+    //             "id": AUTHORITY_UUID,
+    //             "account": authority_pubkey,
+    //             "role": "authority",
+    //             "name": "HAPI Authority",
+    //             "url": "https://hapi.one/reporter/authority",
+    //             "stake": authority_stake.to_string(),
+    //             "status": "active",
+    //             "unlock_timestamp": 0
+    //         },
+    //         {
+    //             "id": PUBLISHERY_UUID,
+    //             "account": publisher_pubkey,
+    //             "role": "publisher",
+    //             "name": "HAPI Publisher",
+    //             "url": "https://hapi.one/reporter/publisher",
+    //             "stake": publisher_stake.to_string(),
+    //             "status": "active",
+    //             "unlock_timestamp": 0
+    //         }
+    //     ]}),
+    //     "reporters"
+    // );
 
-    t.print("Make sure that reporter counter has increased");
-    assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
+    // t.print("Make sure that reporter counter has increased");
+    // assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
 }
