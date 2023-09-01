@@ -291,13 +291,13 @@ pub mod hapi_core_solana {
         ctx: Context<UpdateCase>,
         name: String,
         url: String,
-        state: CaseStatus,
+        status: CaseStatus,
     ) -> Result<()> {
         let case = &mut ctx.accounts.case;
 
         case.name = name;
         case.url = url;
-        case.status = state;
+        case.status = status;
 
         msg!(
             "Case updated, data:

@@ -3,6 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
 
 use anchor_client::{
+    anchor_lang::AccountDeserialize,
     solana_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -15,9 +16,7 @@ use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
 
-use hapi_core_solana::{
-    accounts, instruction, Network as SolanaNetwork, Reporter as SolanaReporter, ReporterRole,
-};
+use hapi_core_solana::{accounts, instruction};
 
 use crate::{
     client::{
@@ -25,7 +24,7 @@ use crate::{
         entities::{
             address::{Address, CreateAddressInput, UpdateAddressInput},
             asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
-            case::{Case, CreateCaseInput, UpdateCaseInput},
+            case::{self, Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
         interface::HapiCoreOptions,
@@ -35,7 +34,8 @@ use crate::{
 };
 
 use super::utils::{
-    get_network_account, get_program_data_account, get_reporter_account, get_signer,
+    get_case_account, get_network_account, get_program_data_account, get_reporter_account,
+    get_signer,
 };
 
 pub struct HapiCoreSolana {
@@ -67,8 +67,11 @@ impl HapiCoreSolana {
         })
     }
 
-    async fn get_reporter(&self) -> Result<(Pubkey, SolanaReporter)> {
-        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+    async fn get_reporter(&self) -> Result<(Pubkey, hapi_core_solana::Reporter)> {
+        let data = self
+            .contract
+            .accounts::<hapi_core_solana::Reporter>(vec![])
+            .await?;
 
         let reporter = data
             .iter()
@@ -138,13 +141,19 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_authority(&self) -> Result<String> {
-        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let data = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         Ok(data.authority.to_string())
     }
 
     async fn update_stake_configuration(&self, configuration: StakeConfiguration) -> Result<Tx> {
-        let network_data = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let network_data = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         let stake_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
@@ -182,7 +191,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
-        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let data = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         let res = StakeConfiguration {
             token: data.stake_mint.to_string(),
@@ -197,7 +209,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
-        let network_data = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let network_data = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
         let reward_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
@@ -231,7 +246,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
-        let data = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let data = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         let res: RewardConfiguration = RewardConfiguration {
             token: data.reward_mint.to_string(),
@@ -265,7 +283,7 @@ impl HapiCore for HapiCoreSolana {
                 reporter_id: input.id.as_u128(),
                 account,
                 name: input.name,
-                role: ReporterRole::from(input.role),
+                role: hapi_core_solana::ReporterRole::from(input.role),
                 url: input.url,
                 bump,
             })
@@ -292,7 +310,7 @@ impl HapiCore for HapiCoreSolana {
             .args(instruction::UpdateReporter {
                 account,
                 name: input.name,
-                role: ReporterRole::from(input.role),
+                role: hapi_core_solana::ReporterRole::from(input.role),
                 url: input.url,
             })
             .send()
@@ -305,13 +323,19 @@ impl HapiCore for HapiCoreSolana {
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
         let reporter =
             get_reporter_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
-        let data = self.contract.account::<SolanaReporter>(reporter).await?;
+        let data = self
+            .contract
+            .account::<hapi_core_solana::Reporter>(reporter)
+            .await?;
 
         Reporter::try_from(data)
     }
 
     async fn get_reporter_count(&self) -> Result<u64> {
-        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+        let data = self
+            .contract
+            .accounts::<hapi_core_solana::Reporter>(vec![])
+            .await?;
 
         Ok(data
             .iter()
@@ -320,7 +344,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        let data = self.contract.accounts::<SolanaReporter>(vec![]).await?;
+        let data = self
+            .contract
+            .accounts::<hapi_core_solana::Reporter>(vec![])
+            .await?;
         let mut result = vec![];
 
         for (_, reporter) in data {
@@ -333,7 +360,10 @@ impl HapiCore for HapiCoreSolana {
 
     async fn activate_reporter(&self) -> Result<Tx> {
         let (reporter_pubkey, reporter) = self.get_reporter().await?;
-        let network = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let network = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         let network_stake_token_account =
             get_associated_token_address(&self.network, &network.stake_mint);
@@ -380,7 +410,10 @@ impl HapiCore for HapiCoreSolana {
 
     async fn unstake_reporter(&self) -> Result<Tx> {
         let (reporter_pubkey, reporter) = self.get_reporter().await?;
-        let network = self.contract.account::<SolanaNetwork>(self.network).await?;
+        let network = self
+            .contract
+            .account::<hapi_core_solana::Network>(self.network)
+            .await?;
 
         let network_stake_token_account =
             get_associated_token_address(&self.network, &network.stake_mint);
@@ -406,20 +439,94 @@ impl HapiCore for HapiCoreSolana {
         Ok(Tx { hash })
     }
 
-    async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_case(&self, input: CreateCaseInput) -> Result<Tx> {
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, bump) = get_case_account(input.id, &self.network, &self.contract.id())?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::CreateCase {
+                sender: self.signer.pubkey(),
+                case,
+                network: self.network,
+                reporter,
+                system_program: system_program::id(),
+            })
+            .args(instruction::CreateCase {
+                case_id: input.id.as_u128(),
+                name: input.name,
+                url: input.url,
+                bump,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn update_case(&self, _input: UpdateCaseInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn update_case(&self, input: UpdateCaseInput) -> Result<Tx> {
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_account(input.id, &self.network, &self.contract.id())?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateCase {
+                sender: self.signer.pubkey(),
+                case,
+                network: self.network,
+                reporter,
+                system_program: system_program::id(),
+            })
+            .args(instruction::UpdateCase {
+                name: input.name,
+                url: input.url,
+                status: hapi_core_solana::CaseStatus::from(input.status),
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn get_case(&self, _id: &str) -> Result<Case> {
-        unimplemented!()
+
+    async fn get_case(&self, id: &str) -> Result<Case> {
+        let case = get_case_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
+        let data = self
+            .contract
+            .account::<hapi_core_solana::Case>(case)
+            .await?;
+
+        Case::try_from(data)
     }
+
     async fn get_case_count(&self) -> Result<u64> {
-        unimplemented!()
+        let data = self
+            .contract
+            .accounts::<hapi_core_solana::Case>(vec![])
+            .await?;
+
+        Ok(data
+            .iter()
+            .filter(|(_, reporter)| reporter.network == self.network)
+            .count() as u64)
     }
+
     async fn get_cases(&self, _skip: u64, _take: u64) -> Result<Vec<Case>> {
-        unimplemented!()
+        let data = self
+            .contract
+            .accounts::<hapi_core_solana::Case>(vec![])
+            .await?;
+        let mut result = vec![];
+
+        for (_, case) in data {
+            if case.network == self.network {}
+            result.push(Case::try_from(case)?);
+        }
+
+        Ok(result)
     }
 
     async fn create_address(&self, _input: CreateAddressInput) -> Result<Tx> {

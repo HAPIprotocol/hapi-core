@@ -3,12 +3,13 @@ use serde_json::json;
 
 mod assert;
 mod cmd_utils;
+mod fixtures;
 mod solana;
 
 use solana::setup::Setup;
 use spl_token::solana_program::pubkey::Pubkey;
 
-use crate::solana::{AUTHORITY_UUID, PUBLISHERY_UUID};
+use fixtures::*;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_cli_works() {
@@ -39,7 +40,7 @@ async fn solana_cli_works() {
     // );
 
     // t.print("Assign authority to a new address");
-    // std::env::set_var("PRIVATE_KEY", &authority_secret);
+    std::env::set_var("PRIVATE_KEY", &authority_secret);
     // assert_tx_output!(t.exec(["authority", "set", &publisher_pubkey]));
 
     // t.print("Make sure that authority has changed");
@@ -315,4 +316,21 @@ async fn solana_cli_works() {
 
     // t.print("Make sure that reporter counter has increased");
     // assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
+
+    t.print("Create a case by authority");
+    assert_tx_output!(t.exec(["case", "create", CASE_UUID_1, CASE_NAME_1, CASE_URL_1]));
+
+    t.print("Verify that the case has been created");
+    assert_json_output!(
+        t.exec(["case", "get", CASE_UUID_1]),
+        json!({ "case": {
+            "id": CASE_UUID_1,
+            "name": CASE_NAME_1,
+            "url": CASE_URL_1,
+            "status": "open",
+        }})
+    );
+
+    t.print("Verify the case count has increased");
+    assert_json_output!(t.exec(["case", "count"]), json!({ "count": 1 }));
 }

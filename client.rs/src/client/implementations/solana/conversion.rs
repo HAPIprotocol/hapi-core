@@ -1,10 +1,16 @@
 use uuid::Uuid;
 
 use crate::client::{
-    entities::reporter::{Reporter, ReporterRole},
+    entities::{
+        case::{Case, CaseStatus},
+        reporter::{Reporter, ReporterRole},
+    },
     result::{ClientError, Result},
 };
-use hapi_core_solana::{Reporter as SolanaReporter, ReporterRole as SolanaReporterRole};
+use hapi_core_solana::{
+    Case as SolanaCase, CaseStatus as SolanaCaseStatus, Reporter as SolanaReporter,
+    ReporterRole as SolanaReporterRole,
+};
 
 impl From<ReporterRole> for SolanaReporterRole {
     fn from(value: ReporterRole) -> Self {
@@ -13,6 +19,15 @@ impl From<ReporterRole> for SolanaReporterRole {
             ReporterRole::Tracer => SolanaReporterRole::Tracer,
             ReporterRole::Publisher => SolanaReporterRole::Publisher,
             ReporterRole::Authority => SolanaReporterRole::Authority,
+        }
+    }
+}
+
+impl From<CaseStatus> for SolanaCaseStatus {
+    fn from(value: CaseStatus) -> Self {
+        match value {
+            CaseStatus::Closed => SolanaCaseStatus::Closed,
+            CaseStatus::Open => SolanaCaseStatus::Open,
         }
     }
 }
@@ -30,6 +45,19 @@ impl TryFrom<SolanaReporter> for Reporter {
             url: reporter.url.to_string(),
             stake: reporter.stake.into(),
             unlock_timestamp: reporter.unlock_timestamp,
+        })
+    }
+}
+
+impl TryFrom<SolanaCase> for Case {
+    type Error = ClientError;
+
+    fn try_from(case: SolanaCase) -> Result<Self> {
+        Ok(Case {
+            id: Uuid::from_u128(case.id),
+            name: case.name.to_string(),
+            url: case.url.to_string(),
+            status: (case.status as u8).try_into()?,
         })
     }
 }
