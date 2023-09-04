@@ -22,7 +22,7 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
+            address::{self, Address, CreateAddressInput, UpdateAddressInput},
             asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
             case::{self, Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
@@ -33,10 +33,7 @@ use crate::{
     HapiCore,
 };
 
-use super::utils::{
-    get_case_address, get_network_address, get_program_data_address, get_reporter_address,
-    get_signer,
-};
+use super::utils::*;
 
 pub struct HapiCoreSolana {
     contract: Program<Arc<Keypair>>,
@@ -523,20 +520,80 @@ impl HapiCore for HapiCoreSolana {
         get_accounts!(self, Case)
     }
 
-    async fn create_address(&self, _input: CreateAddressInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_address(&self, input: CreateAddressInput) -> Result<Tx> {
+        let (address, bump) =
+            get_address_address(&input.address, &self.network, &self.contract.id())?;
+
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
+
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::CreateAddress {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                address,
+                system_program: system_program::id(),
+            })
+            .args(instruction::CreateAddress {
+                addr,
+                category: hapi_core_solana::Category::from(input.category),
+                risk_score: input.risk,
+                bump,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn update_address(&self, _input: UpdateAddressInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx> {
+        let (address, _) = get_address_address(&input.address, &self.network, &self.contract.id())?;
+
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
+
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateAddress {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                address,
+                system_program: system_program::id(),
+            })
+            .args(instruction::UpdateAddress {
+                category: hapi_core_solana::Category::from(input.category),
+                risk_score: input.risk,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn get_address(&self, _addr: &str) -> Result<Address> {
-        unimplemented!()
+    async fn get_address(&self, addr: &str) -> Result<Address> {
+        let addr = get_address_address(addr, &self.network, &self.contract.id())?.0;
+
+        get_account!(self, addr, Address)
     }
     async fn get_address_count(&self) -> Result<u64> {
-        unimplemented!()
+        get_account_count!(self, Address)
     }
     async fn get_addresses(&self, _skip: u64, _take: u64) -> Result<Vec<Address>> {
-        unimplemented!()
+        get_accounts!(self, Address)
     }
 
     async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {

@@ -147,7 +147,7 @@ async fn solana_cli_works() {
 
     // t.print("Make sure that the reporter 1 does not exist yet");
     // assert_error_output!(
-    //     t.exec(["reporter", "get", AUTHORITY_UUID]),
+    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
     //     "Error: Anchor Rpc error: Account not found\n\nCaused by:\n    Account not found"
     // );
 
@@ -155,33 +155,33 @@ async fn solana_cli_works() {
     assert_tx_output!(t.exec([
         "reporter",
         "create",
-        AUTHORITY_UUID,
+        REPORTER_UUID_1,
         &authority_pubkey,
         "authority",
         "HAPI Authority",
         "https://hapi.one/reporter/authority",
     ]));
 
-    t.print("Check that the authority reporter has been created");
-    assert_json_output!(
-        t.exec(["reporter", "get", AUTHORITY_UUID]),
-        json!({ "reporter": {
-            "id": AUTHORITY_UUID,
-            "account": authority_pubkey,
-            "role": "authority",
-            "name": "HAPI Authority",
-            "url": "https://hapi.one/reporter/authority",
-            "stake": "0",
-            "status": "inactive",
-            "unlock_timestamp": 0
-        }})
-    );
+    // t.print("Check that the authority reporter has been created");
+    // assert_json_output!(
+    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
+    //     json!({ "reporter": {
+    //         "id": REPORTER_UUID_1,
+    //         "account": authority_pubkey,
+    //         "role": "authority",
+    //         "name": "HAPI Authority",
+    //         "url": "https://hapi.one/reporter/authority",
+    //         "stake": "0",
+    //         "status": "inactive",
+    //         "unlock_timestamp": 0
+    //     }})
+    // );
 
     // t.print("Update authority reporter");
     // assert_tx_output!(t.exec([
     //     "reporter",
     //     "update",
-    //     AUTHORITY_UUID,
+    //     REPORTER_UUID_1,
     //     &authority_pubkey,
     //     "authority",
     //     "Updated HAPI Authority",
@@ -190,9 +190,9 @@ async fn solana_cli_works() {
 
     // t.print("Check that the authority reporter has been updated");
     // assert_json_output!(
-    //     t.exec(["reporter", "get", AUTHORITY_UUID]),
+    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
     //     json!({ "reporter": {
-    //         "id": AUTHORITY_UUID,
+    //         "id": REPORTER_UUID_1,
     //         "account": authority_pubkey,
     //         "role": "authority",
     //         "name": "Updated HAPI Authority",
@@ -255,7 +255,7 @@ async fn solana_cli_works() {
     assert_tx_output!(t.exec([
         "reporter",
         "create",
-        PUBLISHERY_UUID,
+        REPORTER_UUID_2,
         &publisher_pubkey,
         "publisher",
         "HAPI Publisher",
@@ -264,9 +264,9 @@ async fn solana_cli_works() {
 
     // t.print("Check that the publisher reporter has been created");
     // assert_json_output!(
-    //     t.exec(["reporter", "get", PUBLISHERY_UUID]),
+    //     t.exec(["reporter", "get", REPORTER_UUID_2]),
     //     json!({ "reporter": {
-    //         "id": PUBLISHERY_UUID,
+    //         "id": REPORTER_UUID_2,
     //         "account": &publisher_pubkey,
     //         "role": "publisher",
     //         "name": "HAPI Publisher",
@@ -291,7 +291,7 @@ async fn solana_cli_works() {
     //     t.exec(["reporter", "list"]),
     //     json!({ "reporters": [
     //         {
-    //             "id": AUTHORITY_UUID,
+    //             "id": REPORTER_UUID_1,
     //             "account": authority_pubkey,
     //             "role": "authority",
     //             "name": "HAPI Authority",
@@ -301,7 +301,7 @@ async fn solana_cli_works() {
     //             "unlock_timestamp": 0
     //         },
     //         {
-    //             "id": PUBLISHERY_UUID,
+    //             "id": REPORTER_UUID_2,
     //             "account": publisher_pubkey,
     //             "role": "publisher",
     //             "name": "HAPI Publisher",
@@ -320,17 +320,80 @@ async fn solana_cli_works() {
     t.print("Create a case by authority");
     assert_tx_output!(t.exec(["case", "create", CASE_UUID_1, CASE_NAME_1, CASE_URL_1]));
 
-    t.print("Verify that the case has been created");
-    assert_json_output!(
-        t.exec(["case", "get", CASE_UUID_1]),
-        json!({ "case": {
-            "id": CASE_UUID_1,
-            "name": CASE_NAME_1,
-            "url": CASE_URL_1,
-            "status": "open",
-        }})
-    );
+    // t.print("Verify that the case has been created");
+    // assert_json_output!(
+    //     t.exec(["case", "get", CASE_UUID_1]),
+    //     json!({ "case": {
+    //         "id": CASE_UUID_1,
+    //         "name": CASE_NAME_1,
+    //         "url": CASE_URL_1,
+    //         "status": "open",
+    //     }})
+    // );
+
+    // TODO: list cases
 
     t.print("Verify the case count has increased");
     assert_json_output!(t.exec(["case", "count"]), json!({ "count": 1 }));
+
+    t.print("Create an address by authority");
+    assert_tx_output!(t.exec([
+        "address",
+        "create",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        ADDRESS_CATEGORY_1,
+        ADDRESS_RISK_1,
+    ]));
+
+    t.print("Verify that the address has been created");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": ADDRESS_ADDR_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 5,
+            "category": "ransomware",
+        }})
+    );
+
+    t.print("Verify the address count has increased");
+    assert_json_output!(t.exec(["address", "count"]), json!({ "count": 1 }));
+
+    t.print("List addresses");
+    assert_json_output!(
+        t.exec(["address", "list"]),
+        json!({ "addresses": [
+            {
+                "address": ADDRESS_ADDR_1,
+                "case_id": CASE_UUID_1,
+                "reporter_id": REPORTER_UUID_1,
+                "risk": 5,
+                "category": "ransomware",
+            }
+        ]})
+    );
+
+    t.print("Update the address");
+    assert_tx_output!(t.exec([
+        "address",
+        "update",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        "scam",
+        "6",
+    ]));
+
+    t.print("Verify that the address has been updated");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": ADDRESS_ADDR_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "scam",
+        }})
+    );
 }

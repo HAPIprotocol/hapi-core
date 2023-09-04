@@ -36,7 +36,8 @@ pub fn get_program_data_address(program_id: &Pubkey) -> Result<Pubkey> {
 
 /// Returns network PDA address
 pub fn get_network_address(network_name: &str, program_id: &Pubkey) -> Result<(Pubkey, u8)> {
-    let name = &byte_array_from_str(network_name)?;
+    let mut name = [0u8; 32];
+    byte_array_from_str(network_name, &mut name)?;
 
     Ok(Pubkey::find_program_address(
         &[b"network", name.as_ref()],
@@ -72,14 +73,31 @@ pub fn get_case_address(
     ))
 }
 
-fn byte_array_from_str(data: &str) -> Result<[u8; 32]> {
-    let mut bytes = [0u8; 32];
-    {
-        let mut bytes = &mut bytes[..];
-        bytes
-            .write_all(data.as_bytes())
-            .map_err(|e| ClientError::InvalidData(e.to_string()))?;
-    }
+/// Returns address PDA address
+pub fn get_address_address(
+    address: &str,
+    network: &Pubkey,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8)> {
+    let mut addr = [0u8; 64];
+    byte_array_from_str(address, &mut addr)?;
 
-    Ok(bytes)
+    Ok(Pubkey::find_program_address(
+        &[
+            b"address",
+            network.as_ref(),
+            addr[0..32].as_ref(),
+            addr[32..64].as_ref(),
+        ],
+        program_id,
+    ))
+}
+
+pub fn byte_array_from_str(data: &str, bytes: &mut [u8]) -> Result<()> {
+    let mut bytes = &mut bytes[..];
+    bytes
+        .write_all(data.as_bytes())
+        .map_err(|e| ClientError::InvalidData(e.to_string()))?;
+
+    Ok(())
 }

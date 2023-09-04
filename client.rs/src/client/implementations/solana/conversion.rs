@@ -2,14 +2,16 @@ use uuid::Uuid;
 
 use crate::client::{
     entities::{
+        address::Address,
         case::{Case, CaseStatus},
+        category::Category,
         reporter::{Reporter, ReporterRole},
     },
     result::{ClientError, Result},
 };
 use hapi_core_solana::{
-    Case as SolanaCase, CaseStatus as SolanaCaseStatus, Reporter as SolanaReporter,
-    ReporterRole as SolanaReporterRole,
+    Address as SolanaAddress, Case as SolanaCase, CaseStatus as SolanaCaseStatus,
+    Category as SolanaCategory, Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
 };
 
 impl From<ReporterRole> for SolanaReporterRole {
@@ -28,6 +30,34 @@ impl From<CaseStatus> for SolanaCaseStatus {
         match value {
             CaseStatus::Closed => SolanaCaseStatus::Closed,
             CaseStatus::Open => SolanaCaseStatus::Open,
+        }
+    }
+}
+
+impl From<Category> for SolanaCategory {
+    fn from(value: Category) -> Self {
+        match value {
+            Category::None => SolanaCategory::None,
+            Category::WalletService => SolanaCategory::WalletService,
+            Category::MerchantService => SolanaCategory::MerchantService,
+            Category::MiningPool => SolanaCategory::MiningPool,
+            Category::Exchange => SolanaCategory::Exchange,
+            Category::DeFi => SolanaCategory::DeFi,
+            Category::OTCBroker => SolanaCategory::OTCBroker,
+            Category::ATM => SolanaCategory::ATM,
+            Category::Gambling => SolanaCategory::Gambling,
+            Category::IllicitOrganization => SolanaCategory::IllicitOrganization,
+            Category::Mixer => SolanaCategory::Mixer,
+            Category::DarknetService => SolanaCategory::DarknetService,
+            Category::Scam => SolanaCategory::Scam,
+            Category::Ransomware => SolanaCategory::Ransomware,
+            Category::Theft => SolanaCategory::Theft,
+            Category::Counterfeit => SolanaCategory::Counterfeit,
+            Category::TerroristFinancing => SolanaCategory::TerroristFinancing,
+            Category::Sanctions => SolanaCategory::Sanctions,
+            Category::ChildAbuse => SolanaCategory::ChildAbuse,
+            Category::Hacker => SolanaCategory::Hacker,
+            Category::HighRiskJurisdiction => SolanaCategory::HighRiskJurisdiction,
         }
     }
 }
@@ -58,6 +88,29 @@ impl TryFrom<SolanaCase> for Case {
             name: case.name.to_string(),
             url: case.url.to_string(),
             status: (case.status as u8).try_into()?,
+        })
+    }
+}
+
+impl TryFrom<SolanaAddress> for Address {
+    type Error = ClientError;
+
+    fn try_from(addr: SolanaAddress) -> Result<Self> {
+        let null_index = addr
+            .address
+            .iter()
+            .position(|&ch| ch == b'\0')
+            .unwrap_or(addr.address.len());
+
+        let address = String::from_utf8(addr.address[0..null_index].to_vec())
+            .map_err(|e| ClientError::SolanaAddressParseError(e.to_string()))?;
+
+        Ok(Address {
+            address,
+            case_id: Uuid::from_u128(addr.case_id),
+            reporter_id: Uuid::from_u128(addr.reporter_id),
+            risk: addr.risk_score,
+            category: (addr.category as u8).try_into()?,
         })
     }
 }
