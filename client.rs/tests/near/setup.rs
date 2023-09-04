@@ -12,13 +12,14 @@ use super::util::wait_for_port;
 use crate::cmd_utils::{wrap_cmd, CmdOutput};
 
 pub struct Account {
-    pub account_id: String,
+    pub account: String,
     pub secret_key: String,
 }
 
 pub struct Setup {
     pub token_contract: String,
     pub contract_address: String,
+    pub authority: Account,
     pub reporter: Account,
     pub network: String,
     provider_url: String,
@@ -110,9 +111,11 @@ impl Setup {
         let hapi_account = create_account("hapi");
         let token_account = create_account("token");
         let reporter_account = create_account("reporter");
+        let authority_account = create_account("authority");
 
         let hapi_pk = get_secret_key(&hapi_account);
         let reporter_pk = get_secret_key(&reporter_account);
+        let authority_pk = get_secret_key(&authority_account);
 
         env::set_var("PRIVATE_KEY", hapi_pk);
         env::set_var("ACCOUNT_ID", hapi_account.clone());
@@ -148,7 +151,7 @@ impl Setup {
             &token_account,
             "new_default_meta",
             &format!(
-                "{{\"owner_id\": \"{}\", \"total_supply\": \"10000000000000000000000000\"}}",
+                "{{\"owner_id\": \"{}\", \"total_supply\": \"1000000000000000000000000000\"}}",
                 &token_account
             ),
             "--accountId",
@@ -177,14 +180,53 @@ impl Setup {
             "0.00125",
         ]);
 
-        exec_near_cmd(["call", &token_account, "ft_transfer_call", &format!("{{\"receiver_id\": \"{}\", \"amount\": \"10000000000000000000000000\", \"msg\": \"\"}}", &hapi_account), "--accountId", &token_account]);
-        exec_near_cmd(["call", &token_account, "ft_transfer_call", &format!("{{\"receiver_id\": \"{}\", \"amount\": \"10000000000000000000000000\", \"msg\": \"\"}}", &reporter_account), "--accountId", &token_account]);
+        exec_near_cmd([
+            "call",
+            &token_account,
+            "storage_deposit",
+            "{}",
+            "--accountId",
+            &authority_account,
+            "--deposit",
+            "0.00125",
+        ]);
+
+        exec_near_cmd([
+            "call",
+            &token_account,
+            "ft_transfer",
+            &format!(
+                "{{\"receiver_id\": \"{}\", \"amount\": \"20000000000000000000000000\"}}",
+                &authority_account
+            ),
+            "--accountId",
+            &token_account,
+            "--depositYocto",
+            "1",
+        ]);
+        exec_near_cmd([
+            "call",
+            &token_account,
+            "ft_transfer",
+            &format!(
+                "{{\"receiver_id\": \"{}\", \"amount\": \"20000000000000000000000000\"}}",
+                &reporter_account
+            ),
+            "--accountId",
+            &token_account,
+            "--depositYocto",
+            "1",
+        ]);
 
         Setup {
             token_contract: token_account,
             contract_address: hapi_account,
+            authority: Account {
+                account: authority_account,
+                secret_key: authority_pk,
+            },
             reporter: Account {
-                account_id: reporter_account,
+                account: reporter_account,
                 secret_key: reporter_pk,
             },
             network: "near".to_string(),
@@ -287,6 +329,8 @@ where
         .expect("Failed to execute command");
 
     assert!(output.status.success(), "Failed to build near cmd");
+
+    println!("==> near cmd output: {:?}", output);
 
     output
 }

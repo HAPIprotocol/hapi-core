@@ -1,4 +1,7 @@
-use crate::{client::result::ClientError, HapiCoreOptions};
+use crate::{
+    client::{entities::reporter::ReporterRole, result::ClientError},
+    HapiCoreOptions,
+};
 use async_trait::async_trait;
 use hapi_core_near::Reporter as NearReporter;
 use near_crypto::{InMemorySigner, SecretKey};
@@ -20,9 +23,8 @@ use crate::{
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
         result::{Result, Tx},
-        token::TokenContract,
     },
-    Amount, HapiCore,
+    HapiCore,
 };
 
 use near_jsonrpc_client::{
@@ -30,21 +32,12 @@ use near_jsonrpc_client::{
     JsonRpcClient,
 };
 use near_primitives::{
-    transaction::Transaction,
+    transaction::{Action, FunctionCallAction, Transaction},
     types::{AccountId, BlockReference, Finality, FunctionArgs},
-    views::FinalExecutionStatus,
-};
-use near_primitives::{
-    transaction::{Action, FunctionCallAction},
-    views::QueryRequest,
+    views::{FinalExecutionStatus, QueryRequest},
 };
 
 use serde_json::{from_slice, json, Value};
-
-pub struct Account {
-    pub account_id: AccountId,
-    pub secret_key: SecretKey,
-}
 
 pub struct HapiCoreNear {
     client: JsonRpcClient,
@@ -89,13 +82,14 @@ macro_rules! build_tx {
             actions: vec![Action::FunctionCall(FunctionCallAction {
                 method_name: $method.to_string(),
                 args: $args.to_string().into_bytes(),
-                gas: 10_000_000_000_000, // 10 TeraGas
+                gas: 50_000_000_000_000, // 50 TeraGas
                 deposit: 0,
             })],
         }
     };
 }
 
+#[macro_export]
 macro_rules! wait_tx_execution {
     ($tx_hash:expr, $signer:expr, $sent_at:expr, $client:expr ) => {
         loop {
@@ -124,6 +118,7 @@ macro_rules! wait_tx_execution {
                 },
                 Ok(response) => match response.status {
                     FinalExecutionStatus::SuccessValue(_) => {
+                        time::sleep(time::Duration::from_secs(1)).await;
                         break;
                     }
                     FinalExecutionStatus::Failure(err) => {
@@ -272,8 +267,35 @@ impl HapiCore for HapiCoreNear {
             hash: format!("{:?}", tx_hash),
         })
     }
-    async fn update_reporter(&self, _input: UpdateReporterInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "update_reporter",
+            json!({
+                "id": transform_id!(input.id),
+                "account_id": input.account,
+                "name": input.name,
+                "role": input.role,
+                "url": input.url,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
         let request = self.view_request("get_reporter", Some(json!({ "id": transform_id!(id) })));
@@ -287,18 +309,116 @@ impl HapiCore for HapiCoreNear {
 
         Ok(self.get_response::<u64>(request).await?)
     }
-    async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        unimplemented!()
+    async fn get_reporters(&self, skip: u64, take: u64) -> Result<Vec<Reporter>> {
+        let request =
+            self.view_request("get_reporters", Some(json!({ "skip": skip, "take": take })));
+
+        let reporter = self.get_response::<Vec<NearReporter>>(request).await?;
+
+        Ok(reporter
+            .into_iter()
+            .map(|reporter| reporter.try_into())
+            .collect::<Result<Vec<Reporter>>>()?)
     }
 
+    /// This method calls ft_transfer_call method of the token contract.
     async fn activate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let signer = self.get_signer()?;
+
+        // get reporter role
+        let request = self.view_request(
+            "get_reporter_by_account",
+            Some(json!({ "account_id": signer.account_id.clone() })),
+        );
+
+        let near_reporter = self.get_response::<NearReporter>(request).await?;
+        let reporter: Reporter = near_reporter.try_into()?;
+        let reporter_role = reporter.role;
+        //
+
+        // get stake configuration
+        let request = self.view_request("get_stake_configuration", None);
+
+        let stake_config = self.get_response::<StakeConfiguration>(request).await?;
+        let stake_amount = match reporter_role {
+            ReporterRole::Validator => stake_config.validator_stake,
+            ReporterRole::Tracer => stake_config.tracer_stake,
+            ReporterRole::Publisher => stake_config.publisher_stake,
+            ReporterRole::Authority => stake_config.authority_stake,
+        };
+        let stake_token = AccountId::try_from(stake_config.token)?;
+        //
+
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        // ft_transfer_call to activate reporter
+        let transaction = Transaction {
+            signer_id: signer.account_id.clone(),
+            public_key: signer.public_key.clone(),
+            nonce: self.get_nonce(&access_key_query_response)? + 1,
+            receiver_id: stake_token.clone(),
+            block_hash: access_key_query_response.block_hash,
+            actions: vec![Action::FunctionCall(FunctionCallAction {
+                method_name: "ft_transfer_call".to_string(),
+                args: json!({"receiver_id": self.contract_address, "amount": stake_amount, "msg": "", "memo": ""}).to_string().into_bytes(),
+                gas: 50_000_000_000_000, // 50 TeraGas
+                deposit: 1,
+            })],
+        };
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
     async fn deactivate_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "deactivate_reporter",
+            ""
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
     async fn unstake_reporter(&self) -> Result<Tx> {
-        unimplemented!()
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(self, signer, access_key_query_response, "unstake", "");
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
 
     async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
@@ -369,7 +489,7 @@ impl HapiCoreNear {
     ) -> Result<T> {
         let result = self.client.call(request).await?;
         if let QueryResponseKind::CallResult(result) = result.kind {
-            return Ok(from_slice::<T>(&result.result)?);
+            Ok(from_slice::<T>(&result.result)?)
         } else {
             Err(ClientError::InvalidResponse(
                 "failed to receive call result".into(),
@@ -400,38 +520,9 @@ impl HapiCoreNear {
     fn get_nonce(&self, access_key_request: &RpcQueryResponse) -> Result<u64> {
         match &access_key_request.kind {
             QueryResponseKind::AccessKey(access_key) => Ok(access_key.nonce),
-            _ => {
-                return Err(ClientError::InvalidResponse(
-                    "failed to extract current nonce".into(),
-                ))
-            }
+            _ => Err(ClientError::InvalidResponse(
+                "failed to extract current nonce".into(),
+            )),
         }
-    }
-}
-
-pub struct TokenContractNear {}
-
-impl TokenContractNear {
-    pub fn new() -> Result<Self> {
-        Ok(Self {})
-    }
-}
-
-#[async_trait]
-impl TokenContract for TokenContractNear {
-    fn is_approve_needed(&self) -> bool {
-        false
-    }
-
-    async fn transfer(&self, _to: &str, _amount: Amount) -> Result<Tx> {
-        unimplemented!("`transfer` is not implemented for Near");
-    }
-
-    async fn approve(&self, _spender: &str, _amount: Amount) -> Result<Tx> {
-        unimplemented!("`approve` is not implemented for Near");
-    }
-
-    async fn balance(&self, _addr: &str) -> Result<Amount> {
-        unimplemented!("`balance` is not implemented for Near");
     }
 }

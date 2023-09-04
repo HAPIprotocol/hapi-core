@@ -17,7 +17,7 @@ async fn near_works() {
     let unlock_duration = 3;
     let validator_stake = 10;
     let tracer_stake = 11;
-    let publisher_stake = 12;
+    let publisher_stake: u128 = 12;
     let authority_stake = 13;
     let address_confirmation_reward = 5;
     let tracer_reward = 6;
@@ -32,17 +32,15 @@ async fn near_works() {
     assert_tx_output!(t.exec([
         "authority",
         "set",
-        &t.reporter.account_id,
+        &t.reporter.account,
         "--account-id",
         &t.contract_address
     ]));
 
-    sleep(Duration::from_secs(1));
-
     t.print("Make sure that authority has changed");
     assert_json_output!(
         t.exec(["authority", "get"]),
-        json!({ "authority": t.reporter.account_id })
+        json!({ "authority": t.reporter.account })
     );
 
     t.print("Use the private key of the new authority to change the authority back");
@@ -51,12 +49,10 @@ async fn near_works() {
         "set",
         &t.contract_address,
         "--account-id",
-        &t.reporter.account_id,
+        &t.reporter.account,
         "--private-key",
         &t.reporter.secret_key,
     ]));
-
-    sleep(Duration::from_secs(1));
 
     t.print("Make sure that authority has changed back");
     assert_json_output!(
@@ -81,8 +77,6 @@ async fn near_works() {
         &publisher_stake.to_string(),
         &authority_stake.to_string(),
     ]));
-
-    sleep(Duration::from_secs(3));
 
     t.print("Make sure that the new stake configuration is applied");
     assert_json_output!(
@@ -114,8 +108,6 @@ async fn near_works() {
         &tracer_reward.to_string(),
     ]));
 
-    sleep(Duration::from_secs(3));
-
     t.print("Make sure that the new reward configuration is applied");
     assert_json_output!(
         t.exec(["configuration", "get-reward"]),
@@ -139,7 +131,7 @@ async fn near_works() {
         "reporter",
         "create",
         REPORTER_UUID_1,
-        &t.contract_address,
+        &t.authority.account,
         "Authority",
         "HAPI Authority",
         "https://hapi.one/reporter/authority",
@@ -150,7 +142,7 @@ async fn near_works() {
         t.exec(["reporter", "get", REPORTER_UUID_1]),
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
-            "account": &t.contract_address,
+            "account": &t.authority.account,
             "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
@@ -163,130 +155,100 @@ async fn near_works() {
     t.print("Make sure that reporter counter has increased");
     assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 1 }));
 
-    // t.print("Try to activate the authority reporter without allowance");
-    // assert_error_output!(
-    //     t.exec(["reporter", "activate"]),
-    //     "Error: Ethers error: `activate_reporter` reverted with: ERC20: insufficient allowance"
-    // );
+    t.print("Check authority's token balance");
+    let json = assert_json_output!(
+        t.exec(["token", "balance", &t.token_contract, &t.authority.account]),
+        json!({ "balance": "20000000000000000000000000" })
+    );
+    let authority_balance = json["balance"].as_str().unwrap().parse::<u128>().unwrap();
 
-    // t.print("Check authority's token balance");
-    // let json = assert_json_output!(
-    //     t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
-    //     json!({ "balance": "1000000000" })
-    // );
+    t.print("Activate authority reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "activate",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // let authority_balance = json["balance"].as_str().unwrap().parse::<u64>().unwrap();
+    t.print("Check authority's token balance after activation");
+    assert_json_output!(
+        t.exec(["token", "balance", &t.token_contract, &t.authority.account]),
+        json!({ "balance": (authority_balance - authority_stake).to_string() })
+    );
 
-    // t.print("Establish token allowance from authority to activate the reporter account");
-    // assert_tx_output!(t.exec([
-    //     "token",
-    //     "approve",
-    //     &t.token_contract,
-    //     &t.contract_address,
-    //     &authority_stake.to_string(),
-    // ]));
+    t.print("Create publisher reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "create",
+        REPORTER_UUID_2,
+        &t.reporter.account,
+        "Publisher",
+        "HAPI Publisher",
+        "https://hapi.one/reporter/publisher",
+    ]));
 
-    // t.print("Activate authority reporter");
-    // assert_tx_output!(t.exec(["reporter", "activate"]));
+    t.print("Check that the publisher reporter has been created");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_2]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_2,
+            "account": &t.reporter.account,
+            "role": "Publisher",
+            "name": "HAPI Publisher",
+            "url": "https://hapi.one/reporter/publisher",
+            "stake": "0",
+            "status": "inactive",
+            "unlock_timestamp": 0
+        }})
+    );
 
-    // t.print("Check authority's token balance after activation");
-    // assert_json_output!(
-    //     t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
-    //     json!({ "balance": (authority_balance - authority_stake).to_string() })
-    // );
+    t.print("Activate publisher reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "activate",
+        "--account-id",
+        &t.reporter.account,
+        "--private-key",
+        &t.reporter.secret_key
+    ]));
 
-    // t.print("Send tokens from authority to reporter");
-    // assert_tx_output!(t.exec([
-    //     "token",
-    //     "transfer",
-    //     &t.token_contract,
-    //     PUBLIC_KEY_2,
-    //     &publisher_stake.to_string()
-    // ]));
+    t.print("Check publisher's token balance after activation");
+    assert_json_output!(
+        t.exec(["token", "balance", &t.token_contract, &t.reporter.account]),
+        json!({ "balance": (20000000000000000000000000 - publisher_stake).to_string() })
+    );
 
-    // let authority_balance = authority_balance - publisher_stake;
+    t.print("Get reporters list");
+    assert_json_output!(
+        t.exec(["reporter", "list"]),
+        json!({ "reporters": [
+            {
+                "id": REPORTER_UUID_1,
+                "account": &t.authority.account,
+                "role": "Authority",
+                "name": "HAPI Authority",
+                "url": "https://hapi.one/reporter/authority",
+                "stake": authority_stake.to_string(),
+                "status": "active",
+                "unlock_timestamp": 0
+            },
+            {
+                "id": REPORTER_UUID_2,
+                "account": &t.reporter.account,
+                "role": "Publisher",
+                "name": "HAPI Publisher",
+                "url": "https://hapi.one/reporter/publisher",
+                "stake": publisher_stake.to_string(),
+                "status": "active",
+                "unlock_timestamp": 0
+            }
+        ]})
+    );
 
-    // t.print("Check publisher's token balance");
-    // assert_json_output!(
-    //     t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_2]),
-    //     json!({ "balance": publisher_stake.to_string() })
-    // );
-
-    // t.print("Create publisher reporter");
-    // assert_tx_output!(t.exec([
-    //     "reporter",
-    //     "create",
-    //     REPORTER_UUID_2,
-    //     PUBLIC_KEY_2,
-    //     "publisher",
-    //     "HAPI Publisher",
-    //     "https://hapi.one/reporter/publisher",
-    // ]));
-
-    // t.print("Check that the publisher reporter has been created");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_2]),
-    //     json!({ "reporter": {
-    //         "id": REPORTER_UUID_2,
-    //         "account": to_checksum(PUBLIC_KEY_2),
-    //         "role": "publisher",
-    //         "name": "HAPI Publisher",
-    //         "url": "https://hapi.one/reporter/publisher",
-    //         "stake": "0",
-    //         "status": "inactive",
-    //         "unlock_timestamp": 0
-    //     }})
-    // );
-
-    // t.print("Establish token allowance from publisher to activate the reporter account");
-    // assert_tx_output!(t.exec([
-    //     "token",
-    //     "approve",
-    //     &t.token_contract,
-    //     &t.contract_address,
-    //     &publisher_stake.to_string(),
-    //     "--private-key",
-    //     PRIVATE_KEY_2,
-    // ]));
-
-    // t.print("Activate publisher reporter");
-    // assert_tx_output!(t.exec(["reporter", "activate", "--private-key", PRIVATE_KEY_2]));
-
-    // t.print("Check publisher's token balance after activation");
-    // assert_json_output!(
-    //     t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_2]),
-    //     json!({ "balance": "0" })
-    // );
-
-    // t.print("Get reporters list");
-    // assert_json_output!(
-    //     t.exec(["reporter", "list"]),
-    //     json!({ "reporters": [
-    //         {
-    //             "id": REPORTER_UUID_1,
-    //             "account": to_checksum(PUBLIC_KEY_1),
-    //             "role": "authority",
-    //             "name": "HAPI Authority",
-    //             "url": "https://hapi.one/reporter/authority",
-    //             "stake": authority_stake.to_string(),
-    //             "status": "active",
-    //             "unlock_timestamp": 0
-    //         },
-    //         {
-    //             "id": REPORTER_UUID_2,
-    //             "account": to_checksum(PUBLIC_KEY_2),
-    //             "role": "publisher",
-    //             "name": "HAPI Publisher",
-    //             "url": "https://hapi.one/reporter/publisher",
-    //             "stake": publisher_stake.to_string(),
-    //             "status": "active",
-    //             "unlock_timestamp": 0
-    //         }
-    //     ]})
-    // );
-
-    // t.print("Make sure that reporter counter has increased");
-    // assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
+    t.print("Make sure that reporter counter has increased");
+    assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
 
     // t.print("Create a case by authority");
     // assert_tx_output!(t.exec(["case", "create", CASE_UUID_1, CASE_NAME_1, CASE_URL_1]));
@@ -427,77 +389,72 @@ async fn near_works() {
     //     }})
     // );
 
-    // t.print("Deactivate authority reporter");
-    // let unlock_timestamp = {
-    //     let tx_hash = assert_tx_output!(t.exec(["reporter", "deactivate"]));
-    //     let timestamp = t.get_tx_timestamp(&tx_hash).await;
-    //     timestamp + unlock_duration
-    // };
+    t.print("Deactivate authority reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "deactivate",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key
+    ]));
 
-    // t.print("Verify that authority reporter is being deactivated");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
-    //     json!({ "reporter": {
-    //         "id": REPORTER_UUID_1,
-    //         "account": to_checksum(PUBLIC_KEY_1),
-    //         "role": "authority",
-    //         "name": "HAPI Authority",
-    //         "url": "https://hapi.one/reporter/authority",
-    //         "stake": authority_stake.to_string(),
-    //         "status": "unstaking",
-    //         "unlock_timestamp": unlock_timestamp
-    //     }})
-    // );
+    t.print("Verify that authority reporter is being deactivated");
+    let output = t
+        .exec(["reporter", "get", REPORTER_UUID_1])
+        .unwrap_or_else(|e| panic!("{}", e));
+    let json = serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
+    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "unstaking");
 
-    // sleep(Duration::from_secs(unlock_duration));
+    sleep(Duration::from_secs(unlock_duration));
 
-    // t.print("Unstake authority reporter");
-    // assert_tx_output!(t.exec(["reporter", "unstake"]));
+    t.print("Unstake authority reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "unstake",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key
+    ]));
 
-    // t.print("Verify that the stake has been transferred back to the authority");
-    // assert_json_output!(
-    //     t.exec(["token", "balance", &t.token_contract, PUBLIC_KEY_1]),
-    //     json!({ "balance": authority_balance.to_string() })
-    // );
+    t.print("Verify that the stake has been transferred back to the authority");
+    assert_json_output!(
+        t.exec(["token", "balance", &t.token_contract, &t.authority.account]),
+        json!({ "balance": authority_balance.to_string() })
+    );
 
-    // t.print("Make sure that the status of the authority reporter is now Inactive");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_1]),
-    //     json!({ "reporter": {
-    //         "id": REPORTER_UUID_1,
-    //         "account": to_checksum(PUBLIC_KEY_1),
-    //         "role": "authority",
-    //         "name": "HAPI Authority",
-    //         "url": "https://hapi.one/reporter/authority",
-    //         "stake": "0",
-    //         "status": "inactive",
-    //         "unlock_timestamp": 0
-    //     }})
-    // );
+    t.print("Make sure that the status of the authority reporter is now Inactive");
+    let output = t
+        .exec(["reporter", "get", REPORTER_UUID_1])
+        .unwrap_or_else(|e| panic!("{}", e));
+    let json = serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
+    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "inactive");
+    assert_eq!(json["reporter"]["stake"].as_str().unwrap(), "0");
 
-    // t.print("Update publisher reporter");
-    // assert_tx_output!(t.exec([
-    //     "reporter",
-    //     "update",
-    //     REPORTER_UUID_2,
-    //     PUBLIC_KEY_2,
-    //     "publisher",
-    //     "HAPI Publisher+",
-    //     "https://hapi.one/reporter/new_publisher",
-    // ]));
+    t.print("Update publisher reporter");
+    assert_tx_output!(t.exec([
+        "reporter",
+        "update",
+        REPORTER_UUID_2,
+        &t.reporter.account,
+        "Publisher",
+        "HAPI Publisher+",
+        "https://hapi.one/reporter/new_publisher",
+    ]));
 
-    // t.print("Verify that the publisher reporter has been updated");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", REPORTER_UUID_2]),
-    //     json!({ "reporter": {
-    //         "id": REPORTER_UUID_2,
-    //         "account": to_checksum(PUBLIC_KEY_2),
-    //         "role": "publisher",
-    //         "name": "HAPI Publisher+",
-    //         "url": "https://hapi.one/reporter/new_publisher",
-    //         "stake": "12",
-    //         "status": "active",
-    //         "unlock_timestamp": 0
-    //     }})
-    // );
+    t.print("Verify that the publisher reporter has been updated");
+    assert_json_output!(
+        t.exec(["reporter", "get", REPORTER_UUID_2]),
+        json!({ "reporter": {
+            "id": REPORTER_UUID_2,
+            "account": &t.reporter.account,
+            "role": "Publisher",
+            "name": "HAPI Publisher+",
+            "url": "https://hapi.one/reporter/new_publisher",
+            "stake": "12",
+            "status": "active",
+            "unlock_timestamp": 0
+        }})
+    );
 }

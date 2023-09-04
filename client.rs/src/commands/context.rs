@@ -64,19 +64,21 @@ impl TryFrom<&ArgMatches> for TokenCommandContext {
             .parse()
             .map_err(|e| anyhow::anyhow!("Failed to parse `output`: {:?}", e))?;
 
+        let options = HapiCoreOptions {
+            provider_url,
+            contract_address,
+            private_key,
+            chain_id: None,
+            account_id: None,
+        };
+
         let token: Box<dyn TokenContract> = match network {
             HapiCoreNetwork::Sepolia | HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc => {
-                Box::new(TokenContractEvm::new(HapiCoreOptions {
-                    provider_url,
-                    contract_address,
-                    private_key,
-                    chain_id: None,
-                    account_id: None,
-                })?)
+                Box::new(TokenContractEvm::new(options)?)
             }
             HapiCoreNetwork::Solana => Box::new(TokenContractSolana::new()?),
             HapiCoreNetwork::Bitcoin => Box::new(TokenContractSolana::new()?),
-            HapiCoreNetwork::Near => Box::new(TokenContractNear::new()?),
+            HapiCoreNetwork::Near => Box::new(TokenContractNear::new(options)?),
         };
 
         Ok(Self { token, output })

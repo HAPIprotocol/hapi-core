@@ -24,7 +24,7 @@ pub fn wait_for_port(port: u16) {
 }
 
 pub fn is_tx_match(value: &serde_json::Value) -> bool {
-    Regex::new(r"[0-9a-zA-Z]{44}$").unwrap().is_match(
+    Regex::new(r"[0-9a-zA-Z]{43,44}$").unwrap().is_match(
         value
             .get("tx")
             .expect("`tx` key not found")
