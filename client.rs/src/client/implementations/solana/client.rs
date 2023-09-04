@@ -3,7 +3,6 @@ use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
 
 use anchor_client::{
-    anchor_lang::AccountDeserialize,
     solana_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -22,9 +21,9 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{self, Address, CreateAddressInput, UpdateAddressInput},
+            address::{Address, CreateAddressInput, UpdateAddressInput},
             asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
-            case::{self, Case, CreateCaseInput, UpdateCaseInput},
+            case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
         interface::HapiCoreOptions,
@@ -521,14 +520,12 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn create_address(&self, input: CreateAddressInput) -> Result<Tx> {
-        let (address, bump) =
-            get_address_address(&input.address, &self.network, &self.contract.id())?;
-
-        let (reporter, _) = self.get_reporter().await?;
-        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
-
         let mut addr = [0u8; 64];
         byte_array_from_str(&input.address, &mut addr)?;
+
+        let (address, bump) = get_address_address(&addr, &self.network, &self.contract.id())?;
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
 
         let hash = self
             .contract
@@ -555,13 +552,12 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx> {
-        let (address, _) = get_address_address(&input.address, &self.network, &self.contract.id())?;
-
-        let (reporter, _) = self.get_reporter().await?;
-        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
-
         let mut addr = [0u8; 64];
         byte_array_from_str(&input.address, &mut addr)?;
+
+        let (address, _) = get_address_address(&addr, &self.network, &self.contract.id())?;
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
 
         let hash = self
             .contract
@@ -584,31 +580,114 @@ impl HapiCore for HapiCoreSolana {
 
         Ok(Tx { hash })
     }
+
     async fn get_address(&self, addr: &str) -> Result<Address> {
-        let addr = get_address_address(addr, &self.network, &self.contract.id())?.0;
+        let mut address = [0u8; 64];
+        byte_array_from_str(addr, &mut address)?;
+
+        let addr = get_address_address(&address, &self.network, &self.contract.id())?.0;
 
         get_account!(self, addr, Address)
     }
+
     async fn get_address_count(&self) -> Result<u64> {
         get_account_count!(self, Address)
     }
+
     async fn get_addresses(&self, _skip: u64, _take: u64) -> Result<Vec<Address>> {
         get_accounts!(self, Address)
     }
 
-    async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx> {
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let mut asset_id = [0u8; 64];
+        byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
+
+        let (asset, bump) =
+            get_asset_address(&addr, &asset_id, &self.network, &self.contract.id())?;
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::CreateAsset {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                asset,
+                system_program: system_program::id(),
+            })
+            .args(instruction::CreateAsset {
+                addr,
+                asset_id,
+                category: hapi_core_solana::Category::from(input.category),
+                risk_score: input.risk,
+                bump,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn update_asset(&self, _input: UpdateAssetInput) -> Result<Tx> {
-        unimplemented!()
+
+    async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx> {
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let mut asset_id = [0u8; 64];
+        byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
+
+        let (asset, _) = get_asset_address(&addr, &asset_id, &self.network, &self.contract.id())?;
+        let (reporter, _) = self.get_reporter().await?;
+        let (case, _) = get_case_address(input.case_id, &self.network, &self.contract.id())?;
+
+        let hash = self
+            .contract
+            .request()
+            .accounts(accounts::UpdateAsset {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                asset,
+                system_program: system_program::id(),
+            })
+            .args(instruction::UpdateAsset {
+                category: hapi_core_solana::Category::from(input.category),
+                risk_score: input.risk,
+            })
+            .send()
+            .await?
+            .to_string();
+
+        Ok(Tx { hash })
     }
-    async fn get_asset(&self, _address: &str, _id: &AssetId) -> Result<Asset> {
-        unimplemented!()
+    async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {
+        let mut asset_address = [0u8; 64];
+        byte_array_from_str(address, &mut asset_address)?;
+
+        let mut asset_id = [0u8; 64];
+        byte_array_from_str(&id.to_string(), &mut asset_id)?;
+
+        let addr = get_asset_address(
+            &asset_address,
+            &asset_id,
+            &self.network,
+            &self.contract.id(),
+        )?
+        .0;
+
+        get_account!(self, addr, Asset)
     }
     async fn get_asset_count(&self) -> Result<u64> {
-        unimplemented!()
+        get_account_count!(self, Asset)
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
-        unimplemented!()
+        get_accounts!(self, Asset)
     }
 }

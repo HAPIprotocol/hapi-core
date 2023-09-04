@@ -5,6 +5,8 @@ use thiserror::Error;
 pub enum ClientError {
     #[error("URL parse error: {0}")]
     UrlParseError(String),
+    #[error("Asset Id parse error: {0}")]
+    AssetIdParseError(String),
     #[error("Invalid data: {0}")]
     InvalidData(String),
 

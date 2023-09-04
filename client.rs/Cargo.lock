@@ -2495,6 +2495,7 @@ dependencies = [
  "serde",
  "serde_json",
  "solana-cli-config",
+ "solana-transaction-status",
  "spl-associated-token-account",
  "spl-token",
  "thiserror",

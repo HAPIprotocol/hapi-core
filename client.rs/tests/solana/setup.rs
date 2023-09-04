@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, process::Command, thread::sleep, time::Duration};
+use std::{ffi::OsStr, process::Command, str::FromStr, thread::sleep, time::Duration};
 
 use anchor_client::{
     solana_client::{
@@ -8,13 +8,14 @@ use anchor_client::{
         native_token::LAMPORTS_PER_SOL,
         program_pack::Pack,
         pubkey::Pubkey,
-        signature::{read_keypair_file, Keypair, Signer},
+        signature::{read_keypair_file, Keypair, Signature, Signer},
         system_instruction::create_account,
         transaction::Transaction,
     },
 };
 
 use hapi_core::client::implementations::solana::get_network_address;
+use solana_transaction_status::UiTransactionEncoding;
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
@@ -266,34 +267,16 @@ impl Setup {
         println!("==> {message} [{}]", VALIDATOR_PORT);
     }
 
-    // pub async fn get_tx(&self, hash: &str) -> Transaction {
-    //     let provider = Provider::<Http>::try_from(self.provider_url.clone()).unwrap();
+    pub async fn get_tx_timestamp(&self, hash: &str) -> u64 {
+        let tx = self
+            .cli
+            .get_transaction(
+                &Signature::from_str(hash).expect("Invalid signature"),
+                UiTransactionEncoding::Base64,
+            )
+            .await
+            .expect("Failed to get transaction");
 
-    //     let tx_hash = ethers::types::H256::from_str(hash).expect("Expected valid transaction hash");
-    //     let tx = provider
-    //         .get_transaction(tx_hash)
-    //         .await
-    //         .expect("Could not retrieve transaction");
-
-    //     tx.expect("Transaction not found")
-    // }
-
-    // pub async fn get_block(&self, hash: &str) -> Block<H256> {
-    //     let provider = Provider::<Http>::try_from(self.provider_url.clone()).unwrap();
-
-    //     let block_hash = ethers::types::H256::from_str(hash).expect("Expected valid block hash");
-    //     let block = provider
-    //         .get_block(block_hash)
-    //         .await
-    //         .expect("Could not retrieve block");
-
-    //     block.expect("Block not found")
-    // }
-
-    // pub async fn get_tx_timestamp(&self, hash: &str) -> u64 {
-    //     let tx = self.get_tx(hash).await;
-    //     let block_hash = format!("{:.unwrap()}", tx.block_hash.expect("block hash is expected"));
-    //     let block = self.get_block(&block_hash).await;
-    //     block.timestamp.as_u64()
-    // }
+        tx.block_time.expect("Transaction not found") as u64
+    }
 }

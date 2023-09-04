@@ -75,19 +75,36 @@ pub fn get_case_address(
 
 /// Returns address PDA address
 pub fn get_address_address(
-    address: &str,
+    address: &[u8; 64],
     network: &Pubkey,
     program_id: &Pubkey,
 ) -> Result<(Pubkey, u8)> {
-    let mut addr = [0u8; 64];
-    byte_array_from_str(address, &mut addr)?;
-
     Ok(Pubkey::find_program_address(
         &[
             b"address",
             network.as_ref(),
-            addr[0..32].as_ref(),
-            addr[32..64].as_ref(),
+            address[0..32].as_ref(),
+            address[32..64].as_ref(),
+        ],
+        program_id,
+    ))
+}
+
+/// Returns asset PDA address
+pub fn get_asset_address(
+    address: &[u8; 64],
+    asset_id: &[u8; 64],
+    network: &Pubkey,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8)> {
+    Ok(Pubkey::find_program_address(
+        &[
+            b"asset",
+            network.as_ref(),
+            address[0..32].as_ref(),
+            address[32..64].as_ref(),
+            asset_id[0..32].as_ref(),
+            asset_id[32..64].as_ref(),
         ],
         program_id,
     ))
