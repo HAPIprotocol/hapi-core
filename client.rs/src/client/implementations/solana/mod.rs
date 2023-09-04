@@ -6,4 +6,4 @@ mod utils;
 
 pub use client::HapiCoreSolana;
 pub use token::TokenContractSolana;
-pub use utils::get_network_account;
+pub use utils::get_network_address;

@@ -34,7 +34,7 @@ use crate::{
 };
 
 use super::utils::{
-    get_case_account, get_network_account, get_program_data_account, get_reporter_account,
+    get_case_address, get_network_address, get_program_data_address, get_reporter_address,
     get_signer,
 };
 
@@ -58,7 +58,7 @@ impl HapiCoreSolana {
         let client = Client::new(cluster, signer.clone());
         let contract = client.program(program_id)?;
 
-        let network = get_network_account(&options.network.to_string(), &program_id)?.0;
+        let network = get_network_address(&options.network.to_string(), &program_id)?.0;
 
         Ok(Self {
             contract,
@@ -106,6 +106,47 @@ impl HapiCoreSolana {
     }
 }
 
+macro_rules! get_account {
+    ($self:expr, $address:expr, $account:ident) => {
+        <$account>::try_from(
+            $self
+                .contract
+                .account::<hapi_core_solana::$account>($address)
+                .await?,
+        )
+    };
+}
+
+macro_rules! get_accounts {
+    ($self:expr, $account:ident) => {{
+        let data = $self
+            .contract
+            .accounts::<hapi_core_solana::$account>(vec![])
+            .await?;
+        let mut result = vec![];
+
+        for (_, acc) in data {
+            if acc.network == $self.network {
+                result.push(<$account>::try_from(acc)?);
+            }
+        }
+
+        Ok(result)
+    }};
+}
+
+macro_rules! get_account_count {
+    ($self:expr, $account:ident) => {
+        Ok($self
+            .contract
+            .accounts::<hapi_core_solana::$account>(vec![])
+            .await?
+            .iter()
+            .filter(|(_, acc)| acc.network == $self.network)
+            .count() as u64)
+    };
+}
+
 #[async_trait(?Send)]
 impl HapiCore for HapiCoreSolana {
     fn is_valid_address(&self, address: &str) -> Result<()> {
@@ -120,7 +161,7 @@ impl HapiCore for HapiCoreSolana {
         let new_authority = Pubkey::from_str(address)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`new-authority`: {e}")))?;
         let program_account = self.contract.id();
-        let program_data = get_program_data_account(&program_account)?;
+        let program_data = get_program_data_address(&program_account)?;
 
         let hash = self
             .contract
@@ -266,7 +307,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn create_reporter(&self, input: CreateReporterInput) -> Result<Tx> {
-        let (reporter, bump) = get_reporter_account(input.id, &self.network, &self.contract.id())?;
+        let (reporter, bump) = get_reporter_address(input.id, &self.network, &self.contract.id())?;
         let account = Pubkey::from_str(&input.account)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`account`: {e}")))?;
 
@@ -295,7 +336,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
-        let reporter = get_reporter_account(input.id, &self.network, &self.contract.id())?.0;
+        let reporter = get_reporter_address(input.id, &self.network, &self.contract.id())?.0;
         let account = Pubkey::from_str(&input.account)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`account`: {e}")))?;
 
@@ -321,41 +362,17 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
-        let reporter =
-            get_reporter_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
-        let data = self
-            .contract
-            .account::<hapi_core_solana::Reporter>(reporter)
-            .await?;
+        let addr = get_reporter_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
 
-        Reporter::try_from(data)
+        get_account!(self, addr, Reporter)
     }
 
     async fn get_reporter_count(&self) -> Result<u64> {
-        let data = self
-            .contract
-            .accounts::<hapi_core_solana::Reporter>(vec![])
-            .await?;
-
-        Ok(data
-            .iter()
-            .filter(|(_, reporter)| reporter.network == self.network)
-            .count() as u64)
+        get_account_count!(self, Reporter)
     }
 
     async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        let data = self
-            .contract
-            .accounts::<hapi_core_solana::Reporter>(vec![])
-            .await?;
-        let mut result = vec![];
-
-        for (_, reporter) in data {
-            if reporter.network == self.network {}
-            result.push(Reporter::try_from(reporter)?);
-        }
-
-        Ok(result)
+        get_accounts!(self, Reporter)
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
@@ -441,7 +458,7 @@ impl HapiCore for HapiCoreSolana {
 
     async fn create_case(&self, input: CreateCaseInput) -> Result<Tx> {
         let (reporter, _) = self.get_reporter().await?;
-        let (case, bump) = get_case_account(input.id, &self.network, &self.contract.id())?;
+        let (case, bump) = get_case_address(input.id, &self.network, &self.contract.id())?;
 
         let hash = self
             .contract
@@ -468,7 +485,7 @@ impl HapiCore for HapiCoreSolana {
 
     async fn update_case(&self, input: UpdateCaseInput) -> Result<Tx> {
         let (reporter, _) = self.get_reporter().await?;
-        let (case, _) = get_case_account(input.id, &self.network, &self.contract.id())?;
+        let (case, _) = get_case_address(input.id, &self.network, &self.contract.id())?;
 
         let hash = self
             .contract
@@ -493,40 +510,17 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_case(&self, id: &str) -> Result<Case> {
-        let case = get_case_account(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
-        let data = self
-            .contract
-            .account::<hapi_core_solana::Case>(case)
-            .await?;
+        let addr = get_case_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
 
-        Case::try_from(data)
+        get_account!(self, addr, Case)
     }
 
     async fn get_case_count(&self) -> Result<u64> {
-        let data = self
-            .contract
-            .accounts::<hapi_core_solana::Case>(vec![])
-            .await?;
-
-        Ok(data
-            .iter()
-            .filter(|(_, reporter)| reporter.network == self.network)
-            .count() as u64)
+        get_account_count!(self, Case)
     }
 
     async fn get_cases(&self, _skip: u64, _take: u64) -> Result<Vec<Case>> {
-        let data = self
-            .contract
-            .accounts::<hapi_core_solana::Case>(vec![])
-            .await?;
-        let mut result = vec![];
-
-        for (_, case) in data {
-            if case.network == self.network {}
-            result.push(Case::try_from(case)?);
-        }
-
-        Ok(result)
+        get_accounts!(self, Case)
     }
 
     async fn create_address(&self, _input: CreateAddressInput) -> Result<Tx> {

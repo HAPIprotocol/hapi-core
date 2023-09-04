@@ -25,7 +25,7 @@ pub fn get_signer(private_key: Option<String>) -> Result<Keypair> {
 }
 
 /// Returns program data account
-pub fn get_program_data_account(program_id: &Pubkey) -> Result<Pubkey> {
+pub fn get_program_data_address(program_id: &Pubkey) -> Result<Pubkey> {
     Ok(Pubkey::find_program_address(
         &[&program_id.to_bytes()],
         &Pubkey::from_str("BPFLoaderUpgradeab1e11111111111111111111111")
@@ -35,7 +35,7 @@ pub fn get_program_data_account(program_id: &Pubkey) -> Result<Pubkey> {
 }
 
 /// Returns network PDA address
-pub fn get_network_account(network_name: &str, program_id: &Pubkey) -> Result<(Pubkey, u8)> {
+pub fn get_network_address(network_name: &str, program_id: &Pubkey) -> Result<(Pubkey, u8)> {
     let name = &byte_array_from_str(network_name)?;
 
     Ok(Pubkey::find_program_address(
@@ -45,7 +45,7 @@ pub fn get_network_account(network_name: &str, program_id: &Pubkey) -> Result<(P
 }
 
 /// Returns reporter PDA address
-pub fn get_reporter_account(
+pub fn get_reporter_address(
     reporter_id: Uuid,
     network: &Pubkey,
     program_id: &Pubkey,
@@ -59,7 +59,7 @@ pub fn get_reporter_account(
 }
 
 /// Returns case PDA address
-pub fn get_case_account(
+pub fn get_case_address(
     case_id: Uuid,
     network: &Pubkey,
     program_id: &Pubkey,

@@ -14,7 +14,7 @@ use anchor_client::{
     },
 };
 
-use hapi_core::client::implementations::solana::get_network_account;
+use hapi_core::client::implementations::solana::get_network_address;
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
 };
@@ -109,7 +109,7 @@ impl Setup {
         let program_id = HAPI_CORE_PROGRAM_ID
             .parse::<Pubkey>()
             .expect("Invalid program id");
-        let network_account = get_network_account(NETWORK, &program_id)
+        let network_account = get_network_address(NETWORK, &program_id)
             .expect("Invalid network")
             .0;
 

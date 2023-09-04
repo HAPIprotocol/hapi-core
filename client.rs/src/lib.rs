@@ -10,4 +10,4 @@ pub use client::{
 };
 
 #[cfg(test)]
-pub use client::implementations::solana::get_network_account;
+pub use client::implementations::solana::get_network_address;

@@ -162,20 +162,20 @@ async fn solana_cli_works() {
         "https://hapi.one/reporter/authority",
     ]));
 
-    // t.print("Check that the authority reporter has been created");
-    // assert_json_output!(
-    //     t.exec(["reporter", "get", AUTHORITY_UUID]),
-    //     json!({ "reporter": {
-    //         "id": AUTHORITY_UUID,
-    //         "account": authority_pubkey,
-    //         "role": "authority",
-    //         "name": "HAPI Authority",
-    //         "url": "https://hapi.one/reporter/authority",
-    //         "stake": "0",
-    //         "status": "inactive",
-    //         "unlock_timestamp": 0
-    //     }})
-    // );
+    t.print("Check that the authority reporter has been created");
+    assert_json_output!(
+        t.exec(["reporter", "get", AUTHORITY_UUID]),
+        json!({ "reporter": {
+            "id": AUTHORITY_UUID,
+            "account": authority_pubkey,
+            "role": "authority",
+            "name": "HAPI Authority",
+            "url": "https://hapi.one/reporter/authority",
+            "stake": "0",
+            "status": "inactive",
+            "unlock_timestamp": 0
+        }})
+    );
 
     // t.print("Update authority reporter");
     // assert_tx_output!(t.exec([
