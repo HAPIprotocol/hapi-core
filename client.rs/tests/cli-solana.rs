@@ -3,12 +3,12 @@ use serde_json::json;
 
 mod assert;
 mod cmd_utils;
-mod fixtures;
+mod common_fixtures;
 mod solana;
 
 use solana::setup::Setup;
 
-use fixtures::*;
+use common_fixtures::*;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_cli_works() {

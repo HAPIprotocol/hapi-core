@@ -40,4 +40,3 @@ spl-token = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
 [dev-dependencies]
 bs58 = "0.5.0"
 solana-transaction-status = { git = "https://github.com/hlgltvnnk/solana.git", branch = "update-dependencies" }
-# spl-token = "3"

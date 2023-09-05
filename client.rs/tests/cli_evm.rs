@@ -102,19 +102,19 @@ async fn evm_works() {
     ]));
 
     // TODO: check that the reward configuration is applied
-    // t.print("Make sure that the new reward configuration is applied");
-    // assert_json_output!(
-    //     t.exec(["configuration", "get-reward"]),
-    //     json!({
-    //         "configuration": {
-    //             "token": t.token_contract,
-    //             "address_confirmation_reward": address_confirmation_reward.to_string(),
-    //             "address_tracer_reward": address_tracer_reward.to_string(),
-    //             "asset_confirmation_reward": asset_confirmation_reward.to_string(),
-    //             "asset_tracer_reward": asset_tracer_reward.to_string()
-    //         }
-    //     })
-    // );
+    t.print("Make sure that the new reward configuration is applied");
+    assert_json_output!(
+        t.exec(["configuration", "get-reward"]),
+        json!({
+            "configuration": {
+                "token": t.token_contract,
+                "address_confirmation_reward": address_confirmation_reward.to_string(),
+                "address_tracer_reward": address_tracer_reward.to_string(),
+                "asset_confirmation_reward": asset_confirmation_reward.to_string(),
+                "asset_tracer_reward": asset_tracer_reward.to_string()
+            }
+        })
+    );
 
     t.print("Make sure that the reporter 1 does not exist yet");
     assert_error_output!(
