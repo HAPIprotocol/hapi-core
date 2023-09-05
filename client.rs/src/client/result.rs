@@ -9,6 +9,10 @@ pub enum ClientError {
     AssetIdParseError(String),
     #[error("Invalid data: {0}")]
     InvalidData(String),
+    #[error("Failed to parse balance: {0}")]
+    FailedToParseBalance(String),
+    #[error("The reporter does not exist")]
+    InvalidReporter,
 
     // Ethereum client errors
     #[error("Invalid UUID: {0}")]
@@ -39,11 +43,6 @@ pub enum ClientError {
     AbsentTokenAccount,
     #[error("Solana token error: {0}")]
     SolanaTokenError(#[from] anchor_client::solana_sdk::program_error::ProgramError),
-
-    #[error("Failed to parse balance: {0}")]
-    FailedToParseBalance(String),
-    #[error("The reporter does not exist")]
-    InvalidReporter,
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;
