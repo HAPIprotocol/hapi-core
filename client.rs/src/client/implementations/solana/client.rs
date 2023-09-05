@@ -32,7 +32,10 @@ use crate::{
     HapiCore,
 };
 
-use super::utils::*;
+use super::utils::{
+    byte_array_from_str, get_address_address, get_asset_address, get_case_address,
+    get_network_address, get_program_data_address, get_reporter_address, get_signer,
+};
 
 pub struct HapiCoreSolana {
     contract: Program<Arc<Keypair>>,
@@ -54,7 +57,7 @@ impl HapiCoreSolana {
         let client = Client::new(cluster, signer.clone());
         let contract = client.program(program_id)?;
 
-        let network = get_network_address(&options.network.to_string(), &program_id)?.0;
+        let (network, _) = get_network_address(&options.network.to_string(), &program_id)?;
 
         Ok(Self {
             contract,
@@ -74,7 +77,7 @@ impl HapiCoreSolana {
             .find(|(_, reporter)| reporter.account == self.signer.pubkey())
             .ok_or(ClientError::InvalidReporter)?;
 
-        Ok(reporter.clone())
+        Ok(reporter.to_owned())
     }
 
     async fn create_network_ata(&self, token: &Pubkey) -> Result<()> {
@@ -195,26 +198,16 @@ impl HapiCore for HapiCoreSolana {
         let stake_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
-        let stake_configuration = hapi_core_solana::StakeConfiguration {
-            unlock_duration: configuration.unlock_duration,
-            validator_stake: configuration.validator_stake.into(),
-            tracer_stake: configuration.tracer_stake.into(),
-            publisher_stake: configuration.publisher_stake.into(),
-            authority_stake: configuration.authority_stake.into(),
-            // TODO: add appraiser stake
-            appraiser_stake: network_data.stake_configuration.appraiser_stake,
-        };
-
         let hash = self
             .contract
             .request()
             .accounts(accounts::UpdateStakeConfiguration {
-                authority: network_data.authority,
+                authority: self.signer.pubkey(),
                 network: self.network,
                 stake_mint,
             })
             .args(instruction::UpdateStakeConfiguration {
-                stake_configuration,
+                stake_configuration: configuration.into(),
             })
             .send()
             .await?
@@ -233,16 +226,7 @@ impl HapiCore for HapiCoreSolana {
             .account::<hapi_core_solana::Network>(self.network)
             .await?;
 
-        let res = StakeConfiguration {
-            token: data.stake_mint.to_string(),
-            unlock_duration: data.stake_configuration.unlock_duration,
-            validator_stake: data.stake_configuration.validator_stake.into(),
-            tracer_stake: data.stake_configuration.tracer_stake.into(),
-            publisher_stake: data.stake_configuration.publisher_stake.into(),
-            authority_stake: data.stake_configuration.authority_stake.into(),
-        };
-
-        Ok(res)
+        StakeConfiguration::try_from(data)
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
@@ -253,13 +237,6 @@ impl HapiCore for HapiCoreSolana {
         let reward_mint = Pubkey::from_str(&configuration.token)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`stake-token`: {e}")))?;
 
-        let reward_configuration = hapi_core_solana::RewardConfiguration {
-            address_confirmation_reward: configuration.address_confirmation_reward.into(),
-            address_tracer_reward: configuration.address_tracer_reward.into(),
-            asset_confirmation_reward: configuration.asset_confirmation_reward.into(),
-            asset_tracer_reward: configuration.asset_tracer_reward.into(),
-        };
-
         let hash = self
             .contract
             .request()
@@ -269,7 +246,7 @@ impl HapiCore for HapiCoreSolana {
                 reward_mint,
             })
             .args(instruction::UpdateRewardConfiguration {
-                reward_configuration,
+                reward_configuration: configuration.into(),
             })
             .send()
             .await?
@@ -288,18 +265,7 @@ impl HapiCore for HapiCoreSolana {
             .account::<hapi_core_solana::Network>(self.network)
             .await?;
 
-        let res: RewardConfiguration = RewardConfiguration {
-            token: data.reward_mint.to_string(),
-            address_confirmation_reward: data
-                .reward_configuration
-                .address_confirmation_reward
-                .into(),
-            address_tracer_reward: data.reward_configuration.address_tracer_reward.into(),
-            asset_confirmation_reward: data.reward_configuration.asset_confirmation_reward.into(),
-            asset_tracer_reward: data.reward_configuration.asset_tracer_reward.into(),
-        };
-
-        Ok(res)
+        RewardConfiguration::try_from(data)
     }
 
     async fn create_reporter(&self, input: CreateReporterInput) -> Result<Tx> {
@@ -320,7 +286,7 @@ impl HapiCore for HapiCoreSolana {
                 reporter_id: input.id.as_u128(),
                 account,
                 name: input.name,
-                role: hapi_core_solana::ReporterRole::from(input.role),
+                role: input.role.into(),
                 url: input.url,
                 bump,
             })
@@ -332,7 +298,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
-        let reporter = get_reporter_address(input.id, &self.network, &self.contract.id())?.0;
+        let (reporter, _) = get_reporter_address(input.id, &self.network, &self.contract.id())?;
         let account = Pubkey::from_str(&input.account)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`account`: {e}")))?;
 
@@ -347,7 +313,7 @@ impl HapiCore for HapiCoreSolana {
             .args(instruction::UpdateReporter {
                 account,
                 name: input.name,
-                role: hapi_core_solana::ReporterRole::from(input.role),
+                role: input.role.into(),
                 url: input.url,
             })
             .send()
@@ -358,7 +324,8 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
-        let addr = get_reporter_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
+        let (addr, _) =
+            get_reporter_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?;
 
         get_account!(self, addr, Reporter)
     }
@@ -496,7 +463,7 @@ impl HapiCore for HapiCoreSolana {
             .args(instruction::UpdateCase {
                 name: input.name,
                 url: input.url,
-                status: hapi_core_solana::CaseStatus::from(input.status),
+                status: input.status.into(),
             })
             .send()
             .await?
@@ -506,7 +473,7 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_case(&self, id: &str) -> Result<Case> {
-        let addr = get_case_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?.0;
+        let (addr, _) = get_case_address(Uuid::from_str(id)?, &self.network, &self.contract.id())?;
 
         get_account!(self, addr, Case)
     }
@@ -540,7 +507,7 @@ impl HapiCore for HapiCoreSolana {
             })
             .args(instruction::CreateAddress {
                 addr,
-                category: hapi_core_solana::Category::from(input.category),
+                category: input.category.into(),
                 risk_score: input.risk,
                 bump,
             })
@@ -571,7 +538,7 @@ impl HapiCore for HapiCoreSolana {
                 system_program: system_program::id(),
             })
             .args(instruction::UpdateAddress {
-                category: hapi_core_solana::Category::from(input.category),
+                category: input.category.into(),
                 risk_score: input.risk,
             })
             .send()
@@ -585,7 +552,7 @@ impl HapiCore for HapiCoreSolana {
         let mut address = [0u8; 64];
         byte_array_from_str(addr, &mut address)?;
 
-        let addr = get_address_address(&address, &self.network, &self.contract.id())?.0;
+        let (addr, _) = get_address_address(&address, &self.network, &self.contract.id())?;
 
         get_account!(self, addr, Address)
     }
@@ -624,7 +591,7 @@ impl HapiCore for HapiCoreSolana {
             .args(instruction::CreateAsset {
                 addr,
                 asset_id,
-                category: hapi_core_solana::Category::from(input.category),
+                category: input.category.into(),
                 risk_score: input.risk,
                 bump,
             })
@@ -658,7 +625,7 @@ impl HapiCore for HapiCoreSolana {
                 system_program: system_program::id(),
             })
             .args(instruction::UpdateAsset {
-                category: hapi_core_solana::Category::from(input.category),
+                category: input.category.into(),
                 risk_score: input.risk,
             })
             .send()
@@ -674,13 +641,12 @@ impl HapiCore for HapiCoreSolana {
         let mut asset_id = [0u8; 64];
         byte_array_from_str(&id.to_string(), &mut asset_id)?;
 
-        let addr = get_asset_address(
+        let (addr, _) = get_asset_address(
             &asset_address,
             &asset_id,
             &self.network,
             &self.contract.id(),
-        )?
-        .0;
+        )?;
 
         get_account!(self, addr, Asset)
     }

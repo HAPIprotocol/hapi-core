@@ -9,6 +9,8 @@ use solana_cli_config::{Config, CONFIG_FILE};
 
 use crate::client::result::{ClientError, Result};
 
+const BPF_LOADER_UPGRADEABLE_ID: &str = "BPFLoaderUpgradeab1e11111111111111111111111";
+
 pub fn get_signer(private_key: Option<String>) -> Result<Keypair> {
     if let Some(pk) = private_key {
         return Ok(Keypair::from_base58_string(&pk));
@@ -28,7 +30,7 @@ pub fn get_signer(private_key: Option<String>) -> Result<Keypair> {
 pub fn get_program_data_address(program_id: &Pubkey) -> Result<Pubkey> {
     Ok(Pubkey::find_program_address(
         &[&program_id.to_bytes()],
-        &Pubkey::from_str("BPFLoaderUpgradeab1e11111111111111111111111")
+        &Pubkey::from_str(BPF_LOADER_UPGRADEABLE_ID)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`bpf-loader`: {e}")))?,
     )
     .0)

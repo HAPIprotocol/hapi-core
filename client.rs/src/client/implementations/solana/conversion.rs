@@ -2,6 +2,7 @@ use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::client::{
+    configuration::{RewardConfiguration, StakeConfiguration},
     entities::{
         address::Address,
         asset::{Asset, AssetId},
@@ -13,9 +14,36 @@ use crate::client::{
 };
 use hapi_core_solana::{
     Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
-    CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Reporter as SolanaReporter,
-    ReporterRole as SolanaReporterRole,
+    CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Network as SolanaNetwork,
+    Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
+    RewardConfiguration as SolanaRewardConfiguration,
+    StakeConfiguration as SolanaStakeConfiguration,
 };
+
+impl From<StakeConfiguration> for SolanaStakeConfiguration {
+    fn from(configuration: StakeConfiguration) -> Self {
+        Self {
+            unlock_duration: configuration.unlock_duration,
+            validator_stake: configuration.validator_stake.into(),
+            tracer_stake: configuration.tracer_stake.into(),
+            publisher_stake: configuration.publisher_stake.into(),
+            authority_stake: configuration.authority_stake.into(),
+            // TODO: add appraiser stake
+            appraiser_stake: 0u64,
+        }
+    }
+}
+
+impl From<RewardConfiguration> for SolanaRewardConfiguration {
+    fn from(configuration: RewardConfiguration) -> Self {
+        Self {
+            address_confirmation_reward: configuration.address_confirmation_reward.into(),
+            address_tracer_reward: configuration.address_tracer_reward.into(),
+            asset_confirmation_reward: configuration.asset_confirmation_reward.into(),
+            asset_tracer_reward: configuration.asset_tracer_reward.into(),
+        }
+    }
+}
 
 impl From<ReporterRole> for SolanaReporterRole {
     fn from(value: ReporterRole) -> Self {
@@ -62,6 +90,41 @@ impl From<Category> for SolanaCategory {
             Category::Hacker => SolanaCategory::Hacker,
             Category::HighRiskJurisdiction => SolanaCategory::HighRiskJurisdiction,
         }
+    }
+}
+
+impl TryFrom<SolanaNetwork> for StakeConfiguration {
+    type Error = ClientError;
+
+    fn try_from(network: SolanaNetwork) -> Result<Self> {
+        Ok(StakeConfiguration {
+            token: network.stake_mint.to_string(),
+            unlock_duration: network.stake_configuration.unlock_duration,
+            validator_stake: network.stake_configuration.validator_stake.into(),
+            tracer_stake: network.stake_configuration.tracer_stake.into(),
+            publisher_stake: network.stake_configuration.publisher_stake.into(),
+            authority_stake: network.stake_configuration.authority_stake.into(),
+        })
+    }
+}
+
+impl TryFrom<SolanaNetwork> for RewardConfiguration {
+    type Error = ClientError;
+
+    fn try_from(network: SolanaNetwork) -> Result<Self> {
+        Ok(RewardConfiguration {
+            token: network.reward_mint.to_string(),
+            address_confirmation_reward: network
+                .reward_configuration
+                .address_confirmation_reward
+                .into(),
+            address_tracer_reward: network.reward_configuration.address_tracer_reward.into(),
+            asset_confirmation_reward: network
+                .reward_configuration
+                .asset_confirmation_reward
+                .into(),
+            asset_tracer_reward: network.reward_configuration.asset_tracer_reward.into(),
+        })
     }
 }
 
