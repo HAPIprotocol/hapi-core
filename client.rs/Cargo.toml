@@ -27,16 +27,29 @@ ethers-signers = "2.0.8"
 ethers-contract = "2.0.8"
 
 # Solana dependencies
-anchor-client = { git = "https://github.com/hlgltvnnk/anchor.git", branch = "update-dependencies", features = [
-    "async",
-] }
-solana-cli-config = { git = "https://github.com/hlgltvnnk/solana.git", branch = "update-dependencies" }
-hapi_core_solana = { path = "../solana/programs/hapi_core_solana", features = [
-    "no-entrypoint",
-] }
-spl-associated-token-account = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
-spl-token = { git = "https://github.com/hlgltvnnk/solana-program-library.git" }
+
+[dependencies.anchor-client]
+git = "https://github.com/hlgltvnnk/anchor.git"
+branch = "update-dependencies"
+features = ["async"]
+
+[dependencies.solana-cli-config]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
+[dependencies.hapi_core_solana]
+path = "../solana/programs/hapi_core_solana"
+eatures = ["no-entrypoint"]
+
+[dependencies.spl-associated-token-account]
+git = "https://github.com/hlgltvnnk/solana-program-library.git"
+
+[dependencies.spl-token]
+git = "https://github.com/hlgltvnnk/solana-program-library.git"
 
 [dev-dependencies]
 bs58 = "0.5.0"
-solana-transaction-status = { git = "https://github.com/hlgltvnnk/solana.git", branch = "update-dependencies" }
+
+[dev-dependencies.solana-transaction-status]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
