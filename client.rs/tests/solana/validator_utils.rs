@@ -8,8 +8,11 @@ use super::fixtures::*;
 use crate::cmd_utils::*;
 
 pub fn get_validator_pid() -> Option<u32> {
-    Command::new("lsof")
-        .args(["-t", "-i", &format!(":{VALIDATOR_PORT}")])
+    Command::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "lsof -i :{VALIDATOR_PORT} | grep LISTEN | awk '{{print $2}}'"
+        ))
         .output()
         .expect("Failed to execute command")
         .stdout

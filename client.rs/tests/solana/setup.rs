@@ -280,3 +280,9 @@ impl Setup {
         tx.block_time.expect("Transaction not found") as u64
     }
 }
+
+impl Drop for Setup {
+    fn drop(&mut self) {
+        shut_down_existing_validator();
+    }
+}
