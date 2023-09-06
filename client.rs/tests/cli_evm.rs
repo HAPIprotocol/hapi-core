@@ -101,7 +101,6 @@ async fn evm_works() {
         &asset_tracer_reward.to_string(),
     ]));
 
-    // TODO: check that the reward configuration is applied
     t.print("Make sure that the new reward configuration is applied");
     assert_json_output!(
         t.exec(["configuration", "get-reward"]),

@@ -1,13 +1,10 @@
 use ethers::utils::to_checksum;
 use uuid::Uuid;
 
-use crate::{
-    client::{
-        configuration::{RewardConfiguration, StakeConfiguration},
-        entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
-        result::{ClientError, Result},
-    },
-    Amount,
+use crate::client::{
+    configuration::{RewardConfiguration, StakeConfiguration},
+    entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
+    result::{ClientError, Result},
 };
 
 use super::client::hapi_core_contract;
@@ -27,13 +24,12 @@ impl From<hapi_core_contract::StakeConfiguration> for StakeConfiguration {
 
 impl From<hapi_core_contract::RewardConfiguration> for RewardConfiguration {
     fn from(config: hapi_core_contract::RewardConfiguration) -> Self {
-        // TODO: add asset rewards
         RewardConfiguration {
             token: to_checksum(&config.token, None),
             address_confirmation_reward: config.address_confirmation_reward.into(),
-            address_tracer_reward: config.tracer_reward.into(),
-            asset_confirmation_reward: Amount::default(),
-            asset_tracer_reward: Amount::default(),
+            address_tracer_reward: config.address_tracer_reward.into(),
+            asset_confirmation_reward: config.asset_confirmation_reward.into(),
+            asset_tracer_reward: config.asset_tracer_reward.into(),
         }
     }
 }
