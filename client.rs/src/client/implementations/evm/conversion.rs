@@ -58,6 +58,7 @@ impl TryFrom<hapi_core_contract::Case> for Case {
             name: case.name.to_string(),
             url: case.url.to_string(),
             status: case.status.try_into()?,
+            reporter_id: Uuid::from_u128(case.reporter_id),
         })
     }
 }

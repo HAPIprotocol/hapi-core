@@ -5,19 +5,19 @@ use crate::{
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     near_bindgen,
-    serde::Serialize,
+    serde::{Serialize, Deserialize},
     AccountId,
 };
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AddressView {
-    address: AccountId,
-    category: Category,
-    risk_score: RiskScore,
-    case_id: CaseId,
-    reporter_id: ReporterId,
-    confirmations_count: u64,
+    pub address: AccountId,
+    pub category: Category,
+    pub risk_score: RiskScore,
+    pub case_id: CaseId,
+    pub reporter_id: ReporterId,
+    pub confirmations_count: u64,
 }
 
 impl From<VAddress> for AddressView {

@@ -17,11 +17,11 @@ pub mod stake;
 pub mod token_transferer;
 pub mod utils;
 
-pub use address::VAddress;
+pub use address::{VAddress, AddressView};
 pub use assets::{AssetId, VAsset};
-pub use case::{CaseId, VCase};
+pub use case::{Case, CaseId, VCase};
 pub use errors::*;
-pub use reporter::{ReporterId, VReporter, Reporter};
+pub use reporter::{Reporter, ReporterId, VReporter};
 pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
 pub use utils::TimestampExtension;

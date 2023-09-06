@@ -1,6 +1,8 @@
-use crate::client::entities::reporter::Reporter;
-use crate::client::result::ClientError;
-use crate::client::result::Result;
+use crate::client::entities::address::Address;
+use crate::client::entities::{case::Case, reporter::Reporter};
+use crate::client::result::{ClientError, Result};
+use hapi_core_near::AddressView as NearAddress;
+use hapi_core_near::Case as NearCase;
 use hapi_core_near::Reporter as NearReporter;
 
 use uuid::Uuid;
@@ -18,6 +20,34 @@ impl TryFrom<NearReporter> for Reporter {
             url: reporter.url.to_string(),
             stake: reporter.stake.into(),
             unlock_timestamp: reporter.unlock_timestamp,
+        })
+    }
+}
+
+impl TryFrom<NearCase> for Case {
+    type Error = ClientError;
+
+    fn try_from(case: NearCase) -> Result<Self> {
+        Ok(Case {
+            id: Uuid::from_u128(case.id.0),
+            status: (case.status as u8).try_into()?,
+            name: case.name.to_string(),
+            url: case.url.to_string(),
+            reporter_id: Uuid::from_u128(case.reporter_id.0),
+        })
+    }
+}
+
+impl TryFrom<NearAddress> for Address {
+    type Error = ClientError;
+
+    fn try_from(address: NearAddress) -> Result<Self> {
+        Ok(Address {
+            address: address.address.to_string(),
+            category: (address.category as u8).try_into()?,
+            risk: address.risk_score,
+            case_id: Uuid::from_u128(address.case_id.0),
+            reporter_id: Uuid::from_u128(address.reporter_id.0),
         })
     }
 }

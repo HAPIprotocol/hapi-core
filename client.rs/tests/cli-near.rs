@@ -147,7 +147,7 @@ async fn near_works() {
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -199,7 +199,7 @@ async fn near_works() {
             "name": "HAPI Publisher",
             "url": "https://hapi.one/reporter/publisher",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -231,7 +231,7 @@ async fn near_works() {
                 "name": "HAPI Authority",
                 "url": "https://hapi.one/reporter/authority",
                 "stake": authority_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             },
             {
@@ -241,7 +241,7 @@ async fn near_works() {
                 "name": "HAPI Publisher",
                 "url": "https://hapi.one/reporter/publisher",
                 "stake": publisher_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             }
         ]})
@@ -250,83 +250,102 @@ async fn near_works() {
     t.print("Make sure that reporter counter has increased");
     assert_json_output!(t.exec(["reporter", "count"]), json!({ "count": 2 }));
 
-    // t.print("Create a case by authority");
-    // assert_tx_output!(t.exec(["case", "create", CASE_UUID_1, CASE_NAME_1, CASE_URL_1]));
+    t.print("Create a case by authority");
+    assert_tx_output!(t.exec([
+        "case",
+        "create",
+        CASE_UUID_1,
+        CASE_NAME_1,
+        CASE_URL_1,
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // t.print("Verify that the case has been created");
-    // assert_json_output!(
-    //     t.exec(["case", "get", CASE_UUID_1]),
-    //     json!({ "case": {
-    //         "id": CASE_UUID_1,
-    //         "name": CASE_NAME_1,
-    //         "url": CASE_URL_1,
-    //         "status": "open",
-    //     }})
-    // );
+    t.print("Verify that the case has been created");
+    assert_json_output!(
+        t.exec(["case", "get", CASE_UUID_1]),
+        json!({ "case": {
+            "id": CASE_UUID_1,
+            "name": CASE_NAME_1,
+            "reporter_id": REPORTER_UUID_1,
+            "url": CASE_URL_1,
+            "status": "Open",
+        }})
+    );
 
-    // t.print("Verify the case count has increased");
-    // assert_json_output!(t.exec(["case", "count"]), json!({ "count": 1 }));
+    t.print("Verify the case count has increased");
+    assert_json_output!(t.exec(["case", "count"]), json!({ "count": 1 }));
 
-    // t.print("Create an address by authority");
-    // assert_tx_output!(t.exec([
-    //     "address",
-    //     "create",
-    //     ADDRESS_ADDR_1,
-    //     CASE_UUID_1,
-    //     ADDRESS_CATEGORY_1,
-    //     ADDRESS_RISK_1,
-    // ]));
+    t.print("Create an address by authority");
+    assert_tx_output!(t.exec([
+        "address",
+        "create",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        ADDRESS_CATEGORY_1,
+        ADDRESS_RISK_1,
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // t.print("Verify that the address has been created");
-    // assert_json_output!(
-    //     t.exec(["address", "get", ADDRESS_ADDR_1]),
-    //     json!({ "address": {
-    //         "address": to_checksum(ADDRESS_ADDR_1),
-    //         "case_id": CASE_UUID_1,
-    //         "reporter_id": REPORTER_UUID_1,
-    //         "risk": 5,
-    //         "category": "ransomware",
-    //     }})
-    // );
+    t.print("Verify that the address has been created");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": ADDRESS_ADDR_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 5,
+            "category": "Ransomware",
+        }})
+    );
 
-    // t.print("Verify the address count has increased");
-    // assert_json_output!(t.exec(["address", "count"]), json!({ "count": 1 }));
+    t.print("Verify the address count has increased");
+    assert_json_output!(t.exec(["address", "count"]), json!({ "count": 1 }));
 
-    // t.print("List addresses");
-    // assert_json_output!(
-    //     t.exec(["address", "list"]),
-    //     json!({ "addresses": [
-    //         {
-    //             "address": to_checksum(ADDRESS_ADDR_1),
-    //             "case_id": CASE_UUID_1,
-    //             "reporter_id": REPORTER_UUID_1,
-    //             "risk": 5,
-    //             "category": "ransomware",
-    //         }
-    //     ]})
-    // );
+    t.print("List addresses");
+    assert_json_output!(
+        t.exec(["address", "list"]),
+        json!({ "addresses": [
+            {
+                "address": ADDRESS_ADDR_1,
+                "case_id": CASE_UUID_1,
+                "reporter_id": REPORTER_UUID_1,
+                "risk": 5,
+                "category": "Ransomware",
+            }
+        ]})
+    );
 
-    // t.print("Update the address");
-    // assert_tx_output!(t.exec([
-    //     "address",
-    //     "update",
-    //     ADDRESS_ADDR_1,
-    //     CASE_UUID_1,
-    //     "scam",
-    //     "6",
-    // ]));
+    t.print("Update the address");
+    assert_tx_output!(t.exec([
+        "address",
+        "update",
+        ADDRESS_ADDR_1,
+        CASE_UUID_1,
+        "Scam",
+        "6",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // t.print("Verify that the address has been updated");
-    // assert_json_output!(
-    //     t.exec(["address", "get", ADDRESS_ADDR_1]),
-    //     json!({ "address": {
-    //         "address": to_checksum(ADDRESS_ADDR_1),
-    //         "case_id": CASE_UUID_1,
-    //         "reporter_id": REPORTER_UUID_1,
-    //         "risk": 6,
-    //         "category": "scam",
-    //     }})
-    // );
+    t.print("Verify that the address has been updated");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": ADDRESS_ADDR_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "Scam",
+        }})
+    );
 
     // t.print("Create an asset by authority");
     // assert_tx_output!(t.exec([
@@ -368,26 +387,31 @@ async fn near_works() {
     //     "6",
     // ]));
 
-    // t.print("Close the case by authority");
-    // assert_tx_output!(t.exec([
-    //     "case",
-    //     "update",
-    //     CASE_UUID_1,
-    //     "closed case",
-    //     "https://hapi.one/case/closed",
-    //     "closed"
-    // ]));
+    t.print("Close the case by authority");
+    assert_tx_output!(t.exec([
+        "case",
+        "update",
+        CASE_UUID_1,
+        "closed case",
+        "https://hapi.one/case/closed",
+        "Closed",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // t.print("Verify that the case has been closed");
-    // assert_json_output!(
-    //     t.exec(["case", "get", CASE_UUID_1]),
-    //     json!({ "case": {
-    //         "id": CASE_UUID_1,
-    //         "name": "closed case",
-    //         "url": "https://hapi.one/case/closed",
-    //         "status": "closed",
-    //     }})
-    // );
+    t.print("Verify that the case has been closed");
+    assert_json_output!(
+        t.exec(["case", "get", CASE_UUID_1]),
+        json!({ "case": {
+            "id": CASE_UUID_1,
+            "name": "closed case",
+            "url": "https://hapi.one/case/closed",
+            "status": "Closed",
+            "reporter_id": REPORTER_UUID_1,
+        }})
+    );
 
     t.print("Deactivate authority reporter");
     assert_tx_output!(t.exec([
@@ -404,7 +428,7 @@ async fn near_works() {
         .exec(["reporter", "get", REPORTER_UUID_1])
         .unwrap_or_else(|e| panic!("{}", e));
     let json = serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
-    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "unstaking");
+    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "Unstaking");
 
     sleep(Duration::from_secs(unlock_duration));
 
@@ -429,7 +453,7 @@ async fn near_works() {
         .exec(["reporter", "get", REPORTER_UUID_1])
         .unwrap_or_else(|e| panic!("{}", e));
     let json = serde_json::from_str::<serde_json::Value>(&output.stdout).expect("json parse error");
-    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "inactive");
+    assert_eq!(json["reporter"]["status"].as_str().unwrap(), "Inactive");
     assert_eq!(json["reporter"]["stake"].as_str().unwrap(), "0");
 
     t.print("Update publisher reporter");
@@ -453,7 +477,7 @@ async fn near_works() {
             "name": "HAPI Publisher+",
             "url": "https://hapi.one/reporter/new_publisher",
             "stake": "12",
-            "status": "active",
+            "status": "Active",
             "unlock_timestamp": 0
         }})
     );

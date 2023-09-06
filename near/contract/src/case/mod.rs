@@ -19,12 +19,12 @@ pub enum CaseStatus {
     Open,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Case {
-    id: CaseId,
-    name: String,
-    reporter_id: ReporterId,
-    status: CaseStatus,
-    url: String,
+   pub id: CaseId,
+   pub name: String,
+   pub reporter_id: ReporterId,
+   pub status: CaseStatus,
+   pub url: String,
 }

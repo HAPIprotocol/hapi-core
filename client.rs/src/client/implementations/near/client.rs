@@ -3,6 +3,8 @@ use crate::{
     HapiCoreOptions,
 };
 use async_trait::async_trait;
+use hapi_core_near::AddressView as NearAddress;
+use hapi_core_near::Case as NearCase;
 use hapi_core_near::Reporter as NearReporter;
 use near_crypto::{InMemorySigner, SecretKey};
 use near_jsonrpc_primitives::types::{
@@ -62,7 +64,8 @@ impl HapiCoreNear {
     }
 }
 
-macro_rules! transform_id {
+#[macro_export]
+macro_rules! uuid_to_u128 {
     ($id:expr) => {
         Uuid::parse_str(&$id.to_string())
             .unwrap()
@@ -247,7 +250,7 @@ impl HapiCore for HapiCoreNear {
             access_key_query_response,
             "create_reporter",
             json!({
-                "id": transform_id!(input.id),
+                "id": uuid_to_u128!(input.id),
                 "account_id": input.account,
                 "name": input.name,
                 "role": input.role,
@@ -277,7 +280,7 @@ impl HapiCore for HapiCoreNear {
             access_key_query_response,
             "update_reporter",
             json!({
-                "id": transform_id!(input.id),
+                "id": uuid_to_u128!(input.id),
                 "account_id": input.account,
                 "name": input.name,
                 "role": input.role,
@@ -298,7 +301,7 @@ impl HapiCore for HapiCoreNear {
         })
     }
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
-        let request = self.view_request("get_reporter", Some(json!({ "id": transform_id!(id) })));
+        let request = self.view_request("get_reporter", Some(json!({ "id": uuid_to_u128!(id) })));
 
         let reporter = self.get_response::<NearReporter>(request).await?;
 
@@ -421,38 +424,167 @@ impl HapiCore for HapiCoreNear {
         })
     }
 
-    async fn create_case(&self, _input: CreateCaseInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_case(&self, input: CreateCaseInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "create_case",
+            json!({
+                "id": uuid_to_u128!(input.id),
+                "name": input.name,
+                "url": input.url,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn update_case(&self, _input: UpdateCaseInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_case(&self, input: UpdateCaseInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "update_case",
+            json!({
+                "id": uuid_to_u128!(input.id),
+                "name": input.name,
+                "status": input.status,
+                "url": input.url,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn get_case(&self, _id: &str) -> Result<Case> {
-        unimplemented!()
+    async fn get_case(&self, id: &str) -> Result<Case> {
+        let request = self.view_request("get_case", Some(json!({ "id": uuid_to_u128!(id) })));
+
+        Ok(self.get_response::<NearCase>(request).await?.try_into()?)
     }
     async fn get_case_count(&self) -> Result<u64> {
         let request = self.view_request("get_case_count", None);
 
         Ok(self.get_response::<u64>(request).await?)
     }
-    async fn get_cases(&self, _skip: u64, _take: u64) -> Result<Vec<Case>> {
-        unimplemented!()
+    async fn get_cases(&self, skip: u64, take: u64) -> Result<Vec<Case>> {
+        let request = self.view_request("get_cases", Some(json!({ "skip": skip, "take": take })));
+
+        Ok(self
+            .get_response::<Vec<NearCase>>(request)
+            .await?
+            .into_iter()
+            .map(|case| case.try_into())
+            .collect::<Result<Vec<Case>>>()?)
     }
 
-    async fn create_address(&self, _input: CreateAddressInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_address(&self, input: CreateAddressInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "create_address",
+            json!({
+                "address": input.address,
+                "category": input.category,
+                "case_id": uuid_to_u128!(input.case_id),
+                "risk_score": input.risk,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn update_address(&self, _input: UpdateAddressInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "update_address",
+            json!({
+                "address": input.address,
+                "category": input.category,
+                "case_id": uuid_to_u128!(input.case_id),
+                "risk_score": input.risk,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn get_address(&self, _addr: &str) -> Result<Address> {
-        unimplemented!()
+    async fn get_address(&self, addr: &str) -> Result<Address> {
+        let request = self.view_request("get_address", Some(json!({ "address": addr })));
+
+        Ok(self
+            .get_response::<NearAddress>(request)
+            .await?
+            .try_into()?)
     }
     async fn get_address_count(&self) -> Result<u64> {
-        unimplemented!()
+        let request = self.view_request("get_address_count", None);
+
+        Ok(self.get_response::<u64>(request).await?)
     }
-    async fn get_addresses(&self, _skip: u64, _take: u64) -> Result<Vec<Address>> {
-        unimplemented!()
+    async fn get_addresses(&self, skip: u64, take: u64) -> Result<Vec<Address>> {
+        let request =
+            self.view_request("get_addresses", Some(json!({ "skip": skip, "take": take })));
+
+        Ok(self
+            .get_response::<Vec<NearAddress>>(request)
+            .await?
+            .into_iter()
+            .map(|address| address.try_into())
+            .collect::<Result<Vec<Address>>>()?)
     }
 
     async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {
