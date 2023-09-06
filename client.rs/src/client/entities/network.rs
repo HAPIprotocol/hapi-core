@@ -33,7 +33,7 @@ impl FromStr for HapiCoreNetwork {
     }
 }
 
-// Solana natwork naming is related to this
+// Solana network naming is related to this
 impl fmt::Display for HapiCoreNetwork {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
