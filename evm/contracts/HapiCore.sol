@@ -156,44 +156,61 @@ contract HapiCore is OwnableUpgradeable {
     /// Reward configuration
     struct RewardConfiguration {
         address token;
-        /// Reward amount for Validator reporter
+        /// Address reward amount for Validator reporter
         uint256 address_confirmation_reward;
-        /// Reward amount for Tracer reporter
-        uint256 tracer_reward;
+        /// Address reward amount for Tracer reporter
+        uint256 address_tracer_reward;
+        /// Asset reward amount for Validator reporter
+        uint256 asset_confirmation_reward;
+        /// Asset reward amount for Tracer reporter
+        uint256 asset_tracer_reward;
     }
     RewardConfiguration private _reward_configuration;
 
     /**
      * @param token Reward token contract address
-     * @param address_confirmation_reward Reward amount for Validator reporter
-     * @param tracer_reward Reward amount for Tracer reporter
+     * @param address_confirmation_reward Address reward amount for Validator reporter
+     * @param address_tracer_reward Address reward amount for Tracer reporter
+     * @param asset_confirmation_reward Asset reward amount for Validator reporter
+     * @param asset_tracer_reward Asset reward amount for Tracer reporter
      */
     event RewardConfigurationChanged(
         address token,
         uint256 address_confirmation_reward,
-        uint256 tracer_reward
+        uint256 address_tracer_reward,
+        uint256 asset_confirmation_reward,
+        uint256 asset_tracer_reward
     );
 
     /**
      * Update reward configuration
      * @param token Reward token contract address
-     * @param address_confirmation_reward Reward amount for Validator reporter
-     * @param tracer_reward Reward amount for Tracer reporter
+     * @param address_confirmation_reward Address reward amount for Validator reporter
+     * @param address_tracer_reward Address reward amount for Tracer reporter
+     * @param asset_confirmation_reward Asset reward amount for Validator reporter
+     * @param asset_tracer_reward Asset reward amount for Tracer reporter
      */
     function updateRewardConfiguration(
         address token,
         uint256 address_confirmation_reward,
-        uint256 tracer_reward
+        uint256 address_tracer_reward,
+        uint256 asset_confirmation_reward,
+        uint256 asset_tracer_reward
     ) public onlyAuthority {
         _reward_configuration.token = token;
         _reward_configuration
             .address_confirmation_reward = address_confirmation_reward;
-        _reward_configuration.tracer_reward = tracer_reward;
+        _reward_configuration.address_tracer_reward = address_tracer_reward;
+        _reward_configuration
+            .asset_confirmation_reward = asset_confirmation_reward;
+        _reward_configuration.asset_tracer_reward = asset_tracer_reward;
 
         emit RewardConfigurationChanged(
             token,
             address_confirmation_reward,
-            tracer_reward
+            address_tracer_reward,
+            asset_confirmation_reward,
+            asset_tracer_reward
         );
     }
 
