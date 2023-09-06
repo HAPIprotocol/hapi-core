@@ -224,12 +224,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
-        let data = self
-            .contract
+        self.contract
             .account::<hapi_core_solana::Network>(self.network)
-            .await?;
-
-        StakeConfiguration::try_from(data)
+            .await?
+            .try_into()
     }
 
     async fn update_reward_configuration(&self, configuration: RewardConfiguration) -> Result<Tx> {
@@ -263,12 +261,10 @@ impl HapiCore for HapiCoreSolana {
     }
 
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
-        let data = self
-            .contract
+        self.contract
             .account::<hapi_core_solana::Network>(self.network)
-            .await?;
-
-        RewardConfiguration::try_from(data)
+            .await?
+            .try_into()
     }
 
     async fn create_reporter(&self, input: CreateReporterInput) -> Result<Tx> {
