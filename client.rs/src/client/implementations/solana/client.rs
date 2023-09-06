@@ -3,6 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
 
 use anchor_client::{
+    solana_client::rpc_filter::RpcFilterType,
     solana_sdk::{
         pubkey::Pubkey,
         signature::{Keypair, Signer},
@@ -69,7 +70,9 @@ impl HapiCoreSolana {
     async fn get_reporter(&self) -> Result<(Pubkey, hapi_core_solana::Reporter)> {
         let data = self
             .contract
-            .accounts::<hapi_core_solana::Reporter>(vec![])
+            .accounts::<hapi_core_solana::Reporter>(vec![RpcFilterType::DataSize(
+                (hapi_core_solana::Reporter::LEN + hapi_core_solana::ACCOUNT_RESERVE_SPACE) as u64,
+            )])
             .await?;
 
         let reporter = data

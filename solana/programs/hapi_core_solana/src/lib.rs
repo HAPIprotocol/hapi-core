@@ -16,6 +16,7 @@ pub use state::{
     network::{Network, RewardConfiguration, StakeConfiguration},
     reporter::{Reporter, ReporterRole, ReporterStatus},
     utils::Category,
+    ACCOUNT_RESERVE_SPACE,
 };
 
 const UUID_VERSION: usize = 4;
