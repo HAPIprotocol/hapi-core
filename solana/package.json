@@ -33,9 +33,9 @@
         "create-network": "ts-node scripts/create-network"
     },
     "dependencies": {
-        "@coral-xyz/anchor": "^0.27.0",
+        "@coral-xyz/anchor": "0.28.0",
         "@solana/spl-token": "^0.3.8",
-        "@solana/web3.js": "^1.72.0",
+        "@solana/web3.js": "^1.78.4",
         "@types/bn.js": "^5.1.1",
         "@types/jest": "^29.5.1",
         "@types/node": "^20.1.7",

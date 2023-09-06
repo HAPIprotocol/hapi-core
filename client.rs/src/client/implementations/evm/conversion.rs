@@ -27,7 +27,9 @@ impl From<hapi_core_contract::RewardConfiguration> for RewardConfiguration {
         RewardConfiguration {
             token: to_checksum(&config.token, None),
             address_confirmation_reward: config.address_confirmation_reward.into(),
-            tracer_reward: config.tracer_reward.into(),
+            address_tracer_reward: config.address_tracer_reward.into(),
+            asset_confirmation_reward: config.asset_confirmation_reward.into(),
+            asset_tracer_reward: config.asset_tracer_reward.into(),
         }
     }
 }

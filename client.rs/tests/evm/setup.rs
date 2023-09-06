@@ -2,6 +2,9 @@ use ethers::{
     providers::{Http, Middleware, Provider},
     types::{Block, Transaction, H256},
 };
+
+use regex::Regex;
+
 use std::{
     env,
     ffi::OsStr,
@@ -128,6 +131,16 @@ impl Setup {
                 .env("CONTRACT_ADDRESS", contract_address)
                 .env("NETWORK", network)
                 .env("PROVIDER_URL", provider_url),
+        )
+    }
+
+    pub fn is_tx_match(value: &serde_json::Value) -> bool {
+        Regex::new(r"^0x[0-9a-fA-F]{64}$").unwrap().is_match(
+            value
+                .get("tx")
+                .expect("`tx` key not found")
+                .as_str()
+                .expect("`tx` is not a string"),
         )
     }
 

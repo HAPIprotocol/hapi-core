@@ -6,12 +6,13 @@ use super::{
         address::{Address, CreateAddressInput, UpdateAddressInput},
         asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
         case::{Case, CreateCaseInput, UpdateCaseInput},
+        network::HapiCoreNetwork,
         reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
     },
     result::{Result, Tx},
 };
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait HapiCore {
     fn is_valid_address(&self, address: &str) -> Result<()>;
 
@@ -58,4 +59,5 @@ pub struct HapiCoreOptions {
     pub contract_address: String,
     pub private_key: Option<String>,
     pub chain_id: Option<u64>,
+    pub network: HapiCoreNetwork,
 }

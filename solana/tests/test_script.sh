@@ -19,7 +19,7 @@ test() {
   sleep 5 
   echo "==> Deploying program to test validator and running tests"
   export ANCHOR_WALLET=$AUTHORITY
-  (anchor deploy --program-keypair $KEYPAIR 1> /dev/null && anchor test --skip-local-validator)
+  (anchor deploy --program-keypair $KEYPAIR --program-name hapi_core_solana 1> /dev/null && anchor test --skip-local-validator)
 }
 
 cleanup() {

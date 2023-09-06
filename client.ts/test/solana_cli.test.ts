@@ -253,12 +253,12 @@ describe("Solana Cli test", function () {
           account: reporterData.account.toString(),
           role: ReporterRoleToString(
             getReporterRoleIndex(
-              reporterData.role as typeof ReporterRole
+              reporterData.role as unknown as typeof ReporterRole
             ) as CliReporterRole
           ),
           status: ReporterStatusToString(
             getReporterStatusIndex(
-              reporterData.status as typeof ReporterStatus
+              reporterData.status as unknown as typeof ReporterStatus
             ) as CliReporterStatus
           ),
           name: reporterData.name.toString(),
@@ -293,12 +293,12 @@ describe("Solana Cli test", function () {
           account: reporterData.account.toString(),
           role: ReporterRoleToString(
             getReporterRoleIndex(
-              reporterData.role as typeof ReporterRole
+              reporterData.role as unknown as typeof ReporterRole
             ) as CliReporterRole
           ),
           status: ReporterStatusToString(
             getReporterStatusIndex(
-              reporterData.status as typeof ReporterStatus
+              reporterData.status as unknown as typeof ReporterStatus
             ) as CliReporterStatus
           ),
           name: reporterData.name.toString(),
@@ -395,7 +395,7 @@ describe("Solana Cli test", function () {
           url: caseData.url,
           status: CaseStatusToString(
             getCaseStatusIndex(
-              caseData.status as typeof CaseStatus
+              caseData.status as unknown as typeof CaseStatus
             ) as CliCaseStatus
           ),
         };
@@ -424,7 +424,7 @@ describe("Solana Cli test", function () {
           url: caseData.url,
           status: CaseStatusToString(
             getCaseStatusIndex(
-              caseData.status as typeof CaseStatus
+              caseData.status as unknown as typeof CaseStatus
             ) as CliCaseStatus
           ),
         };
@@ -508,7 +508,9 @@ describe("Solana Cli test", function () {
           caseId: bnToUuid(addressData.caseId),
           reporterId: bnToUuid(addressData.reporterId),
           risk: addressData.riskScore,
-          category: getCategoryIndex(addressData.category as typeof Category),
+          category: getCategoryIndex(
+            addressData.category as unknown as typeof Category
+          ),
         };
         checkCommandResult(res, val);
       }
@@ -534,7 +536,9 @@ describe("Solana Cli test", function () {
           caseId: bnToUuid(addressData.caseId),
           reporterId: bnToUuid(addressData.reporterId),
           risk: addressData.riskScore,
-          category: getCategoryIndex(addressData.category as typeof Category),
+          category: getCategoryIndex(
+            addressData.category as unknown as typeof Category
+          ),
         };
 
         checkCommandResult(res, val, CommandCheck.ToContain);
@@ -643,7 +647,9 @@ describe("Solana Cli test", function () {
           caseId: bnToUuid(assetData.caseId),
           reporterId: bnToUuid(assetData.reporterId),
           risk: assetData.riskScore,
-          category: getCategoryIndex(assetData.category as typeof Category),
+          category: getCategoryIndex(
+            assetData.category as unknown as typeof Category
+          ),
         };
 
         checkCommandResult(res, val);
@@ -673,7 +679,9 @@ describe("Solana Cli test", function () {
           caseId: bnToUuid(assetData.caseId),
           reporterId: bnToUuid(assetData.reporterId),
           risk: assetData.riskScore,
-          category: getCategoryIndex(assetData.category as typeof Category),
+          category: getCategoryIndex(
+            assetData.category as unknown as typeof Category
+          ),
         };
 
         checkCommandResult(res, val, CommandCheck.ToContain);

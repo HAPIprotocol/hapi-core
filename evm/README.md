@@ -9,7 +9,7 @@ This is a HAPI Core contract written in Solidity for EVM-based blockchains.
 npm install
 
 # Use hardhat to compile the contract and create ABI
-npm run compile
+npm run build
 
 # Use `jq` to extract ABI from built artifacts
 jq .abi ./artifacts/contracts/HapiCore.sol/HapiCore.json
