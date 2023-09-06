@@ -101,9 +101,9 @@ impl Display for ReporterStatus {
             f,
             "{}",
             match self {
-                ReporterStatus::Inactive => "inactive",
-                ReporterStatus::Active => "active",
-                ReporterStatus::Unstaking => "unstaking",
+                ReporterStatus::Inactive => "Inactive",
+                ReporterStatus::Active => "Active",
+                ReporterStatus::Unstaking => "Unstaking",
             }
         )
     }
@@ -114,9 +114,9 @@ impl FromStr for ReporterStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "inactive" => Ok(Self::Inactive),
-            "active" => Ok(Self::Active),
-            "unstaking" => Ok(Self::Unstaking),
+            "Inactive" => Ok(Self::Inactive),
+            "Active" => Ok(Self::Active),
+            "Unstaking" => Ok(Self::Unstaking),
             _ => Err(anyhow::anyhow!("invalid reporter status")),
         }
     }

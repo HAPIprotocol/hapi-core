@@ -30,8 +30,8 @@ impl std::fmt::Display for CaseStatus {
             f,
             "{}",
             match self {
-                CaseStatus::Closed => "closed",
-                CaseStatus::Open => "open",
+                CaseStatus::Closed => "Closed",
+                CaseStatus::Open => "Open",
             }
         )
     }
@@ -42,8 +42,8 @@ impl FromStr for CaseStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "closed" => Ok(Self::Closed),
-            "open" => Ok(Self::Open),
+            "Closed" => Ok(Self::Closed),
+            "Open" => Ok(Self::Open),
             _ => Err(anyhow::anyhow!("invalid case status")),
         }
     }
@@ -82,4 +82,5 @@ pub struct Case {
     pub name: String,
     pub url: String,
     pub status: CaseStatus,
+    pub reporter_id: Uuid,
 }

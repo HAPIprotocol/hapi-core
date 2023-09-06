@@ -142,7 +142,7 @@ async fn evm_works() {
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -220,7 +220,7 @@ async fn evm_works() {
             "name": "HAPI Publisher",
             "url": "https://hapi.one/reporter/publisher",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -256,7 +256,7 @@ async fn evm_works() {
                 "name": "HAPI Authority",
                 "url": "https://hapi.one/reporter/authority",
                 "stake": authority_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             },
             {
@@ -266,7 +266,7 @@ async fn evm_works() {
                 "name": "HAPI Publisher",
                 "url": "https://hapi.one/reporter/publisher",
                 "stake": publisher_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             }
         ]})
@@ -285,7 +285,8 @@ async fn evm_works() {
             "id": CASE_UUID_1,
             "name": CASE_NAME_1,
             "url": CASE_URL_1,
-            "status": "open",
+            "status": "Open",
+            "reporter_id": REPORTER_UUID_1,
         }})
     );
 
@@ -310,7 +311,7 @@ async fn evm_works() {
             "case_id": CASE_UUID_1,
             "reporter_id": REPORTER_UUID_1,
             "risk": 5,
-            "category": "ransomware",
+            "category": "Ransomware",
         }})
     );
 
@@ -326,7 +327,7 @@ async fn evm_works() {
                 "case_id": CASE_UUID_1,
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 5,
-                "category": "ransomware",
+                "category": "Ransomware",
             }
         ]})
     );
@@ -337,7 +338,7 @@ async fn evm_works() {
         "update",
         ADDRESS_ADDR_1,
         CASE_UUID_1,
-        "scam",
+        "Scam",
         "6",
     ]));
 
@@ -349,7 +350,7 @@ async fn evm_works() {
             "case_id": CASE_UUID_1,
             "reporter_id": REPORTER_UUID_1,
             "risk": 6,
-            "category": "scam",
+            "category": "Scam",
         }})
     );
 
@@ -377,7 +378,7 @@ async fn evm_works() {
                 "case_id": CASE_UUID_1,
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 7,
-                "category": "counterfeit",
+                "category": "Counterfeit",
             }
         ]})
     );
@@ -389,7 +390,7 @@ async fn evm_works() {
         ASSET_ADDR_1,
         ASSET_ID_1,
         CASE_UUID_1,
-        "scam",
+        "Scam",
         "6",
     ]));
 
@@ -400,7 +401,7 @@ async fn evm_works() {
         CASE_UUID_1,
         "closed case",
         "https://hapi.one/case/closed",
-        "closed"
+        "Closed"
     ]));
 
     t.print("Verify that the case has been closed");
@@ -410,7 +411,8 @@ async fn evm_works() {
             "id": CASE_UUID_1,
             "name": "closed case",
             "url": "https://hapi.one/case/closed",
-            "status": "closed",
+            "status": "Closed",
+            "reporter_id": REPORTER_UUID_1,
         }})
     );
 
@@ -431,7 +433,7 @@ async fn evm_works() {
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": authority_stake.to_string(),
-            "status": "unstaking",
+            "status": "Unstaking",
             "unlock_timestamp": unlock_timestamp
         }})
     );
@@ -457,7 +459,7 @@ async fn evm_works() {
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -483,7 +485,7 @@ async fn evm_works() {
             "name": "HAPI Publisher+",
             "url": "https://hapi.one/reporter/new_publisher",
             "stake": "12",
-            "status": "active",
+            "status": "Active",
             "unlock_timestamp": 0
         }})
     );
