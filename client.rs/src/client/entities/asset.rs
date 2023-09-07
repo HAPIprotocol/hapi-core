@@ -75,6 +75,7 @@ pub struct UpdateAssetInput {
     pub case_id: Uuid,
     pub risk: u8,
     pub category: Category,
+    // TODO: add confirmations_count
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
