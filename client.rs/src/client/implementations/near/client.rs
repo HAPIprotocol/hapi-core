@@ -3,9 +3,11 @@ use crate::{
     HapiCoreOptions,
 };
 use async_trait::async_trait;
-use hapi_core_near::AddressView as NearAddress;
-use hapi_core_near::Case as NearCase;
-use hapi_core_near::Reporter as NearReporter;
+use hapi_core_near::{
+    AddressView as NearAddress, AssetView as NearAsset, Case as NearCase, Reporter as NearReporter,
+};
+// use hapi_core_near::Case as NearCase;
+// use hapi_core_near::Reporter as NearReporter;
 use near_crypto::{InMemorySigner, SecretKey};
 use near_jsonrpc_primitives::types::{
     query::{QueryResponseKind, RpcQueryResponse},
@@ -587,20 +589,84 @@ impl HapiCore for HapiCoreNear {
             .collect::<Result<Vec<Address>>>()?)
     }
 
-    async fn create_asset(&self, _input: CreateAssetInput) -> Result<Tx> {
-        unimplemented!()
+    async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "create_asset",
+            json!({
+                "address": input.address,
+                "id": input.asset_id,
+                "category": input.category,
+                "case_id": uuid_to_u128!(input.case_id),
+                "risk_score": input.risk,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn update_asset(&self, _input: UpdateAssetInput) -> Result<Tx> {
-        unimplemented!()
+    async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "update_asset",
+            json!({
+                "address": input.address,
+                "id": input.asset_id,
+                "category": input.category,
+                "case_id": uuid_to_u128!(input.case_id),
+                "risk_score": input.risk,
+            })
+        );
+
+        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
+            signed_transaction: transaction.sign(&signer),
+        };
+
+        let sent_at = time::Instant::now();
+        let tx_hash = self.client.call(request).await?;
+
+        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
+        Ok(Tx {
+            hash: format!("{:?}", tx_hash),
+        })
     }
-    async fn get_asset(&self, _address: &str, _id: &AssetId) -> Result<Asset> {
-        unimplemented!()
+    async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {
+        let request = self.view_request("get_asset", Some(json!({ "address": address, "id": id })));
+
+        Ok(self.get_response::<NearAsset>(request).await?.try_into()?)
     }
     async fn get_asset_count(&self) -> Result<u64> {
-        unimplemented!()
+        let request = self.view_request("get_asset_count", None);
+
+        Ok(self.get_response::<u64>(request).await?)
     }
-    async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
-        unimplemented!()
+    async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>> {
+        let request = self.view_request("get_assets", Some(json!({ "skip": skip, "take": take })));
+
+        Ok(self
+            .get_response::<Vec<NearAsset>>(request)
+            .await?
+            .into_iter()
+            .map(|asset| asset.try_into())
+            .collect::<Result<Vec<Asset>>>()?)
     }
 }
 

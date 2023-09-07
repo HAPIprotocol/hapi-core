@@ -5,7 +5,7 @@ use crate::{
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     near_bindgen,
-    serde::{Serialize, Deserialize},
+    serde::{Deserialize, Serialize},
     AccountId,
 };
 

@@ -17,8 +17,8 @@ pub mod stake;
 pub mod token_transferer;
 pub mod utils;
 
-pub use address::{VAddress, AddressView};
-pub use assets::{AssetId, VAsset};
+pub use address::{AddressView, VAddress};
+pub use assets::{AssetId, AssetView, VAsset};
 pub use case::{Case, CaseId, VCase};
 pub use errors::*;
 pub use reporter::{Reporter, ReporterId, VReporter};

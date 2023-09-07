@@ -25,3 +25,7 @@ pub const ERROR_ADDRESS_ALREADY_EXISTS: &str = "Address already exists";
 // Configuration errors
 pub const ERROR_STAKE_CONFIGURATION_NOT_SET: &str = "Stake configuration is not set";
 pub const ERROR_REWARD_CONFIGURATION_NOT_SET: &str = "Reward configuration is not set";
+
+// Asset errors
+pub const ERROR_ASSET_NOT_FOUND: &str = "Asset not found";
+pub const ERROR_ASSET_ALREADY_EXISTS: &str = "Asset already exists";

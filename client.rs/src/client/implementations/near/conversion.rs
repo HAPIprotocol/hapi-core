@@ -1,9 +1,8 @@
-use crate::client::entities::address::Address;
-use crate::client::entities::{case::Case, reporter::Reporter};
+use crate::client::entities::{address::Address, asset::Asset, case::Case, reporter::Reporter};
 use crate::client::result::{ClientError, Result};
-use hapi_core_near::AddressView as NearAddress;
-use hapi_core_near::Case as NearCase;
-use hapi_core_near::Reporter as NearReporter;
+use hapi_core_near::{
+    AddressView as NearAddress, AssetView as NearAsset, Case as NearCase, Reporter as NearReporter,
+};
 
 use uuid::Uuid;
 
@@ -48,6 +47,21 @@ impl TryFrom<NearAddress> for Address {
             risk: address.risk_score,
             case_id: Uuid::from_u128(address.case_id.0),
             reporter_id: Uuid::from_u128(address.reporter_id.0),
+        })
+    }
+}
+
+impl TryFrom<NearAsset> for Asset {
+    type Error = ClientError;
+
+    fn try_from(asset: NearAsset) -> Result<Self> {
+        Ok(Asset {
+            address: asset.address.to_string(),
+            asset_id: asset.id.0.into(),
+            category: (asset.category as u8).try_into()?,
+            risk: asset.risk_score,
+            case_id: Uuid::from_u128(asset.case_id.0),
+            reporter_id: Uuid::from_u128(asset.reporter_id.0),
         })
     }
 }

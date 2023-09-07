@@ -300,7 +300,7 @@ async fn near_works() {
             "case_id": CASE_UUID_1,
             "reporter_id": REPORTER_UUID_1,
             "risk": 5,
-            "category": "Ransomware",
+            "category": ADDRESS_CATEGORY_1,
         }})
     );
 
@@ -316,7 +316,7 @@ async fn near_works() {
                 "case_id": CASE_UUID_1,
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 5,
-                "category": "Ransomware",
+                "category": ADDRESS_CATEGORY_1,
             }
         ]})
     );
@@ -347,45 +347,53 @@ async fn near_works() {
         }})
     );
 
-    // t.print("Create an asset by authority");
-    // assert_tx_output!(t.exec([
-    //     "asset",
-    //     "create",
-    //     ASSET_ADDR_1,
-    //     ASSET_ID_1,
-    //     CASE_UUID_1,
-    //     ASSET_CATEGORY_1,
-    //     ASSET_RISK_1,
-    // ]));
+    t.print("Create an asset by authority");
+    assert_tx_output!(t.exec([
+        "asset",
+        "create",
+        ASSET_ADDR_1,
+        ASSET_ID_1,
+        CASE_UUID_1,
+        ASSET_CATEGORY_1,
+        ASSET_RISK_1,
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
-    // t.print("Verify the asset count has increased");
-    // assert_json_output!(t.exec(["asset", "count"]), json!({ "count": 1 }));
+    t.print("Verify the asset count has increased");
+    assert_json_output!(t.exec(["asset", "count"]), json!({ "count": 1 }));
 
-    // t.print("List assets");
-    // assert_json_output!(
-    //     t.exec(["asset", "list"]),
-    //     json!({ "assets": [
-    //         {
-    //             "address": to_checksum(ASSET_ADDR_1),
-    //             "asset_id": ASSET_ID_1,
-    //             "case_id": CASE_UUID_1,
-    //             "reporter_id": REPORTER_UUID_1,
-    //             "risk": 7,
-    //             "category": "counterfeit",
-    //         }
-    //     ]})
-    // );
+    t.print("List assets");
+    assert_json_output!(
+        t.exec(["asset", "list"]),
+        json!({ "assets": [
+            {
+                "address": ASSET_ADDR_1,
+                "asset_id": ASSET_ID_1,
+                "case_id": CASE_UUID_1,
+                "reporter_id": REPORTER_UUID_1,
+                "risk": 7,
+                "category": ASSET_CATEGORY_1,
+            }
+        ]})
+    );
 
-    // t.print("Update the asset");
-    // assert_tx_output!(t.exec([
-    //     "asset",
-    //     "update",
-    //     ASSET_ADDR_1,
-    //     ASSET_ID_1,
-    //     CASE_UUID_1,
-    //     "scam",
-    //     "6",
-    // ]));
+    t.print("Update the asset");
+    assert_tx_output!(t.exec([
+        "asset",
+        "update",
+        ASSET_ADDR_1,
+        ASSET_ID_1,
+        CASE_UUID_1,
+        "Scam",
+        "6",
+        "--account-id",
+        &t.authority.account,
+        "--private-key",
+        &t.authority.secret_key,
+    ]));
 
     t.print("Close the case by authority");
     assert_tx_output!(t.exec([
