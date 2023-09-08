@@ -7,7 +7,17 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{address::*, asset::*, case::*, confirmation::*, network::*, reporter::*, utils::*};
+use state::{confirmation::*, utils::*};
+
+pub use state::{
+    address::Address,
+    asset::Asset,
+    case::{Case, CaseStatus},
+    network::{Network, RewardConfiguration, StakeConfiguration},
+    reporter::{Reporter, ReporterRole, ReporterStatus},
+    utils::Category,
+    ACCOUNT_RESERVE_SPACE,
+};
 
 const UUID_VERSION: usize = 4;
 
@@ -282,13 +292,13 @@ pub mod hapi_core_solana {
         ctx: Context<UpdateCase>,
         name: String,
         url: String,
-        state: CaseStatus,
+        status: CaseStatus,
     ) -> Result<()> {
         let case = &mut ctx.accounts.case;
 
         case.name = name;
         case.url = url;
-        case.status = state;
+        case.status = status;
 
         msg!(
             "Case updated, data:

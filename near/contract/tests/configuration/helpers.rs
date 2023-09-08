@@ -1,7 +1,6 @@
 use near_sdk::{
     json_types::U128,
     serde::{Deserialize, Serialize},
-    serde_json::json,
     Timestamp,
 };
 
@@ -25,7 +24,9 @@ pub struct StakeConfiguration {
 pub struct RewardConfiguration {
     pub token: AccountId,
     pub address_confirmation_reward: U128,
-    pub tracer_reward: U128,
+    pub address_tracer_reward: U128,
+    pub asset_confirmation_reward: U128,
+    pub asset_tracer_reward: U128,
 }
 
 pub const UNLOCK_DURATION: u64 = 60; // in seconds
@@ -47,17 +48,12 @@ impl TestContext {
     }
 
     pub async fn get_reward_configuration(&self) -> RewardConfiguration {
-        json!({
-            "reward_configuration": {
-                "token": self.reward_token.id,
-                "address_confirmation_reward": "1",
-                "tracer_reward": "2"
-            }
-        });
         RewardConfiguration {
             token: self.reward_token.id.clone(),
             address_confirmation_reward: 1.into(),
-            tracer_reward: 2.into(),
+            address_tracer_reward: 2.into(),
+            asset_confirmation_reward: 3.into(),
+            asset_tracer_reward: 4.into(),
         }
     }
 }

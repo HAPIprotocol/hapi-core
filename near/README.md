@@ -154,7 +154,7 @@ near call $CONTRACT_ID update_stake_configuration '{"stake_configuration": {"tok
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "address_confirmation_reward": "4", "tracer_reward": "20"}}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "address_confirmation_reward": "4", "address_tracer_reward": "20", "asset_confirmation_reward": "5", "asset_tracer_reward": "15"}}' --accountId $AUTHORITY_ID
 ```
 
 ## Reporter management

@@ -11,7 +11,9 @@ describe("HapiCore: Configuration", function () {
   const PUBLISHER_STAKE = 103;
   const AUTHORITY_STAKE = 104;
   const ADDRESS_CONFIRMATION_REWARD = 201;
-  const REPORT_REWARD = 202;
+  const ADDRESS_TRACER_REWARD = 202;
+  const ASSET_CONFIRMATION_REWARD = 203;
+  const ASSET_TRACER_REWARD = 204;
 
   it("Should update stake configuration", async function () {
     const { hapiCore } = await loadFixture(basicFixture);
@@ -65,16 +67,26 @@ describe("HapiCore: Configuration", function () {
       await hapiCore.updateRewardConfiguration(
         rewardTokenAddress,
         ADDRESS_CONFIRMATION_REWARD,
-        REPORT_REWARD
+        ADDRESS_TRACER_REWARD,
+        ASSET_CONFIRMATION_REWARD,
+        ASSET_TRACER_REWARD
       )
     )
       .to.emit(hapiCore, "RewardConfigurationChanged")
-      .withArgs(rewardTokenAddress, ADDRESS_CONFIRMATION_REWARD, REPORT_REWARD);
+      .withArgs(
+        rewardTokenAddress,
+        ADDRESS_CONFIRMATION_REWARD,
+        ADDRESS_TRACER_REWARD,
+        ASSET_CONFIRMATION_REWARD,
+        ASSET_TRACER_REWARD
+      );
 
     expect(await hapiCore.rewardConfiguration()).to.deep.equal([
       rewardTokenAddress,
       ADDRESS_CONFIRMATION_REWARD,
-      REPORT_REWARD,
+      ADDRESS_TRACER_REWARD,
+      ASSET_CONFIRMATION_REWARD,
+      ASSET_TRACER_REWARD,
     ]);
   });
 });

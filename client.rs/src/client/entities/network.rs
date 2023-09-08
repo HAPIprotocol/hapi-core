@@ -33,6 +33,19 @@ impl FromStr for HapiCoreNetwork {
     }
 }
 
+// Solana network naming is related to this
+impl fmt::Display for HapiCoreNetwork {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            HapiCoreNetwork::Sepolia => write!(f, "sepolia"),
+            HapiCoreNetwork::Ethereum => write!(f, "ethereum"),
+            HapiCoreNetwork::Bsc => write!(f, "bsc"),
+            HapiCoreNetwork::Solana => write!(f, "solana"),
+            HapiCoreNetwork::Bitcoin => write!(f, "bitcoin"),
+            HapiCoreNetwork::Near => write!(f, "near"),
+        }
+    }
+}
 struct HapiCoreNetworkVisitor;
 
 impl<'de> Visitor<'de> for HapiCoreNetworkVisitor {

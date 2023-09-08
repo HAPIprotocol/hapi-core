@@ -70,14 +70,16 @@ impl TryFrom<&ArgMatches> for TokenCommandContext {
             private_key,
             chain_id: None,
             account_id: None,
+            network: network.clone(),
         };
 
         let token: Box<dyn TokenContract> = match network {
             HapiCoreNetwork::Sepolia | HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc => {
                 Box::new(TokenContractEvm::new(options)?)
             }
-            HapiCoreNetwork::Solana => Box::new(TokenContractSolana::new()?),
-            HapiCoreNetwork::Bitcoin => Box::new(TokenContractSolana::new()?),
+            HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => {
+                Box::new(TokenContractSolana::new(options)?)
+            }
             HapiCoreNetwork::Near => Box::new(TokenContractNear::new(options)?),
         };
 
@@ -135,14 +137,16 @@ impl TryFrom<&ArgMatches> for HapiCoreCommandContext {
             private_key,
             chain_id,
             account_id,
+            network: network.clone(),
         };
 
         let hapi_core: Box<dyn HapiCore> = match network {
             HapiCoreNetwork::Sepolia | HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc => {
                 Box::new(HapiCoreEvm::new(options)?)
             }
-            HapiCoreNetwork::Solana => Box::new(HapiCoreSolana::new()?),
-            HapiCoreNetwork::Bitcoin => Box::new(HapiCoreSolana::new()?),
+            HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => {
+                Box::new(HapiCoreSolana::new(options)?)
+            }
             HapiCoreNetwork::Near => Box::new(HapiCoreNear::new(options)?),
         };
 
