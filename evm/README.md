@@ -111,7 +111,8 @@ export ASSET_TRACER_REWARD=1000000000000000000 # 1e18
 ./hapi-core-cli configuration get-reward
 
 # Update settings
-./hapi-core-cli configuration update-reward $TOKEN_ADDRESS $ADDRESS_CONFIRMATION_REWARD $ADDRESS_TRACER_REWARD $ASSET_CONFIRMATION_REWARD $ASSET_TRACER_REWARD
+./hapi-core-cli configuration update-reward $TOKEN_ADDRESS $ADDRESS_CONFIRMATION_REWARD \
+$ADDRESS_TRACER_REWARD $ASSET_CONFIRMATION_REWARD $ASSET_TRACER_REWARD
 
 # Make sure that reward configuration is now set
 ./hapi-core-cli configuration get-reward
@@ -126,7 +127,8 @@ export AUTHORITY_STAKE=103000000000000000000 # 103e18
 ./hapi-core-cli configuration get-stake
 
 # Update settings
-./hapi-core-cli configuration update-stake $TOKEN_ADDRESS $UNLOCK_DURATION $VALIDATOR_STAKE $TRACER_STAKE $PUBLISHER_STAKE $AUTHORITY_STAKE
+./hapi-core-cli configuration update-stake $TOKEN_ADDRESS $UNLOCK_DURATION $VALIDATOR_STAKE \
+$TRACER_STAKE $PUBLISHER_STAKE $AUTHORITY_STAKE
 
 # Make sure that stake configuration is now set
 ./hapi-core-cli configuration get-stake
@@ -247,10 +249,10 @@ export ADDRESS_4="0x81273458f2b0d78d457edcc0ff6fb9e486f69ea0"
 ./hapi-core-cli address count
 
 # Make sure that publisher can't update authority's address
-./hapi-core-cli address update $ADDRESS_1 $CASE_2_UUID gambling 2
+./hapi-core-cli address update $ADDRESS_1 $CASE_2_UUID gambling 2 --private-key $PUBLISHER_PK
 
 # ...but can update theirs
-./hapi-core-cli address update $ADDRESS_3 $CASE_2_UUID gambling 2
+./hapi-core-cli address update $ADDRESS_3 $CASE_2_UUID gambling 2 --private-key $PUBLISHER_PK
 
 # See the change
 ./hapi-core-cli address get $ADDRESS_3
