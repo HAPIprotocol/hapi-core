@@ -18,20 +18,17 @@ You should build the contract before proceeding
 # 1. Run local node in a separate terminal
 solana-test-validator -r
 
-# 2. Compile the contract
-anchor build
-
-# 3. Deploy the contract with test keypair
+# 2. Deploy the contract with test keypair
 anchor deploy --program-keypair ./tests/test_keypair.json --program-name hapi_core_solana
 
-# 4. Get the deployed contract address from the output of deploy command
+# 3. Get the deployed contract address from the output of deploy command
 export CONTRACT_ADDRESS=FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk
 
 ```
 
 ## Testing with the Rust client
 
-Repeat points 1 through 4 from "Local deployment" section to deploy the contract on a local node.
+Repeat points 1 through 3 from "Local deployment" section to deploy the contract on a local node.
 
 ### Prepare client
 
