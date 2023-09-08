@@ -1,6 +1,6 @@
 # HAPI Core - Solana
 
-This is a HAPI Core contract for Solana blockchains.
+This is a HAPI Core contract for Solana blockchain.
 
 ## Build contract
 
