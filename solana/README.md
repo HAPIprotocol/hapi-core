@@ -1,21 +1,13 @@
-# HAPI Core - Solidity
+# HAPI Core - Solana
 
-This is a HAPI Core contract written in Solidity for EVM-based blockchains.
+This is a HAPI Core contract for Solana blockchain.
 
 ## Build contract
 
 ```sh
-# Make sure that dependencies are installed
-npm install
 
-# Use hardhat to compile the contract and create ABI
-npm run build
+anchor build
 
-# Use `jq` to extract ABI from built artifacts
-jq .abi ./artifacts/contracts/HapiCore.sol/HapiCore.json
-
-# Observe the generated Typescript interface
-cat ./typechain-types/contracts/HapiCore.ts
 ```
 
 ## Local deployment
@@ -24,33 +16,39 @@ You should build the contract before proceeding
 
 ```sh
 # 1. Run local node in a separate terminal
-npx hardhat node
+solana-test-validator -r
 
-# 2. Get the contract owner private key from the node output
-export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+# 2. Deploy the contract with test keypair
+anchor deploy --program-keypair ./tests/test_keypair.json --program-name hapi_core_solana
 
-# 3. Compile the contract
-npx hardhat compile
+# 3. Get the deployed contract address from the output of deploy command
+export CONTRACT_ADDRESS=FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk
 
-# 4. Deploy the contract
-npx hardhat deploy --network localhost
-
-# 5. Get the deployed contract address from the output of deploy command
-export CONTRACT_ADDRESS=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
-
-# 6. Deploy a test token contract
-npx hardhat deploy-test-token --network localhost
-
-# 7. Get the deployed contract address from the token deploy command output
-export TOKEN_ADDRESS=0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
-
-# 8. Run Javascript console with correct environment
-npx hardhat console --network localhost
 ```
 
 ## Testing with the Rust client
 
-Repeat points 1 through 7 from "Local deployment" section to deploy the contract on a local node.
+Repeat points 1 through 3 from "Local deployment" section to deploy the contract on a local node.
+
+### Prepare accounts
+
+```sh
+# Create network for tests
+npm run create-network solana
+
+# Create stake token
+spl-token create-token
+
+# Get the created stake token address from the output of previous command
+export STAKE_TOKEN_ADDRESS=AcomSqAHNzJzHDnoSY9q9d99v9MHSUw1mF3TGJU9Kvz7
+
+# Create reward token
+spl-token create-token
+
+# Get the created reward token address from the output of previous command
+export REWARD_TOKEN_ADDRESS=7q4o7VL1ba8PWgBHhTEv85RHQiVZz3UgZ4ZznJ5aXrug
+
+```
 
 ### Prepare client
 
@@ -68,9 +66,8 @@ cd target/release
 ./hapi-core-cli --version
 
 # Set up command environment variables (that can also be passed as arguments)
-export NETWORK=ethereum
-export PROVIDER_URL=http://127.0.0.1:8545/
-export CHAIN_ID=31337
+export NETWORK=solana
+export PROVIDER_URL=http://127.0.0.1:8899/
 ```
 
 ### Contract authority
@@ -78,11 +75,16 @@ export CHAIN_ID=31337
 Get and set contract authority (aka owner).
 
 ```sh
-export AUTHORITY_ADDR=0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-export AUTHORITY_PK=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-export PUBLISHER_ADDR=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-export PUBLISHER_PK=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+export AUTHORITY_ADDR=QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ
+export AUTHORITY_PK=AR6V6NmxBP1j4qiLjGDYvym5XzNPhg3TDCkRHG1qYhKZ
+
+export PUBLISHER_ADDR=C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX
+export PUBLISHER_PK=DT2ox7SDMVoSj5mTZSr9H4UhWMWahj6HN2w1BeEmhzjz
+
+# Airdroping to reporters
+solana airdrop 10 $AUTHORITY_ADDR
+solana airdrop 10 $PUBLISHER_ADDR
 
 # Check that it's our initial public key
 ./hapi-core-cli authority get
@@ -102,32 +104,33 @@ export PUBLISHER_PK=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b
 Manipulate stake and reward configurations.
 
 ```sh
-export ADDRESS_CONFIRMATION_REWARD=1000000000000000000 # 1e18
-export ADDRESS_TRACER_REWARD=1000000000000000000 # 1e18
-export ASSET_CONFIRMATION_REWARD=1000000000000000000 # 1e18
-export ASSET_TRACER_REWARD=1000000000000000000 # 1e18
+export PRIVATE_KEY=AR6V6NmxBP1j4qiLjGDYvym5XzNPhg3TDCkRHG1qYhKZ
+export ADDRESS_CONFIRMATION_REWARD=1000000000 # 1e9
+export ADDRESS_TRACER_REWARD=1000000000 # 1e9
+export ASSET_CONFIRMATION_REWARD=1000000000 # 1e9
+export ASSET_TRACER_REWARD=1000000000 # 1e9
 
 # Should return an error, as we haven't configured it yet
 ./hapi-core-cli configuration get-reward
 
 # Update settings
-./hapi-core-cli configuration update-reward $TOKEN_ADDRESS $ADDRESS_CONFIRMATION_REWARD \
+./hapi-core-cli configuration update-reward $REWARD_TOKEN_ADDRESS $ADDRESS_CONFIRMATION_REWARD \
 $ADDRESS_TRACER_REWARD $ASSET_CONFIRMATION_REWARD $ASSET_TRACER_REWARD
 
 # Make sure that reward configuration is now set
 ./hapi-core-cli configuration get-reward
 
 export UNLOCK_DURATION=60 # 60 seconds
-export VALIDATOR_STAKE=100000000000000000000 # 100e18
-export TRACER_STAKE=101000000000000000000 # 101e18
-export PUBLISHER_STAKE=102000000000000000000 # 102e18
-export AUTHORITY_STAKE=103000000000000000000 # 103e18
+export VALIDATOR_STAKE=1000000000 # 1e9
+export TRACER_STAKE=1000000000 # 1e9
+export PUBLISHER_STAKE=1000000000 # 1e9
+export AUTHORITY_STAKE=1000000000 # 1e9
 
 # Should return an error, as we haven't configured it yet
 ./hapi-core-cli configuration get-stake
 
 # Update settings
-./hapi-core-cli configuration update-stake $TOKEN_ADDRESS $UNLOCK_DURATION $VALIDATOR_STAKE \
+./hapi-core-cli configuration update-stake $STAKE_TOKEN_ADDRESS $UNLOCK_DURATION $VALIDATOR_STAKE \
 $TRACER_STAKE $PUBLISHER_STAKE $AUTHORITY_STAKE
 
 # Make sure that stake configuration is now set
@@ -139,6 +142,14 @@ $TRACER_STAKE $PUBLISHER_STAKE $AUTHORITY_STAKE
 Create and activate a new reporter with authority role.
 
 ```sh
+# Creating token accounts for reporters
+spl-token create-account $STAKE_TOKEN_ADDRESS --owner $AUTHORITY_ADDR --fee-payer ~/.config/solana/id.json
+spl-token create-account $STAKE_TOKEN_ADDRESS --owner $PUBLISHER_ADDR --fee-payer ~/.config/solana/id.json
+
+# Minting to reporters accounts
+spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $AUTHORITY_ADDR
+spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $PUBLISHER_ADDR
+
 # We'll need a UUID for our new reporter
 export AUTHORITY_UUID="2163ddbf-cc88-409a-b7cf-7bc6a2ec4cd1"
 
@@ -149,10 +160,7 @@ export AUTHORITY_UUID="2163ddbf-cc88-409a-b7cf-7bc6a2ec4cd1"
 ./hapi-core-cli reporter get $AUTHORITY_UUID
 
 # Let's check that we have enough tokens for the stake
-./hapi-core-cli token balance $TOKEN_ADDRESS $AUTHORITY_ADDR
-
-# Let's approve token allowance for our stake
-./hapi-core-cli token approve $TOKEN_ADDRESS $CONTRACT_ADDRESS $AUTHORITY_STAKE
+./hapi-core-cli token balance $STAKE_TOKEN_ADDRESS $AUTHORITY_ADDR
 
 # Activate the reporter
 ./hapi-core-cli reporter activate
@@ -174,13 +182,10 @@ export PUBLISHER_UUID="2896e3be-c40d-4864-b035-4278ba19d4bd"
 ./hapi-core-cli reporter get $PUBLISHER_UUID
 
 # Let's transfer the stake amount of tokens from our authority to publisher's address
-./hapi-core-cli token transfer $TOKEN_ADDRESS $PUBLISHER_ADDR $PUBLISHER_STAKE
+./hapi-core-cli token transfer $STAKE_TOKEN_ADDRESS $PUBLISHER_ADDR $PUBLISHER_STAKE
 
 # Make sure that we now have enought tokens
-./hapi-core-cli token balance $TOKEN_ADDRESS $PUBLISHER_ADDR
-
-# Approve token allowance for the stake, signed by the reporter
-./hapi-core-cli token approve $TOKEN_ADDRESS $CONTRACT_ADDRESS $PUBLISHER_STAKE --private-key $PUBLISHER_PK
+./hapi-core-cli token balance $STAKE_TOKEN_ADDRESS $PUBLISHER_ADDR
 
 # Activate the reporter, signed by the reporter
 ./hapi-core-cli reporter activate --private-key $PUBLISHER_PK
@@ -229,10 +234,10 @@ export CASE_3_UUID="d4f41512-db3e-4306-9303-203ace5fe7e2"
 ### Addresses
 
 ```sh
-export ADDRESS_1="0xfcf0a2631c2cf023c8c3955f348ea10ae2b43b21"
-export ADDRESS_2="0x5cea62b209091c1e9be11e3e0e74e57fab2a18bf"
-export ADDRESS_3="0xa554150aa42540740e85931c8dbd855bac103eb9"
-export ADDRESS_4="0x81273458f2b0d78d457edcc0ff6fb9e486f69ea0"
+export ADDRESS_1="BpJYKGbDnTHJ1ZQ8UvxFkr9rJAaQX6J3MHvMxVhFmyR9"
+export ADDRESS_2="6YqKPBrpKx7HsjE38W3ZFs39wpDvcYAoL5vz1ifjFvJM"
+export ADDRESS_3="5ymaZVmNNHgZLaWptNAYWXJJWS2B44dnPcErNcxvXUt9"
+export ADDRESS_4="GjPfA8rU3jcD97MkvDpgofbKgWEfib2zY4Akhr8Gk4mE"
 
 # Create a few addresses by the authority
 ./hapi-core-cli address create $ADDRESS_1 $CASE_1_UUID theft 8
