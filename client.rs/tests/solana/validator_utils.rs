@@ -65,6 +65,7 @@ pub fn start_validator() {
         sleep(Duration::from_millis(100));
     }
 }
+
 pub async fn prepare_validator(current_dir: &str, provider_url: &str) {
     let program_dir = format!("{}/{}", current_dir, PROGRAM_DIR);
     let admin_keypair = format!("{}/{}/{}", current_dir, KEYS_DIR, AUTHORITY_KEYPAIR);
