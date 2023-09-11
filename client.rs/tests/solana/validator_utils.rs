@@ -69,7 +69,9 @@ pub async fn prepare_validator(current_dir: &str, provider_url: &str) {
     let program_dir = format!("{}/{}", current_dir, PROGRAM_DIR);
     let admin_keypair = format!("{}/{}/{}", current_dir, KEYS_DIR, AUTHORITY_KEYPAIR);
     let program_keypair = format!("{}/{}/{}", current_dir, PROGRAM_DIR, HAPI_CORE_KEYPAIR);
+
     println!("==> Deploying the contract");
+
     ensure_cmd(
         Command::new("anchor")
             .args([
@@ -86,7 +88,9 @@ pub async fn prepare_validator(current_dir: &str, provider_url: &str) {
             .current_dir(&program_dir),
     )
     .unwrap();
+
     println!("==> Creating network for tests");
+
     ensure_cmd(
         Command::new("npm")
             .args(["run", "create-network", NETWORK])
