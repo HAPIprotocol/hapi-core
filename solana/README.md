@@ -2,7 +2,13 @@
 
 This is a HAPI Core contract for Solana blockchain.
 
+## Dependencies
+
+To install everything you need to work with this project, you'll need to install dependencies as described in [Anchor](https://www.anchor-lang.com/docs/installation) documentation.
+
 ## Build contract
+
+To build the **hapi-core** program, you need to execute this command:
 
 ```sh
 
@@ -33,6 +39,9 @@ Repeat points 1 through 3 from "Local deployment" section to deploy the contract
 ### Prepare accounts
 
 ```sh
+# Make sure that dependencies are installed
+npm install
+
 # Create network for tests
 npm run create-network solana
 
