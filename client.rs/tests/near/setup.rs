@@ -32,6 +32,12 @@ impl Default for Setup {
     }
 }
 
+
+#[test]
+fn setup_local_node() {
+    Setup::new();
+}
+
 impl Setup {
     pub fn new() -> Setup {
         const PORT: u16 = 3030;
