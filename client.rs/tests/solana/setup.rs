@@ -69,7 +69,7 @@ impl Setup {
         };
 
         setup.setup_wallets().await;
-        prepare_validator(&dir).await;
+        prepare_validator(&dir, &setup.provider_url).await;
         setup.check_validator_setup().await;
 
         setup
