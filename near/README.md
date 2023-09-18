@@ -48,7 +48,7 @@ docker cp node_master:/srv/near/validator_key.json ~/.near-credentials/local/
 docker cp node_master:/srv/near/validator_key.json ~/.near/
 ```
 
-3. Ensure that node is running
+1. Ensure that node is running
 
 This command should return table with validators, must be only one validator with name `test.near`.
 
@@ -113,7 +113,6 @@ Get and set contract authority (aka owner).
 **Take generated PK from `~/.near-credentials/local/account_id.json`.**
 
 It will look like `2CjCjjvHyK35z7xF2o9vHMoVDqALoYAis8BshQJ9FBE6yMQRop8XSMQWt87XUR7PT4c8HjGFVc9LNw18XWHZmBg`
-
 
 ```sh
 export AUTHORITY_PK=authority_pk
