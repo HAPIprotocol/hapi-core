@@ -66,7 +66,7 @@ pub fn start_validator() {
     }
 }
 
-pub async fn prepare_validator(current_dir: &str) {
+pub async fn prepare_validator(current_dir: &str, provider_url: &str) {
     let program_dir = format!("{}/{}", current_dir, PROGRAM_DIR);
     let admin_keypair = format!("{}/{}/{}", current_dir, KEYS_DIR, AUTHORITY_KEYPAIR);
     let program_keypair = format!("{}/{}/{}", current_dir, PROGRAM_DIR, HAPI_CORE_KEYPAIR);
@@ -96,7 +96,9 @@ pub async fn prepare_validator(current_dir: &str) {
         Command::new("npm")
             .args(["run", "create-network", NETWORK])
             .stdout(Stdio::null())
+            .env("ANCHOR_PROVIDER_URL", &provider_url)
             .env("ANCHOR_WALLET", &admin_keypair)
+            .env("HAPI_CORE_PROGRAM_ID", HAPI_CORE_PROGRAM_ID)
             .current_dir(&program_dir),
     )
     .unwrap();
