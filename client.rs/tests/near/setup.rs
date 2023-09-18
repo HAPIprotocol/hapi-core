@@ -34,7 +34,7 @@ impl Default for Setup {
 
 
 #[test]
-fn setup_local_node() {
+fn setup_local_near_node() {
     Setup::new();
 }
 
