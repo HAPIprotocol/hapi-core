@@ -147,7 +147,7 @@ async fn solana_cli_works() {
     t.print("Make sure that the reporter 1 does not exist yet");
     assert_error_output!(
         t.exec(["reporter", "get", REPORTER_UUID_1]),
-        "Error: Anchor Rpc error: Account not found\n\nCaused by:\n    Account not found"
+        "Error: Account not found"
     );
 
     t.print("Create authority reporter");

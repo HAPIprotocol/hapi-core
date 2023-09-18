@@ -37,6 +37,10 @@ features = ["async"]
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
 
+[dependencies.solana-account-decoder]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
 [dependencies.hapi_core_solana]
 path = "../solana/programs/hapi_core_solana"
 eatures = ["no-entrypoint"]

@@ -2494,6 +2494,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "solana-account-decoder",
  "solana-cli-config",
  "solana-transaction-status",
  "spl-associated-token-account",
