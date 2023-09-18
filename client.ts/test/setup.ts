@@ -66,7 +66,7 @@ async function prepareValidator() {
   process.env.ANCHOR_WALLET = wallet;
   await execute_command(
     `cd ${programDir} && anchor deploy \
-    --program-keypair ${KEYS.program.path} --provider.wallet ${wallet}`
+    --program-keypair ${KEYS.program.path} --program-name hapi_core_solana --provider.wallet ${wallet}`
   );
 
   console.log("==> Creating network for tests");

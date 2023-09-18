@@ -1,4 +1,5 @@
 use dirs;
+use regex::Regex;
 
 use std::{
     env,
@@ -29,6 +30,12 @@ impl Default for Setup {
     fn default() -> Self {
         Self::new()
     }
+}
+
+
+#[test]
+fn setup_local_near_node() {
+    Setup::new();
 }
 
 impl Setup {
@@ -258,6 +265,17 @@ impl Setup {
                 .env("PROVIDER_URL", provider_url),
         )
     }
+
+    pub fn is_tx_match(value: &serde_json::Value) -> bool {
+        Regex::new(r"[0-9a-zA-Z]{43,44}$").unwrap().is_match(
+            value
+                .get("tx")
+                .expect("`tx` key not found")
+                .as_str()
+                .expect("`tx` is not a string"),
+        )
+    }
+    
 }
 
 fn create_account(account: &str) -> String {

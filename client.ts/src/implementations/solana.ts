@@ -188,7 +188,7 @@ export class HapiCoreSolana implements HapiCore {
     const data = await this.contract.getReporterData(this.network, id);
 
     const reporterRole = getReporterRoleIndex(
-      data.role as typeof SolReporterRole
+      data.role as unknown as typeof SolReporterRole
     );
 
     // TODO: should i add appraiser to cli lib?
@@ -197,7 +197,7 @@ export class HapiCoreSolana implements HapiCore {
     }
 
     const reporterStatus = getReporterStatusIndex(
-      data.status as typeof SolReporterStatus
+      data.status as unknown as typeof SolReporterStatus
     );
 
     return {
@@ -225,7 +225,7 @@ export class HapiCoreSolana implements HapiCore {
       const data = acc.account;
 
       const reporterRole = getReporterRoleIndex(
-        data.role as typeof SolReporterRole
+        data.role as unknown as typeof SolReporterRole
       );
 
       if (reporterRole > 3) {
@@ -233,7 +233,7 @@ export class HapiCoreSolana implements HapiCore {
       }
 
       const reporterStatus = getReporterStatusIndex(
-        data.status as typeof SolReporterStatus
+        data.status as unknown as typeof SolReporterStatus
       );
 
       return {
@@ -323,7 +323,9 @@ export class HapiCoreSolana implements HapiCore {
   async getCase(id: string): Promise<Case> {
     const data = await this.contract.getCaseData(this.network, id);
 
-    const caseStatus = getCaseStatusIndex(data.status as typeof SolCaseStatus);
+    const caseStatus = getCaseStatusIndex(
+      data.status as unknown as typeof SolCaseStatus
+    );
 
     return {
       id: bnToUuid(data.id),
@@ -346,7 +348,7 @@ export class HapiCoreSolana implements HapiCore {
       const data = acc.account;
 
       const caseStatus = getCaseStatusIndex(
-        data.status as typeof SolCaseStatus
+        data.status as unknown as typeof SolCaseStatus
       );
 
       return {
@@ -404,7 +406,7 @@ export class HapiCoreSolana implements HapiCore {
     const data = await this.contract.getAddressData(this.network, address);
 
     const addressCategory = getCategoryIndex(
-      data.category as typeof SolCategory
+      data.category as unknown as typeof SolCategory
     );
 
     return {
@@ -429,7 +431,7 @@ export class HapiCoreSolana implements HapiCore {
       const data = acc.account;
 
       const addressCategory = getCategoryIndex(
-        data.category as typeof SolCategory
+        data.category as unknown as typeof SolCategory
       );
 
       return {
@@ -505,7 +507,9 @@ export class HapiCoreSolana implements HapiCore {
       assetId
     );
 
-    const assetCategory = getCategoryIndex(data.category as typeof SolCategory);
+    const assetCategory = getCategoryIndex(
+      data.category as unknown as typeof SolCategory
+    );
 
     return {
       address: decodeAddress(data.address),
@@ -530,7 +534,7 @@ export class HapiCoreSolana implements HapiCore {
       const data = acc.account;
 
       const assetCategory = getCategoryIndex(
-        data.category as typeof SolCategory
+        data.category as unknown as typeof SolCategory
       );
 
       return {

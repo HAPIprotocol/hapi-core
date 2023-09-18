@@ -6,12 +6,8 @@ mod cmd_utils;
 mod common_fixtures;
 mod evm;
 
+use evm::{fixtures::*, setup::Setup, util::to_checksum};
 use common_fixtures::*;
-use evm::{
-    fixtures::*,
-    setup::Setup,
-    util::{is_tx_match, to_checksum},
-};
 
 #[tokio::test]
 async fn evm_works() {
@@ -23,7 +19,9 @@ async fn evm_works() {
     let publisher_stake = 12;
     let authority_stake = 13;
     let address_confirmation_reward = 5;
-    let tracer_reward = 6;
+    let address_tracer_reward = 6;
+    let asset_confirmation_reward = 7;
+    let asset_tracer_reward = 8;
 
     t.print("Check that initial authority matches the key of contract deployer");
     assert_json_output!(
@@ -100,7 +98,9 @@ async fn evm_works() {
         "update-reward",
         &t.token_contract,
         &address_confirmation_reward.to_string(),
-        &tracer_reward.to_string(),
+        &address_tracer_reward.to_string(),
+        &asset_confirmation_reward.to_string(),
+        &asset_tracer_reward.to_string(),
     ]));
 
     t.print("Make sure that the new reward configuration is applied");
@@ -110,7 +110,9 @@ async fn evm_works() {
             "configuration": {
                 "token": t.token_contract,
                 "address_confirmation_reward": address_confirmation_reward.to_string(),
-                "tracer_reward": tracer_reward.to_string()
+                "address_tracer_reward": address_tracer_reward.to_string(),
+                "asset_confirmation_reward": asset_confirmation_reward.to_string(),
+                "asset_tracer_reward": asset_tracer_reward.to_string()
             }
         })
     );

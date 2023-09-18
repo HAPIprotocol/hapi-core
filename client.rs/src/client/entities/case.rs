@@ -42,8 +42,8 @@ impl FromStr for CaseStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Closed" => Ok(Self::Closed),
-            "Open" => Ok(Self::Open),
+            "Closed" | "closed" => Ok(Self::Closed),
+            "Open" | "open" => Ok(Self::Open),
             _ => Err(anyhow::anyhow!("invalid case status")),
         }
     }

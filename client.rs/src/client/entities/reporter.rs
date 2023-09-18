@@ -49,10 +49,10 @@ impl FromStr for ReporterRole {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Validator" => Ok(Self::Validator),
-            "Tracer" => Ok(Self::Tracer),
-            "Publisher" => Ok(Self::Publisher),
-            "Authority" => Ok(Self::Authority),
+            "Validator" | "validator" => Ok(Self::Validator),
+            "Tracer" | "tracer" => Ok(Self::Tracer),
+            "Publisher" | "publisher" => Ok(Self::Publisher),
+            "Authority" | "authority" => Ok(Self::Authority),
             _ => Err(anyhow::anyhow!("invalid reporter role")),
         }
     }
@@ -114,9 +114,9 @@ impl FromStr for ReporterStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Inactive" => Ok(Self::Inactive),
-            "Active" => Ok(Self::Active),
-            "Unstaking" => Ok(Self::Unstaking),
+            "Inactive" | "inactive" => Ok(Self::Inactive),
+            "Active"| "active" => Ok(Self::Active),
+            "Unstaking"| "unstaking" => Ok(Self::Unstaking),
             _ => Err(anyhow::anyhow!("invalid reporter status")),
         }
     }

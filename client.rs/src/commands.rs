@@ -152,16 +152,30 @@ pub async fn update_reward_configuration(args: &ArgMatches) -> anyhow::Result<()
         .parse()
         .map_err(|e| anyhow!("`address-confirmation-reward`: {e}"))?;
 
-    let tracer_reward = args
-        .get_one::<String>("tracer-reward")
-        .ok_or(anyhow!("`tracer-reward` is required"))?
+    let asset_tracer_reward = args
+        .get_one::<String>("asset-tracer-reward")
+        .ok_or(anyhow!("`asset-tracer-reward` is required"))?
         .parse()
-        .map_err(|e| anyhow!("`tracer-reward`: {e}"))?;
+        .map_err(|e| anyhow!("`asset-tracer-reward`: {e}"))?;
+
+    let asset_confirmation_reward = args
+        .get_one::<String>("asset-confirmation-reward")
+        .ok_or(anyhow!("`asset-confirmation-reward` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`asset-confirmation-reward`: {e}"))?;
+
+    let address_tracer_reward = args
+        .get_one::<String>("address-tracer-reward")
+        .ok_or(anyhow!("`address-tracer-reward` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`address-tracer-reward`: {e}"))?;
 
     let cfg = RewardConfiguration {
         token,
         address_confirmation_reward,
-        tracer_reward,
+        address_tracer_reward,
+        asset_confirmation_reward,
+        asset_tracer_reward,
     };
 
     let tx = context.hapi_core.update_reward_configuration(cfg).await?;

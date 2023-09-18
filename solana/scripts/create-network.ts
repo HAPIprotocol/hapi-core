@@ -16,19 +16,19 @@ const hapiCore = new HapiCoreProgram(
 );
 
 const stakeConfiguration = {
-  unlockDuration: new BN(1_000),
-  validatorStake: new BN(2_000),
-  tracerStake: new BN(3_000),
-  publisherStake: new BN(4_000),
-  authorityStake: new BN(5_000),
-  appraiserStake: new BN(6_000),
+  unlockDuration: new BN(0),
+  validatorStake: new BN(0),
+  tracerStake: new BN(0),
+  publisherStake: new BN(0),
+  authorityStake: new BN(0),
+  appraiserStake: new BN(0),
 };
 
 const rewardConfiguration = {
-  addressTracerReward: new BN(1_000),
-  addressConfirmationReward: new BN(2_000),
-  assetTracerReward: new BN(3_000),
-  assetConfirmationReward: new BN(4_000),
+  addressTracerReward: new BN(0),
+  addressConfirmationReward: new BN(0),
+  assetTracerReward: new BN(0),
+  assetConfirmationReward: new BN(0),
 };
 
 let stakeMint = PublicKey.default;

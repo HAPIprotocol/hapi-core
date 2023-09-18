@@ -161,11 +161,25 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Address confirmation reward"),
                         )
                         .arg(
-                            Arg::new("tracer-reward")
-                                .value_name("TRACER_REWARD")
+                            Arg::new("address-tracer-reward")
+                                .value_name("ADDRESS_TRACER_REWARD")
                                 .index(3)
                                 .required(true)
-                                .help("Tracer reward"),
+                                .help("Address tracer reward"),
+                        )
+                        .arg(
+                            Arg::new("asset-confirmation-reward")
+                                .value_name("ASSET_CONFIRMATION_REWARD")
+                                .index(4)
+                                .required(true)
+                                .help("Asset confirmation reward"),
+                        )
+                        .arg(
+                            Arg::new("asset-tracer-reward")
+                                .value_name("ASSET_TRACER_REWARD")
+                                .index(5)
+                                .required(true)
+                                .help("Asset tracer reward"),
                         ),
                 ),
         )
@@ -196,7 +210,16 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .index(3)
                                 .required(true)
                                 .help("Reporter role")
-                                .value_parser(["Validator", "Tracer", "Publisher", "Authority"]),
+                                .value_parser([
+                                    "Validator",
+                                    "Tracer",
+                                    "Publisher",
+                                    "Authority",
+                                    "validator",
+                                    "tracer",
+                                    "publisher",
+                                    "authority",
+                                ]),
                         )
                         .arg(
                             Arg::new("name")
@@ -236,7 +259,16 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .index(3)
                                 .required(true)
                                 .help("Reporter role")
-                                .value_parser(["Validator", "Tracer", "Publisher", "Authority"]),
+                                .value_parser([
+                                    "Validator",
+                                    "Tracer",
+                                    "Publisher",
+                                    "Authority",
+                                    "validator",
+                                    "tracer",
+                                    "publisher",
+                                    "authority",
+                                ]),
                         )
                         .arg(
                             Arg::new("name")
@@ -348,7 +380,7 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .index(4)
                                 .required(true)
                                 .help("Case status")
-                                .value_parser(["Closed", "Open"]),
+                                .value_parser(["Closed", "Open", "closed", "open"]),
                         ),
                 )
                 .subcommand(
@@ -433,6 +465,27 @@ pub(crate) fn matcher() -> ArgMatches {
                                     "ChildAbuse",
                                     "Hacker",
                                     "HighRiskJurisdiction",
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
                                 ]),
                         )
                         .arg(
@@ -489,6 +542,27 @@ pub(crate) fn matcher() -> ArgMatches {
                                     "ChildAbuse",
                                     "Hacker",
                                     "HighRiskJurisdiction",
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
                                 ]),
                         )
                         .arg(
@@ -590,6 +664,27 @@ pub(crate) fn matcher() -> ArgMatches {
                                     "ChildAbuse",
                                     "Hacker",
                                     "HighRiskJurisdiction",
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
                                 ]),
                         )
                         .arg(
@@ -653,6 +748,27 @@ pub(crate) fn matcher() -> ArgMatches {
                                     "ChildAbuse",
                                     "Hacker",
                                     "HighRiskJurisdiction",
+                                    "none",
+                                    "wallet_service",
+                                    "merchant_service",
+                                    "mining_pool",
+                                    "exchange",
+                                    "defi",
+                                    "otc_broker",
+                                    "atm",
+                                    "gambling",
+                                    "illicit_organization",
+                                    "mixer",
+                                    "darknet_service",
+                                    "scam",
+                                    "ransomware",
+                                    "theft",
+                                    "counterfeit",
+                                    "terrorist_financing",
+                                    "sanctions",
+                                    "child_abuse",
+                                    "hacker",
+                                    "high_risk_jurisdiction",
                                 ]),
                         )
                         .arg(

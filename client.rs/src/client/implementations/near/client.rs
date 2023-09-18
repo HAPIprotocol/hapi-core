@@ -140,7 +140,7 @@ macro_rules! wait_tx_execution {
     };
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HapiCore for HapiCoreNear {
     fn is_valid_address(&self, address: &str) -> Result<()> {
         AccountId::try_from(address.to_string())?;

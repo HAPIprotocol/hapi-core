@@ -143,7 +143,7 @@ macro_rules! handle_call {
     };
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl HapiCore for HapiCoreEvm {
     fn is_valid_address(&self, address: &str) -> Result<()> {
         address
@@ -183,6 +183,7 @@ impl HapiCore for HapiCoreEvm {
             "update_stake_configuration"
         )
     }
+
     async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
         handle_call!(self.contract.stake_configuration(), "stake_configuration").map(|c| c.into())
     }
@@ -197,7 +198,9 @@ impl HapiCore for HapiCoreEvm {
             self.contract.update_reward_configuration(
                 token,
                 configuration.address_confirmation_reward.into(),
-                configuration.tracer_reward.into(),
+                configuration.address_tracer_reward.into(),
+                configuration.asset_confirmation_reward.into(),
+                configuration.asset_tracer_reward.into()
             ),
             "update_reward_configuration"
         )
