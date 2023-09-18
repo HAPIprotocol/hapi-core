@@ -64,6 +64,9 @@ async function prepareValidator() {
   const programDir = __dirname + "/../../solana";
 
   process.env.ANCHOR_WALLET = wallet;
+  process.env.ANCHOR_PROVIDER_URL = `http://localhost:${VALIDATOR_PORT}`;
+  process.env.HAPI_CORE_PROGRAM_ID = KEYS.program.pubkey;
+
   await execute_command(
     `cd ${programDir} && anchor deploy \
     --program-keypair ${KEYS.program.path} --program-name hapi_core_solana --provider.wallet ${wallet}`
