@@ -34,7 +34,6 @@ near-primitives = "0.17.0"
 near-chain-configs = "0.17.0"
 near-jsonrpc-client = "0.6.0"
 near-jsonrpc-primitives = "0.17.0"
-# import from local path ../near/contract/
 hapi-core-near = { path = "../near/contract/" }
 
 # Solana dependencies

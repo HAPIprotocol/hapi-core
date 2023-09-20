@@ -26,7 +26,7 @@ pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
 pub use utils::TimestampExtension;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Category {
     // Tier 0

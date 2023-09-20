@@ -1,8 +1,5 @@
-use crate::{
-    address::{Category, RiskScore},
-    case::CaseId,
-    reporter::ReporterId,
-};
+use crate::{case::CaseId, reporter::ReporterId};
+use hapi_core_near::{Category, RiskScore};
 use near_sdk::{
     serde::{Deserialize, Serialize},
     AccountId,

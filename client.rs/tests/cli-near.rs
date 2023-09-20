@@ -5,6 +5,7 @@ mod assert;
 mod cmd_utils;
 mod common_fixtures;
 mod near;
+mod util;
 
 use common_fixtures::*;
 use near::setup::Setup;
@@ -22,7 +23,6 @@ async fn near_works() {
     let address_tracer_reward = 6;
     let asset_confirmation_reward = 7;
     let asset_tracer_reward = 8;
-
 
     t.print("Check that initial authority matches the key of contract deployer");
     assert_json_output!(

@@ -115,8 +115,8 @@ impl FromStr for ReporterStatus {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Inactive" | "inactive" => Ok(Self::Inactive),
-            "Active"| "active" => Ok(Self::Active),
-            "Unstaking"| "unstaking" => Ok(Self::Unstaking),
+            "Active" | "active" => Ok(Self::Active),
+            "Unstaking" | "unstaking" => Ok(Self::Unstaking),
             _ => Err(anyhow::anyhow!("invalid reporter status")),
         }
     }

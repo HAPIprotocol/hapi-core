@@ -32,7 +32,7 @@ pub enum ClientError {
     ParseAccountError(#[from] near_primitives::account::id::ParseAccountError),
     #[error("TimeoutError error: {0}")]
     TimeoutError(String),
-    #[error("Signer error: ")]
+    #[error("Error parse signer PK")]
     SignerError,
     #[error("Near RPC error: {0}")]
     RpcQueryError(#[from] near_jsonrpc_client::errors::JsonRpcError<RpcQueryError>),

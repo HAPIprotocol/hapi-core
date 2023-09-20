@@ -1,6 +1,5 @@
 use dirs;
 use regex::Regex;
-
 use std::{
     env,
     ffi::OsStr,
@@ -9,8 +8,8 @@ use std::{
     time::Duration,
 };
 
-use super::util::wait_for_port;
 use crate::cmd_utils::{wrap_cmd, CmdOutput};
+use crate::util::wait_for_port;
 
 pub struct Account {
     pub account: String,
@@ -31,7 +30,6 @@ impl Default for Setup {
         Self::new()
     }
 }
-
 
 #[test]
 fn setup_local_near_node() {
@@ -275,7 +273,6 @@ impl Setup {
                 .expect("`tx` is not a string"),
         )
     }
-    
 }
 
 fn create_account(account: &str) -> String {

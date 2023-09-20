@@ -9,7 +9,7 @@ use crate::{
 };
 
 mod helpers;
-use crate::address::Category;
+use hapi_core_near::Category;
 use helpers::Asset;
 
 #[tokio::test]

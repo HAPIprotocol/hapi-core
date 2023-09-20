@@ -7,9 +7,10 @@ use crate::{
     utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
     ERROR_CASE_NOT_FOUND,
 };
+use hapi_core_near::Category;
 
 mod helpers;
-pub use helpers::{Address, Category, RiskScore};
+pub use helpers::Address;
 
 #[tokio::test]
 async fn test_address() {

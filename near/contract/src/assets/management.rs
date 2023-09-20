@@ -31,7 +31,7 @@ impl Contract {
 
         require!(self.cases.get(&case_id).is_some(), ERROR_CASE_NOT_FOUND);
 
-        let asset_id = format!("{}:{}", address, id.0);
+        let asset_id = get_asset_id(&address, &id);
 
         let asset = Asset {
             address,
@@ -59,7 +59,7 @@ impl Contract {
     ) {
         let reporter = self.get_reporter_by_account(env::predecessor_account_id());
 
-        let asset_id = format!("{}:{}", address, id.0);
+        let asset_id = get_asset_id(&address, &id);
 
         let mut asset: Asset = self
             .assets
@@ -86,7 +86,7 @@ impl Contract {
         self.assets.insert(&asset_id, &asset.into());
     }
 
-    pub fn confirm_asset(&mut self, address: AccountId, id: String) {
+    pub fn confirm_asset(&mut self, address: AccountId, id: U64) {
         let reporter = self.get_reporter_by_account(env::predecessor_account_id());
 
         match reporter.role {
@@ -96,7 +96,7 @@ impl Contract {
             _ => env::panic_str(ERROR_INVALID_ROLE),
         }
 
-        let asset_id = format!("{}:{}", address, id);
+        let asset_id = get_asset_id(&address, &id);
 
         let mut asset: Asset = self
             .assets
@@ -111,4 +111,8 @@ impl Contract {
 
         self.assets.insert(&asset_id, &asset.into());
     }
+}
+
+pub(crate) fn get_asset_id(address: &AccountId, id: &U64) -> String {
+    format!("{}:{}", address, id.0)
 }

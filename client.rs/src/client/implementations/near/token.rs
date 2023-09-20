@@ -1,39 +1,40 @@
-use crate::{
-    client::{
-        result::{ClientError, Result, Tx},
-        token::TokenContract,
-    },
-    wait_tx_execution, Amount, HapiCoreOptions,
-};
 use async_trait::async_trait;
 use near_crypto::SecretKey;
 use near_jsonrpc_client::{
     methods::{self, query::RpcQueryRequest},
     JsonRpcClient,
 };
-use near_jsonrpc_primitives::types::{query::QueryResponseKind, transactions::TransactionInfo};
+use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::{
     transaction::Transaction,
     transaction::{Action, FunctionCallAction},
     types::{AccountId, BlockReference, Finality, FunctionArgs},
-    views::FinalExecutionStatus,
     views::QueryRequest,
 };
 use serde_json::{from_slice, json};
-use tokio::time;
+
+use super::client::wait_tx_execution;
+use crate::{
+    client::{
+        near::GAS_FOR_TX,
+        result::{ClientError, Result, Tx},
+        token::TokenContract,
+    },
+    Amount, HapiCoreOptions,
+};
 
 pub struct TokenContractNear {
     client: JsonRpcClient,
     contract_address: AccountId,
-    signer: Option<SecretKey>,
+    signer: Option<String>,
 }
 
 impl TokenContractNear {
     pub fn new(options: HapiCoreOptions) -> Result<Self> {
         Ok(Self {
-            client: JsonRpcClient::connect("http://localhost:3030"),
-            contract_address: AccountId::try_from(options.contract_address)?,
-            signer: options.private_key.map(|key| key.parse().unwrap()),
+            client: JsonRpcClient::connect(options.provider_url),
+            contract_address: options.contract_address.try_into()?,
+            signer: options.private_key,
         })
     }
 }
@@ -46,6 +47,9 @@ impl TokenContract for TokenContractNear {
 
     async fn transfer(&self, to: &str, amount: Amount) -> Result<Tx> {
         let signer_secret_key = self.signer.as_ref().ok_or(ClientError::SignerError)?;
+        let signer_secret_key: SecretKey = signer_secret_key
+            .parse()
+            .map_err(|_| ClientError::SignerError)?;
         let signer = near_crypto::InMemorySigner::from_secret_key(
             self.contract_address.clone(),
             signer_secret_key.clone(),
@@ -80,22 +84,12 @@ impl TokenContract for TokenContractNear {
                 args: json!({"receiver_id": to, "amount": amount})
                     .to_string()
                     .into_bytes(),
-                gas: 50_000_000_000_000, // 50 TeraGas
-                deposit: 1,
+                gas: GAS_FOR_TX,
+                deposit: 1, // one yoctoNear is required by contract
             })],
         };
 
-        let request = methods::broadcast_tx_async::RpcBroadcastTxAsyncRequest {
-            signed_transaction: transaction.sign(&signer),
-        };
-        let sent_at = time::Instant::now();
-        let tx_hash = self.client.call(request).await?;
-
-        wait_tx_execution!(tx_hash, signer, sent_at, self.client);
-
-        Ok(Tx {
-            hash: format!("{:?}", tx_hash),
-        })
+        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
     }
 
     async fn approve(&self, _spender: &str, _amount: Amount) -> Result<Tx> {

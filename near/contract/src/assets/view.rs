@@ -1,14 +1,13 @@
-use crate::{
-    CaseId, Category, Contract, ContractExt, ReporterId, RiskScore, ERROR_ASSET_NOT_FOUND,
-};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U64;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 
-use super::{Asset, AssetId, VAsset};
+use super::{management::get_asset_id, Asset, AssetId, VAsset};
+use crate::{
+    CaseId, Category, Contract, ContractExt, ReporterId, RiskScore, ERROR_ASSET_NOT_FOUND,
+};
 
-// AssetView struct
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AssetView {
@@ -52,8 +51,8 @@ impl From<VAsset> for AssetView {
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_asset(&self, address: AccountId, id: String) -> AssetView {
-        let id: AssetId = format!("{}:{}", address, id);
+    pub fn get_asset(&self, address: AccountId, id: U64) -> AssetView {
+        let id: AssetId = get_asset_id(&address, &id);
         self.assets.get(&id).expect(ERROR_ASSET_NOT_FOUND).into()
     }
 
