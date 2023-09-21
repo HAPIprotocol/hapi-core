@@ -7,17 +7,17 @@ use crate::{
 mod helpers;
 pub use helpers::CaseId;
 use helpers::{Case, CaseStatus};
-use near_sdk::serde_json::json;
+use near_sdk::{json_types::U128, serde_json::json};
 use uuid::Uuid;
 
 #[tokio::test]
 async fn test_case() {
     let context = TestContext::new().await;
 
-    let publisher_id = Uuid::new_v4();
-    let tracer_id = Uuid::new_v4();
-    let case_id = Uuid::new_v4();
-    let case_id_2 = Uuid::new_v4();
+    let publisher_id = U128(Uuid::new_v4().as_u128());
+    let tracer_id = U128(Uuid::new_v4().as_u128());
+    let case_id = U128(Uuid::new_v4().as_u128());
+    let case_id_2 = U128(Uuid::new_v4().as_u128());
 
     // prepare reporter(Publisher)
     context
@@ -36,7 +36,7 @@ async fn test_case() {
     context
         .user_1
         .call(&context.contract.id(), "create_case")
-        .args_json(json!({"id": case_id.to_string(), "name": "case", "url": "case.com"}))
+        .args_json(json!({"id": case_id, "name": "case", "url": "case.com"}))
         .transact()
         .await
         .assert_success("create case");
@@ -45,22 +45,18 @@ async fn test_case() {
     let case: Case = context
         .user_1
         .view(&context.contract.id(), "get_case")
-        .args_json(json!({"id": case_id.to_string()}))
+        .args_json(json!({ "id": case_id }))
         .await
         .parse("get case");
 
     assert_eq!(case.status, CaseStatus::Open, "wrong status");
-    assert_eq!(
-        case.reporter_id,
-        publisher_id.to_string(),
-        "wrong reporter id"
-    );
+    assert_eq!(case.reporter_id, publisher_id, "wrong reporter id");
 
     // create case with the same id
     context
         .user_1
         .call(&context.contract.id(), "create_case")
-        .args_json(json!({"id": case_id.to_string(), "name": "case", "url": "case.com"}))
+        .args_json(json!({"id": case_id, "name": "case", "url": "case.com"}))
         .transact()
         .await
         .assert_failure("create case", ERROR_CASE_ALREADY_EXISTS);
@@ -69,7 +65,7 @@ async fn test_case() {
     context
         .user_1
         .call(&context.contract.id(), "update_case")
-        .args_json(json!({"id": case_id.to_string(), "name": "case", "status": "Closed", "url": "case.com"}))
+        .args_json(json!({"id": case_id, "name": "case", "status": "Closed", "url": "case.com"}))
         .transact()
         .await
         .assert_success("update case");
@@ -78,7 +74,7 @@ async fn test_case() {
     let case: Case = context
         .user_1
         .view(&context.contract.id(), "get_case")
-        .args_json(json!({"id": case_id.to_string()}))
+        .args_json(json!({ "id": case_id }))
         .await
         .parse("get case");
 
@@ -88,7 +84,7 @@ async fn test_case() {
     context
         .user_1
         .call(&context.contract.id(), "create_case")
-        .args_json(json!({"id": case_id_2.to_string(), "name": "case", "url": "case.com"}))
+        .args_json(json!({"id": case_id_2, "name": "case", "url": "case.com"}))
         .transact()
         .await
         .assert_success("create case");
@@ -120,7 +116,7 @@ async fn test_case() {
     context
         .user_2
         .call(&context.contract.id(), "create_case")
-        .args_json(json!({"id": case_id.to_string(), "name": "case", "url": "case.com"}))
+        .args_json(json!({"id": case_id, "name": "case", "url": "case.com"}))
         .transact()
         .await
         .assert_failure("create case", ERROR_INVALID_ROLE);

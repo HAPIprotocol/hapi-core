@@ -69,6 +69,7 @@ impl TryFrom<&ArgMatches> for TokenCommandContext {
             contract_address,
             private_key,
             chain_id: None,
+            account_id: None,
             network: network.clone(),
         };
 
@@ -79,7 +80,7 @@ impl TryFrom<&ArgMatches> for TokenCommandContext {
             HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => {
                 Box::new(TokenContractSolana::new(options)?)
             }
-            HapiCoreNetwork::Near => Box::new(TokenContractNear::new()?),
+            HapiCoreNetwork::Near => Box::new(TokenContractNear::new(options)?),
         };
 
         Ok(Self { token, output })
@@ -122,11 +123,20 @@ impl TryFrom<&ArgMatches> for HapiCoreCommandContext {
             .parse()
             .map_err(|e| anyhow::anyhow!("Failed to parse `output`: {:?}", e))?;
 
+        let account_id = matches
+            .get_one::<String>("account-id")
+            .map(|s| {
+                s.parse::<String>()
+                    .map_err(|e| anyhow::anyhow!("`account-id`: {e}"))
+            })
+            .transpose()?;
+
         let options = HapiCoreOptions {
             provider_url,
             contract_address,
             private_key,
             chain_id,
+            account_id,
             network: network.clone(),
         };
 
@@ -137,7 +147,7 @@ impl TryFrom<&ArgMatches> for HapiCoreCommandContext {
             HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => {
                 Box::new(HapiCoreSolana::new(options)?)
             }
-            HapiCoreNetwork::Near => Box::new(HapiCoreNear::new()?),
+            HapiCoreNetwork::Near => Box::new(HapiCoreNear::new(options)?),
         };
 
         Ok(Self { hapi_core, output })

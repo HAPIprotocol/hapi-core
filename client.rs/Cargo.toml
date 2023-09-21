@@ -12,19 +12,29 @@ name = "hapi_core"
 [dependencies]
 async-trait = "0.1.72"
 thiserror = "1.0.44"
-tokio = { version = "1.29.1", features = ["full"] }
+tokio = { version = "1.28.0", features = ["full"] }
 anyhow = { version = "1.0.72" }
 clap = { version = "4.3.19", features = ["env"] }
 regex = "1.9.1"
 serde = "1.0.177"
 serde_json = "1.0.104"
 uuid = { version = "1.4.1", features = ["serde"] }
+dirs = "5.0.1"
 
 # EVM dependencies
-ethers = "2.0.8"
-ethers-providers = "2.0.8"
-ethers-signers = "2.0.8"
-ethers-contract = "2.0.8"
+ethers = "=2.0.4"
+ethers-providers = "=2.0.4"
+ethers-signers = "=2.0.4"
+ethers-contract = "=2.0.4"
+
+# NEAR dependencies
+near-sdk = "4.1.1"
+near-crypto = "0.17.0"
+near-primitives = "0.17.0"
+near-chain-configs = "0.17.0"
+near-jsonrpc-client = "0.6.0"
+near-jsonrpc-primitives = "0.17.0"
+hapi-core-near = { path = "../near/contract/" }
 
 # Solana dependencies
 

@@ -154,6 +154,7 @@ impl TryFrom<SolanaCase> for Case {
             name: case.name.to_string(),
             url: case.url.to_string(),
             status: (case.status as u8).try_into()?,
+            reporter_id: Uuid::from_u128(case.reporter_id),
         })
     }
 }

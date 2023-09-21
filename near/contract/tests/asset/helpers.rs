@@ -7,8 +7,9 @@ use near_sdk::{
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Address {
+pub struct Asset {
     pub address: AccountId,
+    pub id: String,
     pub category: Category,
     pub risk_score: RiskScore,
     pub case_id: CaseId,

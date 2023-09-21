@@ -35,10 +35,10 @@ impl Display for ReporterRole {
             f,
             "{}",
             match self {
-                ReporterRole::Validator => "validator",
-                ReporterRole::Tracer => "tracer",
-                ReporterRole::Publisher => "publisher",
-                ReporterRole::Authority => "authority",
+                ReporterRole::Validator => "Validator",
+                ReporterRole::Tracer => "Tracer",
+                ReporterRole::Publisher => "Publisher",
+                ReporterRole::Authority => "Authority",
             }
         )
     }
@@ -49,10 +49,10 @@ impl FromStr for ReporterRole {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "validator" => Ok(Self::Validator),
-            "tracer" => Ok(Self::Tracer),
-            "publisher" => Ok(Self::Publisher),
-            "authority" => Ok(Self::Authority),
+            "Validator" | "validator" => Ok(Self::Validator),
+            "Tracer" | "tracer" => Ok(Self::Tracer),
+            "Publisher" | "publisher" => Ok(Self::Publisher),
+            "Authority" | "authority" => Ok(Self::Authority),
             _ => Err(anyhow::anyhow!("invalid reporter role")),
         }
     }
@@ -101,9 +101,9 @@ impl Display for ReporterStatus {
             f,
             "{}",
             match self {
-                ReporterStatus::Inactive => "inactive",
-                ReporterStatus::Active => "active",
-                ReporterStatus::Unstaking => "unstaking",
+                ReporterStatus::Inactive => "Inactive",
+                ReporterStatus::Active => "Active",
+                ReporterStatus::Unstaking => "Unstaking",
             }
         )
     }
@@ -114,9 +114,9 @@ impl FromStr for ReporterStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "inactive" => Ok(Self::Inactive),
-            "active" => Ok(Self::Active),
-            "unstaking" => Ok(Self::Unstaking),
+            "Inactive" | "inactive" => Ok(Self::Inactive),
+            "Active" | "active" => Ok(Self::Active),
+            "Unstaking" | "unstaking" => Ok(Self::Unstaking),
             _ => Err(anyhow::anyhow!("invalid reporter status")),
         }
     }

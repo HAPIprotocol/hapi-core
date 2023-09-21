@@ -5,11 +5,11 @@ pub const CASE_UUID_1: &str = "34b9d809-7511-46c5-9117-c7f80f379fad";
 pub const CASE_NAME_1: &str = "HAPI Case 1";
 pub const CASE_URL_1: &str = "https://hapi.one/case/1";
 
-pub const ADDRESS_ADDR_1: &str = "8aqiaHSdGHcwnJQPJo95JqB2hPv4vzfuwc2zgAYHTWXz";
+pub const ADDRESS_ADDR_1: &str = "0x9e833a87087efd527b1a842742eb0f3548cd82ab";
 pub const ADDRESS_RISK_1: &str = "5";
-pub const ADDRESS_CATEGORY_1: &str = "ransomware";
+pub const ADDRESS_CATEGORY_1: &str = "Ransomware";
 
-pub const ASSET_ADDR_1: &str = "6t4vnZsH5X8zcGm5Z5ZzY6TqHrsPtJcjWcNzL892XP37";
+pub const ASSET_ADDR_1: &str = "0xe9dbfa9e9d48393d9d22de10051dcbd91267b756";
 pub const ASSET_ID_1: &str = "1";
 pub const ASSET_RISK_1: &str = "7";
-pub const ASSET_CATEGORY_1: &str = "counterfeit";
+pub const ASSET_CATEGORY_1: &str = "Counterfeit";

@@ -25,7 +25,7 @@ impl Contract {
         require!(self.cases.get(&id).is_none(), ERROR_CASE_ALREADY_EXISTS);
 
         let case = Case {
-            id: id.clone(),
+            id,
             name,
             reporter_id: reporter.id,
             status: CaseStatus::Open,
@@ -40,16 +40,17 @@ impl Contract {
 
         require!(name.len() <= MAX_NAME_LENGTH, ERROR_LONG_NAME);
 
+        let mut case: Case = self.cases.get(&id).expect(ERROR_CASE_NOT_FOUND).into();
+
         match reporter.role {
             Role::Publisher | Role::Authority => {
                 require!(reporter.is_active(), ERROR_REPORTER_IS_INACTIVE);
+                require!(case.reporter_id == reporter.id, ERROR_INVALID_ROLE);
             }
             _ => {
                 env::panic_str(ERROR_INVALID_ROLE);
             }
         }
-
-        let mut case: Case = self.cases.get(&id).expect(ERROR_CASE_NOT_FOUND).into();
 
         case.name = name;
         case.status = status;
