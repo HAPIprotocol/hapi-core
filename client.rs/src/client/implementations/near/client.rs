@@ -15,16 +15,16 @@ use near_primitives::{
 };
 use serde::Deserialize;
 use serde_json::{from_slice, json, Value};
-use tokio::time;
+use tokio::{time, time::Duration};
 use uuid::Uuid;
 
 use hapi_core_near::{
     AddressView as NearAddress, AssetView as NearAsset, Case as NearCase, Reporter as NearReporter,
 };
 
-pub const TRANSACTION_TIMEOUT: u64 = 60;
-pub const PERIOD_CHECK_TX_STATUS: u64 = 2;
-pub const DELAY_AFTER_TX_EXECUTION: u64 = 1;
+pub const TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
+pub const PERIOD_CHECK_TX_STATUS: Duration = Duration::from_secs(2);
+pub const DELAY_AFTER_TX_EXECUTION: Duration = Duration::from_secs(1);
 
 use crate::{
     client::{
@@ -88,7 +88,7 @@ macro_rules! build_tx {
     };
 }
 
-pub(crate) async fn wait_tx_execution(
+pub(crate) async fn execute_transaction(
     transaction: Transaction,
     signer: InMemorySigner,
     client: &JsonRpcClient,
@@ -100,10 +100,7 @@ pub(crate) async fn wait_tx_execution(
     let tx_hash = client.call(request).await?;
 
     loop {
-        let received_at = time::Instant::now();
-        let delta = (received_at - sent_at).as_secs();
-
-        if delta > TRANSACTION_TIMEOUT {
+        if time::Instant::now() > sent_at + TRANSACTION_TIMEOUT {
             return Err(ClientError::TimeoutError("Transaction timeout".to_string()));
         }
 
@@ -119,14 +116,14 @@ pub(crate) async fn wait_tx_execution(
         match response {
             Err(err) => match err.handler_error() {
                 Some(methods::tx::RpcTransactionError::UnknownTransaction { .. }) => {
-                    time::sleep(time::Duration::from_secs(PERIOD_CHECK_TX_STATUS)).await;
+                    time::sleep(PERIOD_CHECK_TX_STATUS).await;
                     continue;
                 }
                 _ => Err(err)?,
             },
             Ok(response) => match response.status {
                 FinalExecutionStatus::SuccessValue(_) => {
-                    time::sleep(time::Duration::from_secs(DELAY_AFTER_TX_EXECUTION)).await;
+                    time::sleep(DELAY_AFTER_TX_EXECUTION).await;
                     break;
                 }
                 FinalExecutionStatus::Failure(err) => Err(ClientError::InvalidResponse(format!(
@@ -165,7 +162,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_authority(&self) -> Result<String> {
@@ -188,7 +185,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_stake_configuration(&self) -> Result<StakeConfiguration> {
@@ -211,7 +208,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_reward_configuration(&self) -> Result<RewardConfiguration> {
@@ -238,7 +235,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn update_reporter(&self, input: UpdateReporterInput) -> Result<Tx> {
@@ -259,7 +256,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
@@ -335,7 +332,7 @@ impl HapiCore for HapiCoreNear {
             })],
         };
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn deactivate_reporter(&self) -> Result<Tx> {
@@ -350,7 +347,7 @@ impl HapiCore for HapiCoreNear {
             ""
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn unstake_reporter(&self) -> Result<Tx> {
@@ -359,7 +356,7 @@ impl HapiCore for HapiCoreNear {
 
         let transaction = build_tx!(self, signer, access_key_query_response, "unstake", "");
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn create_case(&self, input: CreateCaseInput) -> Result<Tx> {
@@ -378,7 +375,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn update_case(&self, input: UpdateCaseInput) -> Result<Tx> {
@@ -398,7 +395,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_case(&self, id: &str) -> Result<Case> {
@@ -441,7 +438,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx> {
@@ -460,7 +457,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_address(&self, addr: &str) -> Result<Address> {
@@ -508,7 +505,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx> {
@@ -528,7 +525,7 @@ impl HapiCore for HapiCoreNear {
             })
         );
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {
@@ -581,8 +578,10 @@ impl HapiCoreNear {
     }
 
     fn get_signer(&self) -> Result<InMemorySigner> {
-        let signer_secret_key = self.signer.as_ref().ok_or(ClientError::SignerError)?;
-        let signer_secret_key: SecretKey = signer_secret_key
+        let signer_secret_key: SecretKey = self
+            .signer
+            .as_ref()
+            .ok_or(ClientError::SignerError)?
             .parse()
             .map_err(|_| ClientError::SignerError)?;
         let signer_account_id = self

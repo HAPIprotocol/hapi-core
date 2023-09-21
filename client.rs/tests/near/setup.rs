@@ -8,8 +8,10 @@ use std::{
     time::Duration,
 };
 
-use crate::cmd_utils::{wrap_cmd, CmdOutput};
-use crate::util::wait_for_port;
+use crate::{
+    cmd_utils::{wrap_cmd, CmdOutput},
+    util::wait_for_port,
+};
 
 pub struct Account {
     pub account: String,

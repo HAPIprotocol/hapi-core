@@ -13,7 +13,7 @@ use near_primitives::{
 };
 use serde_json::{from_slice, json};
 
-use super::client::wait_tx_execution;
+use super::client::execute_transaction;
 use crate::{
     client::{
         near::GAS_FOR_TX,
@@ -46,8 +46,10 @@ impl TokenContract for TokenContractNear {
     }
 
     async fn transfer(&self, to: &str, amount: Amount) -> Result<Tx> {
-        let signer_secret_key = self.signer.as_ref().ok_or(ClientError::SignerError)?;
-        let signer_secret_key: SecretKey = signer_secret_key
+        let signer_secret_key: SecretKey = self
+            .signer
+            .as_ref()
+            .ok_or(ClientError::SignerError)?
             .parse()
             .map_err(|_| ClientError::SignerError)?;
         let signer = near_crypto::InMemorySigner::from_secret_key(
@@ -89,7 +91,7 @@ impl TokenContract for TokenContractNear {
             })],
         };
 
-        Ok(wait_tx_execution(transaction, signer, &self.client).await?)
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn approve(&self, _spender: &str, _amount: Amount) -> Result<Tx> {
