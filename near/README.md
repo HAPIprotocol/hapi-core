@@ -44,8 +44,8 @@ docker run --name node_master -d -e INIT=1 -p3030:3030 nearprotocol/nearcore:1.3
 2. Copy credentials from docker container to local folder
 
 ```sh
-docker cp node_master:/srv/near/validator_key.json ~/.near-credentials/local/
-docker cp node_master:/srv/near/validator_key.json ~/.near/
+mkdir -p ~/.near-credentials/local && docker cp node_master:/srv/near/validator_key.json ~/.near-credentials/local/
+mkdir -p ~/.near && docker cp node_master:/srv/near/validator_key.json ~/.near/
 ```
 
 1. Ensure that node is running

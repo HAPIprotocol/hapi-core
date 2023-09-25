@@ -304,10 +304,13 @@ fn create_account(account: &str) -> String {
 fn copy_credentials() {
     let home_dir = dirs::home_dir().expect("Unable to get home directory");
 
-    let target_path = home_dir
-        .join(".near-credentials")
-        .join("local")
-        .join("validator_key.json");
+    let target_path = home_dir.join(".near-credentials").join("local");
+
+    if !target_path.exists() {
+        std::fs::create_dir_all(&target_path).expect("Failed to create directory");
+    }
+
+    let target_path = target_path.join("validator_key.json");
 
     let output = Command::new("docker")
         .args([
@@ -320,7 +323,13 @@ fn copy_credentials() {
 
     assert!(output.status.success(), "Failed to copy credentials");
 
-    let target_path = home_dir.join(".near").join("validator_key.json");
+    let target_path = home_dir.join(".near");
+
+    if !target_path.exists() {
+        std::fs::create_dir_all(&target_path).expect("Failed to create directory");
+    }
+
+    let target_path = target_path.join("validator_key.json");
 
     let output = Command::new("docker")
         .args([
