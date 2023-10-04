@@ -121,6 +121,9 @@ solana airdrop 10 $PUBLISHER_ADDR
 
 # Set it back
 ./hapi-core-cli authority set $AUTHORITY_ADDR --private-key $PUBLISHER_PK
+
+# Make sure it has been changed
+./hapi-core-cli authority get
 ```
 
 ### Contract configuration
@@ -134,7 +137,7 @@ export ADDRESS_TRACER_REWARD=1000000000 # 1e9
 export ASSET_CONFIRMATION_REWARD=1000000000 # 1e9
 export ASSET_TRACER_REWARD=1000000000 # 1e9
 
-# Should return an error, as we haven't configured it yet
+# Should return zeroes, as we haven't configured it yet
 ./hapi-core-cli configuration get-reward
 
 # Update settings
@@ -150,7 +153,7 @@ export TRACER_STAKE=1000000000 # 1e9
 export PUBLISHER_STAKE=1000000000 # 1e9
 export AUTHORITY_STAKE=1000000000 # 1e9
 
-# Should return an error, as we haven't configured it yet
+# Should return zeroes, as we haven't configured it yet
 ./hapi-core-cli configuration get-stake
 
 # Update settings
@@ -172,7 +175,6 @@ spl-token create-account $STAKE_TOKEN_ADDRESS --owner $PUBLISHER_ADDR --fee-paye
 
 # Minting to reporters accounts
 spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $AUTHORITY_ADDR
-spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $PUBLISHER_ADDR
 
 # We'll need a UUID for our new reporter
 export AUTHORITY_UUID="2163ddbf-cc88-409a-b7cf-7bc6a2ec4cd1"
