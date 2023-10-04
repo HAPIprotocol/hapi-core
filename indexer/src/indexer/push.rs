@@ -167,6 +167,7 @@ mod tests {
     #[test]
     fn test_push_payload_serialization() {
         // Create a sample PushPayload
+        // TODO: should it be a unix timestamp?
         let payload = PushPayload {
             event: PushEvent {
                 name: PushEventName::CreateAddress,

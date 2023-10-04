@@ -243,6 +243,7 @@ impl Indexer {
                         Some(IndexerJob::Log(log))
                     }
                     Err(error) => {
+                        // TODO: if fanching fails - stop the indexer
                         tracing::warn!(
                             tx = ?log.transaction_hash,
                             block = ?log.block_number,
