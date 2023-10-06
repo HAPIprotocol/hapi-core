@@ -9,6 +9,7 @@ use {
 };
 
 pub(crate) mod client;
+pub(crate) mod evm;
 pub(crate) mod jobs;
 pub(crate) mod logic;
 pub(crate) mod persistence;

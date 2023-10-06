@@ -92,23 +92,27 @@ impl FromStr for PushEventName {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "initialize" => Ok(Self::Initialize),
-            "set_authority" => Ok(Self::SetAuthority),
-            "update_stake_configuration" => Ok(Self::UpdateStakeConfiguration),
-            "update_reward_configuration" => Ok(Self::UpdateRewardConfiguration),
-            "create_reporter" => Ok(Self::CreateReporter),
-            "update_reporter" => Ok(Self::UpdateReporter),
-            "activate_reporter" => Ok(Self::ActivateReporter),
-            "deactivate_reporter" => Ok(Self::DeactivateReporter),
-            "unstake" => Ok(Self::Unstake),
-            "create_case" => Ok(Self::CreateCase),
-            "update_case" => Ok(Self::UpdateCase),
-            "create_address" => Ok(Self::CreateAddress),
-            "update_address" => Ok(Self::UpdateAddress),
-            "confirm_address" => Ok(Self::ConfirmAddress),
-            "create_asset" => Ok(Self::CreateAsset),
-            "update_asset" => Ok(Self::UpdateAsset),
-            "confirm_asset" => Ok(Self::ConfirmAsset),
+            "initialize" | "Initialized" => Ok(Self::Initialize),
+            "set_authority" | "AuthorityChanged" => Ok(Self::SetAuthority),
+            "update_stake_configuration" | "StakeConfigurationChanged" => {
+                Ok(Self::UpdateStakeConfiguration)
+            }
+            "update_reward_configuration" | "RewardConfigurationChanged" => {
+                Ok(Self::UpdateRewardConfiguration)
+            }
+            "create_reporter" | "ReporterCreated" => Ok(Self::CreateReporter),
+            "update_reporter" | "ReporterUpdated" => Ok(Self::UpdateReporter),
+            "activate_reporter" | "ReporterActivated" => Ok(Self::ActivateReporter),
+            "deactivate_reporter" | "ReporterDeactivated" => Ok(Self::DeactivateReporter),
+            "unstake" | "Unstake" | "ReporterStakeWithdrawn" => Ok(Self::Unstake),
+            "create_case" | "CaseCreated" => Ok(Self::CreateCase),
+            "update_case" | "CaseUpdated" => Ok(Self::UpdateCase),
+            "create_address" | "AddressCreated" => Ok(Self::CreateAddress),
+            "update_address" | "AddressUpdated" => Ok(Self::UpdateAddress),
+            "confirm_address" | "AddressConfirmed" => Ok(Self::ConfirmAddress),
+            "create_asset" | "AssetCreated" => Ok(Self::CreateAsset),
+            "update_asset" | "AssetUpdated" => Ok(Self::UpdateAsset),
+            "confirm_asset" | "AssetConfirmed" => Ok(Self::ConfirmAsset),
             _ => Err(anyhow::anyhow!("invalid event name")),
         }
     }

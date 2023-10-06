@@ -1,9 +1,6 @@
 use {
     anyhow::Result,
-    ethers::{
-        providers::Middleware,
-        types::{Address, BlockNumber, Filter, H256},
-    },
+    ethers::types::Address,
     std::{
         collections::VecDeque,
         path::PathBuf,
@@ -11,8 +8,6 @@ use {
     },
     tokio::time::sleep,
 };
-
-use hapi_core::HapiCoreEvm;
 
 use crate::config::IndexerConfiguration;
 
@@ -111,54 +106,58 @@ impl Indexer {
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        match (&self.client, cursor.clone()) {
-            (IndexerClient::Evm(client), IndexingCursor::None) => {
-                self.handle_update_evm_empty_cursor(client).await
-            }
-            (IndexerClient::Evm(client), IndexingCursor::Block(last_block)) => {
-                let (state, new_jobs) = self.handle_update_evm_block(client, last_block).await?;
+        // TODO: make it more universal for all networks
+        let contract_address = self.contract_address.parse::<Address>()?;
+
+        match cursor {
+            IndexingCursor::None => self.client.handle_update_cursor(contract_address).await,
+            IndexingCursor::Block(last_block) => {
+                let (state, new_jobs) = self
+                    .client
+                    .handle_update_block(last_block, contract_address)
+                    .await?;
 
                 self.jobs.extend(new_jobs);
 
                 Ok(state)
             }
-            (IndexerClient::Evm(client), IndexingCursor::Transaction(hash)) => {
-                match client
-                    .contract
-                    .client()
-                    .get_transaction(hash.parse::<H256>()?)
-                    .await?
-                {
-                    Some(_) => {
-                        tracing::info!(tx = hash, "Found transaction");
-                        self.jobs.push_back(IndexerJob::Transaction(hash.clone()));
-                        Ok(IndexerState::Processing {
-                            cursor: IndexingCursor::Transaction(hash),
-                        })
-                    }
-                    None => {
-                        tracing::error!(tx = hash, "Transaction not found");
-                        Ok(IndexerState::Stopped {
-                            message: format!("Transaction '{hash}' not found"),
-                        })
-                    }
+            IndexingCursor::Transaction(hash) => {
+                let state = self.client.handle_update_transaction(hash.clone()).await?;
+                if let IndexerState::Processing { .. } = state {
+                    self.jobs.push_back(IndexerJob::Transaction(hash));
                 }
+
+                Ok(state)
             }
-            _ => unimplemented!(),
         }
     }
 
     #[tracing::instrument(name = "process", skip(self))]
     async fn handle_process(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        match (self.jobs.pop_front(), &self.client) {
-            (Some(IndexerJob::Log(log)), IndexerClient::Evm(client)) => {
-                self.process_evm_job_log(client, &log).await?;
+        // match (self.jobs.pop_front(), &self.client) {
+        //     (Some(IndexerJob::Log(log)), IndexerClient::Evm(client)) => {
+        //         self.process_evm_job_log(client, &log).await?;
+        //     }
+        //     (Some(job), ..) => {
+        //         tracing::warn!(?job, "Unsupported job type");
+        //     }
+        //     (None, ..) => {
+        //         tracing::trace!("No more jobs in the queue");
+        //         // TODO: check if there are new blocks
+        //         // Ok(IndexerState::CheckForUpdates { cursor })
+        //     }
+        // };
+
+        match self.jobs.pop_front() {
+            Some(job) => {
+                if let Some(payload) = self.client.handle_process(job).await? {
+                    self.send_webhook(&payload).await?;
+                }
             }
-            (Some(job), ..) => {
-                tracing::warn!(?job, "Unsupported job type");
-            }
-            (None, ..) => {
+            None => {
                 tracing::trace!("No more jobs in the queue");
+                // TODO: check if there are new blocks
+                // Ok(IndexerState::CheckForUpdates { cursor })
             }
         };
 
@@ -178,97 +177,6 @@ impl Indexer {
         } else {
             sleep(self.wait_interval_ms).await;
             Ok(IndexerState::Waiting { until, cursor })
-        }
-    }
-
-    async fn handle_update_evm_empty_cursor(&self, client: &HapiCoreEvm) -> Result<IndexerState> {
-        tracing::info!("No cursor found searching for the earliest block height");
-
-        let filter = Filter::default()
-            .from_block(BlockNumber::Earliest)
-            .to_block(BlockNumber::Latest)
-            .address(self.contract_address.parse::<Address>()?);
-
-        // TODO: make sure it'll work with thousands of transactions; maybe apply paging?
-        match client
-            .contract
-            .client()
-            .get_logs(&filter)
-            .await?
-            .iter()
-            .filter_map(|x| x.block_number.as_ref().map(|bn| bn.as_u64()))
-            .next()
-        {
-            Some(block_number) => {
-                tracing::info!(block_number, "Earliest block height found");
-                Ok(IndexerState::CheckForUpdates {
-                    cursor: IndexingCursor::Block(block_number),
-                })
-            }
-            None => Ok(IndexerState::Stopped {
-                message: "No valid transactions found on the contract address".to_string(),
-            }),
-        }
-    }
-
-    async fn handle_update_evm_block(
-        &self,
-        client: &HapiCoreEvm,
-        last_block: u64,
-    ) -> Result<(IndexerState, Vec<IndexerJob>)> {
-        let current = client.contract.client().get_block_number().await?.as_u64();
-        if last_block < current {
-            tracing::info!(from = last_block, to = current, "New blocks found");
-
-            let filter = Filter::default()
-                .from_block(BlockNumber::Number(last_block.into()))
-                .to_block(BlockNumber::Number(current.into()))
-                .address(self.contract_address.parse::<Address>()?);
-
-            let jobs = client
-                .contract
-                .client()
-                .get_logs(&filter)
-                .await?
-                .into_iter()
-                .filter_map(|log| match client.decode_event(&log) {
-                    Ok(log_header) => {
-                        tracing::info!(
-                            name = log_header.name,
-                            tx = ?log.transaction_hash,
-                            block = ?log.block_number,
-                            tokens = ?log_header.tokens,
-                            "Found event",
-                        );
-                        Some(IndexerJob::Log(log))
-                    }
-                    Err(error) => {
-                        // TODO: if fanching fails - stop the indexer
-                        tracing::warn!(
-                            tx = ?log.transaction_hash,
-                            block = ?log.block_number,
-                            error = ?error,
-                            "Event signature decoding error",
-                        );
-                        None
-                    }
-                });
-
-            Ok((
-                IndexerState::Processing {
-                    cursor: IndexingCursor::Block(current),
-                },
-                jobs.collect(),
-            ))
-        } else {
-            tracing::debug!("No new events found, waiting for new blocks");
-            Ok((
-                IndexerState::Waiting {
-                    until: now()? + client.provider.get_interval().as_secs(),
-                    cursor: IndexingCursor::Block(last_block),
-                },
-                Vec::new(),
-            ))
         }
     }
 }
