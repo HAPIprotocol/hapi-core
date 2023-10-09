@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use spl_token::solana_program::instruction::Instruction;
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 use uuid::Uuid;
 
 use anchor_client::{
@@ -49,10 +49,11 @@ use super::utils::{
 };
 
 pub struct HapiCoreSolana {
-    rpc_client: RpcClient,
+    pub rpc_client: RpcClient,
+    pub program_id: Pubkey,
     network: Pubkey,
-    program_id: Pubkey,
     signer: Arc<Keypair>,
+    instruction_sighashes: HashMap<&'static str, [u8; 8]>,
 }
 
 impl HapiCoreSolana {
@@ -66,6 +67,8 @@ impl HapiCoreSolana {
         let (network, _) = get_network_address(&options.network.to_string(), &program_id)?;
 
         let rpc_client = RpcClient::new_with_timeout(options.provider_url.clone(), DEFAULT_TIMEOUT);
+
+        let instruction_sighashes = 
 
         Ok(Self {
             rpc_client,
@@ -184,6 +187,15 @@ impl HapiCoreSolana {
         );
 
         self.send_transaction(&[create_ata_instruction]).await?;
+
+        Ok(())
+    }
+
+    async fn decode_instructions(hash: String) -> Result<()> {
+        // let tx = client
+        //     .rpc_client
+        //     .get_transaction(&signature, UiTransactionEncoding::Json)
+        //     .await?;
 
         Ok(())
     }

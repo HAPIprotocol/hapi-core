@@ -1787,6 +1787,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum_extract"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11578f9e8496eeb626c549e1b340a57e479840ff7ae13fe12d4dbd97c18779d1"
+
+[[package]]
 name = "env_logger"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2484,8 +2490,10 @@ dependencies = [
  "anchor-client",
  "anyhow",
  "async-trait",
+ "borsh 0.10.3",
  "bs58 0.5.0",
  "clap 4.3.22",
+ "enum_extract",
  "ethers",
  "ethers-contract",
  "ethers-providers",
@@ -2494,6 +2502,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2 0.10.7",
  "solana-account-decoder",
  "solana-cli-config",
  "solana-transaction-status",

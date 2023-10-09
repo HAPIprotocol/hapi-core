@@ -6,6 +6,7 @@ use ethers::{
     signers::{LocalWallet, Signer as EthersSigner},
     types::Address as EthAddress,
 };
+use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
 
@@ -37,6 +38,7 @@ pub(super) type Signer = SignerMiddleware<Provider, LocalWallet>;
 const ZERO_PK: &str = "0000000000000000000000000000000000000000000000000000000000000001";
 pub(crate) const LOCAL_CHAIN_ID: u64 = 31337;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogHeader {
     pub name: String,
     pub tokens: Vec<Token>,
