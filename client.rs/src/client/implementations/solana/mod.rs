@@ -1,6 +1,7 @@
 mod client;
 mod conversion;
 mod instruction_decoder;
+mod instructions;
 pub mod token;
 mod utils;
 

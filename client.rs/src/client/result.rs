@@ -1,4 +1,4 @@
-// use crate::client::solana::result::SolanaClientError;
+use anchor_client::solana_sdk::signature::ParseSignatureError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -36,7 +36,6 @@ pub enum ClientError {
     #[error("Unable to read keypair file: {0}")]
     SolanaKeypairFile(String),
     #[error("Anchor Rpc error: {0}")]
-    // TODO: try to remove
     AnchorRpcError(#[from] anchor_client::ClientError),
     #[error("Solana Rpc error: {0}")]
     SolanaRpcError(#[from] anchor_client::solana_client::client_error::ClientError),
@@ -48,6 +47,10 @@ pub enum ClientError {
     AccountDeserializationError(String),
     #[error("Solana token error: {0}")]
     SolanaTokenError(#[from] anchor_client::solana_sdk::program_error::ProgramError),
+    #[error("Solana parse signature error: {0}")]
+    ParseSignatureError(#[from] ParseSignatureError),
+    #[error("Account instruction decoding: {0}")]
+    InstructionDecodingError(String),
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;

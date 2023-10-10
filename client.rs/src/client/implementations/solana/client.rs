@@ -1,32 +1,31 @@
-use async_trait::async_trait;
-use spl_token::solana_program::instruction::Instruction;
-use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
-use uuid::Uuid;
-
-use anchor_client::{
-    anchor_lang::{AccountDeserialize, Discriminator, InstructionData, ToAccountMetas},
-    solana_client::{
-        nonblocking::rpc_client::RpcClient,
-        rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
-        rpc_filter::{Memcmp, RpcFilterType},
+use {
+    anchor_client::{
+        anchor_lang::{AccountDeserialize, Discriminator, InstructionData, ToAccountMetas},
+        solana_client::{
+            nonblocking::rpc_client::RpcClient,
+            rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
+            rpc_filter::{Memcmp, RpcFilterType},
+        },
+        solana_sdk::{
+            commitment_config::CommitmentConfig,
+            pubkey::Pubkey,
+            signature::{Keypair, Signature, Signer},
+            system_program,
+            transaction::Transaction,
+        },
+        RequestBuilder,
     },
-    solana_sdk::{
-        commitment_config::CommitmentConfig,
-        pubkey::Pubkey,
-        signature::{Keypair, Signer},
-        system_program,
-        transaction::Transaction,
+    async_trait::async_trait,
+    hapi_core_solana::{accounts, instruction},
+    solana_account_decoder::UiAccountEncoding,
+    solana_transaction_status::UiTransactionEncoding,
+    spl_associated_token_account::{
+        get_associated_token_address, instruction::create_associated_token_account,
     },
-    RequestBuilder,
+    spl_token::solana_program::instruction::Instruction,
+    std::{str::FromStr, sync::Arc, time::Duration},
+    uuid::Uuid,
 };
-use solana_account_decoder::UiAccountEncoding;
-use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-};
-
-use hapi_core_solana::{accounts, instruction};
-
-const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 use crate::{
     client::{
@@ -43,17 +42,25 @@ use crate::{
     HapiCore,
 };
 
-use super::utils::{
-    byte_array_from_str, get_address_address, get_asset_address, get_case_address,
-    get_network_address, get_program_data_address, get_reporter_address, get_signer,
+use super::{
+    instruction_decoder::DecodedInstruction,
+    utils::{
+        byte_array_from_str, get_address_address, get_asset_address, get_case_address,
+        get_network_address, get_program_data_address, get_reporter_address, get_signer,
+    },
 };
+
+// #[cfg(feature = "decode")]
+use super::instructions::get_hapi_sighashes;
+
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub struct HapiCoreSolana {
     pub rpc_client: RpcClient,
     pub program_id: Pubkey,
     network: Pubkey,
     signer: Arc<Keypair>,
-    instruction_sighashes: HashMap<&'static str, [u8; 8]>,
+    pub(crate) hashes: Vec<[u8; 8]>,
 }
 
 impl HapiCoreSolana {
@@ -68,13 +75,16 @@ impl HapiCoreSolana {
 
         let rpc_client = RpcClient::new_with_timeout(options.provider_url.clone(), DEFAULT_TIMEOUT);
 
-        let instruction_sighashes = 
+        // let hashes = vec![0_u8; 8];
+        // #[cfg(feature = "decode")]
+        let hashes = get_hapi_sighashes();
 
         Ok(Self {
             rpc_client,
             program_id,
             network,
             signer,
+            hashes,
         })
     }
 
@@ -191,13 +201,15 @@ impl HapiCoreSolana {
         Ok(())
     }
 
-    async fn decode_instructions(hash: String) -> Result<()> {
-        // let tx = client
-        //     .rpc_client
-        //     .get_transaction(&signature, UiTransactionEncoding::Json)
-        //     .await?;
+    pub async fn get_instructions(&self, hash: &str) -> Result<Vec<DecodedInstruction>> {
+        let tx = self
+            .rpc_client
+            .get_transaction(&Signature::from_str(hash)?, UiTransactionEncoding::Json)
+            .await?;
 
-        Ok(())
+        Ok(self
+            .decode_transaction(tx)
+            .map_err(|e| ClientError::InstructionDecodingError(e.to_string()))?)
     }
 }
 
