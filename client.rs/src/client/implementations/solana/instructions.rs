@@ -124,7 +124,6 @@ pub struct UpdateAssetData {
 }
 
 /// Hashes instruction names to bytearray
-// #[cfg(feature = "decode")]
 pub fn get_hapi_sighashes() -> Vec<[u8; 8]> {
     let names = [
         "create_network",
@@ -153,7 +152,6 @@ pub fn get_hapi_sighashes() -> Vec<[u8; 8]> {
 }
 
 /// Hashes instruction names to bytearray
-// #[cfg(feature = "decode")]
 pub(crate) fn get_instruction_sighash(name: &str) -> [u8; 8] {
     use sha2::Digest;
 
