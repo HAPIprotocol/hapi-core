@@ -9,6 +9,9 @@ description = "Rust Client for HAPI Protocol contracts"
 crate-type = ["lib"]
 name = "hapi_core"
 
+[features]
+decode = []
+
 [dependencies]
 async-trait = "0.1.72"
 thiserror = "1.0.44"

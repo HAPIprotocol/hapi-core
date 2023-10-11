@@ -4,33 +4,53 @@ use {
         CaseStatus, Category, ReporterRole, RewardConfiguration, StakeConfiguration,
     },
     spl_token::solana_program::pubkey::Pubkey,
-    std::mem::discriminant,
 };
 
 /// Byte index of bump in account data
 pub const DISCRIMINATOR_SIZE: usize = 8;
 
-/// Hapi core instruction data
-#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Debug)]
+/// Hapi core instructions
 #[repr(usize)]
+pub enum HapiInstruction {
+    CreateNetwork = 0,
+    UpdateStakeConfiguration,
+    UpdateRewardConfiguration,
+    SetAuthority,
+    CreateReporter,
+    UpdateReporter,
+    ActivateReporter,
+    DeactivateReporter,
+    Unstake,
+    CreateCase,
+    UpdateCase,
+    CreateAddress,
+    UpdateAddress,
+    ConfirmAddress,
+    CreateAsset,
+    UpdateAsset,
+    ConfirmAsset,
+}
+
+/// Hapi core instruction data
+#[derive(PartialEq, Debug)]
 pub enum InstructionData {
-    CreateNetwork(CreateNetworkData) = 0,
-    UpdateStakeConfiguration(StakeConfiguration) = 1,
-    UpdateRewardConfiguration(RewardConfiguration) = 2,
-    SetAuthority() = 3,
-    CreateReporter(CreateReporterData) = 4,
-    UpdateReporter(UpdateReporterData) = 5,
-    ActivateReporter() = 6,
-    DeactivateReporter() = 7,
-    Unstake() = 8,
-    CreateCase(CreateCaseData) = 9,
-    UpdateCase(UpdateCaseData) = 10,
-    CreateAddress(CreateAddressData) = 11,
-    UpdateAddress(UpdateAddressData) = 12,
-    ConfirmAddress(u8) = 13,
-    CreateAsset(CreateAssetData) = 14,
-    UpdateAsset(UpdateAssetData) = 15,
-    ConfirmAsset(u8) = 16,
+    CreateNetwork(CreateNetworkData),
+    UpdateStakeConfiguration(StakeConfiguration),
+    UpdateRewardConfiguration(RewardConfiguration),
+    SetAuthority(),
+    CreateReporter(CreateReporterData),
+    UpdateReporter(UpdateReporterData),
+    ActivateReporter(),
+    DeactivateReporter(),
+    Unstake(),
+    CreateCase(CreateCaseData),
+    UpdateCase(UpdateCaseData),
+    CreateAddress(CreateAddressData),
+    UpdateAddress(UpdateAddressData),
+    ConfirmAddress(u8),
+    CreateAsset(CreateAssetData),
+    UpdateAsset(UpdateAssetData),
+    ConfirmAsset(u8),
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Default, Debug)]

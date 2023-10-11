@@ -9,7 +9,7 @@ use {
         solana_sdk::{
             commitment_config::CommitmentConfig,
             pubkey::Pubkey,
-            signature::{Keypair, Signature, Signer},
+            signature::{Keypair, Signer},
             system_program,
             transaction::Transaction,
         },
@@ -18,7 +18,6 @@ use {
     async_trait::async_trait,
     hapi_core_solana::{accounts, instruction},
     solana_account_decoder::UiAccountEncoding,
-    solana_transaction_status::UiTransactionEncoding,
     spl_associated_token_account::{
         get_associated_token_address, instruction::create_associated_token_account,
     },
@@ -42,16 +41,10 @@ use crate::{
     HapiCore,
 };
 
-use super::{
-    instruction_decoder::DecodedInstruction,
-    utils::{
-        byte_array_from_str, get_address_address, get_asset_address, get_case_address,
-        get_network_address, get_program_data_address, get_reporter_address, get_signer,
-    },
+use super::utils::{
+    byte_array_from_str, get_address_address, get_asset_address, get_case_address,
+    get_network_address, get_program_data_address, get_reporter_address, get_signer,
 };
-
-// #[cfg(feature = "decode")]
-use super::instructions::get_hapi_sighashes;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -60,6 +53,7 @@ pub struct HapiCoreSolana {
     pub program_id: Pubkey,
     network: Pubkey,
     signer: Arc<Keypair>,
+    #[cfg(feature = "decode")]
     pub(crate) hashes: Vec<[u8; 8]>,
 }
 
@@ -75,16 +69,13 @@ impl HapiCoreSolana {
 
         let rpc_client = RpcClient::new_with_timeout(options.provider_url.clone(), DEFAULT_TIMEOUT);
 
-        // let hashes = vec![0_u8; 8];
-        // #[cfg(feature = "decode")]
-        let hashes = get_hapi_sighashes();
-
         Ok(Self {
             rpc_client,
             program_id,
             network,
             signer,
-            hashes,
+            #[cfg(feature = "decode")]
+            hashes: super::instructions::get_hapi_sighashes(),
         })
     }
 
@@ -199,17 +190,6 @@ impl HapiCoreSolana {
         self.send_transaction(&[create_ata_instruction]).await?;
 
         Ok(())
-    }
-
-    pub async fn get_instructions(&self, hash: &str) -> Result<Vec<DecodedInstruction>> {
-        let tx = self
-            .rpc_client
-            .get_transaction(&Signature::from_str(hash)?, UiTransactionEncoding::Json)
-            .await?;
-
-        Ok(self
-            .decode_transaction(tx)
-            .map_err(|e| ClientError::InstructionDecodingError(e.to_string()))?)
     }
 }
 

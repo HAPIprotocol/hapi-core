@@ -1,20 +1,21 @@
 use {
-    anchor_client::anchor_lang::AnchorDeserialize,
+    anchor_client::{anchor_lang::AnchorDeserialize, solana_sdk::signature::Signature},
     anyhow::{bail, Result},
     enum_extract::let_extract,
     hapi_core_solana::{RewardConfiguration, StakeConfiguration},
     solana_transaction_status::{
         EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction, UiCompiledInstruction,
-        UiMessage,
+        UiMessage, UiTransactionEncoding,
     },
+    std::str::FromStr,
 };
 
 use super::instructions::{
     CreateAddressData, CreateAssetData, CreateCaseData, CreateNetworkData, CreateReporterData,
-    InstructionData, UpdateAddressData, UpdateAssetData, UpdateCaseData, UpdateReporterData,
-    DISCRIMINATOR_SIZE,
+    HapiInstruction, InstructionData, UpdateAddressData, UpdateAssetData, UpdateCaseData,
+    UpdateReporterData, DISCRIMINATOR_SIZE,
 };
-use crate::HapiCoreSolana;
+use crate::{client::result::ClientError, HapiCoreSolana};
 
 /// Struct representing an Instruction entity from a Solana transaction
 pub struct DecodedInstruction {
@@ -38,7 +39,18 @@ pub struct DecodedInstruction {
 }
 
 impl HapiCoreSolana {
-    pub(crate) fn decode_transaction(
+    pub async fn get_instructions(&self, hash: &str) -> Result<Vec<DecodedInstruction>> {
+        let tx = self
+            .rpc_client
+            .get_transaction(&Signature::from_str(hash)?, UiTransactionEncoding::Json)
+            .await?;
+
+        Ok(self
+            .decode_transaction(tx)
+            .map_err(|e| ClientError::InstructionDecodingError(e.to_string()))?)
+    }
+
+    fn decode_transaction(
         &self,
         tx: EncodedConfirmedTransactionWithStatusMeta,
     ) -> Result<Vec<DecodedInstruction>> {
@@ -102,54 +114,49 @@ impl HapiCoreSolana {
             let buf = &bs58::decode(&instruction.data).into_vec()?;
 
             let data = {
-                let data_slice = &buf[DISCRIMINATOR_SIZE..];
                 let sighash = &buf[..DISCRIMINATOR_SIZE];
+                let data_slice = &buf[DISCRIMINATOR_SIZE..];
 
-                println!(
-                    "index !!!!!!!!!!!!! {}",
-                    InstructionData::CreateNetwork as usize
-                );
-
-                if sighash == self.hashes[InstructionData::CreateNetwork as usize] {
+                if sighash == self.hashes[HapiInstruction::CreateNetwork as usize] {
                     InstructionData::CreateNetwork(CreateNetworkData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::UpdateStakeConfiguration as usize]
+                } else if sighash == self.hashes[HapiInstruction::UpdateStakeConfiguration as usize]
                 {
                     InstructionData::UpdateStakeConfiguration(StakeConfiguration::try_from_slice(
                         data_slice,
                     )?)
                 } else if sighash
-                    == self.hashes[InstructionData::UpdateRewardConfiguration as usize]
+                    == self.hashes[HapiInstruction::UpdateRewardConfiguration as usize]
                 {
                     InstructionData::UpdateRewardConfiguration(RewardConfiguration::try_from_slice(
                         data_slice,
                     )?)
-                } else if sighash == self.hashes[InstructionData::SetAuthority as usize] {
+                } else if sighash == self.hashes[HapiInstruction::SetAuthority as usize] {
                     InstructionData::SetAuthority()
-                } else if sighash == self.hashes[InstructionData::CreateReporter as usize] {
+                } else if sighash == self.hashes[HapiInstruction::CreateReporter as usize] {
                     InstructionData::CreateReporter(CreateReporterData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::UpdateReporter as usize] {
+                } else if sighash == self.hashes[HapiInstruction::UpdateReporter as usize] {
                     InstructionData::UpdateReporter(UpdateReporterData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::ActivateReporter as usize] {
+                } else if sighash == self.hashes[HapiInstruction::ActivateReporter as usize] {
                     InstructionData::ActivateReporter()
-                } else if sighash == self.hashes[InstructionData::DeactivateReporter as usize] {
+                } else if sighash == self.hashes[HapiInstruction::DeactivateReporter as usize] {
                     InstructionData::DeactivateReporter()
-                } else if sighash == self.hashes[InstructionData::Unstake as usize] {
+                } else if sighash == self.hashes[HapiInstruction::Unstake as usize] {
                     InstructionData::Unstake()
-                } else if sighash == self.hashes[InstructionData::CreateCase as usize] {
+                } else if sighash == self.hashes[HapiInstruction::CreateCase as usize] {
                     InstructionData::CreateCase(CreateCaseData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::UpdateCase as usize] {
+                } else if sighash == self.hashes[HapiInstruction::UpdateCase as usize] {
                     InstructionData::UpdateCase(UpdateCaseData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::CreateAddress as usize] {
+                } else if sighash == self.hashes[HapiInstruction::CreateAddress as usize] {
                     InstructionData::CreateAddress(CreateAddressData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::UpdateAddress as usize] {
+                } else if sighash == self.hashes[HapiInstruction::UpdateAddress as usize] {
                     InstructionData::UpdateAddress(UpdateAddressData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::ConfirmAddress as usize] {
+                } else if sighash == self.hashes[HapiInstruction::ConfirmAddress as usize] {
                     InstructionData::ConfirmAddress(u8::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::CreateAsset as usize] {
+                } else if sighash == self.hashes[HapiInstruction::CreateAsset as usize] {
                     InstructionData::CreateAsset(CreateAssetData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::UpdateAsset as usize] {
+                } else if sighash == self.hashes[HapiInstruction::UpdateAsset as usize] {
                     InstructionData::UpdateAsset(UpdateAssetData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[InstructionData::ConfirmAsset as usize] {
+                } else if sighash == self.hashes[HapiInstruction::ConfirmAsset as usize] {
                     InstructionData::ConfirmAsset(u8::try_from_slice(data_slice)?)
                 } else {
                     return Ok(None);
@@ -199,14 +206,34 @@ mod tests {
     const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
     const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 
-    fn create_instruction(instruction_name: &str, data: &InstructionData) -> UiCompiledInstruction {
-        let mut instruction_data = get_instruction_sighash(instruction_name).to_vec();
+    fn serialize<T: AnchorSerialize>(name: &str, data: T) -> Vec<u8> {
+        let mut instruction_data = get_instruction_sighash(name).to_vec();
 
         let mut inner_data = Vec::new();
         data.serialize(&mut instruction_data)
             .expect("Failed to serialize update address data");
 
         instruction_data.append(&mut inner_data);
+        instruction_data
+    }
+
+    fn create_instruction(name: &str, data: &InstructionData) -> UiCompiledInstruction {
+        let instruction_data = match data {
+            InstructionData::CreateNetwork(data) => serialize(name, data),
+            InstructionData::UpdateStakeConfiguration(data) => serialize(name, data),
+            InstructionData::UpdateRewardConfiguration(data) => serialize(name, data),
+            InstructionData::CreateReporter(data) => serialize(name, data),
+            InstructionData::UpdateReporter(data) => serialize(name, data),
+            InstructionData::CreateCase(data) => serialize(name, data),
+            InstructionData::UpdateCase(data) => serialize(name, data),
+            InstructionData::CreateAddress(data) => serialize(name, data),
+            InstructionData::UpdateAddress(data) => serialize(name, data),
+            InstructionData::ConfirmAddress(data) => serialize(name, data),
+            InstructionData::CreateAsset(data) => serialize(name, data),
+            InstructionData::UpdateAsset(data) => serialize(name, data),
+            InstructionData::ConfirmAsset(data) => serialize(name, data),
+            _ => get_instruction_sighash(name).to_vec(),
+        };
 
         UiCompiledInstruction {
             program_id_index: 0,
@@ -254,10 +281,10 @@ mod tests {
         }
     }
 
-    fn get_cli() -> HapiCoreSolana {
+    fn get_cli(program_id: Option<String>) -> HapiCoreSolana {
         HapiCoreSolana::new(HapiCoreOptions {
             provider_url: String::default(),
-            contract_address: PROGRAM_ID.to_string(),
+            contract_address: program_id.unwrap_or(PROGRAM_ID.to_string()),
             private_key: None,
             chain_id: None,
             network: HapiCoreNetwork::Solana,
@@ -265,10 +292,9 @@ mod tests {
         .expect("Failed to initialize client")
     }
 
-    // #[tokio::test(flavor = "multi_thread")]
     #[test]
     fn decode_hapi_transactions() {
-        let client = get_cli();
+        let client = get_cli(None);
 
         let test_data = vec![
             (
@@ -346,10 +372,9 @@ mod tests {
         }
     }
 
-    // #[tokio::test(flavor = "multi_thread")]
     #[test]
     fn ignore_unknown_instruction() {
-        let client = get_cli();
+        let client = get_cli(None);
 
         let instructions = client
             .decode_transaction(create_tx(&vec![(
@@ -361,16 +386,14 @@ mod tests {
         assert_eq!(instructions.len(), 0);
     }
 
-    // #[tokio::test(flavor = "multi_thread")]
     #[test]
     fn ignore_invalid_program_id() {
-        let client = get_cli();
+        let client = get_cli(Some(
+            "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
+        ));
 
         let instructions = client
-            .decode_transaction(create_tx(&vec![(
-                "unknown_instruction",
-                InstructionData::Unstake(),
-            )]))
+            .decode_transaction(create_tx(&vec![("unstake", InstructionData::Unstake())]))
             .expect("Failed to decode transaction");
 
         assert_eq!(instructions.len(), 0);
