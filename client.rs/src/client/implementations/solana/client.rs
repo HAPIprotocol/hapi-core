@@ -41,9 +41,12 @@ use crate::{
     HapiCore,
 };
 
-use super::utils::{
-    byte_array_from_str, get_address_address, get_asset_address, get_case_address,
-    get_network_address, get_program_data_address, get_reporter_address, get_signer,
+use super::{
+    instructions::get_hapi_sighashes,
+    utils::{
+        byte_array_from_str, get_address_address, get_asset_address, get_case_address,
+        get_network_address, get_program_data_address, get_reporter_address, get_signer,
+    },
 };
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -53,7 +56,6 @@ pub struct HapiCoreSolana {
     pub program_id: Pubkey,
     network: Pubkey,
     signer: Arc<Keypair>,
-    #[cfg(feature = "decode")]
     pub(crate) hashes: Vec<[u8; 8]>,
 }
 
@@ -68,14 +70,14 @@ impl HapiCoreSolana {
         let (network, _) = get_network_address(&options.network.to_string(), &program_id)?;
 
         let rpc_client = RpcClient::new_with_timeout(options.provider_url.clone(), DEFAULT_TIMEOUT);
+        let hashes = get_hapi_sighashes();
 
         Ok(Self {
             rpc_client,
             program_id,
             network,
             signer,
-            #[cfg(feature = "decode")]
-            hashes: super::instructions::get_hapi_sighashes(),
+            hashes,
         })
     }
 
@@ -99,7 +101,7 @@ impl HapiCoreSolana {
         Ok(Tx { hash })
     }
 
-    async fn get_account_data<T: AccountDeserialize>(&self, address: &Pubkey) -> Result<T> {
+    pub async fn get_account_data<T: AccountDeserialize>(&self, address: &Pubkey) -> Result<T> {
         let mut data: &[u8] = &self
             .rpc_client
             .get_account_with_commitment(address, CommitmentConfig::processed())

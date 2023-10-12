@@ -12,8 +12,8 @@ use {
 
 use super::instructions::{
     CreateAddressData, CreateAssetData, CreateCaseData, CreateNetworkData, CreateReporterData,
-    HapiInstruction, InstructionData, UpdateAddressData, UpdateAssetData, UpdateCaseData,
-    UpdateReporterData, DISCRIMINATOR_SIZE,
+    DecodedInstructionData, HapiInstruction, InstructionData, UpdateAddressData, UpdateAssetData,
+    UpdateCaseData, UpdateReporterData, DISCRIMINATOR_SIZE,
 };
 use crate::{client::result::ClientError, HapiCoreSolana};
 
@@ -21,6 +21,9 @@ use crate::{client::result::ClientError, HapiCoreSolana};
 pub struct DecodedInstruction {
     /// Sequence index in transaction
     pub id: u8,
+
+    /// HAPI instruction
+    pub instruction: HapiInstruction,
 
     /// Transaction signature hash
     pub tx_hash: String,
@@ -34,12 +37,12 @@ pub struct DecodedInstruction {
     /// List of encoded accounts used by the instruction
     pub account_keys: Vec<String>,
 
-    /// The program input data encoded in a base-58 string
+    /// Program input data
     pub data: InstructionData,
 }
 
 impl HapiCoreSolana {
-    pub async fn get_instructions(&self, hash: &str) -> Result<Vec<DecodedInstruction>> {
+    pub async fn get_hapi_instructions(&self, hash: &str) -> Result<Vec<DecodedInstruction>> {
         let tx = self
             .rpc_client
             .get_transaction(&Signature::from_str(hash)?, UiTransactionEncoding::Json)
@@ -100,7 +103,7 @@ impl HapiCoreSolana {
         &self,
         id: u8,
         instruction: &UiCompiledInstruction,
-        tx_accounts: &Vec<String>,
+        tx_accounts: &[String],
         tx_hash: String,
         blocktime: u64,
     ) -> Result<Option<DecodedInstruction>> {
@@ -113,55 +116,23 @@ impl HapiCoreSolana {
         if instruction_program_id == &self.program_id.to_string() {
             let buf = &bs58::decode(&instruction.data).into_vec()?;
 
-            let data = {
-                let sighash = &buf[..DISCRIMINATOR_SIZE];
-                let data_slice = &buf[DISCRIMINATOR_SIZE..];
+            let sighash = &buf[..DISCRIMINATOR_SIZE];
 
-                if sighash == self.hashes[HapiInstruction::CreateNetwork as usize] {
-                    InstructionData::CreateNetwork(CreateNetworkData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::UpdateStakeConfiguration as usize]
-                {
-                    InstructionData::UpdateStakeConfiguration(StakeConfiguration::try_from_slice(
-                        data_slice,
-                    )?)
-                } else if sighash
-                    == self.hashes[HapiInstruction::UpdateRewardConfiguration as usize]
-                {
-                    InstructionData::UpdateRewardConfiguration(RewardConfiguration::try_from_slice(
-                        data_slice,
-                    )?)
-                } else if sighash == self.hashes[HapiInstruction::SetAuthority as usize] {
-                    InstructionData::SetAuthority()
-                } else if sighash == self.hashes[HapiInstruction::CreateReporter as usize] {
-                    InstructionData::CreateReporter(CreateReporterData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::UpdateReporter as usize] {
-                    InstructionData::UpdateReporter(UpdateReporterData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::ActivateReporter as usize] {
-                    InstructionData::ActivateReporter()
-                } else if sighash == self.hashes[HapiInstruction::DeactivateReporter as usize] {
-                    InstructionData::DeactivateReporter()
-                } else if sighash == self.hashes[HapiInstruction::Unstake as usize] {
-                    InstructionData::Unstake()
-                } else if sighash == self.hashes[HapiInstruction::CreateCase as usize] {
-                    InstructionData::CreateCase(CreateCaseData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::UpdateCase as usize] {
-                    InstructionData::UpdateCase(UpdateCaseData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::CreateAddress as usize] {
-                    InstructionData::CreateAddress(CreateAddressData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::UpdateAddress as usize] {
-                    InstructionData::UpdateAddress(UpdateAddressData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::ConfirmAddress as usize] {
-                    InstructionData::ConfirmAddress(u8::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::CreateAsset as usize] {
-                    InstructionData::CreateAsset(CreateAssetData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::UpdateAsset as usize] {
-                    InstructionData::UpdateAsset(UpdateAssetData::try_from_slice(data_slice)?)
-                } else if sighash == self.hashes[HapiInstruction::ConfirmAsset as usize] {
-                    InstructionData::ConfirmAsset(u8::try_from_slice(data_slice)?)
+            let hapi_instruction =
+                if let Some(index) = self.hashes.iter().position(|hash| hash == sighash) {
+                    HapiInstruction::from_index(index)?
                 } else {
                     return Ok(None);
-                }
-            };
+                };
+
+            #[cfg(not(feature = "decode"))]
+            let data = InstructionData::Raw(instruction.data.clone());
+
+            #[cfg(feature = "decode")]
+            let data = InstructionData::Decoded(decode_instruction_data(
+                &hapi_instruction,
+                &buf[DISCRIMINATOR_SIZE..],
+            )?);
 
             let account_keys = instruction
                 .accounts
@@ -170,8 +141,9 @@ impl HapiCoreSolana {
                 .collect::<Vec<_>>();
 
             return Ok(Some(DecodedInstruction {
-                id: id as u8,
+                id,
                 tx_hash,
+                instruction: hapi_instruction,
                 program_id: instruction_program_id.to_string(),
                 blocktime,
                 account_keys,
@@ -181,6 +153,63 @@ impl HapiCoreSolana {
 
         Ok(None)
     }
+}
+
+fn decode_instruction_data(
+    hapi_instruction: &HapiInstruction,
+    data_slice: &[u8],
+) -> Result<DecodedInstructionData> {
+    let data = match hapi_instruction {
+        HapiInstruction::CreateNetwork => {
+            DecodedInstructionData::CreateNetwork(CreateNetworkData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::UpdateStakeConfiguration => {
+            DecodedInstructionData::UpdateStakeConfiguration(StakeConfiguration::try_from_slice(
+                data_slice,
+            )?)
+        }
+        HapiInstruction::UpdateRewardConfiguration => {
+            DecodedInstructionData::UpdateRewardConfiguration(RewardConfiguration::try_from_slice(
+                data_slice,
+            )?)
+        }
+        HapiInstruction::SetAuthority => DecodedInstructionData::SetAuthority,
+        HapiInstruction::CreateReporter => {
+            DecodedInstructionData::CreateReporter(CreateReporterData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::UpdateReporter => {
+            DecodedInstructionData::UpdateReporter(UpdateReporterData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::ActivateReporter => DecodedInstructionData::ActivateReporter,
+        HapiInstruction::DeactivateReporter => DecodedInstructionData::DeactivateReporter,
+        HapiInstruction::Unstake => DecodedInstructionData::Unstake,
+        HapiInstruction::CreateCase => {
+            DecodedInstructionData::CreateCase(CreateCaseData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::UpdateCase => {
+            DecodedInstructionData::UpdateCase(UpdateCaseData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::CreateAddress => {
+            DecodedInstructionData::CreateAddress(CreateAddressData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::UpdateAddress => {
+            DecodedInstructionData::UpdateAddress(UpdateAddressData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::ConfirmAddress => {
+            DecodedInstructionData::ConfirmAddress(u8::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::CreateAsset => {
+            DecodedInstructionData::CreateAsset(CreateAssetData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::UpdateAsset => {
+            DecodedInstructionData::UpdateAsset(UpdateAssetData::try_from_slice(data_slice)?)
+        }
+        HapiInstruction::ConfirmAsset => {
+            DecodedInstructionData::ConfirmAsset(u8::try_from_slice(data_slice)?)
+        }
+    };
+
+    Ok(data)
 }
 
 #[cfg(test)]
@@ -219,20 +248,23 @@ mod tests {
 
     fn create_instruction(name: &str, data: &InstructionData) -> UiCompiledInstruction {
         let instruction_data = match data {
-            InstructionData::CreateNetwork(data) => serialize(name, data),
-            InstructionData::UpdateStakeConfiguration(data) => serialize(name, data),
-            InstructionData::UpdateRewardConfiguration(data) => serialize(name, data),
-            InstructionData::CreateReporter(data) => serialize(name, data),
-            InstructionData::UpdateReporter(data) => serialize(name, data),
-            InstructionData::CreateCase(data) => serialize(name, data),
-            InstructionData::UpdateCase(data) => serialize(name, data),
-            InstructionData::CreateAddress(data) => serialize(name, data),
-            InstructionData::UpdateAddress(data) => serialize(name, data),
-            InstructionData::ConfirmAddress(data) => serialize(name, data),
-            InstructionData::CreateAsset(data) => serialize(name, data),
-            InstructionData::UpdateAsset(data) => serialize(name, data),
-            InstructionData::ConfirmAsset(data) => serialize(name, data),
-            _ => get_instruction_sighash(name).to_vec(),
+            InstructionData::Decoded(data) => match data {
+                DecodedInstructionData::CreateNetwork(data) => serialize(name, data),
+                DecodedInstructionData::UpdateStakeConfiguration(data) => serialize(name, data),
+                DecodedInstructionData::UpdateRewardConfiguration(data) => serialize(name, data),
+                DecodedInstructionData::CreateReporter(data) => serialize(name, data),
+                DecodedInstructionData::UpdateReporter(data) => serialize(name, data),
+                DecodedInstructionData::CreateCase(data) => serialize(name, data),
+                DecodedInstructionData::UpdateCase(data) => serialize(name, data),
+                DecodedInstructionData::CreateAddress(data) => serialize(name, data),
+                DecodedInstructionData::UpdateAddress(data) => serialize(name, data),
+                DecodedInstructionData::ConfirmAddress(data) => serialize(name, data),
+                DecodedInstructionData::CreateAsset(data) => serialize(name, data),
+                DecodedInstructionData::UpdateAsset(data) => serialize(name, data),
+                DecodedInstructionData::ConfirmAsset(data) => serialize(name, data),
+                _ => get_instruction_sighash(name).to_vec(),
+            },
+            InstructionData::Raw(data) => serialize(name, data),
         };
 
         UiCompiledInstruction {
@@ -293,71 +325,148 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(feature = "decode"))]
+    fn get_hapi_transactions() {
+        let client = get_cli(None);
+
+        let test_data = [
+            "create_network",
+            "update_stake_configuration",
+            "update_reward_configuration",
+            "set_authority",
+            "create_reporter",
+            "update_reporter",
+            "activate_reporter",
+            "deactivate_reporter",
+            "unstake",
+            "create_case",
+            "update_case",
+            "create_address",
+            "update_address",
+            "confirm_address",
+            "create_asset",
+            "update_asset",
+            "confirm_asset",
+        ]
+        .iter()
+        .map(|n| (*n, InstructionData::Raw(String::from("Some data"))))
+        .collect();
+
+        let instructions = client
+            .decode_transaction(create_tx(&test_data))
+            .expect("Failed to decode transaction");
+
+        assert_eq!(instructions.len(), test_data.len());
+        assert!(instructions
+            .iter()
+            .all(|instruction| &instruction.program_id == PROGRAM_ID));
+    }
+
+    #[test]
+    #[cfg(feature = "decode")]
     fn decode_hapi_transactions() {
         let client = get_cli(None);
 
         let test_data = vec![
             (
                 "create_network",
-                InstructionData::CreateNetwork(CreateNetworkData::default()),
+                InstructionData::Decoded(DecodedInstructionData::CreateNetwork(
+                    CreateNetworkData::default(),
+                )),
             ),
             (
                 "update_stake_configuration",
-                InstructionData::UpdateStakeConfiguration(StakeConfiguration::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateStakeConfiguration(
+                    StakeConfiguration::default(),
+                )),
             ),
             (
                 "update_reward_configuration",
-                InstructionData::UpdateRewardConfiguration(RewardConfiguration::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateRewardConfiguration(
+                    RewardConfiguration::default(),
+                )),
             ),
-            ("set_authority", InstructionData::SetAuthority()),
+            (
+                "set_authority",
+                InstructionData::Decoded(DecodedInstructionData::SetAuthority),
+            ),
             (
                 "create_reporter",
-                InstructionData::CreateReporter(CreateReporterData::default()),
+                InstructionData::Decoded(DecodedInstructionData::CreateReporter(
+                    CreateReporterData::default(),
+                )),
             ),
             (
                 "update_reporter",
-                InstructionData::UpdateReporter(UpdateReporterData::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateReporter(
+                    UpdateReporterData::default(),
+                )),
             ),
-            ("activate_reporter", InstructionData::ActivateReporter()),
-            ("deactivate_reporter", InstructionData::DeactivateReporter()),
-            ("unstake", InstructionData::Unstake()),
+            (
+                "activate_reporter",
+                InstructionData::Decoded(DecodedInstructionData::ActivateReporter),
+            ),
+            (
+                "deactivate_reporter",
+                InstructionData::Decoded(DecodedInstructionData::DeactivateReporter),
+            ),
+            (
+                "unstake",
+                InstructionData::Decoded(DecodedInstructionData::Unstake),
+            ),
             (
                 "create_case",
-                InstructionData::CreateCase(CreateCaseData::default()),
+                InstructionData::Decoded(DecodedInstructionData::CreateCase(
+                    CreateCaseData::default(),
+                )),
             ),
             (
                 "update_case",
-                InstructionData::UpdateCase(UpdateCaseData::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateCase(
+                    UpdateCaseData::default(),
+                )),
             ),
             (
                 "create_address",
-                InstructionData::CreateAddress(CreateAddressData {
-                    address: [1u8; 64],
-                    category: Category::Gambling,
-                    risk: 5,
-                    bump: 255,
-                }),
+                InstructionData::Decoded(DecodedInstructionData::CreateAddress(
+                    CreateAddressData {
+                        address: [1u8; 64],
+                        category: Category::Gambling,
+                        risk: 5,
+                        bump: 255,
+                    },
+                )),
             ),
             (
                 "update_address",
-                InstructionData::UpdateAddress(UpdateAddressData::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateAddress(
+                    UpdateAddressData::default(),
+                )),
             ),
-            ("confirm_address", InstructionData::ConfirmAddress(255)),
+            (
+                "confirm_address",
+                InstructionData::Decoded(DecodedInstructionData::ConfirmAddress(255)),
+            ),
             (
                 "create_asset",
-                InstructionData::CreateAsset(CreateAssetData {
+                InstructionData::Decoded(DecodedInstructionData::CreateAsset(CreateAssetData {
                     addr: [1u8; 64],
                     asset_id: [1u8; 64],
                     category: Category::ATM,
                     risk_score: 5,
                     bump: 255,
-                }),
+                })),
             ),
             (
                 "update_asset",
-                InstructionData::UpdateAsset(UpdateAssetData::default()),
+                InstructionData::Decoded(DecodedInstructionData::UpdateAsset(
+                    UpdateAssetData::default(),
+                )),
             ),
-            ("confirm_asset", InstructionData::ConfirmAsset(255)),
+            (
+                "confirm_asset",
+                InstructionData::Decoded(DecodedInstructionData::ConfirmAsset(255)),
+            ),
         ];
 
         let instructions = client
@@ -379,7 +488,7 @@ mod tests {
         let instructions = client
             .decode_transaction(create_tx(&vec![(
                 "unknown_instruction",
-                InstructionData::Unstake(),
+                InstructionData::Raw(String::from("Some data")),
             )]))
             .expect("Failed to decode transaction");
 
@@ -393,7 +502,10 @@ mod tests {
         ));
 
         let instructions = client
-            .decode_transaction(create_tx(&vec![("unstake", InstructionData::Unstake())]))
+            .decode_transaction(create_tx(&vec![(
+                "unstake",
+                InstructionData::Raw(String::from("Some data")),
+            )]))
             .expect("Failed to decode transaction");
 
         assert_eq!(instructions.len(), 0);

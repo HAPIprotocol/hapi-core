@@ -1,5 +1,6 @@
 use {
     anchor_client::anchor_lang::{AnchorDeserialize, AnchorSerialize},
+    anyhow::{bail, Result},
     hapi_core_solana::{
         CaseStatus, Category, ReporterRole, RewardConfiguration, StakeConfiguration,
     },
@@ -10,9 +11,8 @@ use {
 pub const DISCRIMINATOR_SIZE: usize = 8;
 
 /// Hapi core instructions
-#[repr(usize)]
 pub enum HapiInstruction {
-    CreateNetwork = 0,
+    CreateNetwork,
     UpdateStakeConfiguration,
     UpdateRewardConfiguration,
     SetAuthority,
@@ -31,18 +31,51 @@ pub enum HapiInstruction {
     ConfirmAsset,
 }
 
-/// Hapi core instruction data
+impl HapiInstruction {
+    pub fn from_index(index: usize) -> Result<Self> {
+        let instruction = match index {
+            0 => HapiInstruction::CreateNetwork,
+            1 => HapiInstruction::UpdateStakeConfiguration,
+            2 => HapiInstruction::UpdateRewardConfiguration,
+            3 => HapiInstruction::SetAuthority,
+            4 => HapiInstruction::CreateReporter,
+            5 => HapiInstruction::UpdateReporter,
+            6 => HapiInstruction::ActivateReporter,
+            7 => HapiInstruction::DeactivateReporter,
+            8 => HapiInstruction::Unstake,
+            9 => HapiInstruction::CreateCase,
+            10 => HapiInstruction::UpdateCase,
+            11 => HapiInstruction::CreateAddress,
+            12 => HapiInstruction::UpdateAddress,
+            13 => HapiInstruction::ConfirmAddress,
+            14 => HapiInstruction::CreateAsset,
+            15 => HapiInstruction::UpdateAsset,
+            16 => HapiInstruction::ConfirmAsset,
+            _ => bail!("Invalid instruction index: {}", index),
+        };
+
+        Ok(instruction)
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub enum InstructionData {
+    Decoded(DecodedInstructionData),
+    Raw(String),
+}
+
+/// Hapi core instruction data
+#[derive(PartialEq, Debug)]
+pub enum DecodedInstructionData {
     CreateNetwork(CreateNetworkData),
     UpdateStakeConfiguration(StakeConfiguration),
     UpdateRewardConfiguration(RewardConfiguration),
-    SetAuthority(),
+    SetAuthority,
     CreateReporter(CreateReporterData),
     UpdateReporter(UpdateReporterData),
-    ActivateReporter(),
-    DeactivateReporter(),
-    Unstake(),
+    ActivateReporter,
+    DeactivateReporter,
+    Unstake,
     CreateCase(CreateCaseData),
     UpdateCase(UpdateCaseData),
     CreateAddress(CreateAddressData),
@@ -147,7 +180,7 @@ pub fn get_hapi_sighashes() -> Vec<[u8; 8]> {
 
     names
         .iter()
-        .map(|n| get_instruction_sighash(*n))
+        .map(|n| get_instruction_sighash(n))
         .collect::<Vec<_>>()
 }
 
