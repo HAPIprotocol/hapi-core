@@ -1,22 +1,20 @@
 use {
     anyhow::Result,
     ethers::{
+        abi::Token,
         providers::Middleware,
         types::{Address, BlockNumber, Filter, H256},
     },
-    hapi_core::HapiCoreEvm,
+    hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
+    std::str::FromStr,
+    uuid::Uuid,
 };
 
-use std::str::FromStr;
-
-use ethers::abi::Token;
-use uuid::Uuid;
-
-use hapi_core::HapiCore;
-
-use super::push::{PushData, PushEvent, PushEventName, PushPayload};
-
-use super::{now, IndexerJob, IndexerState, IndexingCursor};
+use super::{
+    now,
+    push::{PushData, PushEvent, PushPayload},
+    IndexerJob, IndexerState, IndexingCursor,
+};
 
 pub(super) async fn update_evm_empty_cursor(
     client: &HapiCoreEvm,
@@ -127,7 +125,7 @@ pub(super) async fn update_evm_transaction(
 pub(super) async fn process_evm_job_log(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
-) -> Result<Option<PushPayload>> {
+) -> Result<Option<Vec<PushPayload>>> {
     let log_header = client.decode_event(log)?;
 
     let tx_hash = format!(
@@ -184,15 +182,15 @@ pub(super) async fn process_evm_job_log(
     };
 
     if let Some(data) = data {
-        Ok(Some(PushPayload {
+        Ok(Some(vec![PushPayload {
             event: PushEvent {
-                name: PushEventName::from_str(&log_header.name)?,
+                name: EventName::from_str(&log_header.name)?,
                 tx_hash,
                 tx_index: 0,
                 timestamp: block.timestamp.as_u64(),
             },
             data,
-        }))
+        }]))
     } else {
         return Ok(None);
     }

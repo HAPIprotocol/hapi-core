@@ -15,6 +15,7 @@ pub(crate) mod logic;
 pub(crate) mod persistence;
 pub(crate) mod push;
 pub(crate) mod server;
+pub(crate) mod solana;
 pub(crate) mod state;
 
 pub(crate) use {

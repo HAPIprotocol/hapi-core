@@ -151,7 +151,9 @@ impl Indexer {
         match self.jobs.pop_front() {
             Some(job) => {
                 if let Some(payload) = self.client.handle_process(job).await? {
-                    self.send_webhook(&payload).await?;
+                    for event in payload {
+                        self.send_webhook(&event).await?;
+                    }
                 }
             }
             None => {

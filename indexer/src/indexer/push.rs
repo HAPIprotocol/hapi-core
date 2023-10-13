@@ -1,11 +1,10 @@
 use anyhow::Result;
-use serde::{de, Deserialize, Serialize};
-use std::{
-    fmt::{Display, Formatter},
-    str::FromStr,
-};
+use serde::{Deserialize, Serialize};
 
-use hapi_core::client::entities::{address::Address, asset::Asset, case::Case, reporter::Reporter};
+use hapi_core::client::{
+    entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
+    events::EventName,
+};
 
 use super::Indexer;
 
@@ -20,102 +19,13 @@ pub struct PushPayload {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PushEvent {
     /// Event name
-    pub name: PushEventName,
+    pub name: EventName,
     /// Hash of the transaction
     pub tx_hash: String,
     /// Index of the event in a transaction (for multi-instruction transactions, i.e. Solana)
     pub tx_index: u64,
     /// Timestamp of the transaction block
     pub timestamp: u64,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum PushEventName {
-    Initialize,
-    SetAuthority,
-    UpdateStakeConfiguration,
-    UpdateRewardConfiguration,
-    CreateReporter,
-    UpdateReporter,
-    ActivateReporter,
-    DeactivateReporter,
-    Unstake,
-    CreateCase,
-    UpdateCase,
-    CreateAddress,
-    UpdateAddress,
-    ConfirmAddress,
-    CreateAsset,
-    UpdateAsset,
-    ConfirmAsset,
-}
-
-impl Serialize for PushEventName {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.collect_str(&self.to_string())
-    }
-}
-
-impl<'de> Deserialize<'de> for PushEventName {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        Self::from_str(&s).map_err(de::Error::custom)
-    }
-}
-
-impl Display for PushEventName {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match self {
-            Self::Initialize => write!(f, "initialize"),
-            Self::SetAuthority => write!(f, "set_authority"),
-            Self::UpdateStakeConfiguration => write!(f, "update_stake_configuration"),
-            Self::UpdateRewardConfiguration => write!(f, "update_reward_configuration"),
-            Self::CreateReporter => write!(f, "create_reporter"),
-            Self::UpdateReporter => write!(f, "update_reporter"),
-            Self::ActivateReporter => write!(f, "activate_reporter"),
-            Self::DeactivateReporter => write!(f, "deactivate_reporter"),
-            Self::Unstake => write!(f, "unstake"),
-            Self::CreateCase => write!(f, "create_case"),
-            Self::UpdateCase => write!(f, "update_case"),
-            Self::CreateAddress => write!(f, "create_address"),
-            Self::UpdateAddress => write!(f, "update_address"),
-            Self::ConfirmAddress => write!(f, "confirm_address"),
-            Self::CreateAsset => write!(f, "create_asset"),
-            Self::UpdateAsset => write!(f, "update_asset"),
-            Self::ConfirmAsset => write!(f, "confirm_asset"),
-        }
-    }
-}
-
-impl FromStr for PushEventName {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "initialize" | "Initialized" => Ok(Self::Initialize),
-            "set_authority" | "AuthorityChanged" => Ok(Self::SetAuthority),
-            "update_stake_configuration" | "StakeConfigurationChanged" => {
-                Ok(Self::UpdateStakeConfiguration)
-            }
-            "update_reward_configuration" | "RewardConfigurationChanged" => {
-                Ok(Self::UpdateRewardConfiguration)
-            }
-            "create_reporter" | "ReporterCreated" => Ok(Self::CreateReporter),
-            "update_reporter" | "ReporterUpdated" => Ok(Self::UpdateReporter),
-            "activate_reporter" | "ReporterActivated" => Ok(Self::ActivateReporter),
-            "deactivate_reporter" | "ReporterDeactivated" => Ok(Self::DeactivateReporter),
-            "unstake" | "Unstake" | "ReporterStakeWithdrawn" => Ok(Self::Unstake),
-            "create_case" | "CaseCreated" => Ok(Self::CreateCase),
-            "update_case" | "CaseUpdated" => Ok(Self::UpdateCase),
-            "create_address" | "AddressCreated" => Ok(Self::CreateAddress),
-            "update_address" | "AddressUpdated" => Ok(Self::UpdateAddress),
-            "confirm_address" | "AddressConfirmed" => Ok(Self::ConfirmAddress),
-            "create_asset" | "AssetCreated" => Ok(Self::CreateAsset),
-            "update_asset" | "AssetUpdated" => Ok(Self::UpdateAsset),
-            "confirm_asset" | "AssetConfirmed" => Ok(Self::ConfirmAsset),
-            _ => Err(anyhow::anyhow!("invalid event name")),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -174,7 +84,7 @@ mod tests {
         // TODO: should it be a unix timestamp?
         let payload = PushPayload {
             event: PushEvent {
-                name: PushEventName::CreateAddress,
+                name: EventName::CreateAddress,
                 tx_hash: "acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f"
                     .to_string(),
                 tx_index: 0,
