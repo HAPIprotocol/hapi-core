@@ -1,6 +1,5 @@
 use {
     anchor_client::anchor_lang::{AnchorDeserialize, AnchorSerialize},
-    anyhow::{bail, Result},
     hapi_core_solana::{
         CaseStatus, Category, ReporterRole, RewardConfiguration, StakeConfiguration,
     },
@@ -9,54 +8,6 @@ use {
 
 /// Byte index of bump in account data
 pub const DISCRIMINATOR_SIZE: usize = 8;
-
-/// Hapi core instructions
-pub enum HapiInstruction {
-    CreateNetwork,
-    UpdateStakeConfiguration,
-    UpdateRewardConfiguration,
-    SetAuthority,
-    CreateReporter,
-    UpdateReporter,
-    ActivateReporter,
-    DeactivateReporter,
-    Unstake,
-    CreateCase,
-    UpdateCase,
-    CreateAddress,
-    UpdateAddress,
-    ConfirmAddress,
-    CreateAsset,
-    UpdateAsset,
-    ConfirmAsset,
-}
-
-impl HapiInstruction {
-    pub fn from_index(index: usize) -> Result<Self> {
-        let instruction = match index {
-            0 => HapiInstruction::CreateNetwork,
-            1 => HapiInstruction::UpdateStakeConfiguration,
-            2 => HapiInstruction::UpdateRewardConfiguration,
-            3 => HapiInstruction::SetAuthority,
-            4 => HapiInstruction::CreateReporter,
-            5 => HapiInstruction::UpdateReporter,
-            6 => HapiInstruction::ActivateReporter,
-            7 => HapiInstruction::DeactivateReporter,
-            8 => HapiInstruction::Unstake,
-            9 => HapiInstruction::CreateCase,
-            10 => HapiInstruction::UpdateCase,
-            11 => HapiInstruction::CreateAddress,
-            12 => HapiInstruction::UpdateAddress,
-            13 => HapiInstruction::ConfirmAddress,
-            14 => HapiInstruction::CreateAsset,
-            15 => HapiInstruction::UpdateAsset,
-            16 => HapiInstruction::ConfirmAsset,
-            _ => bail!("Invalid instruction index: {}", index),
-        };
-
-        Ok(instruction)
-    }
-}
 
 #[derive(PartialEq, Debug)]
 pub enum InstructionData {
@@ -160,9 +111,9 @@ pub struct UpdateAssetData {
 pub fn get_hapi_sighashes() -> Vec<[u8; 8]> {
     let names = [
         "create_network",
+        "set_authority",
         "update_stake_configuration",
         "update_reward_configuration",
-        "set_authority",
         "create_reporter",
         "update_reporter",
         "activate_reporter",

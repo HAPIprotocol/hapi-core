@@ -10,12 +10,15 @@ use {
     std::str::FromStr,
 };
 
-use super::instructions::{
+use super::instruction_data::{
     CreateAddressData, CreateAssetData, CreateCaseData, CreateNetworkData, CreateReporterData,
-    DecodedInstructionData, HapiInstruction, InstructionData, UpdateAddressData, UpdateAssetData,
-    UpdateCaseData, UpdateReporterData, DISCRIMINATOR_SIZE,
+    DecodedInstructionData, InstructionData, UpdateAddressData, UpdateAssetData, UpdateCaseData,
+    UpdateReporterData, DISCRIMINATOR_SIZE,
 };
-use crate::{client::result::ClientError, HapiCoreSolana};
+use crate::{
+    client::{events::EventName, result::ClientError},
+    HapiCoreSolana,
+};
 
 /// Struct representing an Instruction entity from a Solana transaction
 pub struct DecodedInstruction {
@@ -23,7 +26,7 @@ pub struct DecodedInstruction {
     pub id: u8,
 
     /// HAPI instruction
-    pub instruction: HapiInstruction,
+    pub name: EventName,
 
     /// Transaction signature hash
     pub tx_hash: String,
@@ -118,19 +121,18 @@ impl HapiCoreSolana {
 
             let sighash = &buf[..DISCRIMINATOR_SIZE];
 
-            let hapi_instruction =
-                if let Some(index) = self.hashes.iter().position(|hash| hash == sighash) {
-                    HapiInstruction::from_index(index)?
-                } else {
-                    return Ok(None);
-                };
+            let name = if let Some(index) = self.hashes.iter().position(|hash| hash == sighash) {
+                EventName::from_index(index)?
+            } else {
+                return Ok(None);
+            };
 
             #[cfg(not(feature = "decode"))]
             let data = InstructionData::Raw(instruction.data.clone());
 
             #[cfg(feature = "decode")]
             let data = InstructionData::Decoded(decode_instruction_data(
-                &hapi_instruction,
+                &name,
                 &buf[DISCRIMINATOR_SIZE..],
             )?);
 
@@ -143,7 +145,7 @@ impl HapiCoreSolana {
             return Ok(Some(DecodedInstruction {
                 id,
                 tx_hash,
-                instruction: hapi_instruction,
+                name,
                 program_id: instruction_program_id.to_string(),
                 blocktime,
                 account_keys,
@@ -156,55 +158,51 @@ impl HapiCoreSolana {
 }
 
 fn decode_instruction_data(
-    hapi_instruction: &HapiInstruction,
+    hapi_instruction: &EventName,
     data_slice: &[u8],
 ) -> Result<DecodedInstructionData> {
     let data = match hapi_instruction {
-        HapiInstruction::CreateNetwork => {
+        EventName::Initialize => {
             DecodedInstructionData::CreateNetwork(CreateNetworkData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::UpdateStakeConfiguration => {
-            DecodedInstructionData::UpdateStakeConfiguration(StakeConfiguration::try_from_slice(
-                data_slice,
-            )?)
-        }
-        HapiInstruction::UpdateRewardConfiguration => {
-            DecodedInstructionData::UpdateRewardConfiguration(RewardConfiguration::try_from_slice(
-                data_slice,
-            )?)
-        }
-        HapiInstruction::SetAuthority => DecodedInstructionData::SetAuthority,
-        HapiInstruction::CreateReporter => {
+        EventName::UpdateStakeConfiguration => DecodedInstructionData::UpdateStakeConfiguration(
+            StakeConfiguration::try_from_slice(data_slice)?,
+        ),
+        EventName::UpdateRewardConfiguration => DecodedInstructionData::UpdateRewardConfiguration(
+            RewardConfiguration::try_from_slice(data_slice)?,
+        ),
+        EventName::SetAuthority => DecodedInstructionData::SetAuthority,
+        EventName::CreateReporter => {
             DecodedInstructionData::CreateReporter(CreateReporterData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::UpdateReporter => {
+        EventName::UpdateReporter => {
             DecodedInstructionData::UpdateReporter(UpdateReporterData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::ActivateReporter => DecodedInstructionData::ActivateReporter,
-        HapiInstruction::DeactivateReporter => DecodedInstructionData::DeactivateReporter,
-        HapiInstruction::Unstake => DecodedInstructionData::Unstake,
-        HapiInstruction::CreateCase => {
+        EventName::ActivateReporter => DecodedInstructionData::ActivateReporter,
+        EventName::DeactivateReporter => DecodedInstructionData::DeactivateReporter,
+        EventName::Unstake => DecodedInstructionData::Unstake,
+        EventName::CreateCase => {
             DecodedInstructionData::CreateCase(CreateCaseData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::UpdateCase => {
+        EventName::UpdateCase => {
             DecodedInstructionData::UpdateCase(UpdateCaseData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::CreateAddress => {
+        EventName::CreateAddress => {
             DecodedInstructionData::CreateAddress(CreateAddressData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::UpdateAddress => {
+        EventName::UpdateAddress => {
             DecodedInstructionData::UpdateAddress(UpdateAddressData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::ConfirmAddress => {
+        EventName::ConfirmAddress => {
             DecodedInstructionData::ConfirmAddress(u8::try_from_slice(data_slice)?)
         }
-        HapiInstruction::CreateAsset => {
+        EventName::CreateAsset => {
             DecodedInstructionData::CreateAsset(CreateAssetData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::UpdateAsset => {
+        EventName::UpdateAsset => {
             DecodedInstructionData::UpdateAsset(UpdateAssetData::try_from_slice(data_slice)?)
         }
-        HapiInstruction::ConfirmAsset => {
+        EventName::ConfirmAsset => {
             DecodedInstructionData::ConfirmAsset(u8::try_from_slice(data_slice)?)
         }
     };
@@ -216,7 +214,6 @@ fn decode_instruction_data(
 mod tests {
     use {
         anchor_client::anchor_lang::AnchorSerialize,
-        hapi_core_solana::Category,
         solana_transaction_status::{
             EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction,
             EncodedTransactionWithStatusMeta, UiMessage, UiRawMessage, UiTransaction,
@@ -225,7 +222,7 @@ mod tests {
     };
 
     use crate::{
-        client::solana::instructions::get_instruction_sighash, HapiCoreNetwork, HapiCoreOptions,
+        client::solana::instruction_data::get_instruction_sighash, HapiCoreNetwork, HapiCoreOptions,
     };
 
     use super::*;

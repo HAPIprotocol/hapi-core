@@ -87,7 +87,6 @@ impl HapiCoreEvm {
         })
     }
 
-    #[cfg(feature = "decode")]
     pub fn decode_event(&self, log: &ethers::types::Log) -> Result<LogHeader> {
         let signature = log.topics.first().ok_or(ClientError::Ethers(format!(
             "failed to decode event: no topics in log: {log:?}",

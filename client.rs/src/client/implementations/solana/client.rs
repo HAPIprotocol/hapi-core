@@ -38,11 +38,11 @@ use crate::{
         interface::HapiCoreOptions,
         result::{ClientError, Result, Tx},
     },
-    HapiCore,
+    get_solana_account, get_solana_account_count, get_solana_accounts, HapiCore,
 };
 
 use super::{
-    instructions::get_hapi_sighashes,
+    instruction_data::get_hapi_sighashes,
     utils::{
         byte_array_from_str, get_address_address, get_asset_address, get_case_address,
         get_network_address, get_program_data_address, get_reporter_address, get_signer,
@@ -70,6 +70,7 @@ impl HapiCoreSolana {
         let (network, _) = get_network_address(&options.network.to_string(), &program_id)?;
 
         let rpc_client = RpcClient::new_with_timeout(options.provider_url.clone(), DEFAULT_TIMEOUT);
+
         let hashes = get_hapi_sighashes();
 
         Ok(Self {
@@ -193,41 +194,6 @@ impl HapiCoreSolana {
 
         Ok(())
     }
-}
-
-macro_rules! get_account {
-    ($self:expr, $address:expr, $account:ident) => {
-        <$account>::try_from(
-            $self
-                .get_account_data::<hapi_core_solana::$account>($address)
-                .await?,
-        )
-    };
-}
-
-macro_rules! get_accounts {
-    ($self:expr, $account:ident) => {{
-        let data = $self
-            .get_accounts::<hapi_core_solana::$account>(hapi_core_solana::$account::LEN)
-            .await?;
-
-        let mut result: Vec<$account> = vec![];
-
-        for (_, acc) in data {
-            if acc.network == $self.network {
-                result.push(<$account>::try_from(acc)?);
-            }
-        }
-
-        Ok(result)
-    }};
-}
-
-macro_rules! get_account_count {
-    ($self:expr, $account:ident) => {{
-        let accounts: Result<Vec<$account>> = get_accounts!($self, $account);
-        Ok(accounts?.len() as u64)
-    }};
 }
 
 #[async_trait]
@@ -383,15 +349,15 @@ impl HapiCore for HapiCoreSolana {
     async fn get_reporter(&self, id: &str) -> Result<Reporter> {
         let (addr, _) = get_reporter_address(Uuid::from_str(id)?, &self.network, &self.program_id)?;
 
-        get_account!(self, &addr, Reporter)
+        get_solana_account!(self, &addr, Reporter)
     }
 
     async fn get_reporter_count(&self) -> Result<u64> {
-        get_account_count!(self, Reporter)
+        get_solana_account_count!(self, Reporter)
     }
 
     async fn get_reporters(&self, _skip: u64, _take: u64) -> Result<Vec<Reporter>> {
-        get_accounts!(self, Reporter)
+        get_solana_accounts!(self, Reporter)
     }
 
     async fn activate_reporter(&self) -> Result<Tx> {
@@ -504,15 +470,15 @@ impl HapiCore for HapiCoreSolana {
     async fn get_case(&self, id: &str) -> Result<Case> {
         let (addr, _) = get_case_address(Uuid::from_str(id)?, &self.network, &self.program_id)?;
 
-        get_account!(self, &addr, Case)
+        get_solana_account!(self, &addr, Case)
     }
 
     async fn get_case_count(&self) -> Result<u64> {
-        get_account_count!(self, Case)
+        get_solana_account_count!(self, Case)
     }
 
     async fn get_cases(&self, _skip: u64, _take: u64) -> Result<Vec<Case>> {
-        get_accounts!(self, Case)
+        get_solana_accounts!(self, Case)
     }
 
     async fn create_address(&self, input: CreateAddressInput) -> Result<Tx> {
@@ -573,15 +539,15 @@ impl HapiCore for HapiCoreSolana {
 
         let (addr, _) = get_address_address(&address, &self.network, &self.program_id)?;
 
-        get_account!(self, &addr, Address)
+        get_solana_account!(self, &addr, Address)
     }
 
     async fn get_address_count(&self) -> Result<u64> {
-        get_account_count!(self, Address)
+        get_solana_account_count!(self, Address)
     }
 
     async fn get_addresses(&self, _skip: u64, _take: u64) -> Result<Vec<Address>> {
-        get_accounts!(self, Address)
+        get_solana_accounts!(self, Address)
     }
 
     async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx> {
@@ -653,12 +619,12 @@ impl HapiCore for HapiCoreSolana {
         let (addr, _) =
             get_asset_address(&asset_address, &asset_id, &self.network, &self.program_id)?;
 
-        get_account!(self, &addr, Asset)
+        get_solana_account!(self, &addr, Asset)
     }
     async fn get_asset_count(&self) -> Result<u64> {
-        get_account_count!(self, Asset)
+        get_solana_account_count!(self, Asset)
     }
     async fn get_assets(&self, _skip: u64, _take: u64) -> Result<Vec<Asset>> {
-        get_accounts!(self, Asset)
+        get_solana_accounts!(self, Asset)
     }
 }
