@@ -16,11 +16,12 @@ use solana_sdk::{pubkey::Pubkey, signature::Signature};
 
 use super::{
     push::{PushData, PushEvent, PushPayload},
-    IndexerJob, IndexerState, IndexingCursor,
+    IndexerJob,
 };
 
-const SIGNATURE_BATCH_SIZE: usize = 500;
+const SOLANA_BATCH_SIZE: usize = 500;
 
+// TODO: add valid indexes
 const REPORTER_ACCOUNT_INDEX: usize = 1;
 const CASE_ACCOUNT_INDEX: usize = 1;
 const ADDRESS_ACCOUNT_INDEX: usize = 1;
@@ -29,10 +30,11 @@ const ASSET_ACCOUNT_INDEX: usize = 1;
 pub(super) async fn update_solana_cursor(
     client: &HapiCoreSolana,
     current_cursor: Option<&str>,
-) -> Result<(IndexerState, Vec<IndexerJob>)> {
-    tracing::info!("No cursor found searching for the earliest block height");
-
+) -> Result<Vec<IndexerJob>> {
+    tracing::info!("No cursor found searching for the earliest transaction");
     let mut signature_list = vec![];
+    let mut recent_tx = None;
+
     let signature_cursor = if let Some(cursor) = current_cursor {
         Some(Signature::from_str(cursor)?)
     } else {
@@ -40,45 +42,34 @@ pub(super) async fn update_solana_cursor(
     };
 
     loop {
-        // TODO: make it prettier
         let config = GetConfirmedSignaturesForAddress2Config {
-            before: signature_cursor,
-            until: None,
-            limit: Some(SIGNATURE_BATCH_SIZE),
+            before: recent_tx,
+            until: signature_cursor,
+            limit: Some(SOLANA_BATCH_SIZE),
             commitment: Some(CommitmentConfig::confirmed()),
         };
+
         let mut signature_batch = client
             .rpc_client
             .get_signatures_for_address_with_config(&client.program_id, config)
             .await?;
 
-        if signature_batch.is_empty() {
+        if let Some(last) = signature_batch.first() {
+            recent_tx = Some(Signature::from_str(&last.signature)?);
+
+            signature_batch.reverse();
+            signature_list.splice(..0, signature_batch);
+        } else {
             break;
         }
-        signature_batch.reverse();
-        signature_list.append(&mut signature_batch);
     }
 
-    if let Some(tx) = signature_list.first() {
-        let tx = tx.signature.to_string();
-        tracing::info!(tx, "Earliest transaction found");
-        Ok((
-            IndexerState::CheckForUpdates {
-                cursor: IndexingCursor::Transaction(tx),
-            },
-            signature_list
-                .iter()
-                .map(|tx| IndexerJob::Transaction(tx.signature.to_string()))
-                .collect(),
-        ))
-    } else {
-        Ok((
-            IndexerState::Stopped {
-                message: "No valid transactions found on the contract address".to_string(),
-            },
-            vec![],
-        ))
-    }
+    let signatures = signature_list
+        .iter()
+        .map(|tx| IndexerJob::Transaction(tx.signature.to_string()))
+        .collect();
+
+    return Ok(signatures);
 }
 
 async fn get_instruction_data(

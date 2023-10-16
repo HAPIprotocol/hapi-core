@@ -1,125 +1,49 @@
 use {
     anyhow::Result,
-    ethers::{
-        abi::Token,
-        providers::Middleware,
-        types::{Address, BlockNumber, Filter, H256},
-    },
+    ethers::{abi::Token, providers::Middleware, types::Filter},
     hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
     std::str::FromStr,
     uuid::Uuid,
 };
 
 use super::{
-    now,
     push::{PushData, PushEvent, PushPayload},
-    IndexerJob, IndexerState, IndexingCursor,
+    IndexerJob,
 };
 
-pub(super) async fn update_evm_empty_cursor(
+const EVM_PAGE_SIZE: u64 = 100;
+
+pub(super) async fn update_evm_cursor(
     client: &HapiCoreEvm,
-    contract_address: Address,
-) -> Result<IndexerState> {
+    current_cursor: Option<u64>,
+) -> Result<Vec<IndexerJob>> {
     tracing::info!("No cursor found searching for the earliest block height");
+    let filter = Filter::default().address(client.contract.address());
+    let mut last_block = current_cursor.unwrap_or_default();
+    let mut event_list = vec![];
 
-    let filter = Filter::default()
-        .from_block(BlockNumber::Earliest)
-        .to_block(BlockNumber::Latest)
-        .address(contract_address);
+    loop {
+        let first_block = last_block + EVM_PAGE_SIZE;
 
-    // TODO: make sure it'll work with thousands of transactions; maybe apply paging?
-    match client
-        .contract
-        .client()
-        .get_logs(&filter)
-        .await?
-        .iter()
-        .filter_map(|x| x.block_number.as_ref().map(|bn| bn.as_u64()))
-        .next()
-    {
-        Some(block_number) => {
-            tracing::info!(block_number, "Earliest block height found");
-            Ok(IndexerState::CheckForUpdates {
-                cursor: IndexingCursor::Block(block_number),
-            })
+        let logs = client
+            .contract
+            .client()
+            .get_logs(&filter.clone().from_block(last_block).to_block(first_block))
+            .await
+            .expect("Failed to fetch logs");
+
+        if logs.is_empty() {
+            break;
         }
-        None => Ok(IndexerState::Stopped {
-            message: "No valid transactions found on the contract address".to_string(),
-        }),
+
+        logs.into_iter().for_each(|log| {
+            event_list.push(IndexerJob::Log(log));
+        });
+
+        last_block = first_block;
     }
-}
 
-pub(super) async fn update_evm_block(
-    client: &HapiCoreEvm,
-    last_block: u64,
-    contract_address: Address,
-) -> Result<(IndexerState, Vec<IndexerJob>)> {
-    let current = client.contract.client().get_block_number().await?.as_u64();
-    if last_block < current {
-        tracing::info!(from = last_block, to = current, "New blocks found");
-
-        let filter = Filter::default()
-            .from_block(BlockNumber::Number(last_block.into()))
-            .to_block(BlockNumber::Number(current.into()))
-            .address(contract_address);
-
-        // TODO: if fetching fails - stop the indexer - test it
-        let mut jobs = vec![];
-
-        for log in client.contract.client().get_logs(&filter).await? {
-            let log_header = client.decode_event(&log)?;
-
-            tracing::info!(
-                name = log_header.name,
-                tx = ?log.transaction_hash,
-                block = ?log.block_number,
-                tokens = ?log_header.tokens,
-                "Found event",
-            );
-            jobs.push(IndexerJob::Log(log))
-        }
-
-        Ok((
-            IndexerState::Processing {
-                cursor: IndexingCursor::Block(current),
-            },
-            jobs,
-        ))
-    } else {
-        tracing::debug!("No new events found, waiting for new blocks");
-        Ok((
-            IndexerState::Waiting {
-                until: now()? + client.provider.get_interval().as_secs(),
-                cursor: IndexingCursor::Block(last_block),
-            },
-            Vec::new(),
-        ))
-    }
-}
-
-pub(super) async fn update_evm_transaction(
-    client: &HapiCoreEvm,
-    hash: String,
-) -> Result<IndexerState> {
-    match client
-        .contract
-        .client()
-        .get_transaction(hash.parse::<H256>()?)
-        .await?
-    {
-        Some(_) => {
-            tracing::info!(tx = hash, "Found transaction");
-            Ok(IndexerState::Processing {
-                cursor: IndexingCursor::Transaction(hash),
-            })
-        }
-        None => {
-            tracing::error!(tx = hash, "Transaction not found");
-            Ok(IndexerState::Stopped {
-                message: format!("Transaction '{hash}' not found"),
-            })
-        }
-    }
+    return Ok(event_list);
 }
 
 pub(super) async fn process_evm_job_log(

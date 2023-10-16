@@ -1,14 +1,13 @@
 use {
     anyhow::Result,
-    ethers::types::Address,
     hapi_core::{HapiCoreEvm, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
 };
 
 use super::{
-    evm::{process_evm_job_log, update_evm_block, update_evm_empty_cursor, update_evm_transaction},
+    evm::{process_evm_job_log, update_evm_cursor},
     push::PushPayload,
-    solana::process_solana_job,
-    IndexerJob, IndexerState,
+    solana::{process_solana_job, update_solana_cursor},
+    IndexerJob, IndexingCursor,
 };
 
 pub(crate) enum IndexerClient {
@@ -42,32 +41,21 @@ impl IndexerClient {
         }
     }
 
-    pub(super) async fn handle_update_cursor(
-        &self,
-        contract_address: Address,
-    ) -> Result<IndexerState> {
-        match self {
-            IndexerClient::Evm(client) => update_evm_empty_cursor(client, contract_address).await,
-            _ => unimplemented!(),
-        }
-    }
-
-    pub(super) async fn handle_update_block(
-        &self,
-        last_block: u64,
-        contract_address: Address,
-    ) -> Result<(IndexerState, Vec<IndexerJob>)> {
-        match self {
-            IndexerClient::Evm(client) => {
-                update_evm_block(client, last_block, contract_address).await
+    pub(super) async fn handle_update(&self, cursor: &IndexingCursor) -> Result<Vec<IndexerJob>> {
+        match (self, cursor) {
+            (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
+                update_evm_cursor(client, Some(n.clone())).await
             }
-            _ => unimplemented!(),
-        }
-    }
+            (IndexerClient::Evm(client), IndexingCursor::None) => {
+                update_evm_cursor(client, None).await
+            }
 
-    pub(super) async fn handle_update_transaction(&self, hash: String) -> Result<IndexerState> {
-        match self {
-            IndexerClient::Evm(client) => update_evm_transaction(client, hash).await,
+            (IndexerClient::Solana(client), IndexingCursor::Transaction(tx)) => {
+                update_solana_cursor(client, Some(&tx)).await
+            }
+            (IndexerClient::Solana(client), IndexingCursor::None) => {
+                update_solana_cursor(client, None).await
+            }
             _ => unimplemented!(),
         }
     }

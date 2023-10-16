@@ -1,6 +1,5 @@
 use {
-    anyhow::Result,
-    ethers::types::Address,
+    anyhow::{bail, Result},
     std::{
         collections::VecDeque,
         path::PathBuf,
@@ -19,7 +18,6 @@ impl Indexer {
     pub fn new(cfg: IndexerConfiguration) -> Result<Self> {
         tracing::info!(network = ?cfg.network, "Initializing indexer");
         Ok(Self {
-            contract_address: cfg.contract_address.clone(),
             wait_interval_ms: cfg.wait_interval_ms,
             state: Arc::new(Mutex::new(IndexerState::Init)),
             jobs: VecDeque::new(),
@@ -104,72 +102,65 @@ impl Indexer {
         })
     }
 
+    fn get_check_for_updates_state(
+        &self,
+        jobs: &Vec<IndexerJob>,
+        old_cursor: IndexingCursor,
+    ) -> Result<IndexerState> {
+        if let Some(job) = jobs.first() {
+            let cursor = IndexingCursor::try_from(job.clone())?;
+
+            tracing::info!(%cursor, "Earliest cursor found");
+
+            return Ok(IndexerState::Processing { cursor });
+        } else if IndexingCursor::None == old_cursor {
+            return Ok(IndexerState::Stopped {
+                message: "No valid transactions found on the contract address".to_string(),
+            });
+        }
+
+        Ok(IndexerState::Waiting {
+            until: now()? + self.wait_interval_ms.as_secs(),
+            cursor: old_cursor,
+        })
+    }
+
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        // TODO: make it more universal for all networks
-        let contract_address = self.contract_address.parse::<Address>()?;
+        let new_jobs = self.client.handle_update(&cursor).await?;
+        let state = self.get_check_for_updates_state(&new_jobs, cursor)?;
 
-        match cursor {
-            IndexingCursor::None => self.client.handle_update_cursor(contract_address).await,
-            IndexingCursor::Block(last_block) => {
-                let (state, new_jobs) = self
-                    .client
-                    .handle_update_block(last_block, contract_address)
-                    .await?;
+        self.jobs.extend(new_jobs);
 
-                self.jobs.extend(new_jobs);
-
-                Ok(state)
-            }
-            IndexingCursor::Transaction(hash) => {
-                let state = self.client.handle_update_transaction(hash.clone()).await?;
-                if let IndexerState::Processing { .. } = state {
-                    self.jobs.push_back(IndexerJob::Transaction(hash));
-                }
-
-                Ok(state)
-            }
-        }
+        Ok(state)
     }
 
     #[tracing::instrument(name = "process", skip(self))]
     async fn handle_process(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        // match (self.jobs.pop_front(), &self.client) {
-        //     (Some(IndexerJob::Log(log)), IndexerClient::Evm(client)) => {
-        //         self.process_evm_job_log(client, &log).await?;
-        //     }
-        //     (Some(job), ..) => {
-        //         tracing::warn!(?job, "Unsupported job type");
-        //     }
-        //     (None, ..) => {
-        //         tracing::trace!("No more jobs in the queue");
-        //         // TODO: check if there are new blocks
-        //         // Ok(IndexerState::CheckForUpdates { cursor })
-        //     }
-        // };
-
-        match self.jobs.pop_front() {
-            Some(job) => {
-                if let Some(payload) = self.client.handle_process(job).await? {
-                    for event in payload {
-                        self.send_webhook(&event).await?;
-                    }
+        if let Some(job) = self.jobs.pop_front() {
+            if let Some(payload) = self.client.handle_process(job).await? {
+                for event in payload {
+                    self.send_webhook(&event).await?;
                 }
             }
-            None => {
+
+            if let Some(next_job) = self.jobs.front() {
+                let new_cursor = IndexingCursor::try_from(next_job.clone())?;
+
+                PersistedState {
+                    cursor: new_cursor.clone(),
+                    jobs: self.jobs.clone(),
+                }
+                .to_file(&self.state_file)?;
+
+                return Ok(IndexerState::Processing { cursor: new_cursor });
+            } else {
                 tracing::trace!("No more jobs in the queue");
-                // TODO: check if there are new blocks
-                // Ok(IndexerState::CheckForUpdates { cursor })
+                return Ok(IndexerState::CheckForUpdates { cursor });
             }
         };
 
-        PersistedState {
-            cursor: cursor.clone(),
-            jobs: self.jobs.clone(),
-        }
-        .to_file(&self.state_file)?;
-
-        Ok(IndexerState::Processing { cursor })
+        bail!("Processing an empty queue")
     }
 
     #[tracing::instrument(name = "waiting", skip(self))]

@@ -1,10 +1,41 @@
-use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+
+use super::jobs::IndexerJob;
+use {
+    anyhow::{anyhow, Result},
+    serde::{Deserialize, Serialize},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub(crate) enum IndexingCursor {
     None,
     Block(u64),
     Transaction(String),
+}
+
+impl TryFrom<IndexerJob> for IndexingCursor {
+    type Error = anyhow::Error;
+
+    fn try_from(value: IndexerJob) -> Result<Self> {
+        match value {
+            IndexerJob::Transaction(tx) => Ok(IndexingCursor::Transaction(tx)),
+            IndexerJob::Log(log) => Ok(IndexingCursor::Block(
+                log.block_number
+                    .ok_or(anyhow!("Unable to parse block number"))?
+                    .as_u64(),
+            )),
+        }
+    }
+}
+
+impl Display for IndexingCursor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IndexingCursor::None => write!(f, "None"),
+            IndexingCursor::Block(block) => write!(f, "Block({})", block),
+            IndexingCursor::Transaction(tx) => write!(f, "Transaction({})", tx),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

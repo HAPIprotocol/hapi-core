@@ -30,9 +30,6 @@ fn now() -> Result<u64> {
 }
 
 pub(crate) struct Indexer {
-    /// Address of the indexed contract
-    contract_address: String,
-
     /// Current state of the indexer
     state: Arc<Mutex<IndexerState>>,
 
