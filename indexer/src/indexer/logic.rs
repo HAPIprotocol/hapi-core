@@ -102,8 +102,7 @@ impl Indexer {
         })
     }
 
-    // TODO: change stupid fn name
-    fn get_check_for_updates_state(
+    fn get_updated_state(
         &self,
         jobs: &Vec<IndexerJob>,
         old_cursor: IndexingCursor,
@@ -129,7 +128,7 @@ impl Indexer {
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
         let new_jobs = self.client.fetch_jobs(&cursor).await?;
-        let state = self.get_check_for_updates_state(&new_jobs, cursor)?;
+        let state = self.get_updated_state(&new_jobs, cursor)?;
 
         self.jobs.extend(new_jobs);
 

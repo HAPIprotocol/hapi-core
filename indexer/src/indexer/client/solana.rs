@@ -22,11 +22,10 @@ use crate::indexer::{
 
 const SOLANA_BATCH_SIZE: usize = 500;
 
-// TODO: add valid indexes
-const REPORTER_ACCOUNT_INDEX: usize = 1;
-const CASE_ACCOUNT_INDEX: usize = 1;
-const ADDRESS_ACCOUNT_INDEX: usize = 1;
-const ASSET_ACCOUNT_INDEX: usize = 1;
+const REPORTER_ACCOUNT_INDEX: usize = 3;
+const CASE_ACCOUNT_INDEX: usize = 4;
+const ADDRESS_ACCOUNT_INDEX: usize = 5;
+const ASSET_ACCOUNT_INDEX: usize = 5;
 
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
