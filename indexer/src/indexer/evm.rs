@@ -17,18 +17,24 @@ pub(super) async fn update_evm_cursor(
     client: &HapiCoreEvm,
     current_cursor: Option<u64>,
 ) -> Result<Vec<IndexerJob>> {
-    tracing::info!("No cursor found searching for the earliest block height");
     let filter = Filter::default().address(client.contract.address());
-    let mut last_block = current_cursor.unwrap_or_default();
+    //TODO: fix tracing
+    tracing::info!("No cursor found searching for the earliest block height");
+    let mut earliest_block = current_cursor.unwrap_or_default();
     let mut event_list = vec![];
 
     loop {
-        let first_block = last_block + EVM_PAGE_SIZE;
+        let next_block = earliest_block + EVM_PAGE_SIZE;
 
         let logs = client
             .contract
             .client()
-            .get_logs(&filter.clone().from_block(last_block).to_block(first_block))
+            .get_logs(
+                &filter
+                    .clone()
+                    .from_block(earliest_block)
+                    .to_block(next_block),
+            )
             .await
             .expect("Failed to fetch logs");
 
@@ -40,13 +46,13 @@ pub(super) async fn update_evm_cursor(
             event_list.push(IndexerJob::Log(log));
         });
 
-        last_block = first_block;
+        earliest_block = next_block;
     }
 
     return Ok(event_list);
 }
 
-pub(super) async fn process_evm_job_log(
+pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
 ) -> Result<Option<Vec<PushPayload>>> {

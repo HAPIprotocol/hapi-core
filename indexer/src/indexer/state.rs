@@ -56,7 +56,10 @@ impl IndexerState {
     pub fn transition(&mut self, new_state: Self) -> bool {
         match self {
             // Already stopped, don't proceed
-            IndexerState::Stopped { .. } => false,
+            IndexerState::Stopped { message } => {
+                tracing::info!(message, "Indexer stopped");
+                false
+            }
 
             // If the new state is waiting, and the current state is also waiting, just move on
             IndexerState::Waiting { .. } if matches!(new_state, IndexerState::Waiting { .. }) => {

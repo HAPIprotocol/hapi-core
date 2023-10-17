@@ -4,7 +4,7 @@ use {
 };
 
 use super::{
-    evm::{process_evm_job_log, update_evm_cursor},
+    evm::{process_evm_job, update_evm_cursor},
     push::PushPayload,
     solana::{process_solana_job, update_solana_cursor},
     IndexerJob, IndexingCursor,
@@ -63,7 +63,7 @@ impl IndexerClient {
     pub(super) async fn handle_process(&self, job: IndexerJob) -> Result<Option<Vec<PushPayload>>> {
         match (self, job) {
             (IndexerClient::Evm(client), IndexerJob::Log(log)) => {
-                process_evm_job_log(client, &log).await
+                process_evm_job(client, &log).await
             }
             (IndexerClient::Solana(client), IndexerJob::Transaction(hash)) => {
                 process_solana_job(client, &hash).await

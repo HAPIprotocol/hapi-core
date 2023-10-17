@@ -4,6 +4,8 @@ use {
     solana_sdk::commitment_config::CommitmentConfig, std::str::FromStr,
 };
 
+use std::collections::VecDeque;
+
 use hapi_core::{
     client::{
         entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
@@ -32,7 +34,7 @@ pub(super) async fn update_solana_cursor(
     current_cursor: Option<&str>,
 ) -> Result<Vec<IndexerJob>> {
     tracing::info!("No cursor found searching for the earliest transaction");
-    let mut signature_list = vec![];
+    let mut signature_list = VecDeque::new();
     let mut recent_tx = None;
 
     let signature_cursor = if let Some(cursor) = current_cursor {
@@ -49,27 +51,23 @@ pub(super) async fn update_solana_cursor(
             commitment: Some(CommitmentConfig::confirmed()),
         };
 
-        let mut signature_batch = client
+        let signature_batch = client
             .rpc_client
             .get_signatures_for_address_with_config(&client.program_id, config)
             .await?;
 
-        if let Some(last) = signature_batch.first() {
-            recent_tx = Some(Signature::from_str(&last.signature)?);
+        if let Some(recent) = signature_batch.last() {
+            recent_tx = Some(Signature::from_str(&recent.signature)?);
 
-            signature_batch.reverse();
-            signature_list.splice(..0, signature_batch);
+            for sign in signature_batch {
+                signature_list.push_front(IndexerJob::Transaction(sign.signature.to_string()));
+            }
         } else {
             break;
         }
     }
 
-    let signatures = signature_list
-        .iter()
-        .map(|tx| IndexerJob::Transaction(tx.signature.to_string()))
-        .collect();
-
-    return Ok(signatures);
+    return Ok(signature_list.into());
 }
 
 async fn get_instruction_data(

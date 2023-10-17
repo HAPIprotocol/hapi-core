@@ -30,7 +30,7 @@ impl Indexer {
 
     pub async fn run(&mut self) -> Result<()> {
         while let Some(new_state) = self.next().await? {
-            if !self.lock_transition(new_state)? {
+            if !self.check_transition(new_state)? {
                 break;
             }
         }
@@ -38,7 +38,7 @@ impl Indexer {
         Ok(())
     }
 
-    fn lock_transition(&mut self, new_state: IndexerState) -> Result<bool> {
+    fn check_transition(&mut self, new_state: IndexerState) -> Result<bool> {
         Ok(self
             .state
             .lock()
@@ -46,7 +46,7 @@ impl Indexer {
             .transition(new_state))
     }
 
-    fn lock_state(&self) -> Result<IndexerState> {
+    fn get_state(&self) -> Result<IndexerState> {
         Ok(self
             .state
             .lock()
@@ -55,7 +55,7 @@ impl Indexer {
     }
 
     async fn next(&mut self) -> Result<Option<IndexerState>> {
-        let new_state = match self.lock_state()? {
+        let new_state = match self.get_state()? {
             IndexerState::Init => Some(self.handle_init().await),
             IndexerState::CheckForUpdates { cursor } => {
                 Some(self.handle_check_for_updates(cursor).await)
