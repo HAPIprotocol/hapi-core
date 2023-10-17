@@ -72,13 +72,15 @@ struct StopOutput {
     success: bool,
 }
 
-async fn stop(State(shared_state): State<Arc<Mutex<IndexerState>>>) -> Json<StopOutput> {
+async fn stop(
+    State(shared_state): State<Arc<Mutex<IndexerState>>>,
+) -> Result<Json<StopOutput>, axum::http::StatusCode> {
     shared_state
         .lock()
-        .unwrap()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .transition(IndexerState::Stopped {
             message: "Stopped by user".to_string(),
         });
 
-    Json(StopOutput { success: true })
+    Ok(Json(StopOutput { success: true }))
 }

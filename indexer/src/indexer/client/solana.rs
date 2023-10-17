@@ -1,22 +1,21 @@
 use {
-    anyhow::Result, hapi_core::HapiCoreSolana,
-    solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
-    solana_sdk::commitment_config::CommitmentConfig, std::str::FromStr,
-};
-
-use std::collections::VecDeque;
-
-use hapi_core::{
-    client::{
-        entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
-        events::EventName,
-        solana::DecodedInstruction,
+    anyhow::Result,
+    hapi_core::HapiCoreSolana,
+    hapi_core::{
+        client::{
+            entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
+            events::EventName,
+            solana::DecodedInstruction,
+        },
+        get_solana_account,
     },
-    get_solana_account,
+    solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
+    solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
+    std::collections::VecDeque,
+    std::str::FromStr,
 };
-use solana_sdk::{pubkey::Pubkey, signature::Signature};
 
-use super::{
+use crate::indexer::{
     push::{PushData, PushEvent, PushPayload},
     IndexerJob,
 };
@@ -29,7 +28,7 @@ const CASE_ACCOUNT_INDEX: usize = 1;
 const ADDRESS_ACCOUNT_INDEX: usize = 1;
 const ASSET_ACCOUNT_INDEX: usize = 1;
 
-pub(super) async fn update_solana_cursor(
+pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: Option<&str>,
 ) -> Result<Vec<IndexerJob>> {
@@ -42,6 +41,11 @@ pub(super) async fn update_solana_cursor(
     } else {
         None
     };
+
+    tracing::info!(
+        current_cursor = %current_cursor.unwrap_or("Latest"),
+        "Fetching solana jobs"
+    );
 
     loop {
         let config = GetConfirmedSignaturesForAddress2Config {

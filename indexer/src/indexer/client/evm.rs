@@ -6,22 +6,22 @@ use {
     uuid::Uuid,
 };
 
-use super::{
+use crate::indexer::{
     push::{PushData, PushEvent, PushPayload},
     IndexerJob,
 };
 
 const EVM_PAGE_SIZE: u64 = 100;
 
-pub(super) async fn update_evm_cursor(
+pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
     current_cursor: Option<u64>,
 ) -> Result<Vec<IndexerJob>> {
     let filter = Filter::default().address(client.contract.address());
-    //TODO: fix tracing
-    tracing::info!("No cursor found searching for the earliest block height");
     let mut earliest_block = current_cursor.unwrap_or_default();
     let mut event_list = vec![];
+
+    tracing::info!(earliest_block, "Fetching evm jobs");
 
     loop {
         let next_block = earliest_block + EVM_PAGE_SIZE;

@@ -102,6 +102,7 @@ impl Indexer {
         })
     }
 
+    // TODO: change stupid fn name
     fn get_check_for_updates_state(
         &self,
         jobs: &Vec<IndexerJob>,
@@ -113,7 +114,7 @@ impl Indexer {
             tracing::info!(%cursor, "Earliest cursor found");
 
             return Ok(IndexerState::Processing { cursor });
-        } else if IndexingCursor::None == old_cursor {
+        } else if old_cursor == IndexingCursor::None {
             return Ok(IndexerState::Stopped {
                 message: "No valid transactions found on the contract address".to_string(),
             });
@@ -127,7 +128,7 @@ impl Indexer {
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        let new_jobs = self.client.handle_update(&cursor).await?;
+        let new_jobs = self.client.fetch_jobs(&cursor).await?;
         let state = self.get_check_for_updates_state(&new_jobs, cursor)?;
 
         self.jobs.extend(new_jobs);

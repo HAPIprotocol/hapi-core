@@ -4,11 +4,11 @@ use {
 };
 
 use super::{
-    evm::{process_evm_job, update_evm_cursor},
-    push::PushPayload,
-    solana::{process_solana_job, update_solana_cursor},
-    IndexerJob, IndexingCursor,
+    evm::{fetch_evm_jobs, process_evm_job},
+    solana::{fetch_solana_jobs, process_solana_job},
 };
+
+use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
 
 pub(crate) enum IndexerClient {
     Evm(HapiCoreEvm),
@@ -41,26 +41,26 @@ impl IndexerClient {
         }
     }
 
-    pub(super) async fn handle_update(&self, cursor: &IndexingCursor) -> Result<Vec<IndexerJob>> {
+    pub(crate) async fn fetch_jobs(&self, cursor: &IndexingCursor) -> Result<Vec<IndexerJob>> {
         match (self, cursor) {
             (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
-                update_evm_cursor(client, Some(n.clone())).await
+                fetch_evm_jobs(client, Some(n.clone())).await
             }
             (IndexerClient::Evm(client), IndexingCursor::None) => {
-                update_evm_cursor(client, None).await
+                fetch_evm_jobs(client, None).await
             }
 
             (IndexerClient::Solana(client), IndexingCursor::Transaction(tx)) => {
-                update_solana_cursor(client, Some(&tx)).await
+                fetch_solana_jobs(client, Some(&tx)).await
             }
             (IndexerClient::Solana(client), IndexingCursor::None) => {
-                update_solana_cursor(client, None).await
+                fetch_solana_jobs(client, None).await
             }
             _ => unimplemented!(),
         }
     }
 
-    pub(super) async fn handle_process(&self, job: IndexerJob) -> Result<Option<Vec<PushPayload>>> {
+    pub(crate) async fn handle_process(&self, job: IndexerJob) -> Result<Option<Vec<PushPayload>>> {
         match (self, job) {
             (IndexerClient::Evm(client), IndexerJob::Log(log)) => {
                 process_evm_job(client, &log).await
