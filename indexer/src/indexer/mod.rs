@@ -27,7 +27,7 @@ fn now() -> Result<u64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
 }
 
-pub(crate) struct Indexer {
+pub struct Indexer {
     /// Current state of the indexer
     state: Arc<Mutex<IndexerState>>,
 

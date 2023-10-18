@@ -1,7 +1,13 @@
 [package]
-name = "hapi-indexer"
+name = "hapi_indexer"
+authors = ["HAPI"]
 version = "0.1.0"
 edition = "2021"
+description = "Indexer for HAPI Protocol contracts"
+
+[lib]
+crate-type = ["lib"]
+name = "hapi_indexer"
 
 [dependencies]
 hapi-core-cli = { path = "../client.rs" }

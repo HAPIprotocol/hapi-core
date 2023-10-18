@@ -3,13 +3,15 @@ use {
     tokio::{task::spawn, try_join},
 };
 
-mod config;
+mod configuration;
 mod indexer;
 mod observability;
 
+pub use {configuration::IndexerConfiguration, indexer::Indexer};
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cfg = config::get_configuration()
+    let cfg = configuration::get_configuration()
         .map_err(|e| anyhow::anyhow!("Configuration parsing error: {e}"))?;
 
     if cfg.is_json_logging {

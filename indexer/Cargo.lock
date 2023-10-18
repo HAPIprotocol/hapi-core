@@ -2632,7 +2632,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "hapi-indexer"
+name = "hapi_core_solana"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "uuid 1.4.1",
+]
+
+[[package]]
+name = "hapi_indexer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2653,15 +2662,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "uuid 1.4.1",
-]
-
-[[package]]
-name = "hapi_core_solana"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
  "uuid 1.4.1",
 ]
 

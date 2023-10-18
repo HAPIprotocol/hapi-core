@@ -8,7 +8,7 @@ use {
     tokio::time::sleep,
 };
 
-use crate::config::IndexerConfiguration;
+use crate::configuration::IndexerConfiguration;
 
 use super::{
     now, Indexer, IndexerClient, IndexerJob, IndexerState, IndexingCursor, PersistedState,
