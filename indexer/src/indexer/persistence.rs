@@ -10,11 +10,9 @@ use {
 
 use super::{IndexerJob, IndexingCursor};
 
-// TODO: do we need to safe full job information?
 #[derive(Serialize, Deserialize)]
 pub struct PersistedState {
     pub(crate) cursor: IndexingCursor,
-    pub(crate) jobs: VecDeque<IndexerJob>,
 }
 
 impl PersistedState {

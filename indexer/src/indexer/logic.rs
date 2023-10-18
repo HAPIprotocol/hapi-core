@@ -84,11 +84,6 @@ impl Indexer {
         if let Ok(state) = PersistedState::from_file(&self.state_file) {
             tracing::info!("Found persisted state");
 
-            if !state.jobs.is_empty() {
-                tracing::info!(size = state.jobs.len(), "Found jobs in the queue");
-                self.jobs = state.jobs;
-            }
-
             if state.cursor != IndexingCursor::None {
                 tracing::info!(cursor = ?state.cursor, "Found cursor");
                 return Ok(IndexerState::CheckForUpdates {
@@ -149,7 +144,6 @@ impl Indexer {
 
                 PersistedState {
                     cursor: new_cursor.clone(),
-                    jobs: self.jobs.clone(),
                 }
                 .to_file(&self.state_file)?;
 
