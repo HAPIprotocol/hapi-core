@@ -2,17 +2,13 @@ use {
     anyhow::Result,
     axum::{
         extract::State,
-        http::StatusCode,
         routing::{get, put},
         Json, Router, Server,
     },
     serde::Serialize,
-    std::{
-        future::Future,
-        sync::{Arc, Mutex},
-        time::Duration,
-    },
+    std::{future::Future, sync::Arc, time::Duration},
     tokio::{
+        sync::Mutex,
         task::{spawn, JoinHandle},
         time::sleep,
     },
@@ -26,7 +22,7 @@ impl Indexer {
         async move {
             loop {
                 sleep(Duration::from_secs(1)).await;
-                if matches!(*shared_state.lock().unwrap(), IndexerState::Stopped { .. }) {
+                if matches!(*shared_state.lock().await, IndexerState::Stopped { .. }) {
                     break;
                 }
             }
@@ -56,15 +52,10 @@ struct GetStateOutput {
     state: IndexerState,
 }
 
-async fn get_state(
-    State(shared_state): State<Arc<Mutex<IndexerState>>>,
-) -> Result<Json<GetStateOutput>, axum::http::StatusCode> {
-    let state = shared_state
-        .lock()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .clone();
+async fn get_state(State(shared_state): State<Arc<Mutex<IndexerState>>>) -> Json<GetStateOutput> {
+    let state = shared_state.lock().await.clone();
 
-    Ok(Json(GetStateOutput { state }))
+    Json(GetStateOutput { state })
 }
 
 #[derive(Serialize)]
@@ -72,15 +63,10 @@ struct StopOutput {
     success: bool,
 }
 
-async fn stop(
-    State(shared_state): State<Arc<Mutex<IndexerState>>>,
-) -> Result<Json<StopOutput>, axum::http::StatusCode> {
-    shared_state
-        .lock()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .transition(IndexerState::Stopped {
-            message: "Stopped by user".to_string(),
-        });
+async fn stop(State(shared_state): State<Arc<Mutex<IndexerState>>>) -> Json<StopOutput> {
+    shared_state.lock().await.transition(IndexerState::Stopped {
+        message: "Stopped by user".to_string(),
+    });
 
-    Ok(Json(StopOutput { success: true }))
+    Json(StopOutput { success: true })
 }

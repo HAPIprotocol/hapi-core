@@ -2,13 +2,12 @@ use {
     anyhow::Result,
     serde::{Deserialize, Serialize},
     std::{
-        collections::VecDeque,
         fs,
         path::{Path, PathBuf},
     },
 };
 
-use super::{IndexerJob, IndexingCursor};
+use super::IndexingCursor;
 
 #[derive(Serialize, Deserialize)]
 pub struct PersistedState {

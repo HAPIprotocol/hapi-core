@@ -1,11 +1,7 @@
 use {
     anyhow::{bail, Result},
-    std::{
-        collections::VecDeque,
-        path::PathBuf,
-        sync::{Arc, Mutex},
-    },
-    tokio::time::sleep,
+    std::{collections::VecDeque, path::PathBuf, sync::Arc},
+    tokio::{sync::Mutex, time::sleep},
 };
 
 use crate::configuration::IndexerConfiguration;
@@ -30,7 +26,7 @@ impl Indexer {
 
     pub async fn run(&mut self) -> Result<()> {
         while let Some(new_state) = self.next().await? {
-            if !self.check_transition(new_state)? {
+            if !self.check_transition(new_state).await {
                 break;
             }
         }
@@ -38,24 +34,16 @@ impl Indexer {
         Ok(())
     }
 
-    fn check_transition(&mut self, new_state: IndexerState) -> Result<bool> {
-        Ok(self
-            .state
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Failed to acquire lock: {e:?}"))?
-            .transition(new_state))
+    async fn check_transition(&mut self, new_state: IndexerState) -> bool {
+        self.state.lock().await.transition(new_state)
     }
 
-    fn get_state(&self) -> Result<IndexerState> {
-        Ok(self
-            .state
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Failed to acquire lock: {e:?}"))?
-            .clone())
+    async fn get_state(&self) -> IndexerState {
+        self.state.lock().await.clone()
     }
 
     async fn next(&mut self) -> Result<Option<IndexerState>> {
-        let new_state = match self.get_state()? {
+        let new_state = match self.get_state().await {
             IndexerState::Init => Some(self.handle_init().await),
             IndexerState::CheckForUpdates { cursor } => {
                 Some(self.handle_check_for_updates(cursor).await)

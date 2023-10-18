@@ -3,9 +3,10 @@ use {
     std::{
         collections::VecDeque,
         path::PathBuf,
-        sync::{Arc, Mutex},
+        sync::Arc,
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
+    tokio::sync::Mutex,
 };
 
 pub(crate) mod client;
