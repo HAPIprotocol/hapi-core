@@ -1,4 +1,6 @@
-use near_sdk::Timestamp;
+use near_sdk::{json_types::U128, Timestamp};
+
+pub type UUID = U128;
 
 const NS: u64 = 1_000_000_000;
 

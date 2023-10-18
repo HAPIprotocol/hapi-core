@@ -43,12 +43,14 @@ pub trait HapiCore {
 
     async fn create_address(&self, input: CreateAddressInput) -> Result<Tx>;
     async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx>;
+    // TODO: add confirm_address method
     async fn get_address(&self, addr: &str) -> Result<Address>;
     async fn get_address_count(&self) -> Result<u64>;
     async fn get_addresses(&self, skip: u64, take: u64) -> Result<Vec<Address>>;
 
     async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx>;
     async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx>;
+    // TODO: add confirm_asset method
     async fn get_asset(&self, addr: &str, id: &AssetId) -> Result<Asset>;
     async fn get_asset_count(&self) -> Result<u64>;
     async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>>;
@@ -59,5 +61,6 @@ pub struct HapiCoreOptions {
     pub contract_address: String,
     pub private_key: Option<String>,
     pub chain_id: Option<u64>,
+    pub account_id: Option<String>,
     pub network: HapiCoreNetwork,
 }

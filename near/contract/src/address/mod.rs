@@ -10,6 +10,7 @@ mod management;
 mod v_address;
 mod view;
 pub use v_address::VAddress;
+pub use view::AddressView;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Address {

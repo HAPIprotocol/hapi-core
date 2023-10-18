@@ -29,34 +29,34 @@ async fn test_configuration() {
         .assert_success("update reward configuration");
 
     // view configuration
-    let (stake_configuration, reward_configuration): (StakeConfiguration, RewardConfiguration) =
-        context
-            .authority
-            .view(&context.contract.id(), "get_configuration")
-            .await
-            .parse("get_configuration");
+    let stake_configuration: StakeConfiguration = context
+        .authority
+        .view(&context.contract.id(), "get_stake_configuration")
+        .await
+        .parse("get_stake_configuration");
+
+    let reward_configuration: RewardConfiguration = context
+        .authority
+        .view(&context.contract.id(), "get_reward_configuration")
+        .await
+        .parse("get_reward_configuration");
 
     assert_eq!(
         stake_configuration.token, context.stake_token.id,
         "wrong stake token"
     );
     assert_eq!(
-        stake_configuration.stake_amounts.validator,
-        context
-            .get_stake_configuration()
-            .await
-            .stake_amounts
-            .validator,
+        stake_configuration.validator_stake,
+        context.get_stake_configuration().await.validator_stake,
         "wrong validator stake amount"
     );
     assert_eq!(reward_configuration.token, context.reward_token.id);
     assert_eq!(
-        reward_configuration.reward_amounts.address_confirmation,
+        reward_configuration.address_confirmation_reward,
         context
             .get_reward_configuration()
             .await
-            .reward_amounts
-            .address_confirmation,
+            .address_confirmation_reward,
         "wrong address confirmation reward amount"
     );
 
@@ -67,6 +67,19 @@ async fn test_configuration() {
         .transact()
         .await
         .assert_success("set authority");
+
+    // check authority
+    let authority: String = context
+        .authority
+        .view(&context.contract.id(), "get_authority")
+        .await
+        .parse("get_authority");
+
+    assert_eq!(
+        authority,
+        context.user_1.id().to_string(),
+        "wrong authority"
+    );
 }
 
 // All methods must be called not from authority.

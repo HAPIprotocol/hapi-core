@@ -27,6 +27,7 @@ impl IndexerClient {
             contract_address: contract_address.to_string(),
             private_key: None,
             chain_id: None,
+            account_id: None,
             network: network.clone(),
         };
 

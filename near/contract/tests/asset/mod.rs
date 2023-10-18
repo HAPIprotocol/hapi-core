@@ -7,13 +7,13 @@ use crate::{
     utils::{CallExecutionDetailsExtension, ViewResultDetailsExtension},
     ERROR_CASE_NOT_FOUND,
 };
-use hapi_core_near::Category;
 
 mod helpers;
-pub use helpers::Address;
+use hapi_core_near::Category;
+use helpers::Asset;
 
 #[tokio::test]
-async fn test_address() {
+async fn test_asset() {
     let context = TestContext::new().await;
 
     let validator_id = U128(Uuid::new_v4().as_u128());
@@ -34,14 +34,14 @@ async fn test_address() {
         .prepare_reporter(tracer_id, &context.user_1, Role::Tracer)
         .await;
 
-    // create address without existed case
+    // create asset without existed case
     context
         .user_1
-        .call(&context.contract.id(), "create_address")
-        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
+        .call(&context.contract.id(), "create_asset")
+        .args_json(json!({"address": "test.near","id": "10",  "category": "Scam", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
         .transact()
         .await
-        .assert_failure("create address", ERROR_CASE_NOT_FOUND);
+        .assert_failure("create asset", ERROR_CASE_NOT_FOUND);
 
     context
         .prepare_reporter(authority_id, &context.authority, Role::Authority)
@@ -56,56 +56,56 @@ async fn test_address() {
         .await
         .assert_success("create case");
 
-    // create address
+    // create asset
     context
         .user_1
-        .call(&context.contract.id(), "create_address")
-        .args_json(json!({"address": "test.near", "category": "TerroristFinancing", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
+        .call(&context.contract.id(), "create_asset")
+        .args_json(json!({"address": "test.near","id": "10", "category": "TerroristFinancing", "risk_score": 1, "case_id": case_id, "reporter_id": tracer_id}))
         .transact()
         .await
-        .assert_success("create address");
+        .assert_success("create asset");
 
     // prepare validator
     context
         .prepare_reporter(validator_id, &context.user_2, Role::Validator)
         .await;
 
-    // confirm address
+    // confirm asset
     context
         .user_2
-        .call(&context.contract.id(), "confirm_address")
-        .args_json(json!({"address": "test.near"}))
+        .call(&context.contract.id(), "confirm_asset")
+        .args_json(json!({"address": "test.near","id": "10"}))
         .transact()
         .await
-        .assert_success("confirm address");
+        .assert_success("confirm asset");
 
-    // check address
-    let address: Address = context
+    // check asset
+    let asset: Asset = context
         .user_1
-        .view(&context.contract.id(), "get_address")
-        .args_json(json!({"address": "test.near"}))
+        .view(&context.contract.id(), "get_asset")
+        .args_json(json!({"address": "test.near","id": "10"}))
         .await
-        .parse("get_address");
+        .parse("get_asset");
 
-    assert_eq!(address.confirmations_count, 1);
+    assert_eq!(asset.confirmations_count, 1);
 
-    // update address
+    // update asset
     context
         .authority
-        .call(&context.contract.id(), "update_address")
-        .args_json(json!({"address": "test.near", "category": "Scam", "risk_score": 5, "case_id": case_id}))
+        .call(&context.contract.id(), "update_asset")
+        .args_json(json!({"address": "test.near","id": "10", "category": "Scam", "risk_score": 5, "case_id": case_id}))
         .transact()
         .await
-        .assert_success("update address");
+        .assert_success("update asset");
 
-    // check address
-    let address: Address = context
+    // check asset
+    let asset: Asset = context
         .user_1
-        .view(&context.contract.id(), "get_address")
-        .args_json(json!({"address": "test.near"}))
+        .view(&context.contract.id(), "get_asset")
+        .args_json(json!({"address": "test.near","id": "10"}))
         .await
-        .parse("get_address");
+        .parse("get_asset");
 
-    assert_eq!(address.risk_score, 5);
-    assert_eq!(address.category, Category::Scam);
+    assert_eq!(asset.risk_score, 5);
+    assert_eq!(asset.category, Category::Scam);
 }

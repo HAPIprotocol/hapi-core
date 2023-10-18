@@ -3,9 +3,9 @@ use crate::{
     errors::ERROR_REPORTER_NOT_FOUND,
     utils::{CallExecutionDetailsExtension, GasExtension, ViewResultDetailsExtension},
     U128Extension, ERROR_REPORTER_IS_ACTIVE, ERROR_REPORTER_IS_INACTIVE,
-    ERROR_UNLOCK_DURATION_NOT_PASSED, INITIAL_USER_BALANCE, STAKE_AMOUNTS, UNLOCK_DURATION,
+    ERROR_UNLOCK_DURATION_NOT_PASSED, INITIAL_USER_BALANCE, PUBLISHER_STAKE, UNLOCK_DURATION,
 };
-use near_sdk::serde_json::json;
+use near_sdk::{json_types::U128, serde_json::json};
 
 mod helpers;
 pub use helpers::{Reporter, ReporterId, ReporterStatus, Role};
@@ -15,7 +15,7 @@ use uuid::Uuid;
 async fn test_reporter() {
     let context = TestContext::new().await;
 
-    let id = Uuid::new_v4();
+    let id = U128(Uuid::new_v4().as_u128());
 
     context
         .authority
@@ -29,7 +29,7 @@ async fn test_reporter() {
     context
         .authority
         .call(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .transact()
         .await
         .assert_failure("get reporter", ERROR_REPORTER_NOT_FOUND);
@@ -38,7 +38,7 @@ async fn test_reporter() {
     context
         .authority
         .call(&context.contract.id(), "create_reporter")
-        .args_json(json!({"id": id.to_string(), "account_id": context.user_1.id(), "name": "reporter", "role": "Publisher", "url": "reporter.com"}))
+        .args_json(json!({"id": id, "account_id": context.user_1.id(), "name": "reporter", "role": "Publisher", "url": "reporter.com"}))
         .transact()
         .await
         .assert_success("create reporter");
@@ -47,7 +47,7 @@ async fn test_reporter() {
     let reporter: Reporter = context
         .authority
         .view(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .await
         .parse("get_reporter");
 
@@ -56,11 +56,7 @@ async fn test_reporter() {
 
     // activate reporter
     context
-        .ft_transfer_call(
-            &context.user_1,
-            &context.stake_token,
-            STAKE_AMOUNTS.publisher.0,
-        )
+        .ft_transfer_call(&context.user_1, &context.stake_token, PUBLISHER_STAKE)
         .await
         .assert_success("activate reporter");
 
@@ -68,7 +64,7 @@ async fn test_reporter() {
     let reporter: Reporter = context
         .authority
         .view(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .await
         .parse("get_reporter");
 
@@ -78,7 +74,7 @@ async fn test_reporter() {
     context
         .authority
         .call(&context.contract.id(), "update_reporter")
-        .args_json(json!({"id": id.to_string(), "account_id": context.user_1.id(), "name": "reporter", "role": "Publisher", "url": "reporter.hapi"}))
+        .args_json(json!({"id": id, "account_id": context.user_1.id(), "name": "reporter", "role": "Publisher", "url": "reporter.hapi"}))
         .transact()
         .await
         .assert_success("update reporter");
@@ -87,7 +83,7 @@ async fn test_reporter() {
     let reporter: Reporter = context
         .authority
         .view(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .await
         .parse("get_reporter");
 
@@ -113,7 +109,7 @@ async fn test_reporter() {
     let reporter: Reporter = context
         .authority
         .view(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .await
         .parse("get_reporter");
 
@@ -144,7 +140,7 @@ async fn test_reporter() {
     let reporter: Reporter = context
         .authority
         .view(&context.contract.id(), "get_reporter")
-        .args_json(json!({"id": id.to_string()}))
+        .args_json(json!({ "id": id }))
         .await
         .parse("get_reporter");
 

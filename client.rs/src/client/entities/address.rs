@@ -24,4 +24,5 @@ pub struct Address {
     pub reporter_id: Uuid,
     pub risk: u8,
     pub category: Category,
+    // TODO: add confirmations_count
 }

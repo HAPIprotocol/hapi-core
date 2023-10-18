@@ -3,14 +3,14 @@ use near_sdk::{
     serde::{Deserialize, Serialize},
 };
 
-use crate::ReporterId;
+use crate::{utils::UUID, ReporterId};
 
 mod management;
 mod v_case;
 mod view;
 pub use v_case::VCase;
 
-pub type CaseId = String;
+pub type CaseId = UUID;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -19,12 +19,12 @@ pub enum CaseStatus {
     Open,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Case {
-    id: CaseId,
-    name: String,
-    reporter_id: ReporterId,
-    status: CaseStatus,
-    url: String,
+    pub id: CaseId,
+    pub name: String,
+    pub reporter_id: ReporterId,
+    pub status: CaseStatus,
+    pub url: String,
 }

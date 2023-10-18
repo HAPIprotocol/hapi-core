@@ -1,7 +1,7 @@
 use near_sdk::{collections::UnorderedSet, env, near_bindgen, require, AccountId};
 
 use crate::{
-    reporter::Role, CaseId, Category, Contract, ContractExt, RiskScore, StorageKey,
+    case::CaseId, reporter::Role, Category, Contract, ContractExt, RiskScore, StorageKey,
     ERROR_ADDRESS_ALREADY_EXISTS, ERROR_ALREADY_CONFIRMED, ERROR_CASE_NOT_FOUND,
     ERROR_INVALID_RISK_SCORE, ERROR_INVALID_ROLE, ERROR_REPORTER_IS_INACTIVE,
 };

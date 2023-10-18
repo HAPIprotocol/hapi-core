@@ -8,6 +8,7 @@ mod solana;
 
 use solana::setup::Setup;
 
+use solana::fixtures::{ADDRESS_ADDR_1, ASSET_ADDR_1};
 use common_fixtures::*;
 
 #[tokio::test(flavor = "multi_thread")]
@@ -167,11 +168,11 @@ async fn solana_cli_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": authority_pubkey,
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -241,11 +242,11 @@ async fn solana_cli_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_2,
             "account": &publisher_pubkey,
-            "role": "publisher",
+            "role": "Publisher",
             "name": "HAPI Publisher",
             "url": "https://hapi.one/reporter/publisher",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -266,21 +267,21 @@ async fn solana_cli_works() {
             {
                 "id": REPORTER_UUID_1,
                 "account": authority_pubkey,
-                "role": "authority",
+                "role": "Authority",
                 "name": "HAPI Authority",
                 "url": "https://hapi.one/reporter/authority",
                 "stake": authority_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             },
             {
                 "id": REPORTER_UUID_2,
                 "account": publisher_pubkey,
-                "role": "publisher",
+                "role": "Publisher",
                 "name": "HAPI Publisher",
                 "url": "https://hapi.one/reporter/publisher",
                 "stake": publisher_stake.to_string(),
-                "status": "active",
+                "status": "Active",
                 "unlock_timestamp": 0
             }
         ]}),
@@ -300,7 +301,8 @@ async fn solana_cli_works() {
             "id": CASE_UUID_1,
             "name": CASE_NAME_1,
             "url": CASE_URL_1,
-            "status": "open",
+            "status": "Open",
+            "reporter_id": REPORTER_UUID_1,
         }})
     );
 
@@ -325,7 +327,7 @@ async fn solana_cli_works() {
             "case_id": CASE_UUID_1,
             "reporter_id": REPORTER_UUID_1,
             "risk": 5,
-            "category": "ransomware",
+            "category": ADDRESS_CATEGORY_1,
         }})
     );
 
@@ -341,7 +343,7 @@ async fn solana_cli_works() {
                 "case_id": CASE_UUID_1,
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 5,
-                "category": "ransomware",
+                "category": ADDRESS_CATEGORY_1,
             }
         ]})
     );
@@ -364,7 +366,7 @@ async fn solana_cli_works() {
             "case_id": CASE_UUID_1,
             "reporter_id": REPORTER_UUID_1,
             "risk": 6,
-            "category": "scam",
+            "category": "Scam",
         }})
     );
 
@@ -392,7 +394,7 @@ async fn solana_cli_works() {
                 "case_id": CASE_UUID_1,
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 7,
-                "category": "counterfeit",
+                "category": ASSET_CATEGORY_1,
             }
         ]})
     );
@@ -425,7 +427,8 @@ async fn solana_cli_works() {
             "id": CASE_UUID_1,
             "name": "closed case",
             "url": "https://hapi.one/case/closed",
-            "status": "closed",
+            "status": "Closed",
+            "reporter_id": REPORTER_UUID_1,
         }})
     );
 
@@ -442,11 +445,11 @@ async fn solana_cli_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": authority_pubkey,
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": authority_stake.to_string(),
-            "status": "unstaking",
+            "status": "Unstaking",
             "unlock_timestamp": unlock_timestamp
         }})
     );
@@ -470,11 +473,11 @@ async fn solana_cli_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_1,
             "account": authority_pubkey,
-            "role": "authority",
+            "role": "Authority",
             "name": "HAPI Authority",
             "url": "https://hapi.one/reporter/authority",
             "stake": "0",
-            "status": "inactive",
+            "status": "Inactive",
             "unlock_timestamp": 0
         }})
     );
@@ -496,11 +499,11 @@ async fn solana_cli_works() {
         json!({ "reporter": {
             "id": REPORTER_UUID_2,
             "account": publisher_pubkey,
-            "role": "publisher",
+            "role": "Publisher",
             "name": "HAPI Publisher+",
             "url": "https://hapi.one/reporter/new_publisher",
             "stake": "12",
-            "status": "active",
+            "status": "Active",
             "unlock_timestamp": 0
         }})
     );

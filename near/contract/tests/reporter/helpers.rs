@@ -1,4 +1,7 @@
-use crate::{utils::CallExecutionDetailsExtension, STAKE_AMOUNTS};
+use crate::{
+    utils::CallExecutionDetailsExtension, AUTHORITY_STAKE, PUBLISHER_STAKE, TRACER_STAKE,
+    VALIDATOR_STAKE,
+};
 use near_sdk::{
     json_types::U128,
     serde::{Deserialize, Serialize},
@@ -8,7 +11,7 @@ use near_sdk::{
 use workspaces::Account;
 
 use crate::context::TestContext;
-pub type ReporterId = String;
+pub type ReporterId = U128;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
@@ -42,22 +45,21 @@ pub struct Reporter {
 }
 
 impl TestContext {
-    pub async fn prepare_reporter(&self, id: uuid::Uuid, account: &Account, role: Role) {
+    pub async fn prepare_reporter(&self, id: U128, account: &Account, role: Role) {
         let (role_str, amount) = match role {
-            Role::Validator => ("Validator", STAKE_AMOUNTS.validator),
-            Role::Tracer => ("Tracer", STAKE_AMOUNTS.tracer),
-            Role::Publisher => ("Publisher", STAKE_AMOUNTS.publisher),
-            Role::Authority => ("Authority", STAKE_AMOUNTS.authority),
+            Role::Validator => ("Validator", U128(VALIDATOR_STAKE)),
+            Role::Tracer => ("Tracer", U128(TRACER_STAKE)),
+            Role::Publisher => ("Publisher", U128(PUBLISHER_STAKE)),
+            Role::Authority => ("Authority", U128(AUTHORITY_STAKE)),
             Role::Appraiser => ("Appraiser", U128(0)),
         };
 
-        self
-        .authority
-        .call(&self.contract.id(), "create_reporter")
-        .args_json(json!({"id": id.to_string(), "account_id": account.id(), "name": role_str, "role": role_str, "url": role_str.to_lowercase() + ".com"}))
-        .transact()
-        .await
-        .assert_success("create reporter");
+        self.authority
+            .call(&self.contract.id(), "create_reporter")
+            .args_json(json!({"id": id, "account_id": account.id(), "name": role_str, "role": role_str, "url": role_str.to_lowercase() + ".com"}))
+            .transact()
+            .await
+            .assert_success("create reporter");
 
         if amount.0 > 0 {
             self.ft_transfer_call(account, &self.stake_token, amount.0)
