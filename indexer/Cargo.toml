@@ -46,3 +46,9 @@ branch = "update-dependencies"
 [dependencies.hapi_core_solana]
 path = "../solana/programs/hapi_core_solana"
 eatures = ["no-entrypoint"]
+
+
+[dev-dependencies]
+# jsonrpsee = { version = "0.20.2", features = ["jsonrpsee-http-client"] }
+
+mockito = "1.2"

@@ -118,7 +118,6 @@ impl HapiCoreSolana {
 
         if instruction_program_id == &self.program_id.to_string() {
             let buf = &bs58::decode(&instruction.data).into_vec()?;
-
             let sighash = &buf[..DISCRIMINATOR_SIZE];
 
             let name = if let Some(index) = self.hashes.iter().position(|hash| hash == sighash) {
@@ -212,103 +211,8 @@ fn decode_instruction_data(
 
 #[cfg(test)]
 mod tests {
-    use {
-        anchor_client::anchor_lang::AnchorSerialize,
-        solana_transaction_status::{
-            EncodedConfirmedTransactionWithStatusMeta, EncodedTransaction,
-            EncodedTransactionWithStatusMeta, UiMessage, UiRawMessage, UiTransaction,
-        },
-        spl_token::solana_program::message::MessageHeader,
-    };
-
-    use crate::{
-        client::solana::instruction_data::get_instruction_sighash, HapiCoreNetwork, HapiCoreOptions,
-    };
-
     use super::*;
-
-    const NETWORK: &str = "QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ";
-    const COMMUNITY: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
-    const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
-    const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
-
-    fn serialize<T: AnchorSerialize>(name: &str, data: T) -> Vec<u8> {
-        let mut instruction_data = get_instruction_sighash(name).to_vec();
-
-        let mut inner_data = Vec::new();
-        data.serialize(&mut instruction_data)
-            .expect("Failed to serialize update address data");
-
-        instruction_data.append(&mut inner_data);
-        instruction_data
-    }
-
-    fn create_instruction(name: &str, data: &InstructionData) -> UiCompiledInstruction {
-        let instruction_data = match data {
-            InstructionData::Decoded(data) => match data {
-                DecodedInstructionData::CreateNetwork(data) => serialize(name, data),
-                DecodedInstructionData::UpdateStakeConfiguration(data) => serialize(name, data),
-                DecodedInstructionData::UpdateRewardConfiguration(data) => serialize(name, data),
-                DecodedInstructionData::CreateReporter(data) => serialize(name, data),
-                DecodedInstructionData::UpdateReporter(data) => serialize(name, data),
-                DecodedInstructionData::CreateCase(data) => serialize(name, data),
-                DecodedInstructionData::UpdateCase(data) => serialize(name, data),
-                DecodedInstructionData::CreateAddress(data) => serialize(name, data),
-                DecodedInstructionData::UpdateAddress(data) => serialize(name, data),
-                DecodedInstructionData::ConfirmAddress(data) => serialize(name, data),
-                DecodedInstructionData::CreateAsset(data) => serialize(name, data),
-                DecodedInstructionData::UpdateAsset(data) => serialize(name, data),
-                DecodedInstructionData::ConfirmAsset(data) => serialize(name, data),
-                _ => get_instruction_sighash(name).to_vec(),
-            },
-            InstructionData::Raw(data) => serialize(name, data),
-        };
-
-        UiCompiledInstruction {
-            program_id_index: 0,
-            accounts: vec![0, 1, 2, 3],
-            data: bs58::encode(instruction_data).into_string(),
-            stack_height: None,
-        }
-    }
-
-    fn create_tx(data: &Vec<(&str, InstructionData)>) -> EncodedConfirmedTransactionWithStatusMeta {
-        let account_keys = vec![
-            String::from(PROGRAM_ID),
-            String::from(COMMUNITY),
-            String::from(NETWORK),
-            String::from(ADDRESS),
-        ];
-
-        let instructions = data
-            .iter()
-            .map(|(name, data)| create_instruction(name, data))
-            .collect();
-
-        EncodedConfirmedTransactionWithStatusMeta {
-
-            slot: 123,
-            transaction: EncodedTransactionWithStatusMeta {
-                transaction: EncodedTransaction::Json(UiTransaction {
-                    signatures: vec!["3AsdoALgZFuq2oUVWrDYhg2pNeaLJKPLf8hU2mQ6U8qJxeJ6hsrPVpMn9ma39DtfYCrDQSvngWRP8NnTpEhezJpE".to_string()],
-                    message: UiMessage::Raw(UiRawMessage {
-                        header: MessageHeader {
-                            num_required_signatures: 1,
-                            num_readonly_signed_accounts: 1,
-                            num_readonly_unsigned_accounts: 2,
-                        },
-                        account_keys,
-                        recent_blockhash: String::default(),
-                        instructions,
-                        address_table_lookups: None,
-                    }),
-                }),
-                meta: None,
-                version: None,
-            },
-            block_time: Some(123),
-        }
-    }
+    use crate::{client::solana::test_helpers::*, HapiCoreNetwork, HapiCoreOptions};
 
     fn get_cli(program_id: Option<String>) -> HapiCoreSolana {
         HapiCoreSolana::new(HapiCoreOptions {
@@ -316,9 +220,23 @@ mod tests {
             contract_address: program_id.unwrap_or(PROGRAM_ID.to_string()),
             private_key: None,
             chain_id: None,
+            account_id: None,
             network: HapiCoreNetwork::Solana,
         })
         .expect("Failed to initialize client")
+    }
+
+    fn get_transaction(
+        test_data: &Vec<(&str, InstructionData)>,
+    ) -> EncodedConfirmedTransactionWithStatusMeta {
+        create_test_tx(&test_data, "3AsdoALgZFuq2oUVWrDYhg2pNeaLJKPLf8hU2mQ6U8qJxeJ6hsrPVpMn9ma39DtfYCrDQSvngWRP8NnTpEhezJpE".to_string(),
+        vec![
+            String::from(PROGRAM_ID),
+            String::from("QDWdYo5JWQ96cCEgdBXpL6TVs5whScFSzVbZgobHLrQ"),
+            String::from("C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX"),
+            String::from("WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC"),
+        ]
+        )
     }
 
     #[test]
@@ -350,7 +268,7 @@ mod tests {
         .collect();
 
         let instructions = client
-            .decode_transaction(create_tx(&test_data))
+            .decode_transaction(get_transaction(&test_data))
             .expect("Failed to decode transaction");
 
         assert_eq!(instructions.len(), test_data.len());
@@ -467,7 +385,7 @@ mod tests {
         ];
 
         let instructions = client
-            .decode_transaction(create_tx(&test_data))
+            .decode_transaction(get_transaction(&test_data))
             .expect("Failed to decode transaction");
 
         assert_eq!(instructions.len(), test_data.len());
@@ -483,7 +401,7 @@ mod tests {
         let client = get_cli(None);
 
         let instructions = client
-            .decode_transaction(create_tx(&vec![(
+            .decode_transaction(get_transaction(&vec![(
                 "unknown_instruction",
                 InstructionData::Raw(String::from("Some data")),
             )]))
@@ -499,7 +417,7 @@ mod tests {
         ));
 
         let instructions = client
-            .decode_transaction(create_tx(&vec![(
+            .decode_transaction(get_transaction(&vec![(
                 "unstake",
                 InstructionData::Raw(String::from("Some data")),
             )]))

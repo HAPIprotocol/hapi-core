@@ -1,7 +1,10 @@
+use hapi_core::client::entities::{address::Address, asset::Asset, case::Case, reporter::Reporter};
 use hapi_core::HapiCoreNetwork;
 use hapi_indexer::{configuration::IndexerConfiguration, Indexer};
 use std::time::Duration;
 use tokio::{spawn, time::sleep, try_join};
+
+mod mocks;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn indexer_test() {

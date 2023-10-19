@@ -20,7 +20,7 @@ use crate::indexer::{
     IndexerJob,
 };
 
-const SOLANA_BATCH_SIZE: usize = 500;
+pub const SOLANA_BATCH_SIZE: usize = 500;
 
 const REPORTER_ACCOUNT_INDEX: usize = 3;
 const CASE_ACCOUNT_INDEX: usize = 4;

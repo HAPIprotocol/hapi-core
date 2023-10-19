@@ -11,7 +11,7 @@ use crate::indexer::{
     IndexerJob,
 };
 
-const EVM_PAGE_SIZE: u64 = 100;
+pub const EVM_PAGE_SIZE: u64 = 100;
 
 pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
