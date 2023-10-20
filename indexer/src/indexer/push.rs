@@ -103,7 +103,7 @@ mod tests {
 
         assert_eq!(
             json,
-            r#"{"event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":1690888679},"data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","risk":0,"category":"none"}}}"#
+            r#"{"event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":1690888679},"data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","risk":0,"category":"None"}}}"#
         );
 
         // Deserialize the JSON back into a PushPayload
