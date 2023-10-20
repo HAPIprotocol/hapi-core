@@ -1,8 +1,27 @@
-use super::{RpcMock, TestEvent};
+use {hapi_core::HapiCoreNetwork, mockito::ServerGuard};
+
+use super::{RpcMock, TestBatch};
 
 pub struct EvmMock;
 
 impl RpcMock for EvmMock {
-    fn fetching_jobs_mock(server: &mut Server, batches: &[&[&str]]) {}
-    fn processing_jobs_mock(server: &mut Server, events: &[TestEvent]) {}
+    fn get_contract_address() -> String {
+        unimplemented!();
+    }
+
+    fn get_network() -> HapiCoreNetwork {
+        unimplemented!();
+    }
+
+    fn fetching_jobs_mock(
+        _server: &mut ServerGuard,
+        _batches: &TestBatch,
+        _cursor: Option<String>,
+    ) {
+        unimplemented!();
+    }
+
+    fn processing_jobs_mock(_server: &mut ServerGuard, _batches: &TestBatch) {
+        unimplemented!();
+    }
 }

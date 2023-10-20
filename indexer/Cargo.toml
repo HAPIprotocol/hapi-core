@@ -43,12 +43,17 @@ branch = "update-dependencies"
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
 
+[dependencies.solana-account-decoder]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
 [dependencies.hapi_core_solana]
 path = "../solana/programs/hapi_core_solana"
 eatures = ["no-entrypoint"]
 
-
 [dev-dependencies]
-# jsonrpsee = { version = "0.20.2", features = ["jsonrpsee-http-client"] }
-
 mockito = "1.2"
+
+[dev-dependencies.anchor-lang]
+git = "https://github.com/hlgltvnnk/anchor.git"
+branch = "update-dependencies"

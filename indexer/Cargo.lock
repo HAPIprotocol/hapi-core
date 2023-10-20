@@ -2907,6 +2907,7 @@ dependencies = [
 name = "hapi_indexer"
 version = "0.1.0"
 dependencies = [
+ "anchor-lang",
  "anyhow",
  "axum",
  "config",
@@ -2920,6 +2921,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 3.4.0",
+ "solana-account-decoder",
  "solana-client",
  "solana-sdk",
  "solana-transaction-status",
