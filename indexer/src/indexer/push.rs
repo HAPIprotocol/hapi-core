@@ -28,7 +28,7 @@ pub struct PushEvent {
     pub timestamp: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum PushData {
     Address(Address),
     Asset(Asset),

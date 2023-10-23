@@ -4,17 +4,16 @@ use {
         client::solana::{test_helpers::create_test_tx, InstructionData},
         HapiCoreNetwork,
     },
-    hapi_indexer::{PushPayload, SOLANA_BATCH_SIZE},
+    hapi_indexer::{IndexingCursor, PushData, PushEvent, SOLANA_BATCH_SIZE},
     mockito::{Matcher, ServerGuard},
     serde_json::{json, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
     solana_sdk::{account::Account, pubkey::Pubkey},
     solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
-    std::io::BufWriter,
     std::str::FromStr,
 };
 
-use hapi_indexer::{PushData, PushEvent};
+use core::panic;
 
 use super::{RpcMock, TestBatch};
 
@@ -35,7 +34,7 @@ impl RpcMock for SolanaMock {
         HapiCoreNetwork::Solana
     }
 
-    fn fetching_jobs_mock(server: &mut ServerGuard, batch: &TestBatch, cursor: Option<String>) {
+    fn fetching_jobs_mock(server: &mut ServerGuard, batch: &TestBatch, cursor: &IndexingCursor) {
         SolanaMock::mock_batches(server, batch, cursor);
     }
 
@@ -71,7 +70,14 @@ impl SolanaMock {
         )
     }
 
-    fn mock_batches(server: &mut ServerGuard, batch: &TestBatch, cursor: Option<String>) {
+    fn mock_batches(server: &mut ServerGuard, batch: &TestBatch, cursor: &IndexingCursor) {
+        // TODO: will it work with option?
+        let until = match cursor {
+            IndexingCursor::None => None,
+            IndexingCursor::Transaction(tx) => Some(tx.to_string()),
+            IndexingCursor::Block(_) => panic!("Invalid cursor"),
+        };
+
         let signatures: Vec<Value> = batch
             .iter()
             .map(|payload| {
@@ -98,7 +104,7 @@ impl SolanaMock {
                 "params": [ PROGRAM_ID,
                 {
                   "limit": SOLANA_BATCH_SIZE,
-                  "until" : cursor,
+                  "until" : until,
                   "commitment" : "confirmed"
                 }],
             })))
@@ -127,8 +133,7 @@ impl SolanaMock {
             .create();
     }
 
-    fn mock_accounts(server: &mut ServerGuard, payload_data: &PushData) {
-        let account_keys = vec![REPORTER, CASE, ADDRESS, ASSET];
+    fn get_account_data(payload_data: PushData) -> (Pubkey, Vec<u8>) {
         let mut data = Vec::new();
 
         let address = match payload_data {
@@ -137,8 +142,7 @@ impl SolanaMock {
                     version: 1,
                     bump: 255,
                     network: Pubkey::default(),
-                    // TODO: encode address
-                    address: [0u8; 64],
+                    address: encode_address(&address.address),
                     category: address.category.into(),
                     risk_score: address.risk,
                     case_id: address.case_id.as_u128(),
@@ -155,8 +159,8 @@ impl SolanaMock {
                     version: 1,
                     bump: 255,
                     network: Pubkey::default(),
-                    // TODO: encode address
-                    address: [0u8; 64],
+                    // TODO: encode asset id
+                    address: encode_address(&asset.address),
                     id: [0u8; 64],
                     category: asset.category.into(),
                     risk_score: asset.risk,
@@ -195,7 +199,7 @@ impl SolanaMock {
                     account: Pubkey::from_str(reporter.account.as_str())
                         .expect("Invalid reporter address"),
                     role: reporter.role.into(),
-                    status: reporter.status,
+                    status: reporter.status.into(),
                     unlock_timestamp: reporter.unlock_timestamp,
                     url: reporter.url,
                     stake: reporter.stake.into(),
@@ -207,16 +211,22 @@ impl SolanaMock {
             }
         };
 
+        (Pubkey::from_str(address).expect("Invalid address"), data)
+    }
+
+    fn mock_accounts(server: &mut ServerGuard, payload_data: &PushData) {
+        let (address, data) = SolanaMock::get_account_data((*payload_data).clone());
+
         let account = Account {
             lamports: 100,
-            data: vec![],
+            data,
             owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
             executable: false,
             rent_epoch: 123,
         };
 
         let encoded_account = UiAccount::encode(
-            &Pubkey::from_str(address).expect("Invalid address"),
+            &address,
             &account,
             UiAccountEncoding::Base64Zstd,
             None,
@@ -245,4 +255,12 @@ impl SolanaMock {
             })))
             .create();
     }
+}
+
+pub fn encode_address(address: &str) -> [u8; 64] {
+    let mut res = [0u8; 64];
+    let bytes = address.as_bytes();
+    res[..bytes.len()].copy_from_slice(bytes);
+
+    res
 }

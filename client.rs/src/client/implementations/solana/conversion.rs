@@ -8,7 +8,7 @@ use crate::client::{
         asset::{Asset, AssetId},
         case::{Case, CaseStatus},
         category::Category,
-        reporter::{Reporter, ReporterRole},
+        reporter::{Reporter, ReporterRole, ReporterStatus},
     },
     result::{ClientError, Result},
 };
@@ -16,7 +16,7 @@ use hapi_core_solana::{
     Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
     CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Network as SolanaNetwork,
     Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
-    RewardConfiguration as SolanaRewardConfiguration,
+    ReporterStatus as SolanaReporterStatus, RewardConfiguration as SolanaRewardConfiguration,
     StakeConfiguration as SolanaStakeConfiguration,
 };
 
@@ -52,6 +52,16 @@ impl From<ReporterRole> for SolanaReporterRole {
             ReporterRole::Tracer => SolanaReporterRole::Tracer,
             ReporterRole::Publisher => SolanaReporterRole::Publisher,
             ReporterRole::Authority => SolanaReporterRole::Authority,
+        }
+    }
+}
+
+impl From<ReporterStatus> for SolanaReporterStatus {
+    fn from(value: ReporterStatus) -> Self {
+        match value {
+            ReporterStatus::Inactive => SolanaReporterStatus::Inactive,
+            ReporterStatus::Active => SolanaReporterStatus::Active,
+            ReporterStatus::Unstaking => SolanaReporterStatus::Unstaking,
         }
     }
 }

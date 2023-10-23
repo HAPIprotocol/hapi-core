@@ -7,7 +7,7 @@ use {
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub(crate) enum IndexingCursor {
+pub enum IndexingCursor {
     None,
     Block(u64),
     Transaction(String),

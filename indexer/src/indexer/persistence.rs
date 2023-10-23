@@ -11,7 +11,7 @@ use super::IndexingCursor;
 
 #[derive(Serialize, Deserialize)]
 pub struct PersistedState {
-    pub(crate) cursor: IndexingCursor,
+    pub cursor: IndexingCursor,
 }
 
 impl PersistedState {

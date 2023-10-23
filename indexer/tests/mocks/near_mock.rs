@@ -1,4 +1,4 @@
-use {hapi_core::HapiCoreNetwork, mockito::ServerGuard};
+use {hapi_core::HapiCoreNetwork, hapi_indexer::IndexingCursor, mockito::ServerGuard};
 
 use super::{RpcMock, TestBatch};
 
@@ -16,7 +16,7 @@ impl RpcMock for NearMock {
     fn fetching_jobs_mock(
         _server: &mut ServerGuard,
         _batches: &TestBatch,
-        _cursor: Option<String>,
+        _cursor: &IndexingCursor,
     ) {
         unimplemented!();
     }
