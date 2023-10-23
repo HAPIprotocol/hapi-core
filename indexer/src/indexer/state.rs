@@ -58,6 +58,7 @@ impl IndexerState {
             // Already stopped, don't proceed
             IndexerState::Stopped { message } => {
                 tracing::info!(message, "Indexer stopped");
+
                 false
             }
 
@@ -81,6 +82,7 @@ impl IndexerState {
                     to = ?new_state,
                     "State change",
                 );
+
                 *self = new_state;
                 true
             }

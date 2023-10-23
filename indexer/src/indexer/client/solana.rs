@@ -63,6 +63,12 @@ pub(super) async fn fetch_solana_jobs(
             recent_tx = Some(Signature::from_str(&recent.signature)?);
 
             for sign in signature_batch {
+                tracing::info!(
+                    tx_hash = sign.signature.to_string(),
+                    block = sign.block_time,
+                    "Found transaction",
+                );
+
                 signature_list.push_front(IndexerJob::Transaction(sign.signature.to_string()));
             }
         } else {
@@ -70,7 +76,9 @@ pub(super) async fn fetch_solana_jobs(
         }
     }
 
-    return Ok(signature_list.into());
+    tracing::info!(count = signature_list.len(), "Found jobs");
+
+    Ok(signature_list.into())
 }
 
 async fn get_instruction_data(
@@ -149,7 +157,7 @@ pub(super) async fn process_solana_job(
     let mut payloads = vec![];
 
     for instruction in instructions {
-        if let Some(data) = get_instruction_data(&client, &instruction).await? {
+        if let Some(data) = get_instruction_data(client, &instruction).await? {
             tracing::info!(
                 name = instruction.name.to_string(),
                 signature,
@@ -174,7 +182,7 @@ pub(super) async fn process_solana_job(
     Ok(Some(payloads))
 }
 
-fn get_pubkey(accounts: &Vec<String>, index: usize) -> Result<Pubkey> {
+fn get_pubkey(accounts: &[String], index: usize) -> Result<Pubkey> {
     Ok(Pubkey::from_str(
         accounts
             .get(index)

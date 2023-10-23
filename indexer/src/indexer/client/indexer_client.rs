@@ -45,14 +45,14 @@ impl IndexerClient {
     pub(crate) async fn fetch_jobs(&self, cursor: &IndexingCursor) -> Result<Vec<IndexerJob>> {
         match (self, cursor) {
             (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
-                fetch_evm_jobs(client, Some(n.clone())).await
+                fetch_evm_jobs(client, Some(*n)).await
             }
             (IndexerClient::Evm(client), IndexingCursor::None) => {
                 fetch_evm_jobs(client, None).await
             }
 
             (IndexerClient::Solana(client), IndexingCursor::Transaction(tx)) => {
-                fetch_solana_jobs(client, Some(&tx)).await
+                fetch_solana_jobs(client, Some(tx)).await
             }
             (IndexerClient::Solana(client), IndexingCursor::None) => {
                 fetch_solana_jobs(client, None).await

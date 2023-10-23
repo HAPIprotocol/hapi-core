@@ -49,7 +49,9 @@ pub(super) async fn fetch_evm_jobs(
         earliest_block = next_block;
     }
 
-    return Ok(event_list);
+    tracing::info!(count = event_list.len(), "Found jobs");
+
+    Ok(event_list)
 }
 
 pub(super) async fn process_evm_job(
@@ -80,7 +82,7 @@ pub(super) async fn process_evm_job(
         tx_hash,
         block = block_number,
         tokens = ?log_header.tokens,
-        "Found event",
+        "Processing event",
     );
 
     let data = match log_header.to_ref() {
@@ -122,7 +124,7 @@ pub(super) async fn process_evm_job(
             data,
         }]))
     } else {
-        return Ok(None);
+        Ok(None)
     }
 }
 

@@ -5,12 +5,11 @@ use hapi_core::client::{
     events::EventName,
 };
 use hapi_indexer::{
-    configuration::IndexerConfiguration, Indexer, IndexingCursor, PersistedState, PushData,
-    PushEvent, PushPayload,
+    configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
+    PersistedState, PushData, PushEvent, PushPayload,
 };
 use mockito::Server;
-use std::path::PathBuf;
-use std::time::Duration;
+use std::{env, path::PathBuf, time::Duration};
 use tokio::{spawn, time::sleep, try_join};
 use uuid::Uuid;
 
@@ -20,6 +19,8 @@ use mocks::{
     evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
     webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
 };
+
+const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 
 const WAIT_INTERVAL: Duration = Duration::from_millis(100);
 const STATE_FILE: &str = "data/state.json";
@@ -44,6 +45,10 @@ fn create_test_batches() -> Vec<TestBatch> {
 }
 
 async fn test_network<T: RpcMock>() {
+    if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
+        setup_tracing("debug");
+    }
+
     println!("==> Starting test for {} network", T::get_network());
 
     let test_data = create_test_batches();
@@ -85,7 +90,10 @@ async fn test_network<T: RpcMock>() {
             timer.as_millis()
         );
 
-        let _ = try_join!(indexer_task, timer_task).expect("Indexing failed");
+        try_join!(indexer_task, timer_task)
+            .unwrap()
+            .0
+            .expect("Indexing failed");
 
         println!("==> Indexing iteration finished, checking results");
 

@@ -36,14 +36,16 @@ impl Indexer {
             .with_state(self.state.clone())
     }
 
-    pub async fn spawn_server(&self, addr: &str) -> Result<JoinHandle<Result<(), hyper::Error>>> {
+    pub async fn spawn_server(&self, addr: &str) -> Result<JoinHandle<Result<()>>> {
         tracing::debug!(?addr, "Start server");
 
         let server = Server::bind(&addr.parse()?)
             .serve(self.create_router().into_make_service())
             .with_graceful_shutdown(self.shutdown_signal().await);
 
-        Ok(spawn(server))
+        Ok(spawn(
+            async move { server.await.map_err(anyhow::Error::from) },
+        ))
     }
 }
 

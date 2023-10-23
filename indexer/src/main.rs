@@ -1,5 +1,5 @@
 use {
-    anyhow::{Error, Result},
+    anyhow::{bail, Result},
     tokio::{task::spawn, try_join},
 };
 
@@ -29,15 +29,14 @@ async fn main() -> Result<()> {
     let mut indexer = indexer::Indexer::new(cfg.indexer)?;
 
     let server_task = indexer.spawn_server(&cfg.listener).await?;
+    let indexer_task = spawn(async move { indexer.run().await });
 
-    let indexer_task = spawn(async move {
-        indexer.run().await.or_else(|error: Error| -> Result<()> {
-            tracing::error!(?error, "Indexer failed");
-            Ok(())
-        })
-    });
+    match try_join!(server_task, indexer_task)? {
+        (Err(e), _) | (_, Err(e)) => {
+            tracing::error!(?e, "Indexer failed");
 
-    let _ = try_join!(server_task, indexer_task)?;
-
-    Ok(())
+            bail!("Indexer failed with error: {:?}", e);
+        }
+        _ => Ok(()),
+    }
 }

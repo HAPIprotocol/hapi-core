@@ -1,5 +1,6 @@
 pub mod configuration;
 mod indexer;
+pub mod observability;
 
 // #[cfg(test)]
 pub use indexer::{

@@ -25,7 +25,9 @@ impl Indexer {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        while let Some(new_state) = self.next().await? {
+        loop {
+            let new_state = self.next().await?;
+
             if !self.check_transition(new_state).await {
                 break;
             }
@@ -42,28 +44,13 @@ impl Indexer {
         self.state.lock().await.clone()
     }
 
-    async fn next(&mut self) -> Result<Option<IndexerState>> {
-        let new_state = match self.get_state().await {
-            IndexerState::Init => Some(self.handle_init().await),
-            IndexerState::CheckForUpdates { cursor } => {
-                Some(self.handle_check_for_updates(cursor).await)
-            }
-            IndexerState::Processing { cursor } => Some(self.handle_process(cursor).await),
-            IndexerState::Waiting { until, cursor } => {
-                Some(self.handle_waiting(until, cursor).await)
-            }
-            IndexerState::Stopped { .. } => None,
-        };
-
-        match new_state {
-            Some(Ok(new_state)) => Ok(Some(new_state)),
-            Some(Err(error)) => {
-                tracing::error!(?error, "State handling error");
-                Ok(Some(IndexerState::Stopped {
-                    message: "Error occured".to_string(),
-                }))
-            }
-            None => Ok(None),
+    async fn next(&mut self) -> Result<IndexerState> {
+        match self.get_state().await {
+            IndexerState::Init => self.handle_init().await,
+            IndexerState::CheckForUpdates { cursor } => self.handle_check_for_updates(cursor).await,
+            IndexerState::Processing { cursor } => self.handle_process(cursor).await,
+            IndexerState::Waiting { until, cursor } => self.handle_waiting(until, cursor).await,
+            IndexerState::Stopped { .. } => bail!("Stoped indexer should not be running"),
         }
     }
 
@@ -74,6 +61,7 @@ impl Indexer {
 
             if state.cursor != IndexingCursor::None {
                 tracing::info!(cursor = ?state.cursor, "Found cursor");
+
                 return Ok(IndexerState::CheckForUpdates {
                     cursor: state.cursor,
                 });
@@ -87,7 +75,7 @@ impl Indexer {
 
     fn get_updated_state(
         &self,
-        jobs: &Vec<IndexerJob>,
+        jobs: &[IndexerJob],
         old_cursor: IndexingCursor,
     ) -> Result<IndexerState> {
         if let Some(job) = jobs.first() {
@@ -102,8 +90,11 @@ impl Indexer {
             });
         }
 
+        let timestamp = now()? + self.wait_interval_ms.as_secs();
+        tracing::info!(timestamp, "New jobs not found, waiting until next check");
+
         Ok(IndexerState::Waiting {
-            until: now()? + self.wait_interval_ms.as_secs(),
+            until: timestamp,
             cursor: old_cursor,
         })
     }
@@ -138,6 +129,7 @@ impl Indexer {
                 return Ok(IndexerState::Processing { cursor: new_cursor });
             } else {
                 tracing::trace!("No more jobs in the queue");
+
                 return Ok(IndexerState::CheckForUpdates { cursor });
             }
         };
