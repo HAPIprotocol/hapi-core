@@ -11,14 +11,16 @@ use {
     },
     solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
-    std::collections::VecDeque,
-    std::str::FromStr,
+    std::{collections::VecDeque, str::FromStr},
+    tokio::time::sleep,
 };
 
 use crate::indexer::{
     push::{PushData, PushEvent, PushPayload},
     IndexerJob,
 };
+
+use super::ITERATION_INTERVAL;
 
 pub const SOLANA_BATCH_SIZE: usize = 500;
 
@@ -54,6 +56,8 @@ pub(super) async fn fetch_solana_jobs(
             commitment: Some(CommitmentConfig::confirmed()),
         };
 
+        tracing::debug!(before = ?config.before, until = ?config.until, "Fetching signatures");
+
         let signature_batch = client
             .rpc_client
             .get_signatures_for_address_with_config(&client.program_id, config)
@@ -71,6 +75,8 @@ pub(super) async fn fetch_solana_jobs(
 
                 signature_list.push_front(IndexerJob::Transaction(sign.signature.to_string()));
             }
+
+            sleep(ITERATION_INTERVAL).await;
         } else {
             break;
         }
@@ -79,6 +85,48 @@ pub(super) async fn fetch_solana_jobs(
     tracing::info!(count = signature_list.len(), "Found jobs");
 
     Ok(signature_list.into())
+}
+
+pub(super) async fn process_solana_job(
+    client: &HapiCoreSolana,
+    signature: &str,
+) -> Result<Option<Vec<PushPayload>>> {
+    let instructions = client.get_hapi_instructions(signature).await?;
+
+    if instructions.is_empty() {
+        tracing::warn!(hash = signature, "Ignoring transaction");
+
+        return Ok(None);
+    }
+
+    tracing::info!(signature, "Processing transaction",);
+
+    let mut payloads = vec![];
+
+    for instruction in instructions {
+        if let Some(data) = get_instruction_data(client, &instruction).await? {
+            tracing::info!(
+                name = instruction.name.to_string(),
+                signature,
+                tx_index = instruction.id,
+                block = instruction.blocktime,
+                arguments = ?instruction.data,
+                "Found instruction",
+            );
+
+            payloads.push(PushPayload {
+                event: PushEvent {
+                    name: instruction.name,
+                    tx_hash: signature.to_string(),
+                    tx_index: instruction.id.into(),
+                    timestamp: instruction.blocktime,
+                },
+                data,
+            });
+        }
+    }
+
+    Ok(Some(payloads))
 }
 
 async fn get_instruction_data(
@@ -139,47 +187,6 @@ async fn get_instruction_data(
     }
 
     Ok(None)
-}
-
-pub(super) async fn process_solana_job(
-    client: &HapiCoreSolana,
-    signature: &str,
-) -> Result<Option<Vec<PushPayload>>> {
-    let instructions = client.get_hapi_instructions(signature).await?;
-
-    if instructions.is_empty() {
-        tracing::warn!(hash = signature, "Ignoring transaction");
-        return Ok(None);
-    }
-
-    tracing::info!(signature, "Processing transaction",);
-
-    let mut payloads = vec![];
-
-    for instruction in instructions {
-        if let Some(data) = get_instruction_data(client, &instruction).await? {
-            tracing::info!(
-                name = instruction.name.to_string(),
-                signature,
-                tx_index = instruction.id,
-                block = instruction.blocktime,
-                arguments = ?instruction.data,
-                "Found instruction",
-            );
-
-            payloads.push(PushPayload {
-                event: PushEvent {
-                    name: instruction.name,
-                    tx_hash: signature.to_string(),
-                    tx_index: instruction.id.into(),
-                    timestamp: instruction.blocktime,
-                },
-                data,
-            });
-        }
-    }
-
-    Ok(Some(payloads))
 }
 
 fn get_pubkey(accounts: &[String], index: usize) -> Result<Pubkey> {

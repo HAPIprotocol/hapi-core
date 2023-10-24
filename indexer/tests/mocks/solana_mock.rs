@@ -34,8 +34,53 @@ impl RpcMock for SolanaMock {
         HapiCoreNetwork::Solana
     }
 
-    fn fetching_jobs_mock(server: &mut ServerGuard, batch: &TestBatch, cursor: &IndexingCursor) {
-        SolanaMock::mock_batches(server, batch, cursor);
+    fn initialization_mock(server: &mut ServerGuard) {
+        let response = json!({
+           "jsonrpc": "2.0",
+           "result": { "feature-set": 289113172, "solana-core": "1.16.7" },
+           "id": 1
+        });
+
+        server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(&response.to_string())
+            .match_body(Matcher::PartialJson(json!({
+                "method":"getVersion",
+            })))
+            .create();
+    }
+
+    fn fetching_jobs_mock(
+        server: &mut ServerGuard,
+        batches: &[TestBatch],
+        cursor: &IndexingCursor,
+    ) {
+        let mut before = None;
+        let until = match cursor {
+            IndexingCursor::None => None,
+            IndexingCursor::Transaction(tx) => Some(tx.to_string()),
+            IndexingCursor::Block(_) => panic!("Invalid cursor"),
+        };
+
+        for batch in batches {
+            let signatures: Vec<Value> = batch
+                .iter()
+                .map(|payload| {
+                    json!({
+                        "signature": payload.event.tx_hash,
+                        "slot": 100,
+                    })
+                })
+                .collect();
+
+            SolanaMock::mock_batches(server, signatures, &before, &until);
+
+            before = batch.last().map(|event| event.event.tx_hash.clone());
+        }
+
+        SolanaMock::mock_batches(server, vec![], &before, &until);
     }
 
     fn processing_jobs_mock(server: &mut ServerGuard, batch: &TestBatch) {
@@ -70,24 +115,12 @@ impl SolanaMock {
         )
     }
 
-    fn mock_batches(server: &mut ServerGuard, batch: &TestBatch, cursor: &IndexingCursor) {
-        // TODO: will it work with option?
-        let until = match cursor {
-            IndexingCursor::None => None,
-            IndexingCursor::Transaction(tx) => Some(tx.to_string()),
-            IndexingCursor::Block(_) => panic!("Invalid cursor"),
-        };
-
-        let signatures: Vec<Value> = batch
-            .iter()
-            .map(|payload| {
-                json!({
-                    "signature": payload.event.tx_hash,
-                    "slot": 100,
-                })
-            })
-            .collect();
-
+    fn mock_batches(
+        server: &mut ServerGuard,
+        signatures: Vec<Value>,
+        before: &Option<String>,
+        until: &Option<String>,
+    ) {
         let response = json!({
             "jsonrpc": "2.0",
             "result": signatures,
@@ -105,6 +138,7 @@ impl SolanaMock {
                 {
                   "limit": SOLANA_BATCH_SIZE,
                   "until" : until,
+                  "before" : before,
                   "commitment" : "confirmed"
                 }],
             })))
@@ -112,7 +146,7 @@ impl SolanaMock {
     }
 
     fn mock_transaction(server: &mut ServerGuard, event: &PushEvent) {
-        let responce = json!({
+        let response = json!({
            "jsonrpc": "2.0",
            "result": json!(SolanaMock::get_transaction(&event)),
            "id": 1
@@ -122,9 +156,9 @@ impl SolanaMock {
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(&responce.to_string())
+            .with_body(&response.to_string())
             .match_body(Matcher::PartialJson(json!({
-                "method": "getConfirmedTransaction",
+                "method": "getTransaction",
                 "params": [
                     event.tx_hash,
                     "json"
@@ -233,25 +267,27 @@ impl SolanaMock {
             None,
         );
 
-        let responce = json!({
+        let response = json!({
            "jsonrpc": "2.0",
-           "result": json!(encoded_account),
+           "result": {
+            "context": { "apiVersion": "1.16.17", "slot": 252201350 },
+            "value": json!(encoded_account),
+           },
            "id": 1
         });
+
+        println!("RESPONCE : {}", response.to_string());
 
         server
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(&responce.to_string())
+            .with_body(&response.to_string())
             .match_body(Matcher::PartialJson(json!({
                 "method": "getAccountInfo",
                 "params": [
-                    address,
-                    {
-                    "commitment": "processed",
-                    "encoding": "base64+zstd"
-                    }]
+                    address.to_string(),
+                ]
             })))
             .create();
     }

@@ -1,7 +1,4 @@
-use {
-    mockito::{Matcher, Mock, Server, ServerGuard},
-    serde_json::json,
-};
+use mockito::{Matcher, Mock, Server, ServerGuard};
 
 use super::TestBatch;
 
@@ -23,7 +20,9 @@ impl WebhookServiceMock {
             let mock = self
                 .server
                 .mock("POST", "/")
-                .match_body(Matcher::PartialJson(json!(event)))
+                .match_body(Matcher::PartialJsonString(
+                    serde_json::to_string(event).expect("Failed to serialize payload"),
+                ))
                 .expect(1)
                 .create();
 

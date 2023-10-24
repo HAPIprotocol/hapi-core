@@ -1,6 +1,7 @@
 use {
     anyhow::Result,
     hapi_core::{HapiCoreEvm, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
+    std::time::Duration,
 };
 
 use super::{
@@ -9,6 +10,8 @@ use super::{
 };
 
 use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
+
+pub const ITERATION_INTERVAL: Duration = Duration::from_millis(100);
 
 pub(crate) enum IndexerClient {
     Evm(HapiCoreEvm),

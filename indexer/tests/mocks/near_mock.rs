@@ -13,15 +13,19 @@ impl RpcMock for NearMock {
         unimplemented!();
     }
 
+    fn initialization_mock(_server: &mut ServerGuard) {
+        unimplemented!();
+    }
+
     fn fetching_jobs_mock(
         _server: &mut ServerGuard,
-        _batches: &TestBatch,
+        _batches: &[TestBatch],
         _cursor: &IndexingCursor,
     ) {
         unimplemented!();
     }
 
-    fn processing_jobs_mock(_server: &mut ServerGuard, _batches: &TestBatch) {
+    fn processing_jobs_mock(_server: &mut ServerGuard, _batch: &TestBatch) {
         unimplemented!();
     }
 }

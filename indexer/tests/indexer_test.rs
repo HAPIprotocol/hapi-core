@@ -1,3 +1,4 @@
+use anyhow::bail;
 use hapi_core::client::{
     entities::{
         address::Address, asset::Asset, case::Case, category::Category, reporter::Reporter,
@@ -30,9 +31,9 @@ fn create_test_batches() -> Vec<TestBatch> {
     vec![vec![PushPayload {
         event: PushEvent {
             name: EventName::CreateAddress,
-            tx_hash: "acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f".to_string(),
+            tx_hash: "3sfXPDgZC6Xsowp27Ktzkeq26nr2QC2XPQ25GkaGvSd8awNTaGYMu6K1cdBw4FcfHM634p9cwLnHB4Njb7waiAEP".to_string(),
             tx_index: 0,
-            timestamp: 1690888679,
+            timestamp: 123,
         },
         data: PushData::Address(Address {
             address: "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
@@ -70,8 +71,10 @@ async fn test_network<T: RpcMock>() {
     for (index, batches) in test_data.chunks(2).enumerate() {
         let mut indexer = Indexer::new(cfg.clone()).expect("Failed to initialize indexer");
 
+        T::initialization_mock(&mut rpc_mock);
+        T::fetching_jobs_mock(&mut rpc_mock, batches, &cursor);
+
         for batch in batches {
-            T::fetching_jobs_mock(&mut rpc_mock, batch, &cursor);
             T::processing_jobs_mock(&mut rpc_mock, batch);
             webhook_mock.set_mocks(batch);
         }
@@ -81,19 +84,34 @@ async fn test_network<T: RpcMock>() {
             index + 1
         );
 
+        // let timer = WAIT_INTERVAL.saturating_mul(2);
+        // let timer_task = spawn(async move {
+        //     sleep(timer).await;
+        //     return Err(());
+        // });
+        // let indexer_task = spawn(async move { indexer.run().await });
+
+        // println!(
+        //     "==> Starting indexer with timer: {} millis",
+        //     timer.as_millis()
+        // );
+
+        // try_join!(indexer_task, timer_task)
+        //     .unwrap()
+        //     .0
+        //     .expect("Indexing failed");
+
         let timer = WAIT_INTERVAL.saturating_mul(5);
-        let timer_task = spawn(async move { sleep(timer).await });
-        let indexer_task = spawn(async move { indexer.run().await });
 
         println!(
             "==> Starting indexer with timer: {} millis",
             timer.as_millis()
         );
 
-        try_join!(indexer_task, timer_task)
-            .unwrap()
-            .0
-            .expect("Indexing failed");
+        let indexer_task = spawn(async move { indexer.run().await });
+        sleep(timer).await;
+
+        indexer_task.abort();
 
         println!("==> Indexing iteration finished, checking results");
 

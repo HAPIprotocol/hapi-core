@@ -3,6 +3,7 @@ use {
     ethers::{abi::Token, providers::Middleware, types::Filter},
     hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
     std::str::FromStr,
+    tokio::time::sleep,
     uuid::Uuid,
 };
 
@@ -10,6 +11,8 @@ use crate::indexer::{
     push::{PushData, PushEvent, PushPayload},
     IndexerJob,
 };
+
+use super::ITERATION_INTERVAL;
 
 pub const EVM_PAGE_SIZE: u64 = 100;
 
@@ -47,6 +50,7 @@ pub(super) async fn fetch_evm_jobs(
         });
 
         earliest_block = next_block;
+        sleep(ITERATION_INTERVAL).await;
     }
 
     tracing::info!(count = event_list.len(), "Found jobs");
