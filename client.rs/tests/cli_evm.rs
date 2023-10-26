@@ -6,8 +6,8 @@ mod cmd_utils;
 mod common_fixtures;
 mod evm;
 
-use evm::{fixtures::*, setup::Setup, util::to_checksum};
 use common_fixtures::*;
+use evm::{fixtures::*, setup::Setup, util::to_checksum};
 
 #[tokio::test]
 async fn evm_works() {

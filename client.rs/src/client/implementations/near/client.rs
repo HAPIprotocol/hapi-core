@@ -97,7 +97,7 @@ pub(crate) async fn execute_transaction(
         signed_transaction: transaction.sign(&signer),
     };
     let sent_at = time::Instant::now();
-    let tx_hash = client.call(request).await?;
+    let hash = client.call(request).await?;
 
     loop {
         if time::Instant::now() > sent_at + TRANSACTION_TIMEOUT {
@@ -107,7 +107,7 @@ pub(crate) async fn execute_transaction(
         let response = client
             .call(methods::tx::RpcTransactionStatusRequest {
                 transaction_info: TransactionInfo::TransactionId {
-                    hash: tx_hash.clone(),
+                    hash,
                     account_id: signer.account_id.clone(),
                 },
             })
@@ -137,7 +137,7 @@ pub(crate) async fn execute_transaction(
     }
 
     Ok(Tx {
-        hash: tx_hash.to_string(),
+        hash: hash.to_string(),
     })
 }
 

@@ -58,7 +58,7 @@ fn create_test_instruction(
 }
 
 pub fn create_test_tx(
-    data: &Vec<(&str, InstructionData)>,
+    data: &[(&str, InstructionData)],
     signature: String,
     account_keys: Vec<String>,
 ) -> EncodedConfirmedTransactionWithStatusMeta {

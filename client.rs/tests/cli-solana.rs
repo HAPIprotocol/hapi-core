@@ -8,8 +8,8 @@ mod solana;
 
 use solana::setup::Setup;
 
-use solana::fixtures::{ADDRESS_ADDR_1, ASSET_ADDR_1};
 use common_fixtures::*;
+use solana::fixtures::{ADDRESS_ADDR_1, ASSET_ADDR_1};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_cli_works() {

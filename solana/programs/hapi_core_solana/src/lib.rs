@@ -393,7 +393,7 @@ pub mod hapi_core_solana {
     pub fn create_asset(
         ctx: Context<CreateAsset>,
         addr: [u8; 64],
-        asset_id: [u8; 64],
+        asset_id: [u8; 32],
         category: Category,
         risk_score: u8,
         bump: u8,

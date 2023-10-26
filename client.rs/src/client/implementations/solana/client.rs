@@ -554,7 +554,7 @@ impl HapiCore for HapiCoreSolana {
         let mut addr = [0u8; 64];
         byte_array_from_str(&input.address, &mut addr)?;
 
-        let mut asset_id = [0u8; 64];
+        let mut asset_id = [0u8; 32];
         byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
 
         let (asset, bump) = get_asset_address(&addr, &asset_id, &self.network, &self.program_id)?;
@@ -585,7 +585,7 @@ impl HapiCore for HapiCoreSolana {
         let mut addr = [0u8; 64];
         byte_array_from_str(&input.address, &mut addr)?;
 
-        let mut asset_id = [0u8; 64];
+        let mut asset_id = [0u8; 32];
         byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
 
         let (asset, _) = get_asset_address(&addr, &asset_id, &self.network, &self.program_id)?;
@@ -613,7 +613,7 @@ impl HapiCore for HapiCoreSolana {
         let mut asset_address = [0u8; 64];
         byte_array_from_str(address, &mut asset_address)?;
 
-        let mut asset_id = [0u8; 64];
+        let mut asset_id = [0u8; 32];
         byte_array_from_str(&id.to_string(), &mut asset_id)?;
 
         let (addr, _) =
