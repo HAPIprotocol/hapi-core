@@ -24,7 +24,7 @@ pub(crate) use {
     state::{IndexerState, IndexingCursor},
 };
 
-pub use client::{EVM_PAGE_SIZE, SOLANA_BATCH_SIZE};
+pub use client::{EVM_PAGE_SIZE, ITERATION_INTERVAL, SOLANA_BATCH_SIZE};
 
 fn now() -> Result<u64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())

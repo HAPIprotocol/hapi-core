@@ -1,142 +1,126 @@
-use anyhow::bail;
-use hapi_core::client::{
-    entities::{
-        address::Address, asset::Asset, case::Case, category::Category, reporter::Reporter,
+use {
+    hapi_indexer::{
+        configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
+        PersistedState, ITERATION_INTERVAL,
     },
-    events::EventName,
+    std::{env, path::PathBuf},
+    tokio::{spawn, time::sleep},
 };
-use hapi_indexer::{
-    configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
-    PersistedState, PushData, PushEvent, PushPayload,
-};
-use mockito::Server;
-use std::{env, path::PathBuf, time::Duration};
-use tokio::{spawn, time::sleep, try_join};
-use uuid::Uuid;
 
 mod mocks;
 
 use mocks::{
-    evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
+    create_test_batches, evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
     webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
 };
 
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
-
-const WAIT_INTERVAL: Duration = Duration::from_millis(100);
 const STATE_FILE: &str = "data/state.json";
 
-// TODO: add other transactions (update_configuration etc.)
-fn create_test_batches() -> Vec<TestBatch> {
-    vec![vec![PushPayload {
-        event: PushEvent {
-            name: EventName::CreateAddress,
-            tx_hash: "3sfXPDgZC6Xsowp27Ktzkeq26nr2QC2XPQ25GkaGvSd8awNTaGYMu6K1cdBw4FcfHM634p9cwLnHB4Njb7waiAEP".to_string(),
-            tx_index: 0,
-            timestamp: 123,
-        },
-        data: PushData::Address(Address {
-            address: "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
-            case_id: Uuid::new_v4(),
-            reporter_id: Uuid::new_v4(),
-            risk: 5,
-            category: Category::ATM,
-        }),
-    }]]
+pub struct IndexerTest<T: RpcMock> {
+    webhook_mock: WebhookServiceMock,
+    rpc_mock: T,
+    cursor: IndexingCursor,
 }
 
-async fn test_network<T: RpcMock>() {
-    if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
-        setup_tracing("debug");
-    }
-
-    println!("==> Starting test for {} network", T::get_network());
-
-    let test_data = create_test_batches();
-    let mut webhook_mock = WebhookServiceMock::new();
-    let mut rpc_mock = Server::new();
-
-    let cfg = IndexerConfiguration {
-        network: T::get_network(),
-        rpc_node_url: rpc_mock.url(),
-        webhook_url: webhook_mock.server.url(),
-        contract_address: T::get_contract_address(),
-        wait_interval_ms: WAIT_INTERVAL,
-        state_file: STATE_FILE.to_string(),
-    };
-
-    let mut cursor = IndexingCursor::None;
-
-    // TODO: describe test
-    for (index, batches) in test_data.chunks(2).enumerate() {
-        let mut indexer = Indexer::new(cfg.clone()).expect("Failed to initialize indexer");
-
-        T::initialization_mock(&mut rpc_mock);
-        T::fetching_jobs_mock(&mut rpc_mock, batches, &cursor);
-
-        for batch in batches {
-            T::processing_jobs_mock(&mut rpc_mock, batch);
-            webhook_mock.set_mocks(batch);
+impl<T: RpcMock> IndexerTest<T> {
+    pub fn new() -> Self {
+        if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
+            setup_tracing("debug");
         }
 
-        println!(
-            "==> Indexer initialized for {} time, batch mocks created",
-            index + 1
-        );
+        if PathBuf::from(STATE_FILE).exists() {
+            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
+        }
 
-        // let timer = WAIT_INTERVAL.saturating_mul(2);
-        // let timer_task = spawn(async move {
-        //     sleep(timer).await;
-        //     return Err(());
-        // });
-        // let indexer_task = spawn(async move { indexer.run().await });
+        Self {
+            webhook_mock: WebhookServiceMock::new(),
+            rpc_mock: T::initialize(),
+            cursor: IndexingCursor::None,
+        }
+    }
 
-        // println!(
-        //     "==> Starting indexer with timer: {} millis",
-        //     timer.as_millis()
-        // );
+    fn create_mocks(&mut self, batches: &[TestBatch]) {
+        self.rpc_mock.fetching_jobs_mock(batches, &self.cursor);
 
-        // try_join!(indexer_task, timer_task)
-        //     .unwrap()
-        //     .0
-        //     .expect("Indexing failed");
+        for batch in batches {
+            self.rpc_mock.processing_jobs_mock(batch);
+            self.webhook_mock.set_mocks(batch);
+        }
 
-        let timer = WAIT_INTERVAL.saturating_mul(5);
+        println!("==> Batch mocks created");
+    }
+
+    async fn indexing_iteration(&self) {
+        let cfg = IndexerConfiguration {
+            network: T::get_network(),
+            rpc_node_url: self.rpc_mock.get_mock_url(),
+            webhook_url: self.webhook_mock.server.url(),
+            contract_address: T::get_contract_address(),
+            wait_interval_ms: ITERATION_INTERVAL,
+            state_file: STATE_FILE.to_string(),
+        };
+
+        let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
+        let timer = ITERATION_INTERVAL.saturating_mul(3);
 
         println!(
             "==> Starting indexer with timer: {} millis",
             timer.as_millis()
         );
 
+        // Does it panic if error occurs?
         let indexer_task = spawn(async move { indexer.run().await });
         sleep(timer).await;
 
         indexer_task.abort();
+    }
 
-        println!("==> Indexing iteration finished, checking results");
-
-        webhook_mock.check_mocks();
+    fn check_cursor(&mut self) {
         // TODO: check persistent state file + fetch cursor from it
-
-        cursor = PersistedState::from_file(&PathBuf::from(STATE_FILE))
+        self.cursor = PersistedState::from_file(&PathBuf::from(STATE_FILE))
             .expect("Failed to get state")
             .cursor;
+    }
 
-        println!("==> Successful indexing iteration");
+    pub async fn run_test(&mut self) {
+        println!("==> Starting test for {} network", T::get_network());
+
+        let test_data = create_test_batches::<T>();
+
+        // TODO: describe test
+        for (index, batches) in test_data.chunks(2).enumerate() {
+            self.create_mocks(batches);
+
+            println!("==> Running indexer for {} time", index + 1);
+            self.indexing_iteration().await;
+
+            println!("==> Indexing iteration finished, checking results");
+            self.webhook_mock.check_mocks();
+            self.check_cursor();
+
+            println!("==> Successful indexing iteration");
+        }
+    }
+}
+
+impl<T: RpcMock> Drop for IndexerTest<T> {
+    fn drop(&mut self) {
+        std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
     }
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_indexer_test() {
-    test_network::<SolanaMock>().await;
+    IndexerTest::<SolanaMock>::new().run_test().await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn evm_indexer_test() {
-    test_network::<EvmMock>().await;
+    IndexerTest::<EvmMock>::new().run_test().await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn near_indexer_test() {
-    test_network::<NearMock>().await;
+    IndexerTest::<NearMock>::new().run_test().await;
 }

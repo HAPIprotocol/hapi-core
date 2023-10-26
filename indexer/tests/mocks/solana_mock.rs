@@ -4,8 +4,8 @@ use {
         client::solana::{test_helpers::create_test_tx, InstructionData},
         HapiCoreNetwork,
     },
-    hapi_indexer::{IndexingCursor, PushData, PushEvent, SOLANA_BATCH_SIZE},
-    mockito::{Matcher, ServerGuard},
+    hapi_indexer::{IndexingCursor, PushData, SOLANA_BATCH_SIZE},
+    mockito::{Matcher, Server, ServerGuard},
     serde_json::{json, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
     solana_sdk::{account::Account, pubkey::Pubkey},
@@ -13,9 +13,7 @@ use {
     std::str::FromStr,
 };
 
-use core::panic;
-
-use super::{RpcMock, TestBatch};
+use super::{RpcMock, TestBatch, TestData};
 
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 pub const REPORTER: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
@@ -23,7 +21,9 @@ pub const CASE: &str = "DTDk9GEQoVibTuHmTfDUwHehkH4WYd5fpawPfayGRVdi";
 pub const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
 pub const ASSET: &str = "5f2iaDyv4yzTudiNc1XR2EkEW5NtVbfZpqmjZ3fhFtaX";
 
-pub struct SolanaMock;
+pub struct SolanaMock {
+    server: ServerGuard,
+}
 
 impl RpcMock for SolanaMock {
     fn get_contract_address() -> String {
@@ -34,7 +34,18 @@ impl RpcMock for SolanaMock {
         HapiCoreNetwork::Solana
     }
 
-    fn initialization_mock(server: &mut ServerGuard) {
+    fn get_hashes() -> [String; 6] {
+        ["3rsZaASe9nEWoSudhqSXTCYSdWzE4ynNdmdwa4DWmpttkjRbsrPy292YUN1gm7LSm9zKh9X6oCUJoML7uuJEWZM5".to_string(), 
+        "KZsY26mofenqWeTRK2KpboNNWBsxZvauSmCbnehFHK5ALzksZEi6Jci91KNENec8NXv4p9Ksq68FmKAJDBTCKiT".to_string(),
+        "4dxiswkbCh4bE1wDevwN1jUa1cLozDyb78WPdFoqr7UJn3RuC5PHpCbJ7zQAXQTxcvXqrWYVtYGnP3Q8kHgg8FM".to_string(),
+        "5PwVsyu5jxHKJUp2qps8ZwARyh3jm6edCw62m8NAZVDWMngntMEpgCojyVDATn1qK3VaLZJ3LZzQw94mBcgaYoLz".to_string(),
+        "BMt6636zZ7QbR9sjmwMcTFqEZaKNWmrMhbxMxTdZqyni2sNv3xQoqZ6Z2h3qaGQhW5aZutPNkdLJ94jt2gMGHJs".to_string(),
+        "4RcKC84uwEVPx9qw1toe4W1JrTeyG76pWg6GN5x3FFHrCt9wb6QSDhtSCaZ4kpZXkyz4QcYubYGfecGtWsXtTNmM".to_string()]
+    }
+
+    fn initialize() -> Self {
+        let mut server = Server::new();
+
         let response = json!({
            "jsonrpc": "2.0",
            "result": { "feature-set": 289113172, "solana-core": "1.16.7" },
@@ -50,13 +61,15 @@ impl RpcMock for SolanaMock {
                 "method":"getVersion",
             })))
             .create();
+
+        Self { server }
     }
 
-    fn fetching_jobs_mock(
-        server: &mut ServerGuard,
-        batches: &[TestBatch],
-        cursor: &IndexingCursor,
-    ) {
+    fn get_mock_url(&self) -> String {
+        self.server.url()
+    }
+
+    fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
         let mut before = None;
         let until = match cursor {
             IndexingCursor::None => None,
@@ -67,32 +80,32 @@ impl RpcMock for SolanaMock {
         for batch in batches {
             let signatures: Vec<Value> = batch
                 .iter()
-                .map(|payload| {
+                .map(|data| {
                     json!({
-                        "signature": payload.event.tx_hash,
+                        "signature": data.hash,
                         "slot": 100,
                     })
                 })
                 .collect();
 
-            SolanaMock::mock_batches(server, signatures, &before, &until);
+            self.mock_batches(signatures, &before, &until);
 
-            before = batch.last().map(|event| event.event.tx_hash.clone());
+            before = batch.last().map(|data| data.hash.clone());
         }
 
-        SolanaMock::mock_batches(server, vec![], &before, &until);
+        self.mock_batches(vec![], &before, &until);
     }
 
-    fn processing_jobs_mock(server: &mut ServerGuard, batch: &TestBatch) {
+    fn processing_jobs_mock(&mut self, batch: &TestBatch) {
         for event in batch {
-            SolanaMock::mock_transaction(server, &event.event);
-            SolanaMock::mock_accounts(server, &event.data);
+            self.mock_transaction(event.name.to_string(), &event.hash);
+            self.mock_accounts(event);
         }
     }
 }
 
 impl SolanaMock {
-    fn get_transaction(event: &PushEvent) -> EncodedConfirmedTransactionWithStatusMeta {
+    fn get_transaction(name: String, hash: &str) -> EncodedConfirmedTransactionWithStatusMeta {
         // TODO: what about asset?
         let account_keys = vec![
             String::from(PROGRAM_ID),
@@ -103,20 +116,18 @@ impl SolanaMock {
             String::from(ADDRESS),
         ];
 
-        let event_name = event.name.to_string();
-
         create_test_tx(
             &vec![(
-                event_name.as_str(),
+                name.as_str(),
                 InstructionData::Raw(String::from("Some data")),
             )],
-            event.tx_hash.clone(),
+            hash.to_string(),
             account_keys,
         )
     }
 
     fn mock_batches(
-        server: &mut ServerGuard,
+        &mut self,
         signatures: Vec<Value>,
         before: &Option<String>,
         until: &Option<String>,
@@ -127,7 +138,7 @@ impl SolanaMock {
             "id": 1
         });
 
-        server
+        self.server
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -145,14 +156,14 @@ impl SolanaMock {
             .create();
     }
 
-    fn mock_transaction(server: &mut ServerGuard, event: &PushEvent) {
+    fn mock_transaction(&mut self, name: String, hash: &str) {
         let response = json!({
            "jsonrpc": "2.0",
-           "result": json!(SolanaMock::get_transaction(&event)),
+           "result": json!(SolanaMock::get_transaction(name, hash)),
            "id": 1
         });
 
-        server
+        self.server
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -160,7 +171,7 @@ impl SolanaMock {
             .match_body(Matcher::PartialJson(json!({
                 "method": "getTransaction",
                 "params": [
-                    event.tx_hash,
+                    hash,
                     "json"
                   ]
             })))
@@ -248,48 +259,50 @@ impl SolanaMock {
         (Pubkey::from_str(address).expect("Invalid address"), data)
     }
 
-    fn mock_accounts(server: &mut ServerGuard, payload_data: &PushData) {
-        let (address, data) = SolanaMock::get_account_data((*payload_data).clone());
+    fn mock_accounts(&mut self, test_data: &TestData) {
+        if let Some(payload_data) = &test_data.data {
+            let (address, data) = SolanaMock::get_account_data(payload_data.clone());
 
-        let account = Account {
-            lamports: 100,
-            data,
-            owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
-            executable: false,
-            rent_epoch: 123,
-        };
+            let account = Account {
+                lamports: 100,
+                data,
+                owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
+                executable: false,
+                rent_epoch: 123,
+            };
 
-        let encoded_account = UiAccount::encode(
-            &address,
-            &account,
-            UiAccountEncoding::Base64Zstd,
-            None,
-            None,
-        );
+            let encoded_account = UiAccount::encode(
+                &address,
+                &account,
+                UiAccountEncoding::Base64Zstd,
+                None,
+                None,
+            );
 
-        let response = json!({
-           "jsonrpc": "2.0",
-           "result": {
-            "context": { "apiVersion": "1.16.17", "slot": 252201350 },
-            "value": json!(encoded_account),
-           },
-           "id": 1
-        });
+            let response = json!({
+               "jsonrpc": "2.0",
+               "result": {
+                "context": { "apiVersion": "1.16.17", "slot": 252201350 },
+                "value": json!(encoded_account),
+               },
+               "id": 1
+            });
 
-        println!("RESPONCE : {}", response.to_string());
+            println!("RESPONCE : {}", response.to_string());
 
-        server
-            .mock("POST", "/")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(&response.to_string())
-            .match_body(Matcher::PartialJson(json!({
-                "method": "getAccountInfo",
-                "params": [
-                    address.to_string(),
-                ]
-            })))
-            .create();
+            self.server
+                .mock("POST", "/")
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(&response.to_string())
+                .match_body(Matcher::PartialJson(json!({
+                    "method": "getAccountInfo",
+                    "params": [
+                        address.to_string(),
+                    ]
+                })))
+                .create();
+        }
     }
 }
 

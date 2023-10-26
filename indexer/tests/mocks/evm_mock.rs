@@ -1,4 +1,4 @@
-use {hapi_core::HapiCoreNetwork, hapi_indexer::IndexingCursor, mockito::ServerGuard};
+use {hapi_core::HapiCoreNetwork, hapi_indexer::IndexingCursor};
 
 use super::{RpcMock, TestBatch};
 
@@ -13,19 +13,23 @@ impl RpcMock for EvmMock {
         unimplemented!();
     }
 
-    fn initialization_mock(_server: &mut ServerGuard) {
+    fn get_hashes() -> [String; 6] {
+        unimplemented!()
+    }
+
+    fn initialize() -> Self {
+        unimplemented!()
+    }
+
+    fn get_mock_url(&self) -> String {
+        unimplemented!()
+    }
+
+    fn fetching_jobs_mock(&mut self, _batches: &[TestBatch], _cursor: &IndexingCursor) {
         unimplemented!();
     }
 
-    fn fetching_jobs_mock(
-        _server: &mut ServerGuard,
-        _batches: &[TestBatch],
-        _cursor: &IndexingCursor,
-    ) {
-        unimplemented!();
-    }
-
-    fn processing_jobs_mock(_server: &mut ServerGuard, _batch: &TestBatch) {
+    fn processing_jobs_mock(&mut self, _batch: &TestBatch) {
         unimplemented!();
     }
 }

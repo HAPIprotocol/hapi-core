@@ -112,29 +112,25 @@ impl Indexer {
     #[tracing::instrument(name = "process", skip(self))]
     async fn handle_process(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
         if let Some(job) = self.jobs.pop_front() {
-            if let Some(payload) = self.client.handle_process(job).await? {
+            if let Some(payload) = self.client.handle_process(&job).await? {
                 for event in payload {
                     self.send_webhook(&event).await?;
                 }
             }
 
-            if let Some(next_job) = self.jobs.front() {
-                let new_cursor = IndexingCursor::try_from(next_job.clone())?;
+            let new_cursor = IndexingCursor::try_from(job.clone())?;
 
-                PersistedState {
-                    cursor: new_cursor.clone(),
-                }
-                .to_file(&self.state_file)?;
-
-                return Ok(IndexerState::Processing { cursor: new_cursor });
-            } else {
-                tracing::trace!("No more jobs in the queue");
-
-                return Ok(IndexerState::CheckForUpdates { cursor });
+            PersistedState {
+                cursor: new_cursor.clone(),
             }
+            .to_file(&self.state_file)?;
+
+            return Ok(IndexerState::Processing { cursor: new_cursor });
         };
 
-        bail!("Processing an empty queue")
+        tracing::trace!("No more jobs in the queue");
+
+        Ok(IndexerState::CheckForUpdates { cursor })
     }
 
     #[tracing::instrument(name = "waiting", skip(self))]
