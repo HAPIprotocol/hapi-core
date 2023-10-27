@@ -43,12 +43,15 @@ impl<T: RpcMock> IndexerTest<T> {
     fn create_mocks(&mut self, batches: &[TestBatch]) {
         self.rpc_mock.fetching_jobs_mock(batches, &self.cursor);
 
-        for batch in batches {
+        for (index, batch) in batches.iter().enumerate() {
             self.rpc_mock.processing_jobs_mock(batch);
             self.webhook_mock.set_mocks(batch);
-        }
 
-        println!("==> Batch mocks created");
+            println!("==> Created mocks in {} batch for:", index + 1);
+            batch
+                .iter()
+                .for_each(|event| println!("    --> {:?}", event.name));
+        }
     }
 
     async fn indexing_iteration(&self) -> anyhow::Result<()> {

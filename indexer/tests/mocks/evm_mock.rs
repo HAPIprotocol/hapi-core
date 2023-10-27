@@ -13,7 +13,7 @@ impl RpcMock for EvmMock {
         unimplemented!();
     }
 
-    fn get_hashes() -> [String; 6] {
+    fn get_hashes() -> [String; 17] {
         unimplemented!()
     }
 

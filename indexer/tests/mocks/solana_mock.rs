@@ -13,6 +13,8 @@ use {
     std::str::FromStr,
 };
 
+use solana_sdk::signature::Signature;
+
 use super::{RpcMock, TestBatch, TestData};
 
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
@@ -33,22 +35,20 @@ impl RpcMock for SolanaMock {
         HapiCoreNetwork::Solana
     }
 
-    fn get_hashes() -> [String; 6] {
-        // Solana RPC returns transactions in descending order (latest => earliest)
+    fn get_hashes() -> [String; 17] {
+        // Solana RPC returns transactions in descending order (latest => earliest):
+        // ==> First run: 2 batches of 6 transactions each
+        //     -> last tx in second batch is the earliest
+        // ==> Second run: 1 batch of 5 transactions
+        //     -> first tx in this batch is the latest
 
-        // ==> First run
-        // First batch
-        ["3rsZaASe9nEWoSudhqSXTCYSdWzE4ynNdmdwa4DWmpttkjRbsrPy292YUN1gm7LSm9zKh9X6oCUJoML7uuJEWZM5".to_string(), 
-        "KZsY26mofenqWeTRK2KpboNNWBsxZvauSmCbnehFHK5ALzksZEi6Jci91KNENec8NXv4p9Ksq68FmKAJDBTCKiT".to_string(),
-        
-        // Second batch (last tx in this batch is the earliest)
-        "4dxiswkbCh4bE1wDevwN1jUa1cLozDyb78WPdFoqr7UJn3RuC5PHpCbJ7zQAXQTxcvXqrWYVtYGnP3Q8kHgg8FM".to_string(),
-        "5PwVsyu5jxHKJUp2qps8ZwARyh3jm6edCw62m8NAZVDWMngntMEpgCojyVDATn1qK3VaLZJ3LZzQw94mBcgaYoLz".to_string(),
-        "BMt6636zZ7QbR9sjmwMcTFqEZaKNWmrMhbxMxTdZqyni2sNv3xQoqZ6Z2h3qaGQhW5aZutPNkdLJ94jt2gMGHJs".to_string(),
-        
-        // ==> Second run
-        // First batch (first transaction in this batch is the latest)
-        "4RcKC84uwEVPx9qw1toe4W1JrTeyG76pWg6GN5x3FFHrCt9wb6QSDhtSCaZ4kpZXkyz4QcYubYGfecGtWsXtTNmM".to_string()]
+        let signatures: [String; 17] = (0..17)
+            .map(|_| Signature::new_unique().to_string())
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("Failed to create signatures");
+
+        signatures
     }
 
     fn initialize() -> Self {
@@ -122,7 +122,6 @@ impl RpcMock for SolanaMock {
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
         for event in batch {
-
             // Mocking transaction request with instruction
             self.mock_transaction(event.name.to_string(), &event.hash);
 

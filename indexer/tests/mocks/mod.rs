@@ -27,7 +27,7 @@ pub trait RpcMock {
 
     fn get_contract_address() -> String;
     fn get_network() -> HapiCoreNetwork;
-    fn get_hashes() -> [String; 6];
+    fn get_hashes() -> [String; 17];
     fn get_mock_url(&self) -> String;
 
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor);
@@ -43,58 +43,89 @@ pub struct TestData {
     pub data: Option<PushData>,
 }
 
-// TODO: add other transactions (update_configuration etc.)
 pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
+    let reporter = Reporter {
+        id: Uuid::new_v4(),
+        account: "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
+        role: ReporterRole::Publisher,
+        status: ReporterStatus::Active,
+        name: String::from("Publisher reporter"),
+        url: String::from("https://publisher.com"),
+        stake: 1234.into(),
+        unlock_timestamp: 123,
+    };
+
+    let case = Case {
+        id: Uuid::new_v4(),
+        name: String::from("Case 1"),
+        url: String::from("https://case1.com"),
+        status: CaseStatus::Open,
+        reporter_id: Uuid::new_v4(),
+    };
+
+    let address = Address {
+        address: "BGCCDDHfysuuVnaNVtEhhqeT4k9Muyem3Kpgq2U1m9HX".to_string(),
+        case_id: Uuid::new_v4(),
+        reporter_id: Uuid::new_v4(),
+        risk: 5,
+        category: Category::ATM,
+    };
+
+    let asset = Asset {
+        address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
+        asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
+        case_id: Uuid::new_v4(),
+        reporter_id: Uuid::new_v4(),
+        risk: 7,
+        category: Category::DeFi,
+    };
+
     let data = [
+        // ==> First Run
+        // First batch
+        (EventName::Initialize, None),
+        (EventName::SetAuthority, None),
         (
             EventName::CreateReporter,
-            Some(PushData::Reporter(Reporter {
-                id: Uuid::new_v4(),
-                account: "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
-                role: ReporterRole::Publisher,
-                status: ReporterStatus::Active,
-                name: String::from("Publisher reporter"),
-                url: String::from("https://publisher.com"),
-                stake: 1234.into(),
-                unlock_timestamp: 123,
-            })),
+            Some(PushData::Reporter(reporter.clone())),
         ),
         (EventName::UpdateStakeConfiguration, None),
-        (EventName::ConfirmAddress, None),
-        (EventName::ConfirmAsset, None),
+        (
+            EventName::ActivateReporter,
+            Some(PushData::Reporter(reporter.clone())),
+        ),
+        (
+            EventName::UpdateReporter,
+            Some(PushData::Reporter(reporter.clone())),
+        ),
+        // Second batch
+        (EventName::UpdateRewardConfiguration, None),
+        (EventName::CreateCase, Some(PushData::Case(case.clone()))),
+        (EventName::UpdateCase, Some(PushData::Case(case.clone()))),
         (
             EventName::CreateAddress,
-            Some(PushData::Address(Address {
-                address: "BGCCDDHfysuuVnaNVtEhhqeT4k9Muyem3Kpgq2U1m9HX".to_string(),
-                case_id: Uuid::new_v4(),
-                reporter_id: Uuid::new_v4(),
-                risk: 5,
-                category: Category::ATM,
-            })),
+            Some(PushData::Address(address.clone())),
         ),
         (
-            EventName::CreateAsset,
-            Some(PushData::Asset(Asset {
-                address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
-                asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
-                case_id: Uuid::new_v4(),
-                reporter_id: Uuid::new_v4(),
-                risk: 7,
-                category: Category::DeFi,
-            })),
+            EventName::UpdateAddress,
+            Some(PushData::Address(address.clone())),
         ),
-        // (
-        //     EventName::CreateCase,
-        //     Some(PushData::Case(Case {
-        //         id: Uuid::new_v4(),
-        //         name: String::from("Case 1"),
-        //         url: String::from("https://case1.com"),
-        //         status: CaseStatus::Open,
-        //         reporter_id: Uuid::new_v4(),
-        //     })),
-        // ),
+        (EventName::ConfirmAddress, None),
+        // ==> Second Run
+        // First batch
+        (EventName::CreateAsset, Some(PushData::Asset(asset.clone()))),
+        (EventName::UpdateAsset, Some(PushData::Asset(asset.clone()))),
+        (EventName::ConfirmAsset, None),
+        (
+            EventName::DeactivateReporter,
+            Some(PushData::Reporter(reporter.clone())),
+        ),
+        (
+            EventName::Unstake,
+            Some(PushData::Reporter(reporter.clone())),
+        ),
     ];
 
     let batches: TestBatch = hashes
@@ -107,9 +138,9 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
         })
         .collect();
 
-    let first_batch = batches[0..2].to_vec();
-    let second_batch = batches[2..5].to_vec();
-    let third_batch = batches[5..].to_vec();
+    let first_batch = batches[0..6].to_vec();
+    let second_batch = batches[6..12].to_vec();
+    let third_batch = batches[12..].to_vec();
 
     vec![first_batch, second_batch, third_batch]
 }
