@@ -30,6 +30,7 @@ pub trait RpcMock {
     fn get_hashes() -> [String; 17];
     fn get_mock_url(&self) -> String;
 
+    fn get_cursor(batch: &[TestBatch]) -> IndexingCursor;
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor);
     fn processing_jobs_mock(&mut self, batch: &TestBatch);
 }

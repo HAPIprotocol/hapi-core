@@ -84,31 +84,34 @@ impl<T: RpcMock> IndexerTest<T> {
         }}
     }
 
-    fn check_cursor(&mut self) {
-        // TODO: check persistent state file + fetch cursor from it
+    fn check_cursor(&mut self, batches: &[TestBatch]) {
         self.cursor = PersistedState::from_file(&PathBuf::from(STATE_FILE))
             .expect("Failed to get state")
             .cursor;
+
+        assert_eq!(self.cursor, T::get_cursor(batches));
     }
 
     pub async fn run_test(&mut self) {
-        println!("==> Starting test for {} network", T::get_network());
+        println!("Starting test for {} network\n", T::get_network());
 
         let test_data = create_test_batches::<T>();
 
         // TODO: describe test
         for (index, batches) in test_data.chunks(2).enumerate() {
+            println!("==> Running indexer for {} time", index + 1);
+
             self.create_mocks(batches);
 
-            println!("==> Running indexer for {} time", index + 1);
             self.indexing_iteration().await.unwrap();
 
-            println!("==> Indexing iteration finished, checking results");
             self.webhook_mock.check_mocks();
-            self.check_cursor();
+            self.check_cursor(&batches);
+
+            println!("==> Success: all events were processed, cursor updated\n");
         }
 
-        println!("==> Successful indexing on {} network", T::get_network());
+        println!("Successful indexing on {} network!", T::get_network());
     }
 }
 

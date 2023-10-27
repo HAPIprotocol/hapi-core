@@ -78,6 +78,14 @@ impl RpcMock for SolanaMock {
         self.server.url()
     }
 
+    fn get_cursor(batch: &[TestBatch]) -> IndexingCursor {
+        batch
+            .first()
+            .map(|batch| batch.first().expect("Empty batch"))
+            .map(|tx| IndexingCursor::Transaction(tx.hash.clone()))
+            .unwrap_or(IndexingCursor::None)
+    }
+
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
         let mut before = None;
         let until = match cursor {

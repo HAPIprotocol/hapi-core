@@ -25,6 +25,10 @@ impl RpcMock for EvmMock {
         unimplemented!()
     }
 
+    fn get_cursor(_batch: &[TestBatch]) -> IndexingCursor {
+        unimplemented!()
+    }
+
     fn fetching_jobs_mock(&mut self, _batches: &[TestBatch], _cursor: &IndexingCursor) {
         unimplemented!();
     }
