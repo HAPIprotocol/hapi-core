@@ -122,9 +122,7 @@ impl RpcMock for SolanaMock {
             &None,
             &batches
                 .first()
-                .expect("Failed to get first batch")
-                .first()
-                .map(|data| data.hash.clone()),
+                .map(|batch| batch.first().expect("Empty Batch").hash.clone()),
         );
     }
 

@@ -54,32 +54,28 @@ pub(crate) enum IndexerState {
 
 impl IndexerState {
     pub fn transition(&mut self, new_state: Self) -> bool {
-        match self {
+        match (&self, &new_state) {
             // Already stopped, don't proceed
-            IndexerState::Stopped { message } => {
+            (_, IndexerState::Stopped { message }) => {
                 tracing::info!(message, "Indexer stopped");
 
                 false
             }
 
             // If the new state is waiting, and the current state is also waiting, just move on
-            IndexerState::Waiting { .. } if matches!(new_state, IndexerState::Waiting { .. }) => {
-                true
-            }
+            (IndexerState::Waiting { .. }, IndexerState::Waiting { .. }) => true,
 
             // If the new state is processing, and the current state is also processing, just move on
-            IndexerState::Processing { .. }
-                if matches!(new_state, IndexerState::Processing { .. }) =>
-            {
+            (IndexerState::Processing { .. }, IndexerState::Processing { .. }) => {
                 *self = new_state;
                 true
             }
 
             // Otherwise, change the state
-            _ => {
+            (_, _) => {
                 tracing::debug!(
-                    from = ?self,
-                    to = ?new_state,
+                    from = ?&self,
+                    to = ?&new_state,
                     "State change",
                 );
 

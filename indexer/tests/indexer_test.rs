@@ -92,8 +92,8 @@ impl<T: RpcMock> IndexerTest<T> {
         assert_eq!(self.cursor, T::get_cursor(batches));
     }
 
-    pub async fn run_test(&mut self) {
-        println!("Starting test for {} network\n", T::get_network());
+    pub async fn indexing_test(&mut self) {
+        println!("\nIndexing test");
 
         let test_data = create_test_batches::<T>();
 
@@ -110,6 +110,20 @@ impl<T: RpcMock> IndexerTest<T> {
 
             println!("==> Success: all events were processed, cursor updated\n");
         }
+    }
+
+    pub async fn empty_contract_test(&mut self) {
+        println!("\nEmpty contract test");
+
+        self.create_mocks(&vec![]);
+        assert!(self.indexing_iteration().await.is_ok());
+    }
+
+    pub async fn run_test(&mut self) {
+        println!("Starting test for {} network\n", T::get_network());
+
+        self.indexing_test().await;
+        self.empty_contract_test().await;
 
         println!("Successful indexing on {} network!", T::get_network());
     }
