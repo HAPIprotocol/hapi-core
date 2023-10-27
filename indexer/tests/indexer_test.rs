@@ -97,7 +97,6 @@ impl<T: RpcMock> IndexerTest<T> {
 
         let test_data = create_test_batches::<T>();
 
-        // TODO: describe test
         for (index, batches) in test_data.chunks(2).enumerate() {
             println!("==> Running indexer for {} time", index + 1);
 
@@ -116,13 +115,22 @@ impl<T: RpcMock> IndexerTest<T> {
         println!("\nEmpty contract test");
 
         self.create_mocks(&vec![]);
+
         assert!(self.indexing_iteration().await.is_ok());
     }
 
     pub async fn run_test(&mut self) {
         println!("Starting test for {} network\n", T::get_network());
 
+        // First test: indexer will be running 2 times:
+        // 1. First time it will process 2 batches of events
+        // 2. Second time it will process 1 batch of events
+        // Each time it will check the cursor in
+        // persistent state file and received webhook payloads
         self.indexing_test().await;
+
+        // Second test: indexer should stop with log:
+        // No valid transactions found on the contract address
         self.empty_contract_test().await;
 
         println!("Successful indexing on {} network!", T::get_network());

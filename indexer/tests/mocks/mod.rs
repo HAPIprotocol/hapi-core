@@ -23,15 +23,28 @@ pub mod solana_mock;
 pub mod webhook_mock;
 
 pub trait RpcMock {
+    // Network mock server initialization
     fn initialize() -> Self;
 
+    // Returns Hapi core contarct address
     fn get_contract_address() -> String;
+
+    // Returns Hapi core network
     fn get_network() -> HapiCoreNetwork;
+
+    // Returns network-specific hashes for 17 events
     fn get_hashes() -> [String; 17];
+
+    // Returns the URL of the network mock server
     fn get_mock_url(&self) -> String;
 
+    // Returns the cursor used in network indexing
     fn get_cursor(batch: &[TestBatch]) -> IndexingCursor;
+
+    // Should contain necessary mocks to handle check for updates
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor);
+
+    // Should contain mocks to handle processing (not mandatory for all networks)
     fn processing_jobs_mock(&mut self, batch: &TestBatch);
 }
 
@@ -44,6 +57,8 @@ pub struct TestData {
     pub data: Option<PushData>,
 }
 
+// Create test batches: 17 events structured into 3 batches:
+// 2 batches for the first launch of the indexer 1 batch for the second
 pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
