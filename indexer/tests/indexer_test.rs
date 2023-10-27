@@ -4,7 +4,7 @@ use {
         PersistedState, ITERATION_INTERVAL,
     },
     std::{env, path::PathBuf},
-    tokio::{spawn, time::sleep},
+    tokio::time::sleep,
 };
 
 mod mocks;
@@ -51,7 +51,7 @@ impl<T: RpcMock> IndexerTest<T> {
         println!("==> Batch mocks created");
     }
 
-    async fn indexing_iteration(&self) {
+    async fn indexing_iteration(&self) -> anyhow::Result<()> {
         let cfg = IndexerConfiguration {
             network: T::get_network(),
             rpc_node_url: self.rpc_mock.get_mock_url(),
@@ -62,18 +62,23 @@ impl<T: RpcMock> IndexerTest<T> {
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
-        let timer = ITERATION_INTERVAL.saturating_mul(3);
+        let indexer_task = async move { indexer.run().await };
+        let timer = ITERATION_INTERVAL.saturating_mul(6);
 
         println!(
             "==> Starting indexer with timer: {} millis",
             timer.as_millis()
         );
 
-        // Does it panic if error occurs?
-        let indexer_task = spawn(async move { indexer.run().await });
-        sleep(timer).await;
-
-        indexer_task.abort();
+        tokio::select! {
+        Err(e) = indexer_task => {
+            println!("==> Indexer task finished before timer, error: {}", e);
+            return  Err(e.into());
+        }
+        _ = sleep(timer) => {
+            println!("==> Timer finished, aborting indexer task");
+            return Ok(())
+        }}
     }
 
     fn check_cursor(&mut self) {
@@ -93,20 +98,22 @@ impl<T: RpcMock> IndexerTest<T> {
             self.create_mocks(batches);
 
             println!("==> Running indexer for {} time", index + 1);
-            self.indexing_iteration().await;
+            self.indexing_iteration().await.unwrap();
 
             println!("==> Indexing iteration finished, checking results");
             self.webhook_mock.check_mocks();
             self.check_cursor();
-
-            println!("==> Successful indexing iteration");
         }
+
+        println!("==> Successful indexing on {} network", T::get_network());
     }
 }
 
 impl<T: RpcMock> Drop for IndexerTest<T> {
     fn drop(&mut self) {
-        std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
+        if PathBuf::from(STATE_FILE).exists() {
+            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
+        }
     }
 }
 

@@ -18,8 +18,7 @@ use super::{RpcMock, TestBatch, TestData};
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 pub const REPORTER: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
 pub const CASE: &str = "DTDk9GEQoVibTuHmTfDUwHehkH4WYd5fpawPfayGRVdi";
-pub const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
-pub const ASSET: &str = "5f2iaDyv4yzTudiNc1XR2EkEW5NtVbfZpqmjZ3fhFtaX";
+pub const ADDRESS_OR_ASSET: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
 
 pub struct SolanaMock {
     server: ServerGuard,
@@ -35,11 +34,20 @@ impl RpcMock for SolanaMock {
     }
 
     fn get_hashes() -> [String; 6] {
+        // Solana RPC returns transactions in descending order (latest => earliest)
+
+        // ==> First run
+        // First batch
         ["3rsZaASe9nEWoSudhqSXTCYSdWzE4ynNdmdwa4DWmpttkjRbsrPy292YUN1gm7LSm9zKh9X6oCUJoML7uuJEWZM5".to_string(), 
         "KZsY26mofenqWeTRK2KpboNNWBsxZvauSmCbnehFHK5ALzksZEi6Jci91KNENec8NXv4p9Ksq68FmKAJDBTCKiT".to_string(),
+        
+        // Second batch (last tx in this batch is the earliest)
         "4dxiswkbCh4bE1wDevwN1jUa1cLozDyb78WPdFoqr7UJn3RuC5PHpCbJ7zQAXQTxcvXqrWYVtYGnP3Q8kHgg8FM".to_string(),
         "5PwVsyu5jxHKJUp2qps8ZwARyh3jm6edCw62m8NAZVDWMngntMEpgCojyVDATn1qK3VaLZJ3LZzQw94mBcgaYoLz".to_string(),
         "BMt6636zZ7QbR9sjmwMcTFqEZaKNWmrMhbxMxTdZqyni2sNv3xQoqZ6Z2h3qaGQhW5aZutPNkdLJ94jt2gMGHJs".to_string(),
+        
+        // ==> Second run
+        // First batch (first transaction in this batch is the latest)
         "4RcKC84uwEVPx9qw1toe4W1JrTeyG76pWg6GN5x3FFHrCt9wb6QSDhtSCaZ4kpZXkyz4QcYubYGfecGtWsXtTNmM".to_string()]
     }
 
@@ -52,6 +60,7 @@ impl RpcMock for SolanaMock {
            "id": 1
         });
 
+        // This method is called quite often before other requests in rpc client
         server
             .mock("POST", "/")
             .with_status(200)
@@ -77,6 +86,7 @@ impl RpcMock for SolanaMock {
             IndexingCursor::Block(_) => panic!("Invalid cursor"),
         };
 
+        // Mocking all transactions in batches
         for batch in batches {
             let signatures: Vec<Value> = batch
                 .iter()
@@ -93,12 +103,30 @@ impl RpcMock for SolanaMock {
             before = batch.last().map(|data| data.hash.clone());
         }
 
+        // Mocking last call before processing:
+        // from the last fetched transaction in indexer iteration to the current cursor
         self.mock_batches(vec![], &before, &until);
+
+        // Mocking last call in indexer iteration:
+        // from the latest to the last processed
+        self.mock_batches(
+            vec![],
+            &None,
+            &batches
+                .first()
+                .expect("Failed to get first batch")
+                .first()
+                .map(|data| data.hash.clone()),
+        );
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
         for event in batch {
+
+            // Mocking transaction request with instruction
             self.mock_transaction(event.name.to_string(), &event.hash);
+
+            // Mocking accounts request from instruction
             self.mock_accounts(event);
         }
     }
@@ -106,14 +134,15 @@ impl RpcMock for SolanaMock {
 
 impl SolanaMock {
     fn get_transaction(name: String, hash: &str) -> EncodedConfirmedTransactionWithStatusMeta {
-        // TODO: what about asset?
+        // To reduce redundant code asset and address have common pubkey (same index in account list)
+        // It is important  to call them in different index launches
         let account_keys = vec![
             String::from(PROGRAM_ID),
             String::default(),
             String::default(),
             String::from(REPORTER),
             String::from(CASE),
-            String::from(ADDRESS),
+            String::from(ADDRESS_OR_ASSET),
         ];
 
         create_test_tx(
@@ -197,7 +226,7 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize address");
 
-                ADDRESS
+                ADDRESS_OR_ASSET
             }
             PushData::Asset(asset) => {
                 hapi_core_solana::Asset {
@@ -206,7 +235,7 @@ impl SolanaMock {
                     network: Pubkey::default(),
                     // TODO: encode asset id
                     address: encode_address(&asset.address),
-                    id: [0u8; 64],
+                    id: asset.asset_id.into(),
                     category: asset.category.into(),
                     risk_score: asset.risk,
                     case_id: asset.case_id.as_u128(),
@@ -216,7 +245,7 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize asset");
 
-                ASSET
+                ADDRESS_OR_ASSET
             }
             PushData::Case(case) => {
                 hapi_core_solana::Case {
@@ -287,8 +316,6 @@ impl SolanaMock {
                },
                "id": 1
             });
-
-            println!("RESPONCE : {}", response.to_string());
 
             self.server
                 .mock("POST", "/")

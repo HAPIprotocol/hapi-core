@@ -3,7 +3,7 @@ use {
         client::{
             entities::{
                 address::Address,
-                asset::Asset,
+                asset::{Asset, AssetId},
                 case::{Case, CaseStatus},
                 category::Category,
                 reporter::{Reporter, ReporterRole, ReporterStatus},
@@ -13,6 +13,7 @@ use {
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData},
+    std::str::FromStr,
     uuid::Uuid,
 };
 
@@ -73,27 +74,27 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
                 category: Category::ATM,
             })),
         ),
-        // (
-        //     EventName::CreateAsset,
-        //     Some(PushData::Asset(Asset {
-        //         address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
-        //         asset_id: "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d".to_string(),
-        //         case_id: Uuid::new_v4(),
-        //         reporter_id: Uuid::new_v4(),
-        //         risk: 7,
-        //         category: Category::DeFi,
-        //     })),
-        // ),
         (
-            EventName::CreateCase,
-            Some(PushData::Case(Case {
-                id: Uuid::new_v4(),
-                name: String::from("Case 1"),
-                url: String::from("https://case1.com"),
-                status: CaseStatus::Open,
+            EventName::CreateAsset,
+            Some(PushData::Asset(Asset {
+                address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
+                asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
+                case_id: Uuid::new_v4(),
                 reporter_id: Uuid::new_v4(),
+                risk: 7,
+                category: Category::DeFi,
             })),
         ),
+        // (
+        //     EventName::CreateCase,
+        //     Some(PushData::Case(Case {
+        //         id: Uuid::new_v4(),
+        //         name: String::from("Case 1"),
+        //         url: String::from("https://case1.com"),
+        //         status: CaseStatus::Open,
+        //         reporter_id: Uuid::new_v4(),
+        //     })),
+        // ),
     ];
 
     let batches: TestBatch = hashes

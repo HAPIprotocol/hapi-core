@@ -33,7 +33,6 @@ pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: Option<&str>,
 ) -> Result<Vec<IndexerJob>> {
-    tracing::info!("No cursor found searching for the earliest transaction");
     let mut signature_list = VecDeque::new();
     let mut recent_tx = None;
 

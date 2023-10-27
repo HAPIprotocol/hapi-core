@@ -2,7 +2,7 @@ use crate::client::{
     configuration::{RewardConfiguration, StakeConfiguration},
     entities::{
         address::Address,
-        asset::{Asset, AssetId},
+        asset::Asset,
         case::{Case, CaseStatus},
         category::Category,
         reporter::{Reporter, ReporterRole, ReporterStatus},
@@ -17,7 +17,6 @@ use {
         ReporterStatus as SolanaReporterStatus, RewardConfiguration as SolanaRewardConfiguration,
         StakeConfiguration as SolanaStakeConfiguration,
     },
-    std::str::FromStr,
     uuid::Uuid,
 };
 
@@ -188,15 +187,9 @@ impl TryFrom<SolanaAsset> for Asset {
     type Error = ClientError;
 
     fn try_from(asset: SolanaAsset) -> Result<Self> {
-        let asset_id_str =
-            remove_zeroes(&asset.id).map_err(|e| ClientError::AssetIdParseError(e.to_string()))?;
-
-        let asset_id = AssetId::from_str(&asset_id_str)
-            .map_err(|e| ClientError::AssetIdParseError(e.to_string()))?;
-
         Ok(Asset {
             address: remove_zeroes(&asset.address)?,
-            asset_id,
+            asset_id: asset.id.into(),
             case_id: Uuid::from_u128(asset.case_id),
             reporter_id: Uuid::from_u128(asset.reporter_id),
             risk: asset.risk_score,

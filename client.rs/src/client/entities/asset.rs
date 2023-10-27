@@ -35,6 +35,12 @@ impl From<U256> for AssetId {
     }
 }
 
+impl From<[u8; 32]> for AssetId {
+    fn from(value: [u8; 32]) -> Self {
+        U256::from_little_endian(&value).into()
+    }
+}
+
 impl From<u64> for AssetId {
     fn from(value: u64) -> Self {
         Self(value.into())
@@ -50,6 +56,15 @@ impl From<AssetId> for U256 {
 impl From<AssetId> for u64 {
     fn from(value: AssetId) -> Self {
         value.0.as_u64()
+    }
+}
+
+impl From<AssetId> for [u8; 32] {
+    fn from(value: AssetId) -> Self {
+        let mut res = [0u8; 32];
+        value.0.to_little_endian(&mut res);
+
+        res
     }
 }
 
