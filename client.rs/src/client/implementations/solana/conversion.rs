@@ -9,6 +9,7 @@ use crate::client::{
     },
     result::{ClientError, Result},
 };
+
 use {
     hapi_core_solana::{
         Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,

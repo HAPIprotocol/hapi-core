@@ -3,21 +3,21 @@ use {
     tokio::{task::spawn, try_join},
 };
 
-mod configuration;
-mod indexer;
-mod observability;
-
-pub use {configuration::IndexerConfiguration, indexer::Indexer};
+use hapi_indexer::{
+    configuration::get_configuration,
+    observability::{setup_json_tracing, setup_tracing},
+    Indexer,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cfg = configuration::get_configuration()
-        .map_err(|e| anyhow::anyhow!("Configuration parsing error: {e}"))?;
+    let cfg =
+        get_configuration().map_err(|e| anyhow::anyhow!("Configuration parsing error: {e}"))?;
 
     if cfg.is_json_logging {
-        observability::setup_json_tracing(&cfg.log_level)?;
+        setup_json_tracing(&cfg.log_level)?;
     } else {
-        observability::setup_tracing(&cfg.log_level)?;
+        setup_tracing(&cfg.log_level)?;
     }
 
     tracing::info!(
@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
 
-    let mut indexer = indexer::Indexer::new(cfg.indexer)?;
+    let mut indexer = Indexer::new(cfg.indexer)?;
 
     let server_task = indexer.spawn_server(&cfg.listener).await?;
     let indexer_task = spawn(async move { indexer.run().await });

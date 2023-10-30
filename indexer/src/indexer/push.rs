@@ -1,9 +1,10 @@
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
-
-use hapi_core::client::{
-    entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
-    events::EventName,
+use {
+    anyhow::Result,
+    hapi_core::client::{
+        entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
+        events::EventName,
+    },
+    serde::{Deserialize, Serialize},
 };
 
 use super::Indexer;

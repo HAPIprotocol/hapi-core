@@ -1,10 +1,10 @@
-use std::fmt::Display;
-
-use super::jobs::IndexerJob;
 use {
     anyhow::{anyhow, Result},
     serde::{Deserialize, Serialize},
+    std::fmt::Display,
 };
+
+use super::jobs::IndexerJob;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IndexingCursor {

@@ -1,11 +1,11 @@
+use hapi_core_near::{
+    AddressView as NearAddress, AssetView as NearAsset, Case as NearCase, Reporter as NearReporter,
+};
 use uuid::Uuid;
 
 use crate::client::{
     entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
     result::{ClientError, Result},
-};
-use hapi_core_near::{
-    AddressView as NearAddress, AssetView as NearAsset, Case as NearCase, Reporter as NearReporter,
 };
 
 impl TryFrom<NearReporter> for Reporter {
