@@ -283,6 +283,6 @@ impl Setup {
 
 impl Drop for Setup {
     fn drop(&mut self) {
-        // shut_down_existing_validator();
+        shut_down_existing_validator();
     }
 }

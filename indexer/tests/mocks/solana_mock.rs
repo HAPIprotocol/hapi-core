@@ -144,7 +144,6 @@ impl SolanaMock {
         let account_keys = vec![
             String::from(PROGRAM_ID),
             String::default(),
-            String::default(),
             String::from(REPORTER),
             String::from(CASE),
             String::from(ADDRESS_OR_ASSET),

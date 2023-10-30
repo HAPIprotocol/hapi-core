@@ -24,10 +24,10 @@ use super::ITERATION_INTERVAL;
 
 pub const SOLANA_BATCH_SIZE: usize = 500;
 
-const REPORTER_ACCOUNT_INDEX: usize = 3;
-const CASE_ACCOUNT_INDEX: usize = 4;
-const ADDRESS_ACCOUNT_INDEX: usize = 5;
-const ASSET_ACCOUNT_INDEX: usize = 5;
+const REPORTER_ACCOUNT_INDEX: usize = 2;
+const CASE_ACCOUNT_INDEX: usize = 3;
+const ADDRESS_ACCOUNT_INDEX: usize = 4;
+const ASSET_ACCOUNT_INDEX: usize = 4;
 
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
