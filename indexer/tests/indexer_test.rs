@@ -26,7 +26,9 @@ pub struct IndexerTest<T: RpcMock> {
 impl<T: RpcMock> IndexerTest<T> {
     pub fn new() -> Self {
         if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
-            setup_tracing("debug");
+            if let Err(e) = setup_tracing("debug") {
+                println!("Failed to setup tracing: {}", e);
+            }
         }
 
         if PathBuf::from(STATE_FILE).exists() {

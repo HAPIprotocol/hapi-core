@@ -15,9 +15,9 @@ async fn main() -> Result<()> {
         .map_err(|e| anyhow::anyhow!("Configuration parsing error: {e}"))?;
 
     if cfg.is_json_logging {
-        observability::setup_json_tracing(&cfg.log_level);
+        observability::setup_json_tracing(&cfg.log_level)?;
     } else {
-        observability::setup_tracing(&cfg.log_level);
+        observability::setup_tracing(&cfg.log_level)?;
     }
 
     tracing::info!(
