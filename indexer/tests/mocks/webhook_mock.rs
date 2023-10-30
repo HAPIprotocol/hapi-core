@@ -7,7 +7,6 @@ use super::TestBatch;
 
 pub struct WebhookServiceMock {
     mocks: Vec<Mock>,
-    // TODO: maybe this is redundant
     pub server: ServerGuard,
 }
 

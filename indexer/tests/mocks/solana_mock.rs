@@ -1,7 +1,7 @@
 use {
     anchor_lang::AccountSerialize,
     hapi_core::{
-        client::solana::{test_helpers::create_test_tx, InstructionData},
+        client::solana::{byte_array_from_str, test_helpers::create_test_tx, InstructionData},
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData, SOLANA_BATCH_SIZE},
@@ -233,13 +233,16 @@ impl SolanaMock {
                 ADDRESS_OR_ASSET
             }
             PushData::Asset(asset) => {
+                let mut id = [0_u8; 32];
+                byte_array_from_str(&asset.asset_id.to_string(), &mut id)
+                    .expect("Failed to parse asset id");
+
                 hapi_core_solana::Asset {
                     version: 1,
                     bump: 255,
                     network: Pubkey::default(),
-                    // TODO: encode asset id
                     address: encode_address(&asset.address),
-                    id: asset.asset_id.into(),
+                    id,
                     category: asset.category.into(),
                     risk_score: asset.risk,
                     case_id: asset.case_id.as_u128(),

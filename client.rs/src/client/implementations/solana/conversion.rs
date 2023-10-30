@@ -2,7 +2,7 @@ use crate::client::{
     configuration::{RewardConfiguration, StakeConfiguration},
     entities::{
         address::Address,
-        asset::Asset,
+        asset::{Asset, AssetId},
         case::{Case, CaseStatus},
         category::Category,
         reporter::{Reporter, ReporterRole, ReporterStatus},
@@ -12,12 +12,13 @@ use crate::client::{
 
 use {
     hapi_core_solana::{
-        Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
+        bytes_to_string, Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
         CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Network as SolanaNetwork,
         Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
         ReporterStatus as SolanaReporterStatus, RewardConfiguration as SolanaRewardConfiguration,
         StakeConfiguration as SolanaStakeConfiguration,
     },
+    std::str::FromStr,
     uuid::Uuid,
 };
 
@@ -188,9 +189,16 @@ impl TryFrom<SolanaAsset> for Asset {
     type Error = ClientError;
 
     fn try_from(asset: SolanaAsset) -> Result<Self> {
+        let asset_id = AssetId::from_str(&bytes_to_string(&asset.id).map_err(|e| {
+            ClientError::AssetIdParseError(format!("invalid-bytes {}", e.to_string()))
+        })?)
+        .map_err(|e| {
+            ClientError::AssetIdParseError(format!("invalid-asset-id {}", e.to_string()))
+        })?;
+
         Ok(Asset {
             address: remove_zeroes(&asset.address)?,
-            asset_id: asset.id.into(),
+            asset_id,
             case_id: Uuid::from_u128(asset.case_id),
             reporter_id: Uuid::from_u128(asset.reporter_id),
             risk: asset.risk_score,

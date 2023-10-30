@@ -14,4 +14,4 @@ pub use token::TokenContractSolana;
 
 pub use instruction_data::{DecodedInstructionData, InstructionData};
 pub use instruction_decoder::DecodedInstruction;
-pub use utils::get_network_address;
+pub use utils::{byte_array_from_str, get_network_address};
