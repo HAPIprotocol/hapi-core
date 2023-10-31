@@ -48,6 +48,16 @@ To enable indexer tracing in tests, set the ENABLE_TRACING env variable to 1
 cargo test
 ```
 
+## Manual testing
+
+Steps:
+
+1. Prepare the environment for the selected network: run validator, deploy contract and create test data (all instructions are in the contact directory).
+2. Start a listener server for webhooks (a simple python server is available in the ./tests/manual_helpers directory).
+3. Set indexer configuration and define cfg path in CONFIG_PATH env variable.
+4. Run indexer with ` cargo run` command.
+5. Compare the resulting payload with the test data
+
 ## License
 
 HAPI indexer is distributed under the terms of the MIT license.
