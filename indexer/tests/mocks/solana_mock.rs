@@ -140,7 +140,7 @@ impl RpcMock for SolanaMock {
 impl SolanaMock {
     fn get_transaction(name: String, hash: &str) -> EncodedConfirmedTransactionWithStatusMeta {
         // To reduce redundant code asset and address have common pubkey (same index in account list)
-        // It is important  to call them in different index launches
+        // It is important  to call them in different indexer launches
         let account_keys = vec![
             String::from(PROGRAM_ID),
             String::default(),

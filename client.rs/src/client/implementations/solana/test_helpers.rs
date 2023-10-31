@@ -11,8 +11,6 @@ use {
 use super::instruction_data::{DecodedInstructionData, InstructionData};
 use crate::client::solana::instruction_data::get_instruction_sighash;
 
-pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
-
 fn serialize<T: AnchorSerialize>(name: &str, data: T) -> Vec<u8> {
     let mut instruction_data = get_instruction_sighash(name).to_vec();
 

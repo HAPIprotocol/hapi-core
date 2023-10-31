@@ -214,6 +214,8 @@ mod tests {
     use super::*;
     use crate::{client::solana::test_helpers::*, HapiCoreNetwork, HapiCoreOptions};
 
+    const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
+
     fn get_cli(program_id: Option<String>) -> HapiCoreSolana {
         HapiCoreSolana::new(HapiCoreOptions {
             provider_url: String::default(),
