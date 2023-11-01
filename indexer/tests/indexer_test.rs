@@ -9,6 +9,9 @@ use {
 
 mod mocks;
 
+#[cfg(feature = "manual-helper")]
+mod simple_listener;
+
 use mocks::{
     create_test_batches, evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
     webhook_mock::WebhookServiceMock, RpcMock, TestBatch,

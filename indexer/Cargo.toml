@@ -9,6 +9,9 @@ description = "Indexer for HAPI Protocol contracts"
 crate-type = ["lib"]
 name = "hapi_indexer"
 
+[features]
+manual-helper = []
+
 [dependencies]
 hapi-core-cli = { path = "../client.rs" }
 anyhow = "1"

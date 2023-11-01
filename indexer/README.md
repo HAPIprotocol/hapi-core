@@ -53,7 +53,7 @@ cargo test
 Steps:
 
 1. Prepare the environment for the selected network: run validator, deploy contract and create test data (all instructions are in the contact directory).
-2. Start a listener server for webhooks (a simple python server is available in the ./tests/manual_helpers directory).
+2. Start a listener server for webhooks (a simple listener server is available in tests, run `cargo test run_simple_listener -- --nocapture`).
 3. Set indexer configuration and define cfg path in CONFIG_PATH env variable.
 4. Run indexer with ` cargo run` command.
 5. Compare the resulting payload with the test data
