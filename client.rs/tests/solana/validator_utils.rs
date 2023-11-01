@@ -98,7 +98,7 @@ pub async fn prepare_validator(current_dir: &str, provider_url: &str) {
             .stdout(Stdio::null())
             .env("ANCHOR_PROVIDER_URL", &provider_url)
             .env("ANCHOR_WALLET", &admin_keypair)
-            .env("HAPI_CORE_PROGRAM_ID", HAPI_CORE_PROGRAM_ID)
+            .env("CONTRACT_ADDRESS", CONTRACT_ADDRESS)
             .current_dir(&program_dir),
     )
     .unwrap();

@@ -10,10 +10,7 @@ import chalk from "chalk";
 dotenv.config();
 
 const provider = anchor.AnchorProvider.local();
-const hapiCore = new HapiCoreProgram(
-  process.env.HAPI_CORE_PROGRAM_ID,
-  provider
-);
+const hapiCore = new HapiCoreProgram(process.env.CONTRACT_ADDRESS, provider);
 
 const stakeConfiguration = {
   unlockDuration: new BN(0),
@@ -41,8 +38,8 @@ async function main() {
     throw new Error(`Argument <NETWORK_NAME> is required`);
   }
 
-  if (!process.env.HAPI_CORE_PROGRAM_ID) {
-    throw new Error("HAPI_CORE_PROGRAM_ID is not set");
+  if (!process.env.CONTRACT_ADDRESS) {
+    throw new Error("CONTRACT_ADDRESS is not set");
   }
 
   if (STAKE_MINT) {

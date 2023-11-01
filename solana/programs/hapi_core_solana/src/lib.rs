@@ -7,7 +7,7 @@ mod state;
 
 use context::*;
 use error::{print_error, ErrorCode};
-use state::{confirmation::*, utils::*};
+use state::confirmation::*;
 
 pub use state::{
     address::Address,
@@ -15,7 +15,7 @@ pub use state::{
     case::{Case, CaseStatus},
     network::{Network, RewardConfiguration, StakeConfiguration},
     reporter::{Reporter, ReporterRole, ReporterStatus},
-    utils::Category,
+    utils::{bytes_to_string, Category},
     ACCOUNT_RESERVE_SPACE,
 };
 
@@ -393,7 +393,7 @@ pub mod hapi_core_solana {
     pub fn create_asset(
         ctx: Context<CreateAsset>,
         addr: [u8; 64],
-        asset_id: [u8; 64],
+        asset_id: [u8; 32],
         category: Category,
         risk_score: u8,
         bump: u8,

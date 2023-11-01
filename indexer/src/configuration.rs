@@ -1,7 +1,6 @@
-use hapi_core::HapiCoreNetwork;
-
 use {
     config::{Config, ConfigError, File, FileFormat},
+    hapi_core::HapiCoreNetwork,
     serde::Deserialize,
     serde_with::{serde_as, DurationMilliSeconds},
     std::{env, time::Duration},
@@ -12,7 +11,7 @@ pub const SECRET_PATH: &str = "secret.toml";
 
 #[serde_as]
 #[derive(Default, Deserialize, Clone)]
-pub(crate) struct Configuration {
+pub struct Configuration {
     /// Log level for the application layer
     #[serde(default = "default_loglevel")]
     pub log_level: String,
@@ -30,7 +29,7 @@ pub(crate) struct Configuration {
 
 #[serde_as]
 #[derive(Default, Deserialize, Clone)]
-pub(crate) struct IndexerConfiguration {
+pub struct IndexerConfiguration {
     /// The network to use
     pub network: HapiCoreNetwork,
 
@@ -73,7 +72,7 @@ fn default_state_file() -> String {
     String::from("data/state.json")
 }
 
-pub(crate) fn get_configuration() -> Result<Configuration, ConfigError> {
+pub fn get_configuration() -> Result<Configuration, ConfigError> {
     let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| CONFIG_PATH.to_string());
     let secret_path = env::var("SECRET_PATH").unwrap_or_else(|_| SECRET_PATH.to_string());
 

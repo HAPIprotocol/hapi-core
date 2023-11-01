@@ -1,3 +1,4 @@
+use anchor_client::solana_sdk::signature::ParseSignatureError;
 use near_jsonrpc_client::methods::broadcast_tx_async::RpcBroadcastTxAsyncError;
 use near_jsonrpc_primitives::types::{query::RpcQueryError, transactions::RpcTransactionError};
 use thiserror::Error;
@@ -60,8 +61,16 @@ pub enum ClientError {
     SolanaRpcError(#[from] anchor_client::solana_client::client_error::ClientError),
     #[error("This owner has no token account")]
     AbsentTokenAccount,
+    #[error("Account not found")]
+    AccountNotFound,
+    #[error("Account deserialization error: {0}")]
+    AccountDeserializationError(String),
     #[error("Solana token error: {0}")]
     SolanaTokenError(#[from] anchor_client::solana_sdk::program_error::ProgramError),
+    #[error("Solana parse signature error: {0}")]
+    ParseSignatureError(#[from] ParseSignatureError),
+    #[error("Account instruction decoding: {0}")]
+    InstructionDecodingError(String),
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;

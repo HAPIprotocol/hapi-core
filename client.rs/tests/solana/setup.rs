@@ -107,7 +107,7 @@ impl Setup {
     }
 
     async fn check_validator_setup(&self) {
-        let program_id = HAPI_CORE_PROGRAM_ID
+        let program_id = CONTRACT_ADDRESS
             .parse::<Pubkey>()
             .expect("Invalid program id");
         let network_account = get_network_address(NETWORK, &program_id)
@@ -237,7 +237,7 @@ impl Setup {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        let contract_address = HAPI_CORE_PROGRAM_ID.to_string();
+        let contract_address = CONTRACT_ADDRESS.to_string();
         let network = NETWORK.to_string();
         let provider_url = self.provider_url.clone();
 

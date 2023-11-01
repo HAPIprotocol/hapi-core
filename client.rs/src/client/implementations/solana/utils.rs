@@ -96,7 +96,7 @@ pub fn get_address_address(
 /// Returns asset PDA address
 pub fn get_asset_address(
     address: &[u8; 64],
-    asset_id: &[u8; 64],
+    asset_id: &[u8; 32],
     network: &Pubkey,
     program_id: &Pubkey,
 ) -> Result<(Pubkey, u8)> {
@@ -106,8 +106,7 @@ pub fn get_asset_address(
             network.as_ref(),
             address[0..32].as_ref(),
             address[32..64].as_ref(),
-            asset_id[0..32].as_ref(),
-            asset_id[32..64].as_ref(),
+            asset_id,
         ],
         program_id,
     ))
