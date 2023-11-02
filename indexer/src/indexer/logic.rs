@@ -77,32 +77,33 @@ impl Indexer {
         &self,
         jobs: &[IndexerJob],
         old_cursor: IndexingCursor,
+        new_cursor: IndexingCursor,
     ) -> Result<IndexerState> {
-        if let Some(job) = jobs.first() {
-            let cursor = IndexingCursor::try_from(job.clone())?;
+        if !jobs.is_empty() {
+            tracing::info!(%new_cursor, "Earliest cursor found");
 
-            tracing::info!(%cursor, "Earliest cursor found");
+            return Ok(IndexerState::Processing { cursor: new_cursor });
+        } else {
+            if old_cursor == IndexingCursor::None {
+                return Ok(IndexerState::Stopped {
+                    message: "No valid transactions found on the contract address".to_string(),
+                });
+            } else {
+                let timestamp = now()? + self.wait_interval_ms.as_secs();
+                tracing::info!(timestamp, %new_cursor, "New jobs not found, waiting until next check");
 
-            return Ok(IndexerState::Processing { cursor });
-        } else if old_cursor == IndexingCursor::None {
-            return Ok(IndexerState::Stopped {
-                message: "No valid transactions found on the contract address".to_string(),
-            });
+                Ok(IndexerState::Waiting {
+                    until: timestamp,
+                    cursor: new_cursor,
+                })
+            }
         }
-
-        let timestamp = now()? + self.wait_interval_ms.as_secs();
-        tracing::info!(timestamp, "New jobs not found, waiting until next check");
-
-        Ok(IndexerState::Waiting {
-            until: timestamp,
-            cursor: old_cursor,
-        })
     }
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        let new_jobs = self.client.fetch_jobs(&cursor).await?;
-        let state = self.get_updated_state(&new_jobs, cursor)?;
+        let (new_jobs, new_cursor) = self.client.fetch_jobs(&cursor).await?;
+        let state = self.get_updated_state(&new_jobs, cursor, new_cursor)?;
 
         self.jobs.extend(new_jobs);
 

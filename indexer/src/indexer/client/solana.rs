@@ -1,5 +1,5 @@
 use {
-    anyhow::Result,
+    anyhow::{bail, Result},
     hapi_core::HapiCoreSolana,
     hapi_core::{
         client::{
@@ -17,7 +17,7 @@ use {
 
 use crate::indexer::{
     push::{PushData, PushEvent, PushPayload},
-    IndexerJob,
+    IndexerJob, IndexingCursor,
 };
 
 use super::ITERATION_INTERVAL;
@@ -31,21 +31,38 @@ const ASSET_ACCOUNT_INDEX: usize = 4;
 
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
-    current_cursor: Option<&str>,
-) -> Result<Vec<IndexerJob>> {
-    let mut signature_list = VecDeque::new();
-    let mut recent_tx = None;
-
-    let signature_cursor = if let Some(cursor) = current_cursor {
-        Some(Signature::from_str(cursor)?)
-    } else {
-        None
+    current_cursor: &IndexingCursor,
+) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
+    let signature_cursor = match &current_cursor {
+        IndexingCursor::None => None,
+        IndexingCursor::Transaction(tx) => Some(Signature::from_str(tx)?),
+        _ => bail!("Solana network must have a transaction cursor"),
     };
 
     tracing::info!(
-        current_cursor = %current_cursor.unwrap_or("Latest"),
+        current_cursor = %current_cursor,
         "Fetching solana jobs"
     );
+
+    let signature_list = get_signature_list(client, signature_cursor).await?;
+    tracing::info!(count = signature_list.len(), "Found jobs");
+
+    // TODO: describe this
+    let new_cursor = if let Some(recent) = signature_list.first() {
+        IndexingCursor::try_from(recent.clone())?
+    } else {
+        current_cursor.clone()
+    };
+
+    Ok((signature_list, new_cursor))
+}
+
+async fn get_signature_list(
+    client: &HapiCoreSolana,
+    signature_cursor: Option<Signature>,
+) -> Result<Vec<IndexerJob>> {
+    let mut recent_tx = None;
+    let mut signature_list = VecDeque::new();
 
     loop {
         let config = GetConfirmedSignaturesForAddress2Config {
@@ -80,8 +97,6 @@ pub(super) async fn fetch_solana_jobs(
             break;
         }
     }
-
-    tracing::info!(count = signature_list.len(), "Found jobs");
 
     Ok(signature_list.into())
 }

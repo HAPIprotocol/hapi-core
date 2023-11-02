@@ -1,33 +1,35 @@
 use {
-    anyhow::Result,
+    anyhow::{bail, Result},
     ethers::{abi::Token, providers::Middleware, types::Filter},
     hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
-    std::str::FromStr,
+    std::{cmp::min, str::FromStr},
     tokio::time::sleep,
     uuid::Uuid,
 };
 
-use crate::indexer::{
-    push::{PushData, PushEvent, PushPayload},
-    IndexerJob,
+use crate::{
+    indexer::{
+        push::{PushData, PushEvent, PushPayload},
+        IndexerJob,
+    },
+    IndexingCursor,
 };
 
 use super::ITERATION_INTERVAL;
 
 pub const EVM_PAGE_SIZE: u64 = 100;
 
-pub(super) async fn fetch_evm_jobs(
+async fn get_event_list(
     client: &HapiCoreEvm,
-    current_cursor: Option<u64>,
+    earliest_block: u64,
+    latest_block: u64,
 ) -> Result<Vec<IndexerJob>> {
-    let filter = Filter::default().address(client.contract.address());
-    let mut earliest_block = current_cursor.unwrap_or_default();
+    let mut previous_block = earliest_block;
     let mut event_list = vec![];
-
-    tracing::info!(earliest_block, "Fetching evm jobs");
+    let filter = Filter::default().address(client.contract.address());
 
     loop {
-        let next_block = earliest_block + EVM_PAGE_SIZE;
+        let next_block = min(previous_block + EVM_PAGE_SIZE, latest_block);
 
         let logs = client
             .contract
@@ -35,13 +37,13 @@ pub(super) async fn fetch_evm_jobs(
             .get_logs(
                 &filter
                     .clone()
-                    .from_block(earliest_block)
+                    .from_block(previous_block)
                     .to_block(next_block),
             )
             .await
             .expect("Failed to fetch logs");
 
-        if logs.is_empty() {
+        if next_block == latest_block {
             break;
         }
 
@@ -49,13 +51,36 @@ pub(super) async fn fetch_evm_jobs(
             event_list.push(IndexerJob::Log(log));
         });
 
-        earliest_block = next_block;
+        previous_block = next_block;
         sleep(ITERATION_INTERVAL).await;
     }
 
+    Ok(event_list)
+}
+
+pub(super) async fn fetch_evm_jobs(
+    client: &HapiCoreEvm,
+    current_cursor: &IndexingCursor,
+) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
+    let earliest_block = match &current_cursor {
+        IndexingCursor::None => 0,
+        IndexingCursor::Block(block) => *block,
+        _ => bail!("Evm network must have a block cursor"),
+    };
+
+    tracing::info!(earliest_block, "Fetching evm jobs");
+
+    let latest_block = client.provider.get_block_number().await?.as_u64();
+    let event_list = get_event_list(client, earliest_block, latest_block).await?;
     tracing::info!(count = event_list.len(), "Found jobs");
 
-    Ok(event_list)
+    let new_cursor = if let Some(recent) = event_list.first() {
+        IndexingCursor::try_from(recent.clone())?
+    } else {
+        IndexingCursor::Block(latest_block)
+    };
+
+    Ok((event_list, new_cursor))
 }
 
 pub(super) async fn process_evm_job(
