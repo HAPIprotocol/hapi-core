@@ -77,6 +77,7 @@ impl Indexer {
         &self,
         jobs: &[IndexerJob],
         old_cursor: IndexingCursor,
+        new_cursor: IndexingCursor,
     ) -> Result<IndexerState> {
         if let Some(job) = jobs.first() {
             let cursor = IndexingCursor::try_from(job.clone())?;
@@ -95,16 +96,25 @@ impl Indexer {
 
         Ok(IndexerState::Waiting {
             until: timestamp,
-            cursor: old_cursor,
+            cursor: new_cursor,
         })
     }
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        let new_jobs = self.client.fetch_jobs(&cursor).await?;
-        let state = self.get_updated_state(&new_jobs, cursor)?;
+        let artifacts = self.client.fetch_jobs(&cursor).await?;
+        let state = self.get_updated_state(&artifacts.jobs, cursor, artifacts.cursor.clone())?;
 
-        self.jobs.extend(new_jobs);
+        match state {
+            IndexerState::Waiting { .. } => {
+                PersistedState {
+                    cursor: artifacts.cursor,
+                }
+                .to_file(&self.state_file)?;
+            }
+            _ => {}
+        };
+        self.jobs.extend(artifacts.jobs);
 
         Ok(state)
     }

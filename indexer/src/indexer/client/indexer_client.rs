@@ -1,21 +1,27 @@
 use {
     anyhow::Result,
-    hapi_core::{HapiCoreEvm, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
+    hapi_core::{HapiCoreEvm, HapiCoreNear, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
     std::time::Duration,
 };
 
 use super::{
     evm::{fetch_evm_jobs, process_evm_job},
+    near::{fetch_near_jobs, process_near_job},
     solana::{fetch_solana_jobs, process_solana_job},
 };
 
 use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
 
+pub(crate) struct FetchingArtifacts {
+    pub jobs: Vec<IndexerJob>,
+    pub cursor: IndexingCursor,
+}
+
 pub const ITERATION_INTERVAL: Duration = Duration::from_millis(100);
 
 pub(crate) enum IndexerClient {
     Evm(HapiCoreEvm),
-    Near,
+    Near(HapiCoreNear),
     Solana(HapiCoreSolana),
 }
 
@@ -38,14 +44,14 @@ impl IndexerClient {
             HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc | HapiCoreNetwork::Sepolia => {
                 Ok(Self::Evm(HapiCoreEvm::new(options)?))
             }
-            HapiCoreNetwork::Near => Ok(Self::Near),
+            HapiCoreNetwork::Near => Ok(Self::Near(HapiCoreNear::new(options)?)),
             HapiCoreNetwork::Solana | HapiCoreNetwork::Bitcoin => {
                 Ok(Self::Solana(HapiCoreSolana::new(options)?))
             }
         }
     }
 
-    pub(crate) async fn fetch_jobs(&self, cursor: &IndexingCursor) -> Result<Vec<IndexerJob>> {
+    pub(crate) async fn fetch_jobs(&self, cursor: &IndexingCursor) -> Result<FetchingArtifacts> {
         match (self, cursor) {
             (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
                 fetch_evm_jobs(client, Some(*n)).await
@@ -59,6 +65,13 @@ impl IndexerClient {
             }
             (IndexerClient::Solana(client), IndexingCursor::None) => {
                 fetch_solana_jobs(client, None).await
+            }
+
+            (IndexerClient::Near(client), IndexingCursor::Block(n)) => {
+                fetch_near_jobs(client, Some(n.clone())).await
+            }
+            (IndexerClient::Near(client), IndexingCursor::None) => {
+                fetch_near_jobs(client, None).await
             }
             _ => unimplemented!(),
         }
@@ -74,6 +87,9 @@ impl IndexerClient {
             }
             (IndexerClient::Solana(client), IndexerJob::Transaction(hash)) => {
                 process_solana_job(client, hash).await
+            }
+            (IndexerClient::Near(client), IndexerJob::TransactionReceipt(receipt)) => {
+                process_near_job(client, receipt).await
             }
             _ => unimplemented!(),
         }

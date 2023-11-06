@@ -15,10 +15,10 @@ use {
     tokio::time::sleep,
 };
 
-use crate::indexer::{
+use crate::{indexer::{
     push::{PushData, PushEvent, PushPayload},
-    IndexerJob,
-};
+    IndexerJob, client::indexer_client::FetchingArtifacts,
+}, IndexingCursor};
 
 use super::ITERATION_INTERVAL;
 
@@ -32,7 +32,7 @@ const ASSET_ACCOUNT_INDEX: usize = 4;
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: Option<&str>,
-) -> Result<Vec<IndexerJob>> {
+) -> Result<FetchingArtifacts> {
     let mut signature_list = VecDeque::new();
     let mut recent_tx = None;
 
@@ -83,7 +83,12 @@ pub(super) async fn fetch_solana_jobs(
 
     tracing::info!(count = signature_list.len(), "Found jobs");
 
-    Ok(signature_list.into())
+    let artifacts: FetchingArtifacts = FetchingArtifacts {
+        jobs: signature_list.into(),
+        cursor: IndexingCursor::None, // TODO: Implement cursor
+    };
+
+    Ok(artifacts)
 }
 
 pub(super) async fn process_solana_job(

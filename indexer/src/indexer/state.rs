@@ -24,6 +24,9 @@ impl TryFrom<IndexerJob> for IndexingCursor {
                     .ok_or(anyhow!("Unable to parse block number"))?
                     .as_u64(),
             )),
+            IndexerJob::TransactionReceipt(receipt) => {
+                Ok(IndexingCursor::Block(receipt.block_height))
+            }
         }
     }
 }

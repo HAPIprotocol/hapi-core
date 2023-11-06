@@ -84,6 +84,12 @@ To deploy contract use:
 near deploy $CONTRACT_ID --wasmFile=res/hapi_core_near.wasm
 ```
 
+To initialize contract use:
+
+```sh
+near call $CONTRACT_ID initialize '{}' --accountId $CONTRACT_ID
+
+
 Command to work with contract via near_cli you can find [here](README_contract.md).
 
 ### Prepare client
