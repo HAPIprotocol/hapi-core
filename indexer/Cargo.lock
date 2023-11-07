@@ -2915,6 +2915,7 @@ dependencies = [
  "ethers",
  "hapi-core-cli",
  "hapi_core_solana",
+ "hex",
  "hyper",
  "mockito",
  "reqwest",

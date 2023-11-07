@@ -56,6 +56,7 @@ eatures = ["no-entrypoint"]
 
 [dev-dependencies]
 mockito = "1.2"
+hex = "0.4"
 
 [dev-dependencies.anchor-lang]
 git = "https://github.com/hlgltvnnk/anchor.git"

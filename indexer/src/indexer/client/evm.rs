@@ -19,6 +19,31 @@ use super::ITERATION_INTERVAL;
 
 pub const EVM_PAGE_SIZE: u64 = 100;
 
+pub(super) async fn fetch_evm_jobs(
+    client: &HapiCoreEvm,
+    current_cursor: &IndexingCursor,
+) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
+    let earliest_block = match &current_cursor {
+        IndexingCursor::None => 0,
+        IndexingCursor::Block(block) => *block,
+        _ => bail!("Evm network must have a block cursor"),
+    };
+
+    tracing::info!(earliest_block, "Fetching evm jobs");
+
+    let latest_block = client.provider.get_block_number().await?.as_u64();
+    let event_list = get_event_list(client, earliest_block, latest_block).await?;
+    tracing::info!(count = event_list.len(), "Found jobs");
+
+    let new_cursor = if let Some(recent) = event_list.first() {
+        IndexingCursor::try_from(recent.clone())?
+    } else {
+        IndexingCursor::Block(latest_block)
+    };
+
+    Ok((event_list, new_cursor))
+}
+
 async fn get_event_list(
     client: &HapiCoreEvm,
     earliest_block: u64,
@@ -56,31 +81,6 @@ async fn get_event_list(
     }
 
     Ok(event_list)
-}
-
-pub(super) async fn fetch_evm_jobs(
-    client: &HapiCoreEvm,
-    current_cursor: &IndexingCursor,
-) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
-    let earliest_block = match &current_cursor {
-        IndexingCursor::None => 0,
-        IndexingCursor::Block(block) => *block,
-        _ => bail!("Evm network must have a block cursor"),
-    };
-
-    tracing::info!(earliest_block, "Fetching evm jobs");
-
-    let latest_block = client.provider.get_block_number().await?.as_u64();
-    let event_list = get_event_list(client, earliest_block, latest_block).await?;
-    tracing::info!(count = event_list.len(), "Found jobs");
-
-    let new_cursor = if let Some(recent) = event_list.first() {
-        IndexingCursor::try_from(recent.clone())?
-    } else {
-        IndexingCursor::Block(latest_block)
-    };
-
-    Ok((event_list, new_cursor))
 }
 
 pub(super) async fn process_evm_job(

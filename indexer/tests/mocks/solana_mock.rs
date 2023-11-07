@@ -8,12 +8,10 @@ use {
     mockito::{Matcher, Server, ServerGuard},
     serde_json::{json, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_sdk::{account::Account, pubkey::Pubkey},
+    solana_sdk::{account::Account, pubkey::Pubkey, signature::Signature},
     solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
     std::str::FromStr,
 };
-
-use solana_sdk::signature::Signature;
 
 use super::{RpcMock, TestBatch, TestData};
 
