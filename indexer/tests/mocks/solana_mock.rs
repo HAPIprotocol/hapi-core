@@ -4,16 +4,21 @@ use {
         client::solana::{byte_array_from_str, test_helpers::create_test_tx, InstructionData},
         HapiCoreNetwork,
     },
-    hapi_indexer::{IndexingCursor, PushData, SOLANA_BATCH_SIZE},
+    hapi_indexer::{IndexingCursor, PushData},
     mockito::{Matcher, Server, ServerGuard},
     serde_json::{json, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_sdk::{account::Account, pubkey::Pubkey, signature::Signature},
+    solana_sdk::{
+        account::Account,
+        pubkey::Pubkey,
+        signature::{Keypair, Signature},
+        signer::Signer,
+    },
     solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
     std::str::FromStr,
 };
 
-use super::{RpcMock, TestBatch, TestData};
+use super::{RpcMock, TestBatch, TestData, PAGE_SIZE};
 
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 pub const REPORTER: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
@@ -49,6 +54,10 @@ impl RpcMock for SolanaMock {
         signatures
     }
 
+    fn generate_address() -> String {
+        Keypair::new().pubkey().to_string()
+    }
+
     fn initialize() -> Self {
         let mut server = Server::new();
 
@@ -80,7 +89,7 @@ impl RpcMock for SolanaMock {
         batch
             .first()
             .map(|batch| batch.first().expect("Empty batch"))
-            .map(|tx| IndexingCursor::Transaction(tx.hash.clone()))
+            .map(|data: &TestData| IndexingCursor::Transaction(data.hash.clone()))
             .unwrap_or(IndexingCursor::None)
     }
 
@@ -178,7 +187,7 @@ impl SolanaMock {
                 "method": "getSignaturesForAddress",
                 "params": [ PROGRAM_ID,
                 {
-                  "limit": SOLANA_BATCH_SIZE,
+                  "limit": PAGE_SIZE,
                   "until" : until,
                   "before" : before,
                   "commitment" : "confirmed"

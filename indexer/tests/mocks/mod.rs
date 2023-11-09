@@ -22,6 +22,8 @@ pub mod near_mock;
 pub mod solana_mock;
 pub mod webhook_mock;
 
+pub const PAGE_SIZE: u64 = 6;
+
 pub trait RpcMock {
     // Network mock server initialization
     fn initialize() -> Self;
@@ -34,6 +36,9 @@ pub trait RpcMock {
 
     // Returns network-specific hashes for 17 events
     fn get_hashes() -> [String; 17];
+
+    // Returns network-specific address
+    fn generate_address() -> String;
 
     // Returns the URL of the network mock server
     fn get_mock_url(&self) -> String;
@@ -55,6 +60,7 @@ pub struct TestData {
     pub hash: String,
     pub name: EventName,
     pub data: Option<PushData>,
+    pub block: u64,
 }
 
 // Create test batches: 17 events structured into 3 batches:
@@ -62,9 +68,10 @@ pub struct TestData {
 pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
+    // TODO: make data universal to all networks
     let reporter = Reporter {
         id: Uuid::new_v4(),
-        account: "9ZNTfG4NyQgxy2SWjSiQoUyBPEvXT2xo7fKc5hPYYJ7b".to_string(),
+        account: T::generate_address(),
         role: ReporterRole::Publisher,
         status: ReporterStatus::Active,
         name: String::from("Publisher reporter"),
@@ -82,7 +89,8 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     };
 
     let address = Address {
-        address: "BGCCDDHfysuuVnaNVtEhhqeT4k9Muyem3Kpgq2U1m9HX".to_string(),
+        // address: "BGCCDDHfysuuVnaNVtEhhqeT4k9Muyem3Kpgq2U1m9HX".to_string(),
+        address: T::generate_address(),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
         risk: 5,
@@ -90,7 +98,7 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     };
 
     let asset = Asset {
-        address: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F".to_string(),
+        address: T::generate_address(),
         asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
@@ -98,6 +106,9 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
         category: Category::DeFi,
     };
 
+    // TODO: Evm doesnt have confirmations:
+    // 1. Add confirmation to Evm contract
+    // 2. Or remove confirmation indexer tests
     let data = [
         // ==> First Run
         // First batch
@@ -128,12 +139,12 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
             EventName::UpdateAddress,
             Some(PushData::Address(address.clone())),
         ),
-        (EventName::ConfirmAddress, None),
+        // (EventName::ConfirmAddress, None),
         // ==> Second Run
         // First batch
         (EventName::CreateAsset, Some(PushData::Asset(asset.clone()))),
         (EventName::UpdateAsset, Some(PushData::Asset(asset.clone()))),
-        (EventName::ConfirmAsset, None),
+        // (EventName::ConfirmAsset, None),
         (
             EventName::DeactivateReporter,
             Some(PushData::Reporter(reporter.clone())),
@@ -146,11 +157,13 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
 
     let batches: TestBatch = hashes
         .iter()
+        .enumerate()
         .zip(data.iter())
-        .map(|(hash, (name, data))| TestData {
+        .map(|((index, hash), (name, data))| TestData {
             hash: hash.clone(),
             name: name.clone(),
             data: data.clone(),
+            block: index as u64,
         })
         .collect();
 

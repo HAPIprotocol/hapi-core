@@ -16,13 +16,10 @@ use {
 };
 
 use crate::indexer::{
+    client::indexer_client::{ITERATION_INTERVAL, PAGE_SIZE},
     push::{PushData, PushEvent, PushPayload},
     IndexerJob, IndexingCursor,
 };
-
-use super::ITERATION_INTERVAL;
-
-pub const SOLANA_BATCH_SIZE: usize = 500;
 
 const REPORTER_ACCOUNT_INDEX: usize = 2;
 const CASE_ACCOUNT_INDEX: usize = 3;
@@ -68,7 +65,7 @@ async fn get_signature_list(
         let config = GetConfirmedSignaturesForAddress2Config {
             before: recent_tx,
             until: signature_cursor,
-            limit: Some(SOLANA_BATCH_SIZE),
+            limit: Some(*PAGE_SIZE as usize),
             commitment: Some(CommitmentConfig::confirmed()),
         };
 

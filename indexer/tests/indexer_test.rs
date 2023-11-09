@@ -14,7 +14,7 @@ mod simple_listener;
 
 use mocks::{
     create_test_batches, evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
-    webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
+    webhook_mock::WebhookServiceMock, RpcMock, TestBatch, PAGE_SIZE,
 };
 
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
@@ -126,6 +126,7 @@ impl<T: RpcMock> IndexerTest<T> {
 
     pub async fn run_test(&mut self) {
         println!("Starting test for {} network\n", T::get_network());
+        std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         // First test: indexer will be running 2 times:
         // 1. First time it will process 2 batches of events

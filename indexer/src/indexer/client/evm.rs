@@ -9,15 +9,12 @@ use {
 
 use crate::{
     indexer::{
+        client::indexer_client::{ITERATION_INTERVAL, PAGE_SIZE},
         push::{PushData, PushEvent, PushPayload},
         IndexerJob,
     },
     IndexingCursor,
 };
-
-use super::ITERATION_INTERVAL;
-
-pub const EVM_PAGE_SIZE: u64 = 100;
 
 pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
@@ -54,7 +51,7 @@ async fn get_event_list(
     let filter = Filter::default().address(client.contract.address());
 
     loop {
-        let next_block = min(previous_block + EVM_PAGE_SIZE, latest_block);
+        let next_block = min(PAGE_SIZE.saturating_add(previous_block), latest_block);
 
         let logs = client
             .contract

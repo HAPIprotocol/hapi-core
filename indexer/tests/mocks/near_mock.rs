@@ -17,6 +17,10 @@ impl RpcMock for NearMock {
         unimplemented!()
     }
 
+    fn generate_address() -> String {
+        unimplemented!()
+    }
+
     fn initialize() -> Self {
         unimplemented!()
     }
