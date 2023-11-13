@@ -78,8 +78,8 @@ impl RpcMock for EvmMock {
         let provider =
             Provider::<Http>::try_from(server.url()).expect("Provider intialization failed");
         let wallet = LocalWallet::new(&mut rand::thread_rng());
-        let client = SignerMiddleware::new(provider, wallet);
 
+        let client = SignerMiddleware::new(provider, wallet);
         let contract = HAPI_CORE_CONTRACT::new(
             CONTRACT_ADDRESS
                 .parse::<Address>()
@@ -96,8 +96,8 @@ impl RpcMock for EvmMock {
 
     fn get_cursor(batch: &[TestBatch]) -> IndexingCursor {
         batch
-            .first()
-            .map(|batch| batch.first().expect("Empty batch"))
+            .last()
+            .map(|batch| batch.last().expect("Empty batch"))
             .map(|data| IndexingCursor::Block(data.block))
             .unwrap_or(IndexingCursor::None)
     }
@@ -111,39 +111,18 @@ impl RpcMock for EvmMock {
         };
 
         for batch in batches {
-            to_block = from_block + PAGE_SIZE;
+            to_block = from_block + PAGE_SIZE - 1;
+
             let logs = Self::get_logs(batch);
+            self.logs_request_mock(&logs, from_block, to_block);
 
-            let response = json!({
-               "jsonrpc": "2.0",
-               "result": logs,
-               "id": 1
-            });
-
-            let params = Filter::default()
-                .address(
-                    CONTRACT_ADDRESS
-                        .parse::<Address>()
-                        .expect("Failed to parse address"),
-                )
-                .from_block(from_block)
-                .to_block(to_block);
-
-            self.server
-                .mock("POST", "/")
-                .with_status(200)
-                .with_header("content-type", "application/json")
-                .with_body(&response.to_string())
-                .match_body(Matcher::PartialJson(json!({
-                    "method": "eth_getLogs",
-                    "params": [ params ]
-                })))
-                .create();
-
-            from_block = to_block;
+            from_block = to_block + 1;
         }
 
-        self.latest_block_mock(to_block);
+        let latest_block = from_block;
+
+        self.logs_request_mock(&vec![], latest_block, latest_block);
+        self.latest_block_mock(latest_block);
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
@@ -151,7 +130,7 @@ impl RpcMock for EvmMock {
             self.block_request_mock(event.block);
 
             if let Some(data) = &event.data {
-                self.processing_data_mock(data, event.block);
+                self.processing_data_mock(data);
             }
         }
     }
@@ -280,7 +259,15 @@ impl EvmMock {
                     .into();
                 }
                 EventName::CreateCase | EventName::UpdateCase => {
-                    // TODO: case update - status closed
+                    let_extract!(
+                        PushData::Case(data),
+                        event.data.as_ref().expect("Empty data"),
+                        panic!("Wrong message encoding")
+                    );
+
+                    let id_topic = u128_to_bytes(data.id.as_u128()).into();
+
+                    log.topics.append(&mut vec![id_topic]);
                 }
                 EventName::CreateAddress | EventName::UpdateAddress | EventName::ConfirmAddress => {
                     let_extract!(
@@ -328,6 +315,34 @@ impl EvmMock {
         }
 
         res
+    }
+
+    fn logs_request_mock(&mut self, logs: &[Log], from_block: u64, to_block: u64) {
+        let response = json!({
+           "jsonrpc": "2.0",
+           "result": logs,
+           "id": 1
+        });
+
+        let params = Filter::default()
+            .address(
+                CONTRACT_ADDRESS
+                    .parse::<Address>()
+                    .expect("Failed to parse address"),
+            )
+            .from_block(from_block)
+            .to_block(to_block);
+
+        self.server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(&response.to_string())
+            .match_body(Matcher::PartialJson(json!({
+                "method": "eth_getLogs",
+                "params": [ params ]
+            })))
+            .create();
     }
 
     fn get_events_signatures() -> HashMap<String, H256> {
@@ -386,7 +401,7 @@ impl EvmMock {
             .create();
     }
 
-    fn processing_data_mock(&mut self, data: &PushData, block_id: u64) {
+    fn processing_data_mock(&mut self, data: &PushData) {
         let (raw_tx, result) = match data {
             PushData::Address(address) => {
                 let addr = address
@@ -397,46 +412,99 @@ impl EvmMock {
                 let case_id = U256::from_big_endian(&u128_to_bytes(address.case_id.as_u128()));
                 let reporter_id =
                     U256::from_big_endian(&u128_to_bytes(address.reporter_id.as_u128()));
-                let confirmation = U256::zero();
+                let confirmations = U256::zero();
                 let risk = U256::from(address.risk);
                 let category = U256::from(address.category.clone() as u8);
 
                 let raw_tx = self.contract.get_address(addr).tx;
-                let responce = hex::encode(ethers::abi::encode(&[
+                let responce = hex::encode(ethers::abi::encode(&[Token::Tuple(vec![
                     Token::Address(addr),
                     Token::Uint(case_id),
                     Token::Uint(reporter_id),
-                    Token::Uint(confirmation),
+                    Token::Uint(confirmations),
                     Token::Uint(risk),
                     Token::Uint(category),
-                ]));
+                ])]));
 
-                (raw_tx, responce)
+                (raw_tx, format!("0x{}", responce))
             }
             PushData::Asset(asset) => {
-                let address = asset.address.parse().expect("Failed to parse address");
+                let addr = asset
+                    .address
+                    .parse::<Address>()
+                    .expect("Failed to parse address");
+                let asset_id = U256::from(asset.asset_id.to_owned());
+                let case_id = U256::from_big_endian(&u128_to_bytes(asset.case_id.as_u128()));
+                let reporter_id =
+                    U256::from_big_endian(&u128_to_bytes(asset.reporter_id.as_u128()));
+                let confirmations = U256::zero();
+                let risk = U256::from(asset.risk);
+                let category = U256::from(asset.category.clone() as u8);
+
                 let raw_tx = self
                     .contract
-                    .get_asset(address, asset.asset_id.clone().into())
+                    .get_asset(addr, asset.asset_id.clone().into())
                     .tx;
+                let responce = hex::encode(ethers::abi::encode(&[Token::Tuple(vec![
+                    Token::Address(addr),
+                    Token::Uint(asset_id),
+                    Token::Uint(case_id),
+                    Token::Uint(reporter_id),
+                    Token::Uint(confirmations),
+                    Token::Uint(risk),
+                    Token::Uint(category),
+                ])]));
 
-                (raw_tx, "".to_string())
+                (raw_tx, format!("0x{}", responce))
             }
             PushData::Case(case) => {
-                let raw_tx = self.contract.get_case(case.id.as_u128()).tx;
+                let id = U256::from_big_endian(&u128_to_bytes(case.id.as_u128()));
+                let name = case.name.to_owned();
+                let url = case.url.to_owned();
+                let reporter_id = U256::from_big_endian(&u128_to_bytes(case.reporter_id.as_u128()));
+                let status = U256::from(case.status.clone() as u8);
 
-                (raw_tx, "".to_string())
+                let raw_tx = self.contract.get_case(case.id.as_u128()).tx;
+                let responce = hex::encode(ethers::abi::encode(&[Token::Tuple(vec![
+                    Token::Uint(id),
+                    Token::String(name),
+                    Token::Uint(reporter_id),
+                    Token::Uint(status),
+                    Token::String(url),
+                ])]));
+
+                (raw_tx, format!("0x{}", responce))
             }
             PushData::Reporter(reporter) => {
-                let raw_tx = self.contract.get_reporter(reporter.id.as_u128()).tx;
+                let reporter_id = U256::from_big_endian(&u128_to_bytes(reporter.id.as_u128()));
+                let account = reporter
+                    .account
+                    .parse::<Address>()
+                    .expect("Failed to parse address");
+                let name = reporter.name.to_owned();
+                let url = reporter.url.to_owned();
+                let role = U256::from(reporter.role.clone() as u8);
+                let status = U256::from(reporter.status.clone() as u8);
+                let stake = U256::from(reporter.stake.to_owned());
+                let unlock_timestamp = U256::from(reporter.unlock_timestamp);
 
-                (raw_tx, "".to_string())
+                let raw_tx = self.contract.get_reporter(reporter.id.as_u128()).tx;
+                let responce = hex::encode(ethers::abi::encode(&[Token::Tuple(vec![
+                    Token::Uint(reporter_id),
+                    Token::Address(account),
+                    Token::String(name),
+                    Token::String(url),
+                    Token::Uint(role),
+                    Token::Uint(status),
+                    Token::Uint(stake),
+                    Token::Uint(unlock_timestamp),
+                ])]));
+
+                (raw_tx, format!("0x{}", responce))
             }
         };
 
         let tx = serde_json::to_value(raw_tx).expect("Failed to serialize raw transaction");
-        let block = serde_json::to_value(BlockId::Number(BlockNumber::Number(block_id.into())))
-            .expect("Failed to serialize block id");
 
         let response = json!({
            "jsonrpc": "2.0",
@@ -451,7 +519,7 @@ impl EvmMock {
             .with_body(&response.to_string())
             .match_body(Matcher::PartialJson(json!({
                 "method": "eth_call",
-                "params": [ tx, block ]
+                "params": [ tx, "latest" ]
             })))
             .create();
     }

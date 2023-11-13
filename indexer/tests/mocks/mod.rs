@@ -68,7 +68,6 @@ pub struct TestData {
 pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
-    // TODO: make data universal to all networks
     let reporter = Reporter {
         id: Uuid::new_v4(),
         account: T::generate_address(),
@@ -89,7 +88,6 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     };
 
     let address = Address {
-        // address: "BGCCDDHfysuuVnaNVtEhhqeT4k9Muyem3Kpgq2U1m9HX".to_string(),
         address: T::generate_address(),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),

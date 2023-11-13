@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
     let server_task = indexer.spawn_server(&cfg.listener).await?;
     let indexer_task = spawn(async move { indexer.run().await });
 
+    // TODO: fix runtime
     match try_join!(server_task, indexer_task)? {
         (Err(e), _) | (_, Err(e)) => {
             tracing::error!(?e, "Indexer failed");

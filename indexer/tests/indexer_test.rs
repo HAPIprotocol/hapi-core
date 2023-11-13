@@ -29,7 +29,7 @@ pub struct IndexerTest<T: RpcMock> {
 impl<T: RpcMock> IndexerTest<T> {
     pub fn new() -> Self {
         if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
-            if let Err(e) = setup_tracing("debug") {
+            if let Err(e) = setup_tracing("trace") {
                 println!("Failed to setup tracing: {}", e);
             }
         }
@@ -37,6 +37,8 @@ impl<T: RpcMock> IndexerTest<T> {
         if PathBuf::from(STATE_FILE).exists() {
             std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
         }
+
+        std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         Self {
             webhook_mock: WebhookServiceMock::new(),
@@ -126,7 +128,6 @@ impl<T: RpcMock> IndexerTest<T> {
 
     pub async fn run_test(&mut self) {
         println!("Starting test for {} network\n", T::get_network());
-        std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         // First test: indexer will be running 2 times:
         // 1. First time it will process 2 batches of events
