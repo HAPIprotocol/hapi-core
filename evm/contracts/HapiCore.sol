@@ -785,6 +785,9 @@ contract HapiCore is OwnableUpgradeable {
     /// A list of all addresses
     address[] private _address_addrs;
 
+    // Mapping to keep track of address confirmations
+    mapping(address => mapping(uint128 => bool)) private _address_confirmations;
+
     /**
      * @param addr Address
      * @param risk Risk score for the address (0..10)
@@ -889,6 +892,41 @@ contract HapiCore is OwnableUpgradeable {
         _addresses[addr].category = category;
 
         emit AddressUpdated(addr, risk, category);
+    }
+
+    /**
+     * @param addr Address
+     */
+    event AddressConfirmed(address indexed addr);
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Address
+     *
+     * @dev Panics if the address does not exist
+     * @dev Panics if the caller is not a publisher or a validator
+     * @dev Panics if the caller already confirmed the address
+     */
+    function confirmAddress(address addr) public {
+        require(_addresses[addr].addr != address(0), "Address does not exist");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher || role == ReporterRole.Validator,
+            "Reporter is not publisher or validator"
+        );
+        require(
+            !_address_confirmations[addr][reporter_id],
+            "The reporter has already confirmed the address"
+        );
+
+        _address_confirmations[addr][reporter_id] = true;
+        _addresses[addr].confirmations++;
+
+        emit AddressConfirmed(addr);
     }
 
     /**
