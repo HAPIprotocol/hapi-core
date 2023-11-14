@@ -113,7 +113,7 @@ impl RpcMock for EvmMock {
         for batch in batches {
             to_block = from_block + PAGE_SIZE - 1;
 
-            let logs = Self::get_logs(batch);
+            let logs = self.get_logs(batch);
             self.logs_request_mock(&logs, from_block, to_block);
 
             from_block = to_block + 1;
@@ -155,18 +155,21 @@ impl EvmMock {
             .create();
     }
 
-    fn get_logs(batch: &TestBatch) -> Vec<Log> {
+    fn get_logs(&self, batch: &TestBatch) -> Vec<Log> {
         let mut res = vec![];
         let address = CONTRACT_ADDRESS
             .parse::<Address>()
             .expect("Failed to parse address");
 
-        // TODO: fetch from abi
-        let event_signatures = Self::get_events_signatures();
-
         for event in batch {
-            let signature = event_signatures
-                .get(&event.name.to_string())
+            let signature = self
+                .contract
+                .abi()
+                .events()
+                .find(|e| {
+                    EventName::from_str(&e.name).unwrap_or(EventName::Initialize) == event.name
+                })
+                .map(|e| e.signature())
                 .expect("Failed to get event signature");
 
             let mut log = Log {
@@ -343,40 +346,6 @@ impl EvmMock {
                 "params": [ params ]
             })))
             .create();
-    }
-
-    fn get_events_signatures() -> HashMap<String, H256> {
-        let parsed_json: Value =
-            serde_json::from_str(&fs::read_to_string(ABI).expect("Failed to read ABI file"))
-                .expect("Failed to psarse ABI JSON");
-
-        let abi_entries = parsed_json["abi"]
-            .as_array()
-            .expect("Failed to find 'abi' key in JSON");
-
-        // Parse the actual ABI.
-        let abi: Abi = serde_json::from_value(Value::Array(abi_entries.clone()))
-            .expect("Failed to parse ABI JSON");
-
-        let mut signatures = HashMap::new();
-
-        // Extract the event signatures.
-        for event in abi.events() {
-            let signature = get_signature(&event);
-            let topic_hash: H256 = keccak256(signature.as_bytes()).into();
-
-            // println!(
-            //     "Event name: {}, Signature Topic: 0x{}",
-            //     event.name,
-            //     topic_hash.to_string()
-            // );
-
-            let_extract!(Ok(event_name), EventName::from_str(&event.name), continue);
-
-            signatures.insert(event_name.to_string(), topic_hash);
-        }
-
-        signatures
     }
 
     fn block_request_mock(&mut self, num: u64) {
