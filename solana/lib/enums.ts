@@ -202,7 +202,7 @@ export const ACCOUNT_SIZE: Readonly<Record<HapiCoreAccount, number>> = {
   network: 251,
   reporter: 397,
   case: 380,
-  address: 189,
-  asset: 221,
+  address: 181,
+  asset: 213,
   confirmation: 123,
 };

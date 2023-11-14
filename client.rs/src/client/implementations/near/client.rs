@@ -30,8 +30,8 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
-            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, ReporterRole, UpdateReporterInput},
         },
@@ -460,6 +460,10 @@ impl HapiCore for HapiCoreNear {
         Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
+        unimplemented!()
+    }
+
     async fn get_address(&self, addr: &str) -> Result<Address> {
         let request = self.view_request("get_address", Some(json!({ "address": addr })));
 
@@ -526,6 +530,10 @@ impl HapiCore for HapiCoreNear {
         );
 
         Ok(execute_transaction(transaction, signer, &self.client).await?)
+    }
+
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
+        unimplemented!()
     }
 
     async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {

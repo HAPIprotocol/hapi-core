@@ -14,8 +14,8 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
-            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
@@ -350,6 +350,10 @@ impl HapiCore for HapiCoreEvm {
         )
     }
 
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
+        unimplemented!()
+    }
+
     async fn get_address(&self, address: &str) -> Result<Address> {
         let address = address.parse().map_err(|e| {
             ClientError::Ethers(format!("failed to parse address `{}`: {}", address, e))
@@ -408,6 +412,10 @@ impl HapiCore for HapiCoreEvm {
             ),
             "update_asset"
         )
+    }
+
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
+        unimplemented!()
     }
 
     async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {

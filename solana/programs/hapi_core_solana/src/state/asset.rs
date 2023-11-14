@@ -31,10 +31,10 @@ pub struct Asset {
     pub reporter_id: u128,
 
     /// Confirmation count for this address
-    pub confirmations: u128,
+    pub confirmations: u64,
 }
 
 impl Asset {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 32 + 1 + 1 + 16 + 16 + 16);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 32 + 1 + 1 + 16 + 16 + 8);
     pub const VERSION: u16 = 1;
 }

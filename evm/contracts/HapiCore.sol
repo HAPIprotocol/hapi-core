@@ -772,7 +772,7 @@ contract HapiCore is OwnableUpgradeable {
         /// The UUID of the reporter that submitted the address
         uint128 reporter_id;
         /// The number of confirmations for the address
-        uint confirmations;
+        uint64 confirmations;
         /// Risk score for the address (0..10)
         uint8 risk;
         /// Category of activity associated with the address
@@ -990,7 +990,7 @@ contract HapiCore is OwnableUpgradeable {
         /// The UUID of the reporter that submitted the address
         uint128 reporter_id;
         /// The number of confirmations for the address
-        uint confirmations;
+        uint64 confirmations;
         /// Risk score for the address (0..10)
         uint8 risk;
         /// Category of activity associated with the address

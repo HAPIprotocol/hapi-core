@@ -328,6 +328,7 @@ async fn solana_cli_works() {
             "reporter_id": REPORTER_UUID_1,
             "risk": 5,
             "category": ADDRESS_CATEGORY_1,
+            "confirmations": 0,
         }})
     );
 
@@ -344,6 +345,7 @@ async fn solana_cli_works() {
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 5,
                 "category": ADDRESS_CATEGORY_1,
+                "confirmations": 0,
             }
         ]})
     );
@@ -367,6 +369,29 @@ async fn solana_cli_works() {
             "reporter_id": REPORTER_UUID_1,
             "risk": 6,
             "category": "Scam",
+            "confirmations": 0,
+        }})
+    );
+
+    t.print("Confirm the address");
+    assert_tx_output!(t.exec([
+        "address",
+        "confirm",
+        ADDRESS_ADDR_1,
+        "--private-key",
+        &publisher_secret
+    ]));
+
+    t.print("Verify that the address has been confirmed");
+    assert_json_output!(
+        t.exec(["address", "get", ADDRESS_ADDR_1]),
+        json!({ "address": {
+            "address": ADDRESS_ADDR_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "Scam",
+            "confirmations": 1,
         }})
     );
 
@@ -395,6 +420,7 @@ async fn solana_cli_works() {
                 "reporter_id": REPORTER_UUID_1,
                 "risk": 7,
                 "category": ASSET_CATEGORY_1,
+                "confirmations": 0,
             }
         ]})
     );
@@ -409,6 +435,43 @@ async fn solana_cli_works() {
         "scam",
         "6",
     ]));
+
+    t.print("Verify that the asset has been updated");
+    assert_json_output!(
+        t.exec(["asset", "get", ASSET_ADDR_1]),
+        json!({ "asset": {
+            "address": ASSET_ADDR_1,
+            "asset_id": ASSET_ID_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "scam",
+            "confirmations": 0,
+        }})
+    );
+
+    t.print("Confirm the asset");
+    assert_tx_output!(t.exec([
+        "asset",
+        "confirm",
+        ASSET_ADDR_1,
+        "--private-key",
+        &publisher_secret
+    ]));
+
+    t.print("Verify that the asset has been confirmed");
+    assert_json_output!(
+        t.exec(["asset", "get", ASSET_ADDR_1]),
+        json!({ "asset": {
+            "address": ASSET_ADDR_1,
+            "asset_id": ASSET_ID_1,
+            "case_id": CASE_UUID_1,
+            "reporter_id": REPORTER_UUID_1,
+            "risk": 6,
+            "category": "scam",
+            "confirmations": 1,
+        }})
+    );
 
     t.print("Close the case by authority");
     assert_tx_output!(t.exec([

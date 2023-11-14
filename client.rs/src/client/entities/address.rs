@@ -17,6 +17,10 @@ pub struct UpdateAddressInput {
     pub category: Category,
 }
 
+pub struct ConfirmAddressInput {
+    pub address: String,
+}
+
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Address {
     pub address: String,
@@ -24,5 +28,5 @@ pub struct Address {
     pub reporter_id: Uuid,
     pub risk: u8,
     pub category: Category,
-    // TODO: add confirmations_count
+    pub confirmations: u64,
 }

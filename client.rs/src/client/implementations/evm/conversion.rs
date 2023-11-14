@@ -75,6 +75,7 @@ impl TryFrom<hapi_core_contract::Address> for Address {
             reporter_id: Uuid::from_u128(address.reporter_id),
             risk: address.risk,
             category: address.category.try_into()?,
+            confirmations: address.confirmations,
         })
     }
 }
@@ -90,6 +91,7 @@ impl TryFrom<hapi_core_contract::Asset> for Asset {
             reporter_id: Uuid::from_u128(asset.reporter_id),
             risk: asset.risk,
             category: asset.category.try_into()?,
+            confirmations: asset.confirmations,
         })
     }
 }

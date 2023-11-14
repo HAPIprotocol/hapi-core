@@ -575,6 +575,15 @@ pub(crate) fn matcher() -> ArgMatches {
                         ),
                 )
                 .subcommand(
+                    Command::new("confirm").about("Confirm address").arg(
+                        Arg::new("address")
+                            .value_name("ADDRESS")
+                            .index(1)
+                            .required(true)
+                            .help("Address"),
+                    ),
+                )
+                .subcommand(
                     Command::new("get").about("Get address").arg(
                         Arg::new("address")
                             .value_name("ADDRESS")
@@ -778,6 +787,24 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .required(true)
                                 .help("Risk score (0..10)")
                                 .value_parser(risk_parser),
+                        ),
+                )
+                .subcommand(
+                    Command::new("confirm")
+                        .about("Confirm asset")
+                        .arg(
+                            Arg::new("address")
+                                .value_name("ADDRESS")
+                                .index(1)
+                                .required(true)
+                                .help("Asset contract address"),
+                        )
+                        .arg(
+                            Arg::new("id")
+                                .value_name("ID")
+                                .index(2)
+                                .required(true)
+                                .help("Asset ID"),
                         ),
                 )
                 .subcommand(
