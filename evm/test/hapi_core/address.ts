@@ -128,7 +128,7 @@ describe("HapiCore: Address", function () {
     await expect(
       await hapiCore
         .connect(wallets.publisher)
-        .updateAddress(address.addr, 10, Category.ChildAbuse, case1.id)
+        .updateAddress(address.addr, 10, Category.ChildAbuse, case2.id)
     )
       .to.emit(hapiCore, "AddressUpdated")
       .withArgs(address.addr, 10, Category.ChildAbuse);
@@ -137,7 +137,7 @@ describe("HapiCore: Address", function () {
       await hapiCore.getFunction("getAddress")(address.addr)
     ).to.deep.equal([
       address.addr,
-      address.caseId,
+      case2.id,
       address.reporterId,
       0,
       10,
@@ -238,8 +238,8 @@ describe("HapiCore: Address", function () {
       address.caseId,
       address.reporterId,
       1,
-      5,
-      Category.Hacker,
+      address.risk,
+      address.category,
     ]);
   });
 

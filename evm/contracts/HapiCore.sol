@@ -1008,6 +1008,10 @@ contract HapiCore is OwnableUpgradeable {
     /// A list of all assets
     AssetKey[] private _asset_addrs;
 
+    // Mapping to keep track of asset confirmations
+    mapping(address => mapping(uint256 => mapping(uint256 => bool)))
+        private _asset_confirmations;
+
     /**
      * @param addr Asset contract address
      * @param asset_id Asset ID (ERC-721 compatible)
@@ -1135,6 +1139,46 @@ contract HapiCore is OwnableUpgradeable {
         _assets[addr][asset_id].category = category;
 
         emit AssetUpdated(addr, asset_id, risk, category);
+    }
+
+    /**
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     */
+    event AssetConfirmed(address indexed addr, uint256 asset_id);
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     *
+     * @dev Panics if the asset does not exist
+     * @dev Panics if the caller is not a publisher or a validator
+     * @dev Panics if the caller already confirmed the asset
+     */
+    function confirmAsset(address addr, uint256 asset_id) public {
+        require(
+            _assets[addr][asset_id].addr != address(0),
+            "Address does not exist"
+        );
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher || role == ReporterRole.Validator,
+            "Reporter is not publisher or validator"
+        );
+        require(
+            !_asset_confirmations[addr][asset_id][reporter_id],
+            "The reporter has already confirmed the asset"
+        );
+
+        _asset_confirmations[addr][asset_id][reporter_id] = true;
+        _assets[addr][asset_id].confirmations++;
+
+        emit AssetConfirmed(addr, asset_id);
     }
 
     /**
