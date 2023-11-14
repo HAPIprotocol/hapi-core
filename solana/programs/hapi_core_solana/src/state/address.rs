@@ -28,10 +28,10 @@ pub struct Address {
     pub reporter_id: u128,
 
     /// Confirmation count for this address
-    pub confirmations: u8,
+    pub confirmations: u128,
 }
 
 impl Address {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 1 + 1 + 16 + 16 + 1);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 1 + 1 + 16 + 16 + 16);
     pub const VERSION: u16 = 1;
 }

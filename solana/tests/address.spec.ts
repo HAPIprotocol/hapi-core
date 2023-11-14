@@ -244,7 +244,7 @@ describe("HapiCore Address", () => {
       expect(
         fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedAddressAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
         decodeAddress(address.address)
@@ -310,7 +310,7 @@ describe("HapiCore Address", () => {
       expect(
         fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedAddressAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
         decodeAddress(address.address)
@@ -376,7 +376,7 @@ describe("HapiCore Address", () => {
       expect(
         fetchedAddressAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAddressAccount.confirmations).toEqual(0);
+      expect(fetchedAddressAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAddressAccount.address)).toEqual(
         decodeAddress(address.address)
@@ -982,9 +982,9 @@ describe("HapiCore Address", () => {
         addressAccount
       );
 
-      expect(fetchedAddressAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
+      expect(
+        fetchedAddressAccount.confirmations.eq(confirmationsBefore.addn(1))
+      ).toBeTruthy();
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
@@ -1051,9 +1051,9 @@ describe("HapiCore Address", () => {
         addressAccount
       );
 
-      expect(fetchedAddressAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
+      expect(
+        fetchedAddressAccount.confirmations.eq(confirmationsBefore.addn(1))
+      ).toBeTruthy();
 
       const addressInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
