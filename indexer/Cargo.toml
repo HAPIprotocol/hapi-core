@@ -1,7 +1,16 @@
 [package]
-name = "hapi-indexer"
+name = "hapi_indexer"
+authors = ["HAPI"]
 version = "0.1.0"
 edition = "2021"
+description = "Indexer for HAPI Protocol contracts"
+
+[lib]
+crate-type = ["lib"]
+name = "hapi_indexer"
+
+[features]
+manual-helper = []
 
 [dependencies]
 hapi-core-cli = { path = "../client.rs" }
@@ -20,5 +29,41 @@ tracing-subscriber = { version = "0.3", features = [
     "json",
     "env-filter",
 ] }
-uuid = { version = "1", features = ["serde"] }
+uuid = { version = "1", features = ["serde", "v4"] }
 reqwest = "0.11"
+
+enum_extract = "0.1"
+
+#NEAR dependencies
+near-jsonrpc-primitives = "0.17.0"
+near-jsonrpc-client = "0.6.0"
+near-primitives = "0.17.0"
+hapi-core-near = { path = "../near/contract/" }
+near-crypto = "0.17.0"
+
+[dependencies.solana-client]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
+[dependencies.solana-sdk]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
+[dependencies.solana-transaction-status]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
+[dependencies.solana-account-decoder]
+git = "https://github.com/hlgltvnnk/solana.git"
+branch = "update-dependencies"
+
+[dependencies.hapi_core_solana]
+path = "../solana/programs/hapi_core_solana"
+eatures = ["no-entrypoint"]
+
+[dev-dependencies]
+mockito = "1.2"
+
+[dev-dependencies.anchor-lang]
+git = "https://github.com/hlgltvnnk/anchor.git"
+branch = "update-dependencies"

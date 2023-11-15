@@ -114,7 +114,7 @@ export const ASSETS: Record<
 > = {
   firstAsset: {
     address: ZERO_ADDRESS,
-    assetId: uuidv4(),
+    assetId: "12345",
     caseId: CASES.firstCase.id,
     category: "WalletService",
     riskScore: 3,

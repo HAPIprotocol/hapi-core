@@ -42,10 +42,10 @@ use crate::{
 };
 
 pub struct HapiCoreNear {
-    client: JsonRpcClient,
-    contract_address: AccountId,
-    signer: Option<String>,
-    account_id: Option<String>,
+    pub client: JsonRpcClient,
+    pub contract_address: AccountId,
+    pub signer: Option<String>,
+    pub account_id: Option<String>,
 }
 
 impl HapiCoreNear {
@@ -97,7 +97,7 @@ pub(crate) async fn execute_transaction(
         signed_transaction: transaction.sign(&signer),
     };
     let sent_at = time::Instant::now();
-    let tx_hash = client.call(request).await?;
+    let hash = client.call(request).await?;
 
     loop {
         if time::Instant::now() > sent_at + TRANSACTION_TIMEOUT {
@@ -107,7 +107,7 @@ pub(crate) async fn execute_transaction(
         let response = client
             .call(methods::tx::RpcTransactionStatusRequest {
                 transaction_info: TransactionInfo::TransactionId {
-                    hash: tx_hash.clone(),
+                    hash,
                     account_id: signer.account_id.clone(),
                 },
             })
@@ -137,11 +137,11 @@ pub(crate) async fn execute_transaction(
     }
 
     Ok(Tx {
-        hash: tx_hash.to_string(),
+        hash: hash.to_string(),
     })
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl HapiCore for HapiCoreNear {
     fn is_valid_address(&self, address: &str) -> Result<()> {
         AccountId::try_from(address.to_string())?;
@@ -615,5 +615,16 @@ impl HapiCoreNear {
                 "failed to extract current nonce".into(),
             )),
         }
+    }
+
+    pub async fn get_reporter_by_account(&self, account_id: &str) -> Result<Reporter> {
+        let request = self.view_request(
+            "get_reporter_by_account",
+            Some(json!({ "account_id": account_id })),
+        );
+
+        let reporter = self.get_response::<NearReporter>(request).await?;
+
+        reporter.try_into()
     }
 }

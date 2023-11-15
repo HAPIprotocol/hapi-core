@@ -3,9 +3,10 @@ use {
     std::{
         collections::VecDeque,
         path::PathBuf,
-        sync::{Arc, Mutex},
+        sync::Arc,
         time::{Duration, SystemTime, UNIX_EPOCH},
     },
+    tokio::sync::Mutex,
 };
 
 pub(crate) mod client;
@@ -23,14 +24,13 @@ pub(crate) use {
     state::{IndexerState, IndexingCursor},
 };
 
+pub use client::{EVM_PAGE_SIZE, ITERATION_INTERVAL, SOLANA_BATCH_SIZE};
+
 fn now() -> Result<u64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
 }
 
-pub(crate) struct Indexer {
-    /// Address of the indexed contract
-    contract_address: String,
-
+pub struct Indexer {
     /// Current state of the indexer
     state: Arc<Mutex<IndexerState>>,
 

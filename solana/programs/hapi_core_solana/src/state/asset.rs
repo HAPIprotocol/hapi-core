@@ -16,7 +16,7 @@ pub struct Asset {
     pub address: [u8; 64],
 
     /// Asset ID on it’s contract
-    pub id: [u8; 64],
+    pub id: [u8; 32],
 
     /// Primary category of activity detected on the address
     pub category: Category,
@@ -35,6 +35,6 @@ pub struct Asset {
 }
 
 impl Asset {
-    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 64 + 1 + 1 + 16 + 16 + 1);
+    pub const LEN: usize = DISCRIMINATOR_LENGTH + (2 + 1 + 32 + 64 + 32 + 1 + 1 + 16 + 16 + 1);
     pub const VERSION: u16 = 1;
 }

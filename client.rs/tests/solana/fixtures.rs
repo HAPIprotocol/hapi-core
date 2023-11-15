@@ -5,7 +5,7 @@ pub const NETWORK: &str = "solana";
 pub const PROGRAM_DIR: &str = "../solana";
 pub const PROGRAM_NAME: &str = "hapi_core_solana";
 pub const HAPI_CORE_KEYPAIR: &str = "tests/test_keypair.json";
-pub const HAPI_CORE_PROGRAM_ID: &str = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
+pub const CONTRACT_ADDRESS: &str = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk";
 
 pub const KEYS_DIR: &str = "tests/solana/keys";
 

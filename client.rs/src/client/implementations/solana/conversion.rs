@@ -1,6 +1,3 @@
-use std::str::FromStr;
-use uuid::Uuid;
-
 use crate::client::{
     configuration::{RewardConfiguration, StakeConfiguration},
     entities::{
@@ -8,16 +5,21 @@ use crate::client::{
         asset::{Asset, AssetId},
         case::{Case, CaseStatus},
         category::Category,
-        reporter::{Reporter, ReporterRole},
+        reporter::{Reporter, ReporterRole, ReporterStatus},
     },
     result::{ClientError, Result},
 };
-use hapi_core_solana::{
-    Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
-    CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Network as SolanaNetwork,
-    Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
-    RewardConfiguration as SolanaRewardConfiguration,
-    StakeConfiguration as SolanaStakeConfiguration,
+
+use {
+    hapi_core_solana::{
+        bytes_to_string, Address as SolanaAddress, Asset as SolanaAsset, Case as SolanaCase,
+        CaseStatus as SolanaCaseStatus, Category as SolanaCategory, Network as SolanaNetwork,
+        Reporter as SolanaReporter, ReporterRole as SolanaReporterRole,
+        ReporterStatus as SolanaReporterStatus, RewardConfiguration as SolanaRewardConfiguration,
+        StakeConfiguration as SolanaStakeConfiguration,
+    },
+    std::str::FromStr,
+    uuid::Uuid,
 };
 
 impl From<StakeConfiguration> for SolanaStakeConfiguration {
@@ -52,6 +54,16 @@ impl From<ReporterRole> for SolanaReporterRole {
             ReporterRole::Tracer => SolanaReporterRole::Tracer,
             ReporterRole::Publisher => SolanaReporterRole::Publisher,
             ReporterRole::Authority => SolanaReporterRole::Authority,
+        }
+    }
+}
+
+impl From<ReporterStatus> for SolanaReporterStatus {
+    fn from(value: ReporterStatus) -> Self {
+        match value {
+            ReporterStatus::Inactive => SolanaReporterStatus::Inactive,
+            ReporterStatus::Active => SolanaReporterStatus::Active,
+            ReporterStatus::Unstaking => SolanaReporterStatus::Unstaking,
         }
     }
 }
@@ -164,7 +176,7 @@ impl TryFrom<SolanaAddress> for Address {
 
     fn try_from(addr: SolanaAddress) -> Result<Self> {
         Ok(Address {
-            address: remove_zeroes(addr.address)?,
+            address: remove_zeroes(&addr.address)?,
             case_id: Uuid::from_u128(addr.case_id),
             reporter_id: Uuid::from_u128(addr.reporter_id),
             risk: addr.risk_score,
@@ -177,11 +189,15 @@ impl TryFrom<SolanaAsset> for Asset {
     type Error = ClientError;
 
     fn try_from(asset: SolanaAsset) -> Result<Self> {
-        let asset_id = AssetId::from_str(&remove_zeroes(asset.id)?)
-            .map_err(|e| ClientError::AssetIdParseError(e.to_string()))?;
+        let asset_id = AssetId::from_str(&bytes_to_string(&asset.id).map_err(|e| {
+            ClientError::AssetIdParseError(format!("invalid-bytes {}", e.to_string()))
+        })?)
+        .map_err(|e| {
+            ClientError::AssetIdParseError(format!("invalid-asset-id {}", e.to_string()))
+        })?;
 
         Ok(Asset {
-            address: remove_zeroes(asset.address)?,
+            address: remove_zeroes(&asset.address)?,
             asset_id,
             case_id: Uuid::from_u128(asset.case_id),
             reporter_id: Uuid::from_u128(asset.reporter_id),
@@ -191,7 +207,7 @@ impl TryFrom<SolanaAsset> for Asset {
     }
 }
 
-fn remove_zeroes(bytes: [u8; 64]) -> Result<String> {
+fn remove_zeroes(bytes: &[u8]) -> Result<String> {
     let null_index = bytes
         .iter()
         .position(|&ch| ch == b'\0')

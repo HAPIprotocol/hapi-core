@@ -16,6 +16,16 @@ anchor build
 
 ```
 
+## Test contract
+
+To test the **hapi-core** program, you need to execute this command:
+
+```sh
+
+./tests/test_script.sh
+
+```
+
 ## Local deployment
 
 You should build the contract before proceeding
@@ -43,6 +53,9 @@ Repeat points 1 through 3 from "Local deployment" section to deploy the contract
 npm install
 
 # Create network for tests
+
+export ANCHOR_WALLET=$(solana config get keypair | awk -F': ' '{print $2}' | tr -d '[:space:]')
+export ANCHOR_PROVIDER_URL=http://localhost:8899
 npm run create-network solana
 
 # Create stake token
@@ -60,6 +73,8 @@ export REWARD_TOKEN_ADDRESS=7q4o7VL1ba8PWgBHhTEv85RHQiVZz3UgZ4ZznJ5aXrug
 ```
 
 ### Prepare client
+
+Also, before testing, you need to build the evm and near parts
 
 ```sh
 # Go to the client.rs directory
@@ -106,6 +121,9 @@ solana airdrop 10 $PUBLISHER_ADDR
 
 # Set it back
 ./hapi-core-cli authority set $AUTHORITY_ADDR --private-key $PUBLISHER_PK
+
+# Make sure it has been changed
+./hapi-core-cli authority get
 ```
 
 ### Contract configuration
@@ -119,7 +137,7 @@ export ADDRESS_TRACER_REWARD=1000000000 # 1e9
 export ASSET_CONFIRMATION_REWARD=1000000000 # 1e9
 export ASSET_TRACER_REWARD=1000000000 # 1e9
 
-# Should return an error, as we haven't configured it yet
+# Should return zeroes, as we haven't configured it yet
 ./hapi-core-cli configuration get-reward
 
 # Update settings
@@ -135,7 +153,7 @@ export TRACER_STAKE=1000000000 # 1e9
 export PUBLISHER_STAKE=1000000000 # 1e9
 export AUTHORITY_STAKE=1000000000 # 1e9
 
-# Should return an error, as we haven't configured it yet
+# Should return zeroes, as we haven't configured it yet
 ./hapi-core-cli configuration get-stake
 
 # Update settings
@@ -157,7 +175,6 @@ spl-token create-account $STAKE_TOKEN_ADDRESS --owner $PUBLISHER_ADDR --fee-paye
 
 # Minting to reporters accounts
 spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $AUTHORITY_ADDR
-spl-token mint $STAKE_TOKEN_ADDRESS 1000000000 --recipient-owner $PUBLISHER_ADDR
 
 # We'll need a UUID for our new reporter
 export AUTHORITY_UUID="2163ddbf-cc88-409a-b7cf-7bc6a2ec4cd1"

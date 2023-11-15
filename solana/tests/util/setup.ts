@@ -9,6 +9,7 @@ import {
   ReporterRoleKeys,
   CategoryKeys,
   encodeAddress,
+  bufferFromString,
 } from "../../lib";
 
 import { TestToken } from "./token";
@@ -170,7 +171,7 @@ export function getAssets() {
   const cases: Record<string, Asset> = {
     firstAsset: {
       address: encodeAddress("0xeEE91Aa5d1AcBBe0DA7a1009BeC3fdD91e711832"),
-      id: encodeAddress(uuidv4()),
+      id: bufferFromString("12345678", 32),
       category: "WalletService",
       riskScore: 3,
     },
@@ -178,7 +179,7 @@ export function getAssets() {
       address: encodeAddress(
         "6923f8792e9b41a2cc735d4c995b20c8d717cfda8d30e216fe1857389da71c94"
       ),
-      id: encodeAddress(uuidv4()),
+      id: bufferFromString("12345678", 32),
       category: "Mixer",
       riskScore: 6,
     },
@@ -186,7 +187,7 @@ export function getAssets() {
       address: encodeAddress(
         "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
       ),
-      id: encodeAddress(uuidv4()),
+      id: bufferFromString("12345678", 32),
       category: "Sanctions",
       riskScore: 10,
     },

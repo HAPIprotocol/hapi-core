@@ -32,7 +32,9 @@ export function encodeAddress(address: string): Buffer {
   return padBuffer(Buffer.from(address), 64);
 }
 
-export function decodeAddress(address: BN | Buffer | Uint8Array | number[]): string {
+export function decodeAddress(
+  address: BN | Buffer | Uint8Array | number[]
+): string {
   if (!(address instanceof Buffer)) {
     address = Buffer.from(address instanceof BN ? address.toArray() : address);
   }
@@ -104,7 +106,7 @@ export class HapiCoreProgram {
         bufferFromString("asset"),
         network.toBytes(),
         ...addrToSeeds(address),
-        ...addrToSeeds(assetId),
+        assetId,
       ],
       this.programId
     );
@@ -162,7 +164,7 @@ export class HapiCoreProgram {
     id: Buffer | string
   ) {
     const addr = typeof address === "string" ? encodeAddress(address) : address;
-    const assetId = typeof id === "string" ? encodeAddress(id) : id;
+    const assetId = typeof id === "string" ? bufferFromString(id, 32) : id;
     const [network] = this.findNetworkAddress(networkName);
     const [assetAccount] = this.findAssetAddress(network, addr, assetId);
 
@@ -735,7 +737,7 @@ export class HapiCoreProgram {
     wallet?: Signer | Wallet
   ) {
     let assetAddress = encodeAddress(address);
-    let assetId = encodeAddress(id);
+    let assetId = bufferFromString(id, 32);
     const [network] = this.findNetworkAddress(networkName);
     const [reporter] = this.findReporterAddress(network, reporterId);
     const [caseAccount] = this.findCaseAddress(network, caseId);
@@ -784,7 +786,7 @@ export class HapiCoreProgram {
     const [assetAccount] = this.findAssetAddress(
       network,
       encodeAddress(address),
-      encodeAddress(id)
+      bufferFromString(id, 32)
     );
 
     const assetData = await this.program.account.asset.fetch(assetAccount);
@@ -824,7 +826,7 @@ export class HapiCoreProgram {
     const [assetAccount] = this.findAssetAddress(
       network,
       encodeAddress(address),
-      encodeAddress(id)
+      bufferFromString(id, 32)
     );
     const [confirmationAccount, bump] = this.findConfirmationAddress(
       assetAccount,

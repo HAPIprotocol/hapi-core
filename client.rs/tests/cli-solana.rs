@@ -8,8 +8,8 @@ mod solana;
 
 use solana::setup::Setup;
 
-use solana::fixtures::{ADDRESS_ADDR_1, ASSET_ADDR_1};
 use common_fixtures::*;
+use solana::fixtures::{ADDRESS_ADDR_1, ASSET_ADDR_1};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn solana_cli_works() {
@@ -148,7 +148,7 @@ async fn solana_cli_works() {
     t.print("Make sure that the reporter 1 does not exist yet");
     assert_error_output!(
         t.exec(["reporter", "get", REPORTER_UUID_1]),
-        "Error: Anchor Rpc error: Account not found\n\nCaused by:\n    Account not found"
+        "Error: Account not found"
     );
 
     t.print("Create authority reporter");
