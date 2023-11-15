@@ -72,6 +72,7 @@ cargo build
 | ---------- | ----------------- |
 | create     | Create address    |
 | update     | Update address    |
+| confirm    | Confirm address   |
 | get        | Get address       |
 | count      | Get address count |
 | list       | Get address list  |
@@ -82,6 +83,7 @@ cargo build
 | ---------- | --------------- |
 | create     | Create asset    |
 | update     | Update asset    |
+| confirm    | Confirm address |
 | get        | Get asset       |
 | count      | Get asset count |
 | list       | Get asset list  |

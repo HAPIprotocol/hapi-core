@@ -542,9 +542,11 @@ impl HapiCore for HapiCoreSolana {
         let address_data = get_solana_account!(self, &address, Address)?;
 
         let (reporter, _) = self.get_reporter().await?;
+        let reporter_data = get_solana_account!(self, &reporter, Reporter)?;
+
         let (case, _) = get_case_address(address_data.case_id, &self.network, &self.program_id)?;
         let (confirmation, bump) =
-            get_confirmation_address(&address, address_data.reporter_id, &self.program_id)?;
+            get_confirmation_address(&address, reporter_data.id, &self.program_id)?;
 
         self.call_contract(
             accounts::ConfirmAddress {
@@ -645,12 +647,14 @@ impl HapiCore for HapiCoreSolana {
         byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
 
         let (asset, _) = get_asset_address(&addr, &asset_id, &self.network, &self.program_id)?;
-        let asset_data = get_solana_account!(self, &asset, Address)?;
+        let asset_data = get_solana_account!(self, &asset, Asset)?;
 
         let (reporter, _) = self.get_reporter().await?;
+        let reporter_data = get_solana_account!(self, &reporter, Reporter)?;
+
         let (case, _) = get_case_address(asset_data.case_id, &self.network, &self.program_id)?;
         let (confirmation, bump) =
-            get_confirmation_address(&asset, asset_data.reporter_id, &self.program_id)?;
+            get_confirmation_address(&asset, reporter_data.id, &self.program_id)?;
 
         self.call_contract(
             accounts::ConfirmAsset {

@@ -461,7 +461,20 @@ impl HapiCore for HapiCoreNear {
     }
 
     async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
-        unimplemented!()
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "confirm_address",
+            json!({
+                "address": input.address,
+            })
+        );
+
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_address(&self, addr: &str) -> Result<Address> {
@@ -533,7 +546,20 @@ impl HapiCore for HapiCoreNear {
     }
 
     async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
-        unimplemented!()
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "confirm_asset",
+            json!({
+                "address": input.address,
+            })
+        );
+
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
     async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {

@@ -800,8 +800,8 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Asset contract address"),
                         )
                         .arg(
-                            Arg::new("id")
-                                .value_name("ID")
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
                                 .index(2)
                                 .required(true)
                                 .help("Asset ID"),
@@ -818,8 +818,8 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Asset contract address"),
                         )
                         .arg(
-                            Arg::new("id")
-                                .value_name("ID")
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
                                 .index(2)
                                 .required(true)
                                 .help("Asset ID"),

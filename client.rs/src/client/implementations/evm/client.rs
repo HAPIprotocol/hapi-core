@@ -351,7 +351,14 @@ impl HapiCore for HapiCoreEvm {
     }
 
     async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
-        unimplemented!()
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        handle_send!(self.contract.confirm_address(address), "confirm_address")
     }
 
     async fn get_address(&self, address: &str) -> Result<Address> {
@@ -415,7 +422,17 @@ impl HapiCore for HapiCoreEvm {
     }
 
     async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
-        unimplemented!()
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        handle_send!(
+            self.contract.confirm_asset(address, input.asset_id.into(),),
+            "confirm_asset"
+        )
     }
 
     async fn get_asset(&self, address: &str, id: &AssetId) -> Result<Asset> {
