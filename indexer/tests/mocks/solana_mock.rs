@@ -135,6 +135,10 @@ impl RpcMock for SolanaMock {
             self.mock_accounts(event);
         }
     }
+
+    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
+        unimplemented!()
+    }
 }
 
 impl SolanaMock {

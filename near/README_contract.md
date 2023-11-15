@@ -176,7 +176,7 @@ near call $CONTRACT_ID update_stake_configuration '{"stake_configuration": {"tok
 Callable from authority only.
 
 ```bash
-near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "$REWARD_TOKEN", "address_confirmation_reward": "4", "address_tracer_reward": "20", "asset_confirmation_reward": "5", "asset_tracer_reward": "15"}}' --accountId $AUTHORITY_ID
+near call $CONTRACT_ID update_reward_configuration '{"reward_configuration": {"token": "'$REWARD_TOKEN'", "address_confirmation_reward": "4", "address_tracer_reward": "20", "asset_confirmation_reward": "5", "asset_tracer_reward": "15"}}' --accountId $AUTHORITY_ID
 ```
 
 ## Reporter management
@@ -238,7 +238,7 @@ near call $CONTRACT_ID update_case '{"id": "42", "name": "Case", "status":"Close
 ### Create address
 
 ```bash
-near call $CONTRACT_ID create_address '{"address": "address.near", "category": "Scam", "risk_score": 5, "case_id": "UUID"}' --accountId $REPORTER_ID
+near call $CONTRACT_ID create_address '{"address": "address.near", "category": "Scam", "risk_score": 5, "case_id": "42"}' --accountId $REPORTER_ID
 ```
 
 ### Update address

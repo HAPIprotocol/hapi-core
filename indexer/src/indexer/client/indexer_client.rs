@@ -68,7 +68,7 @@ impl IndexerClient {
             }
 
             (IndexerClient::Near(client), IndexingCursor::Block(n)) => {
-                fetch_near_jobs(client, Some(n.clone())).await
+                fetch_near_jobs(client, Some(*n)).await
             }
             (IndexerClient::Near(client), IndexingCursor::None) => {
                 fetch_near_jobs(client, None).await

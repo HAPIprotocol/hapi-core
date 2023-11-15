@@ -37,6 +37,7 @@ use super::indexer_client::FetchingArtifacts;
 pub struct NearReceipt {
     pub hash: CryptoHash,
     pub block_height: u64,
+    pub timestamp: u64,
 }
 
 const NEAR_PAGE_SIZE: u64 = 600;
@@ -67,7 +68,7 @@ pub(super) async fn fetch_near_jobs(
 
         let changes_in_block = client
             .call(RpcStateChangesInBlockByTypeRequest {
-                block_reference: BlockReference::BlockId(block_id),
+                block_reference: BlockReference::BlockId(block_id.clone()),
                 state_changes_request: StateChangesRequestView::DataChanges {
                     account_ids: vec![contract_address],
                     key_prefix: StoreKey::from(vec![]),
@@ -98,16 +99,25 @@ pub(super) async fn fetch_near_jobs(
             }
         };
 
-        if changes.len() > 0 {
+        if !changes.is_empty() {
             let hashes: HashSet<CryptoHash> = changes
                 .iter()
                 .map(|change| get_hash_from_cause(&change.cause).expect("no hash"))
                 .collect();
 
+            let timestamp = client
+                .call(near_jsonrpc_primitives::types::blocks::RpcBlockRequest {
+                    block_reference: BlockReference::BlockId(block_id),
+                })
+                .await?
+                .header
+                .timestamp_nanosec;
+
             for hash in hashes {
                 event_list.push(IndexerJob::TransactionReceipt(NearReceipt {
                     hash,
-                    block_height: block_height,
+                    block_height,
+                    timestamp,
                 }));
             }
         }
@@ -119,12 +129,10 @@ pub(super) async fn fetch_near_jobs(
     }
     tracing::info!(block_height, "Fetched until block {}", block_height);
 
-    let artifacts = FetchingArtifacts {
+    Ok(FetchingArtifacts {
         jobs: event_list,
         cursor: IndexingCursor::Block(block_height),
-    };
-
-    return Ok(artifacts);
+    })
 }
 
 pub(super) async fn process_near_job(
@@ -137,11 +145,10 @@ pub(super) async fn process_near_job(
         .client
         .call(RpcReceiptRequest {
             receipt_reference: ReceiptReference {
-                receipt_id: receipt.hash.clone(),
+                receipt_id: receipt.hash,
             },
         })
-        .await
-        .expect("Failed to fetch receipt");
+        .await?;
 
     let (method, args) =
         get_method_from_receipt(&receipt_view).expect("Err get method_from_receipt");
@@ -191,7 +198,7 @@ pub(super) async fn process_near_job(
         }
         EventName::CreateAsset | EventName::UpdateAsset => {
             tracing::info!("Asset updated");
-            let addr = get_field_from_args(&args, "asset_id");
+            let addr = get_field_from_args(&args, "address");
             let asset_id = get_field_from_args(&args, "id").parse::<AssetId>()?;
             client.get_asset(&addr, &asset_id).await?.into()
         }
@@ -213,17 +220,17 @@ pub(super) async fn process_near_job(
             name: event_name,
             tx_hash: receipt.hash.to_string(),
             tx_index: 0,
-            timestamp: 0,
+            timestamp: receipt.timestamp,
         },
-        data: data,
+        data,
     };
     Ok(Some(vec![payload]))
 }
 
 fn get_hash_from_cause(cause: &StateChangeCauseView) -> Option<CryptoHash> {
     match cause {
-        StateChangeCauseView::TransactionProcessing { tx_hash } => Some(tx_hash.clone()),
-        StateChangeCauseView::ReceiptProcessing { receipt_hash } => Some(receipt_hash.clone()),
+        StateChangeCauseView::TransactionProcessing { tx_hash } => Some(*tx_hash),
+        StateChangeCauseView::ReceiptProcessing { receipt_hash } => Some(*receipt_hash),
         _ => None,
     }
 }
@@ -260,12 +267,10 @@ fn get_field_from_args(args: &FunctionArgs, field: &str) -> String {
 }
 
 async fn get_id_from_args(args: &FunctionArgs) -> Result<Uuid> {
-    let json: serde_json::Value = serde_json::from_slice(args).expect("Failed to parse args");
+    let json: serde_json::Value = serde_json::from_slice(args)?;
 
     let id = json["id"]
         .as_str()
         .expect(format!("Failed to parse id from {:?}", json).as_str());
-    Ok(Uuid::from_u128(
-        id.parse::<u128>().expect("Failed to parse uuid"),
-    ))
+    Ok(Uuid::from_u128(id.parse::<u128>()?))
 }

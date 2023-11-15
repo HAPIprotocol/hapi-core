@@ -105,15 +105,12 @@ impl Indexer {
         let artifacts = self.client.fetch_jobs(&cursor).await?;
         let state = self.get_updated_state(&artifacts.jobs, cursor, artifacts.cursor.clone())?;
 
-        match state {
-            IndexerState::Waiting { .. } => {
-                PersistedState {
-                    cursor: artifacts.cursor,
-                }
-                .to_file(&self.state_file)?;
+        if let IndexerState::Waiting { .. } = state {
+            PersistedState {
+                cursor: artifacts.cursor,
             }
-            _ => {}
-        };
+            .to_file(&self.state_file)?;
+        }
         self.jobs.extend(artifacts.jobs);
 
         Ok(state)

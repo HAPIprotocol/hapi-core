@@ -51,6 +51,12 @@ impl From<Amount> for U256 {
     }
 }
 
+impl From<Amount> for U128 {
+    fn from(value: Amount) -> Self {
+        U128(value.0.as_u128())
+    }
+}
+
 impl From<Amount> for u64 {
     fn from(value: Amount) -> Self {
         value.0.as_u64()

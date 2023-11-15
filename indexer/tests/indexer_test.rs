@@ -1,7 +1,7 @@
 use {
     hapi_indexer::{
         configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
-        PersistedState, ITERATION_INTERVAL,
+        PersistedState, PushData, ITERATION_INTERVAL,
     },
     std::{env, path::PathBuf},
     tokio::time::sleep,
@@ -13,8 +13,8 @@ mod mocks;
 mod simple_listener;
 
 use mocks::{
-    create_test_batches, evm_mock::EvmMock, near_mock::NearMock, solana_mock::SolanaMock,
-    webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
+    create_pushdata, create_test_batches, evm_mock::EvmMock, near_mock::NearMock,
+    solana_mock::SolanaMock, webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
 };
 
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
@@ -45,8 +45,12 @@ impl<T: RpcMock> IndexerTest<T> {
         }
     }
 
-    fn create_mocks(&mut self, batches: &[TestBatch]) {
+    fn create_mocks(&mut self, batches: &[TestBatch], pushdata: Option<Vec<PushData>>) {
         self.rpc_mock.fetching_jobs_mock(batches, &self.cursor);
+
+        if let Some(data) = pushdata {
+            self.rpc_mock.entity_getters_mock(data);
+        }
 
         for (index, batch) in batches.iter().enumerate() {
             self.rpc_mock.processing_jobs_mock(batch);
@@ -71,7 +75,7 @@ impl<T: RpcMock> IndexerTest<T> {
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
         let indexer_task = async move { indexer.run().await };
-        let timer = ITERATION_INTERVAL.saturating_mul(6);
+        let timer = ITERATION_INTERVAL.saturating_mul(20);
 
         println!(
             "==> Starting indexer with timer: {} millis",
@@ -100,12 +104,13 @@ impl<T: RpcMock> IndexerTest<T> {
     pub async fn indexing_test(&mut self) {
         println!("\nIndexing test");
 
-        let test_data = create_test_batches::<T>();
+        let pushdata = create_pushdata();
+        let test_data = create_test_batches::<T>(&pushdata);
 
         for (index, batches) in test_data.chunks(2).enumerate() {
             println!("==> Running indexer for {} time", index + 1);
 
-            self.create_mocks(batches);
+            self.create_mocks(batches, Some(pushdata.clone()));
 
             self.indexing_iteration().await.unwrap();
 
@@ -119,7 +124,7 @@ impl<T: RpcMock> IndexerTest<T> {
     pub async fn empty_contract_test(&mut self) {
         println!("\nEmpty contract test");
 
-        self.create_mocks(&vec![]);
+        self.create_mocks(&vec![], None);
 
         assert!(self.indexing_iteration().await.is_ok());
     }
