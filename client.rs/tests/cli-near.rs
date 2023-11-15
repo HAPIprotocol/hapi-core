@@ -424,9 +424,9 @@ async fn near_works() {
         "Scam",
         "6",
         "--account-id",
-        &t.reporter.account,
+        &t.authority.account,
         "--private-key",
-        &t.reporter.secret_key,
+        &t.authority.secret_key,
     ]));
 
     t.print("Verify that the asset has been updated");
@@ -450,9 +450,9 @@ async fn near_works() {
         ASSET_ADDR_1,
         ASSET_ID_1,
         "--account-id",
-        &t.authority.account,
+        &t.reporter.account,
         "--private-key",
-        &t.authority.secret_key,
+        &t.reporter.secret_key,
     ]));
 
     t.print("Verify that the asset has been confirmed");

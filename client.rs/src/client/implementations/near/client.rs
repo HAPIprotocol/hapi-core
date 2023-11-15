@@ -556,6 +556,7 @@ impl HapiCore for HapiCoreNear {
             "confirm_asset",
             json!({
                 "address": input.address,
+                "id": input.asset_id,
             })
         );
 
