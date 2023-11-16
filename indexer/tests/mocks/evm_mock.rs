@@ -56,7 +56,7 @@ impl RpcMock for EvmMock {
 
     fn get_hashes() -> [String; 17] {
         let signatures: [String; 17] = (0..17)
-            .map(|_| generate_hash())
+            .map(|_| format!("0x{}", generate_hash()))
             .collect::<Vec<_>>()
             .try_into()
             .expect("Failed to create signatures");
@@ -65,11 +65,7 @@ impl RpcMock for EvmMock {
     }
 
     fn generate_address() -> String {
-        hex::encode(
-            LocalWallet::new(&mut rand::thread_rng())
-                .address()
-                .as_bytes(),
-        )
+        ethers::utils::to_checksum(&LocalWallet::new(&mut rand::thread_rng()).address(), None)
     }
 
     fn initialize() -> Self {
@@ -106,7 +102,7 @@ impl RpcMock for EvmMock {
         let mut to_block = 0;
         let mut from_block = match &cursor {
             IndexingCursor::None => 0,
-            IndexingCursor::Block(block) => *block,
+            IndexingCursor::Block(block) => *block + 1,
             _ => panic!("Evm network must have a block cursor"),
         };
 
@@ -119,7 +115,7 @@ impl RpcMock for EvmMock {
             from_block = to_block + 1;
         }
 
-        let latest_block = from_block;
+        let latest_block = from_block - 1;
 
         self.logs_request_mock(&vec![], latest_block, latest_block);
         self.latest_block_mock(latest_block);
@@ -381,7 +377,7 @@ impl EvmMock {
                 let case_id = U256::from_big_endian(&u128_to_bytes(address.case_id.as_u128()));
                 let reporter_id =
                     U256::from_big_endian(&u128_to_bytes(address.reporter_id.as_u128()));
-                let confirmations = U256::zero();
+                let confirmations = U256::from(address.confirmations);
                 let risk = U256::from(address.risk);
                 let category = U256::from(address.category.clone() as u8);
 
@@ -406,7 +402,7 @@ impl EvmMock {
                 let case_id = U256::from_big_endian(&u128_to_bytes(asset.case_id.as_u128()));
                 let reporter_id =
                     U256::from_big_endian(&u128_to_bytes(asset.reporter_id.as_u128()));
-                let confirmations = U256::zero();
+                let confirmations = U256::from(asset.confirmations);
                 let risk = U256::from(asset.risk);
                 let category = U256::from(asset.category.clone() as u8);
 

@@ -232,11 +232,12 @@ impl SolanaMock {
                     risk_score: address.risk,
                     case_id: address.case_id.as_u128(),
                     reporter_id: address.reporter_id.as_u128(),
-                    confirmations: 0,
+                    confirmations: address.confirmations,
                 }
                 .try_serialize(&mut data)
                 .expect("Failed to serialize address");
 
+                println!("aaand here 3 times");
                 ADDRESS_OR_ASSET
             }
             PushData::Asset(asset) => {
@@ -254,11 +255,12 @@ impl SolanaMock {
                     risk_score: asset.risk,
                     case_id: asset.case_id.as_u128(),
                     reporter_id: asset.reporter_id.as_u128(),
-                    confirmations: 0,
+                    confirmations: asset.confirmations,
                 }
                 .try_serialize(&mut data)
                 .expect("Failed to serialize asset");
 
+                println!("must be here 3 times");
                 ADDRESS_OR_ASSET
             }
             PushData::Case(case) => {

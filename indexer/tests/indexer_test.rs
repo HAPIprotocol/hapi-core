@@ -67,7 +67,7 @@ impl<T: RpcMock> IndexerTest<T> {
             rpc_node_url: self.rpc_mock.get_mock_url(),
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
-            wait_interval_ms: ITERATION_INTERVAL,
+            wait_interval_ms: ITERATION_INTERVAL.saturating_mul(2),
             state_file: STATE_FILE.to_string(),
         };
 

@@ -68,6 +68,8 @@ pub struct TestData {
 pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
+    // TODO: separate data and instructions
+    // TODO: update for solana (confirmation)
     let reporter = Reporter {
         id: Uuid::new_v4(),
         account: T::generate_address(),
@@ -93,6 +95,7 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
         reporter_id: Uuid::new_v4(),
         risk: 5,
         category: Category::ATM,
+        confirmations: 10,
     };
 
     let asset = Asset {
@@ -102,11 +105,9 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
         reporter_id: Uuid::new_v4(),
         risk: 7,
         category: Category::DeFi,
+        confirmations: 3,
     };
 
-    // TODO: Evm doesnt have confirmations:
-    // 1. Add confirmation to Evm contract
-    // 2. Or remove confirmation indexer tests
     let data = [
         // ==> First Run
         // First batch
@@ -137,12 +138,18 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
             EventName::UpdateAddress,
             Some(PushData::Address(address.clone())),
         ),
-        // (EventName::ConfirmAddress, None),
+        (
+            EventName::ConfirmAddress,
+            Some(PushData::Address(address.clone())),
+        ),
         // ==> Second Run
         // First batch
         (EventName::CreateAsset, Some(PushData::Asset(asset.clone()))),
         (EventName::UpdateAsset, Some(PushData::Asset(asset.clone()))),
-        // (EventName::ConfirmAsset, None),
+        (
+            EventName::ConfirmAsset,
+            Some(PushData::Asset(asset.clone())),
+        ),
         (
             EventName::DeactivateReporter,
             Some(PushData::Reporter(reporter.clone())),

@@ -29,7 +29,7 @@ pub(super) async fn fetch_evm_jobs(
     tracing::info!(from_block, "Fetching evm jobs from");
 
     let latest_block = client.provider.get_block_number().await?.as_u64();
-    let event_list = get_event_list(client, from_block, latest_block).await?;
+    let event_list = get_event_list(client, min(from_block, latest_block), latest_block).await?;
     tracing::info!(count = event_list.len(), "Found jobs");
 
     let new_cursor = if let Some(recent) = event_list.first() {
