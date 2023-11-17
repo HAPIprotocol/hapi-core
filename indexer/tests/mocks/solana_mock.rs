@@ -237,7 +237,6 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize address");
 
-                println!("aaand here 3 times");
                 ADDRESS_OR_ASSET
             }
             PushData::Asset(asset) => {
@@ -260,7 +259,6 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize asset");
 
-                println!("must be here 3 times");
                 ADDRESS_OR_ASSET
             }
             PushData::Case(case) => {

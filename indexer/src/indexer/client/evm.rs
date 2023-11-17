@@ -18,15 +18,13 @@ use crate::{
 
 async fn get_event_list(
     client: &HapiCoreEvm,
-    earliest_block: u64,
+    from_block: u64,
     latest_block: u64,
 ) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
     let filter = Filter::default().address(client.contract.address());
     // let start_timestamp = std::time::Instant::now();
 
-    let from_block = min(earliest_block, latest_block);
-    println!("from_block: {}", from_block);
     // Substracting 1 from page size because the result will include filter limits
     let to_block = min(PAGE_SIZE.to_owned() - 1 + from_block, latest_block);
 
@@ -54,32 +52,43 @@ pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
     current_cursor: &IndexingCursor,
 ) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
-    let earliest_block = match &current_cursor {
+    let current_block = match current_cursor {
         IndexingCursor::None => 0,
         IndexingCursor::Block(block) => *block + 1,
         _ => bail!("Evm network must have a block cursor"),
     };
 
-    tracing::info!(earliest_block, "Fetching evm jobs from");
-
     let latest_block = client.provider.get_block_number().await?.as_u64();
-    let event_list = get_event_list(client, earliest_block, latest_block).await?;
-    tracing::info!(count = event_list.len(), "Found jobs");
 
-    let new_cursor = if let Some(recent) = event_list.first() {
-        IndexingCursor::try_from(recent.clone())?
-    } else {
-        IndexingCursor::Block(latest_block)
-    };
+    if current_block < latest_block {
+        tracing::info!(current_block, "Fetching evm jobs from");
 
-    Ok((event_list, new_cursor))
+        let event_list = get_event_list(client, current_block, latest_block).await?;
+        tracing::info!(count = event_list.len(), "Found jobs");
+
+        let new_cursor = if let Some(recent) = event_list.first() {
+            IndexingCursor::try_from(recent.clone())?
+        } else {
+            IndexingCursor::Block(latest_block)
+        };
+
+        return Ok((event_list, new_cursor));
+    }
+
+    tracing::trace!("No new blocks found");
+
+    return Ok((vec![], current_cursor.clone()));
 }
 
 pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
 ) -> Result<Option<Vec<PushPayload>>> {
-    let log_header = client.decode_event(log)?;
+    let log_header = if let Some(header) = client.decode_event(log)? {
+        header
+    } else {
+        return Ok(None);
+    };
 
     let tx_hash = format!(
         "{:#?}",

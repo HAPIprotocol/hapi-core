@@ -87,29 +87,29 @@ impl HapiCoreEvm {
         })
     }
 
-    pub fn decode_event(&self, log: &ethers::types::Log) -> Result<LogHeader> {
+    pub fn decode_event(&self, log: &ethers::types::Log) -> Result<Option<LogHeader>> {
         let signature = log.topics.first().ok_or(ClientError::Ethers(format!(
             "failed to decode event: no topics in log: {log:?}",
         )))?;
 
-        let name = self
+        if let Some(name) = self
             .contract
             .abi()
             .events()
             .find(|e| e.signature() == *signature)
             .map(|e| e.name.to_string())
-            .ok_or(ClientError::Ethers(format!(
-                "failed to decode event: no event with signature `{signature}`",
-            )))?;
+        {
+            let tokens = self
+                .contract
+                .decode_event_raw(&name, log.topics.clone(), log.data.clone())
+                .map_err(|error| {
+                    ClientError::Ethers(format!("failed to decode event `{name}`: {error}"))
+                })?;
 
-        let tokens = self
-            .contract
-            .decode_event_raw(&name, log.topics.clone(), log.data.clone())
-            .map_err(|error| {
-                ClientError::Ethers(format!("failed to decode event `{name}`: {error}"))
-            })?;
+            return Ok(Some(LogHeader { name, tokens }));
+        }
 
-        Ok(LogHeader { name, tokens })
+        Ok(None)
     }
 }
 

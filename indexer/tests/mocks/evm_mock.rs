@@ -1,39 +1,24 @@
 use {
-    ethers::signers,
-    hapi_core::HapiCoreNetwork,
-    hapi_indexer::IndexingCursor,
+    enum_extract::let_extract,
+    ethers::{
+        abi::Token,
+        prelude::{abigen, SignerMiddleware},
+        providers::{Http, Provider},
+        signers::{LocalWallet, Signer},
+        types::{Address, Block, Bytes, Filter, Log, H256, U256},
+        utils::keccak256,
+    },
+    hapi_core::{client::events::EventName, HapiCoreNetwork},
+    hapi_indexer::{IndexingCursor, PushData},
     mockito::{Matcher, Server, ServerGuard},
-    serde_json::{json, Value},
-    std::fmt::LowerHex,
+    rand::RngCore,
+    serde_json::json,
+    std::{str::FromStr, sync::Arc},
 };
-
-use ethers::{
-    abi::{Abi, Event},
-    signers::{Signer, Wallet},
-    types::{Block, BlockNumber},
-};
-use ethers::{types::BlockId, utils::keccak256};
-use rand::RngCore;
-use std::fs;
-
-use std::{collections::HashMap, str::FromStr, sync::Arc};
-
-use enum_extract::let_extract;
-use ethers::{
-    abi::{Token, Tokenizable},
-    prelude::{abigen, SignerMiddleware},
-    providers::{Http, Middleware, Provider},
-    signers::LocalWallet,
-    types::{Address, Bytes, Filter, Log, H256, U256},
-};
-use hapi_core::client::events::EventName;
-use hapi_indexer::PushData;
-use solana_sdk::signature::Signature;
 
 use super::{RpcMock, TestBatch, PAGE_SIZE};
 
 pub const CONTRACT_ADDRESS: &str = "0x2947F98C42597966a0ec25e92843c09ac18Fbab7";
-pub const ABI: &str = "../evm/artifacts/contracts/HapiCore.sol/HapiCore.json";
 
 abigen!(
     HAPI_CORE_CONTRACT,
@@ -503,15 +488,4 @@ fn generate_hash() -> String {
     rng.fill_bytes(&mut data);
 
     hex::encode(keccak256(data).to_vec())
-}
-
-fn get_signature(event: &Event) -> String {
-    let inputs = event
-        .inputs
-        .iter()
-        .map(|param| param.kind.to_string())
-        .collect::<Vec<String>>()
-        .join(",");
-
-    format!("{}({})", event.name, inputs)
 }
