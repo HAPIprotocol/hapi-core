@@ -302,4 +302,59 @@ export ADDRESS_4="address4.near"
 
 # See the change
 ./hapi-core-cli address get $ADDRESS_3
+
+# Make sure that publisher can confirm authority's address
+./hapi-core-cli address confirm $ADDRESS_1 --private-key $PUBLISHER_PK
+
+# See the change
+./hapi-core-cli address get $ADDRESS_1
+
+# ...but can't confirm theirs
+./hapi-core-cli address confirm $ADDRESS_3 --private-key $PUBLISHER_PK
+```
+
+### Asset
+
+```sh
+export ASSET_1="98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
+export ASSET_2="alice.near"
+export ASSET_3="bob.near"
+export ASSET_4="carol.near"
+
+export ASSET_1_ID="123456789"
+export ASSET_2_ID="987654321"
+export ASSET_3_ID="135790753"
+export ASSET_4_ID="246809753"
+
+# Create a few assets by the authority
+./hapi-core-cli asset create $ASSET_1 $ASSET_1_ID $CASE_1_UUID theft 8
+./hapi-core-cli asset create $ASSET_2 $ASSET_2_ID $CASE_1_UUID theft 3
+
+# ...and a few by the publisher
+./hapi-core-cli asset create $ASSET_3 $ASSET_3_ID $CASE_1_UUID theft 3 --private-key $PUBLISHER_PK
+./hapi-core-cli asset create $ASSET_4 $ASSET_4_ID $CASE_2_UUID theft 3 --private-key $PUBLISHER_PK
+
+# See the list of created assets
+./hapi-core-cli asset list
+
+# Check that now we have 4 assets in total
+./hapi-core-cli asset count
+
+# Make sure that publisher can't update authority's asset
+./hapi-core-cli asset update $ASSET_1 $ASSET_1_ID $CASE_2_UUID gambling 2 --private-key $PUBLISHER_PK
+
+# ...but can update theirs
+./hapi-core-cli asset update $ASSET_3 $ASSET_3_ID $CASE_2_UUID gambling 2 --private-key $PUBLISHER_PK
+
+# See the change
+./hapi-core-cli asset get $ASSET_3 $ASSET_3_ID
+
+# Make sure that publisher can confirm authority's asset
+./hapi-core-cli asset confirm $ASSET_1 $ASSET_1_ID --private-key $PUBLISHER_PK
+
+# See the change
+./hapi-core-cli asset get $ASSET_1 $ASSET_1_ID
+
+# ...but can't confirm theirs
+./hapi-core-cli asset confirm $ASSET_3 $ASSET_3_ID --private-key $PUBLISHER_PK
 ```
