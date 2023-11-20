@@ -918,6 +918,12 @@ contract HapiCore is OwnableUpgradeable {
             role == ReporterRole.Publisher || role == ReporterRole.Validator,
             "Reporter is not publisher or validator"
         );
+
+        require(
+            reporter_id != _addresses[addr].reporter_id,
+            "Cannot confirm the address reported by himself"
+        );
+
         require(
             !_address_confirmations[addr][reporter_id],
             "The reporter has already confirmed the address"
@@ -1170,6 +1176,12 @@ contract HapiCore is OwnableUpgradeable {
             role == ReporterRole.Publisher || role == ReporterRole.Validator,
             "Reporter is not publisher or validator"
         );
+
+        require(
+            reporter_id != _assets[addr][asset_id].reporter_id,
+            "Cannot confirm the asset reported by himself"
+        );
+
         require(
             !_asset_confirmations[addr][asset_id][reporter_id],
             "The reporter has already confirmed the asset"

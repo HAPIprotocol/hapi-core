@@ -206,7 +206,7 @@ describe("HapiCore: Address", function () {
     const address = {
       addr: "0xc0fFF558F848ffDB39251186c6A0c598010a3615",
       caseId: case1.id,
-      reporterId: reporters.publisher.id,
+      reporterId: reporters.tracer.id,
       risk: 5,
       category: Category.Hacker,
     };
@@ -216,7 +216,7 @@ describe("HapiCore: Address", function () {
         .connect(wallets.publisher)
         .createCase(case1.id, case1.name, case1.url),
       hapiCore
-        .connect(wallets.publisher)
+        .connect(wallets.tracer)
         .createAddress(
           address.addr,
           address.caseId,
@@ -323,5 +323,43 @@ describe("HapiCore: Address", function () {
     await expect(
       hapiCore.connect(wallets.tracer).confirmAddress(address.addr)
     ).to.be.revertedWith("Reporter is not publisher or validator");
+  });
+
+  it("Cannot confirm the address reported by himself", async function () {
+    const { hapiCore, wallets, reporters } = await loadFixture(
+      fixtureWithReporters
+    );
+
+    const case1 = {
+      id: randomId(),
+      name: "big hack 2023",
+      url: "https://big.hack",
+    };
+
+    const address = {
+      addr: "0xc0fFF558F848ffDB39251186c6A0c598010a3615",
+      caseId: case1.id,
+      reporterId: reporters.publisher.id,
+      risk: 5,
+      category: Category.Hacker,
+    };
+
+    await Promise.all([
+      hapiCore
+        .connect(wallets.publisher)
+        .createCase(case1.id, case1.name, case1.url),
+      hapiCore
+        .connect(wallets.publisher)
+        .createAddress(
+          address.addr,
+          address.caseId,
+          address.risk,
+          address.category
+        ),
+    ]);
+
+    await expect(
+      hapiCore.connect(wallets.publisher).confirmAddress(address.addr)
+    ).to.be.revertedWith("Cannot confirm the address reported by himself");
   });
 });

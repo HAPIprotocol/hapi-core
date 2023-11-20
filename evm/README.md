@@ -264,7 +264,6 @@ export ADDRESS_4="0x81273458f2b0d78d457edcc0ff6fb9e486f69ea0"
 ./hapi-core-cli address get $ADDRESS_1
 
 # ...but can't confirm theirs
-# TODO: fix broken logic
 ./hapi-core-cli address confirm $ADDRESS_3 --private-key $PUBLISHER_PK
 ```
 
@@ -311,6 +310,5 @@ export ASSET_4_ID="246809753"
 ./hapi-core-cli asset get $ASSET_1 $ASSET_1_ID
 
 # ...but can't confirm theirs
-# TODO: fix broken logic
 ./hapi-core-cli asset confirm $ASSET_3 $ASSET_3_ID --private-key $PUBLISHER_PK
 ```
