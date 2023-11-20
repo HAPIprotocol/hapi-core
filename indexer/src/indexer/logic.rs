@@ -82,21 +82,19 @@ impl Indexer {
         if !jobs.is_empty() {
             tracing::info!(%new_cursor, "Earliest cursor found");
 
-            return Ok(IndexerState::Processing { cursor: new_cursor });
+            Ok(IndexerState::Processing { cursor: new_cursor })
+        } else if old_cursor == IndexingCursor::None {
+            Ok(IndexerState::Stopped {
+                message: "No valid transactions found on the contract address".to_string(),
+            })
         } else {
-            if old_cursor == IndexingCursor::None {
-                return Ok(IndexerState::Stopped {
-                    message: "No valid transactions found on the contract address".to_string(),
-                });
-            } else {
-                let timestamp = now()? + self.wait_interval_ms.as_secs();
-                tracing::info!(timestamp, %new_cursor, "New jobs not found, waiting until next check");
+            let timestamp = now()? + self.wait_interval_ms.as_secs();
+            tracing::info!(timestamp, %new_cursor, "New jobs not found, waiting until next check");
 
-                Ok(IndexerState::Waiting {
-                    until: timestamp,
-                    cursor: new_cursor,
-                })
-            }
+            Ok(IndexerState::Waiting {
+                until: timestamp,
+                cursor: new_cursor,
+            })
         }
     }
 

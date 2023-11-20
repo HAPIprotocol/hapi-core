@@ -18,7 +18,6 @@ use mocks::{
 };
 
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
-const STATE_FILE: &str = "data/state.json";
 
 pub struct IndexerTest<T: RpcMock> {
     webhook_mock: WebhookServiceMock,
@@ -34,10 +33,7 @@ impl<T: RpcMock> IndexerTest<T> {
             }
         }
 
-        if PathBuf::from(STATE_FILE).exists() {
-            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
-        }
-
+        drop_srate_file(T::STATE_FILE);
         std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         Self {
@@ -68,7 +64,7 @@ impl<T: RpcMock> IndexerTest<T> {
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
             wait_interval_ms: ITERATION_INTERVAL.saturating_mul(2),
-            state_file: STATE_FILE.to_string(),
+            state_file: T::STATE_FILE.to_string(),
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
@@ -92,7 +88,7 @@ impl<T: RpcMock> IndexerTest<T> {
     }
 
     fn check_cursor(&mut self, batches: &[TestBatch]) {
-        self.cursor = PersistedState::from_file(&PathBuf::from(STATE_FILE))
+        self.cursor = PersistedState::from_file(&PathBuf::from(T::STATE_FILE))
             .expect("Failed to get state")
             .cursor;
 
@@ -146,9 +142,13 @@ impl<T: RpcMock> IndexerTest<T> {
 
 impl<T: RpcMock> Drop for IndexerTest<T> {
     fn drop(&mut self) {
-        if PathBuf::from(STATE_FILE).exists() {
-            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
-        }
+        drop_srate_file(T::STATE_FILE);
+    }
+}
+
+fn drop_srate_file(file: &'static str) {
+    if PathBuf::from(file).exists() {
+        std::fs::remove_file(file).expect("Failed to remove state file");
     }
 }
 

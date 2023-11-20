@@ -5,6 +5,8 @@ use super::{RpcMock, TestBatch};
 pub struct NearMock;
 
 impl RpcMock for NearMock {
+    const STATE_FILE: &'static str = "data/near_state.json";
+
     fn get_contract_address() -> String {
         unimplemented!();
     }

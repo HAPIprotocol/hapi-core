@@ -31,6 +31,8 @@ pub struct EvmMock {
 }
 
 impl RpcMock for EvmMock {
+    const STATE_FILE: &'static str = "data/evm_state.json";
+
     fn get_contract_address() -> String {
         CONTRACT_ADDRESS.to_string()
     }

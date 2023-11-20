@@ -25,6 +25,8 @@ pub mod webhook_mock;
 pub const PAGE_SIZE: u64 = 6;
 
 pub trait RpcMock {
+    const STATE_FILE: &'static str;
+
     // Network mock server initialization
     fn initialize() -> Self;
 

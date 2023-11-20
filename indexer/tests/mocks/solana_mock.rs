@@ -23,13 +23,16 @@ use super::{RpcMock, TestBatch, TestData, PAGE_SIZE};
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 pub const REPORTER: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
 pub const CASE: &str = "DTDk9GEQoVibTuHmTfDUwHehkH4WYd5fpawPfayGRVdi";
-pub const ADDRESS_OR_ASSET: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
+pub const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
+pub const ASSET: &str = "GsQmgPjFvA4cLqkTD5urwMmLPDiSA1cCxijRkofaLsC9";
 
 pub struct SolanaMock {
     server: ServerGuard,
 }
 
 impl RpcMock for SolanaMock {
+    const STATE_FILE: &'static str = "data/solana_state.json";
+
     fn get_contract_address() -> String {
         PROGRAM_ID.to_string()
     }
@@ -146,15 +149,18 @@ impl RpcMock for SolanaMock {
 
 impl SolanaMock {
     fn get_transaction(name: String, hash: &str) -> EncodedConfirmedTransactionWithStatusMeta {
-        // To reduce redundant code asset and address have common pubkey (same index in account list)
-        // It is important  to call them in different indexer launches
-        let account_keys = vec![
+        let mut account_keys = vec![
             String::from(PROGRAM_ID),
             String::default(),
             String::from(REPORTER),
             String::from(CASE),
-            String::from(ADDRESS_OR_ASSET),
         ];
+
+        if name.contains("address") {
+            account_keys.push(String::from(ADDRESS))
+        } else if name.contains("asset") {
+            account_keys.push(String::from(ASSET))
+        }
 
         create_test_tx(
             &vec![(
@@ -237,7 +243,7 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize address");
 
-                ADDRESS_OR_ASSET
+                ADDRESS
             }
             PushData::Asset(asset) => {
                 let mut id = [0_u8; 32];
@@ -259,7 +265,7 @@ impl SolanaMock {
                 .try_serialize(&mut data)
                 .expect("Failed to serialize asset");
 
-                ADDRESS_OR_ASSET
+                ASSET
             }
             PushData::Case(case) => {
                 hapi_core_solana::Case {

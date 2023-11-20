@@ -77,7 +77,7 @@ pub(super) async fn fetch_evm_jobs(
 
     tracing::trace!("No new blocks found");
 
-    return Ok((vec![], current_cursor.clone()));
+    Ok((vec![], current_cursor.clone()))
 }
 
 pub(super) async fn process_evm_job(
