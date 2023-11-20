@@ -50,6 +50,9 @@ pub struct IndexerConfiguration {
     /// The file to persist the indexer state in
     #[serde(default = "default_state_file")]
     pub state_file: String,
+
+    /// The number of milliseconds between iterations in the fetching
+    pub fetching_delay: Duration,
 }
 
 fn default_is_json_logging() -> bool {

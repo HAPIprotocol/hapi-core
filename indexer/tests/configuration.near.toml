@@ -6,5 +6,6 @@ listener = "0.0.0.0:3001"
 network = "near"
 rpc_node_url =  "https://archival-rpc.testnet.near.org"
 webhook_url = "http://localhost:8080"
+fetching_delay = 100
 contract_address = "sub_hapi.testcore.testnet"
 state_file = "data/state.json"

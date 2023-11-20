@@ -17,8 +17,6 @@ pub(crate) struct FetchingArtifacts {
     pub cursor: IndexingCursor,
 }
 
-pub const ITERATION_INTERVAL: Duration = Duration::from_millis(100);
-
 pub(crate) enum IndexerClient {
     Evm(HapiCoreEvm),
     Near(HapiCoreNear),
@@ -51,27 +49,31 @@ impl IndexerClient {
         }
     }
 
-    pub(crate) async fn fetch_jobs(&self, cursor: &IndexingCursor) -> Result<FetchingArtifacts> {
+    pub(crate) async fn fetch_jobs(
+        &self,
+        cursor: &IndexingCursor,
+        fetching_delay: Duration,
+    ) -> Result<FetchingArtifacts> {
         match (self, cursor) {
             (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
-                fetch_evm_jobs(client, Some(*n)).await
+                fetch_evm_jobs(client, Some(*n), fetching_delay).await
             }
             (IndexerClient::Evm(client), IndexingCursor::None) => {
-                fetch_evm_jobs(client, None).await
+                fetch_evm_jobs(client, None, fetching_delay).await
             }
 
             (IndexerClient::Solana(client), IndexingCursor::Transaction(tx)) => {
-                fetch_solana_jobs(client, Some(tx)).await
+                fetch_solana_jobs(client, Some(tx), fetching_delay).await
             }
             (IndexerClient::Solana(client), IndexingCursor::None) => {
-                fetch_solana_jobs(client, None).await
+                fetch_solana_jobs(client, None, fetching_delay).await
             }
 
             (IndexerClient::Near(client), IndexingCursor::Block(n)) => {
-                fetch_near_jobs(client, Some(*n)).await
+                fetch_near_jobs(client, Some(*n), fetching_delay).await
             }
             (IndexerClient::Near(client), IndexingCursor::None) => {
-                fetch_near_jobs(client, None).await
+                fetch_near_jobs(client, None, fetching_delay).await
             }
             _ => unimplemented!(),
         }

@@ -13,7 +13,7 @@ use {
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData},
-    std::str::FromStr,
+    std::{str::FromStr, time::Duration},
     uuid::Uuid,
 };
 
@@ -49,6 +49,10 @@ pub trait RpcMock {
 
     // Should contains mocks to handle entity getters for client
     fn entity_getters_mock(&mut self, data: Vec<PushData>);
+
+    fn get_fetching_delay_multiplier() -> u32;
+
+    fn get_fetching_delay() -> Duration;
 }
 
 pub type TestBatch = Vec<TestData>;

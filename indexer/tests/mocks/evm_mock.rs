@@ -1,4 +1,9 @@
-use {hapi_core::HapiCoreNetwork, hapi_indexer::{IndexingCursor, PushData}};
+use std::time::Duration;
+
+use {
+    hapi_core::HapiCoreNetwork,
+    hapi_indexer::{IndexingCursor, PushData},
+};
 
 use super::{RpcMock, TestBatch};
 
@@ -37,7 +42,15 @@ impl RpcMock for EvmMock {
         unimplemented!();
     }
 
-    fn entity_getters_mock(&mut self, _data: Vec<PushData>){
+    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
         unimplemented!()
+    }
+
+    fn get_fetching_delay_multiplier() -> u32 {
+        unimplemented!()
+    }
+
+    fn get_fetching_delay() -> Duration {
+        Duration::from_millis(100)
     }
 }

@@ -1,7 +1,7 @@
 use {
     hapi_indexer::{
         configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
-        PersistedState, PushData, ITERATION_INTERVAL,
+        PersistedState, PushData,
     },
     std::{env, path::PathBuf},
     tokio::time::sleep,
@@ -69,13 +69,14 @@ impl<T: RpcMock> IndexerTest<T> {
             rpc_node_url: self.rpc_mock.get_mock_url(),
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
-            wait_interval_ms: ITERATION_INTERVAL,
+            wait_interval_ms: T::get_fetching_delay(),
             state_file: STATE_FILE.to_string(),
+            fetching_delay: T::get_fetching_delay(),
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
         let indexer_task = async move { indexer.run().await };
-        let timer = ITERATION_INTERVAL.saturating_mul(20);
+        let timer = T::get_fetching_delay().saturating_mul(T::get_fetching_delay_multiplier());
 
         println!(
             "==> Starting indexer with timer: {} millis",

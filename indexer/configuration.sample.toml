@@ -6,5 +6,6 @@ listener = "0.0.0.0:3000"
 network = "ethereum"
 rpc_node_url = "http://localhost:8545"
 webhook_url = "http://localhost:3000"
+fetching_delay = 100
 contract_address = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
 state_file = "data/state.json"

@@ -1,4 +1,4 @@
-use {anyhow::Result, hapi_core::HapiCoreEvm};
+use {anyhow::Result, hapi_core::HapiCoreEvm, std::time::Duration};
 
 use crate::indexer::push::PushPayload;
 
@@ -9,6 +9,7 @@ pub const EVM_PAGE_SIZE: u64 = 100;
 pub(super) async fn fetch_evm_jobs(
     _client: &HapiCoreEvm,
     _current_cursor: Option<u64>,
+    _fetching_delay: Duration,
 ) -> Result<FetchingArtifacts> {
     unimplemented!()
 }

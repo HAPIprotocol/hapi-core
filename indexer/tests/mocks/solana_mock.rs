@@ -10,7 +10,7 @@ use {
     solana_account_decoder::{UiAccount, UiAccountEncoding},
     solana_sdk::{account::Account, pubkey::Pubkey},
     solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
-    std::str::FromStr,
+    std::{str::FromStr, time::Duration},
 };
 
 use solana_sdk::signature::Signature;
@@ -138,6 +138,14 @@ impl RpcMock for SolanaMock {
 
     fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
         unimplemented!()
+    }
+
+    fn get_fetching_delay_multiplier() -> u32 {
+        6
+    }
+
+    fn get_fetching_delay() -> Duration {
+        Duration::from_millis(100)
     }
 }
 

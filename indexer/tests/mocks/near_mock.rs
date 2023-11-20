@@ -12,7 +12,7 @@ use {
         views::{BlockHeaderView, CallResult},
     },
     serde_json::{json, Value},
-    std::str::FromStr,
+    std::{str::FromStr, time::Duration},
 };
 
 use {
@@ -66,9 +66,7 @@ impl RpcMock for NearMock {
     }
 
     fn initialize() -> Self {
-        let mut server = Server::new();
-
-        server.mock("POST", "/").with_status(200).create();
+        let server = Server::new();
 
         Self { server }
     }
@@ -132,6 +130,26 @@ impl RpcMock for NearMock {
                 self.mock_block(data.block);
             }
         }
+
+        if let Some(batch) = batches.last() {
+            let response = json!({
+                "jsonrpc": "2.0",
+                "result": get_default_rpc_block_response(batch.last().unwrap().block),
+                "id": 1
+            });
+
+            let payload = methods::block::RpcBlockRequest {
+                block_reference: BlockReference::Finality(Finality::Final),
+            };
+
+            self.server
+                .mock("POST", "/")
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(&response.to_string())
+                .match_body(Matcher::PartialJson(get_value_from_method(payload)))
+                .create();
+        }
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
@@ -147,54 +165,21 @@ impl RpcMock for NearMock {
         self.mock_client_get_requests(&data[2], "get_address");
         self.mock_client_get_requests(&data[3], "get_asset");
     }
+
+    fn get_fetching_delay_multiplier() -> u32 {
+        14
+    }
+
+    fn get_fetching_delay() -> Duration {
+        Duration::from_millis(100)
+    }
 }
 
 impl NearMock {
     fn mock_block(&mut self, block: u64) {
-        let result = RpcBlockResponse {
-            block_view: near_primitives::views::BlockView {
-                author: reporter_id(),
-                header: BlockHeaderView {
-                    height: block,
-                    prev_height: None,
-                    epoch_id: CryptoHash::default(),
-                    next_epoch_id: CryptoHash::default(),
-                    hash: CryptoHash::default(),
-                    prev_hash: CryptoHash::default(),
-                    prev_state_root: CryptoHash::default(),
-                    chunk_receipts_root: CryptoHash::default(),
-                    chunk_headers_root: CryptoHash::default(),
-                    chunk_tx_root: CryptoHash::default(),
-                    outcome_root: CryptoHash::default(),
-                    chunks_included: 0,
-                    challenges_root: CryptoHash::default(),
-                    timestamp: 123,
-                    timestamp_nanosec: 123,
-                    random_value: CryptoHash::default(),
-                    validator_proposals: vec![],
-                    chunk_mask: vec![],
-                    gas_price: 0,
-                    block_ordinal: None,
-                    rent_paid: Balance::default(),
-                    validator_reward: Balance::default(),
-                    total_supply: Balance::default(),
-                    challenges_result: vec![],
-                    last_final_block: CryptoHash::default(),
-                    last_ds_final_block: CryptoHash::default(),
-                    next_bp_hash: CryptoHash::default(),
-                    block_merkle_root: CryptoHash::default(),
-                    epoch_sync_data_hash: None,
-                    approvals: vec![],
-                    signature: near_crypto::Signature::default(),
-                    latest_protocol_version: 0,
-                },
-                chunks: vec![],
-            },
-        };
-
         let response = json!({
             "jsonrpc": "2.0",
-            "result": result,
+            "result":  get_default_rpc_block_response(block),
             "id": 1
         });
 
@@ -400,4 +385,47 @@ fn get_asset_json(data: &Asset) -> Value {
 
 fn args_from_json(json: Value) -> FunctionArgs {
     FunctionArgs::from(json.to_string().into_bytes())
+}
+
+fn get_default_rpc_block_response(block: u64) -> RpcBlockResponse {
+    RpcBlockResponse {
+        block_view: near_primitives::views::BlockView {
+            author: reporter_id(),
+            header: BlockHeaderView {
+                height: block,
+                prev_height: None,
+                epoch_id: CryptoHash::default(),
+                next_epoch_id: CryptoHash::default(),
+                hash: CryptoHash::default(),
+                prev_hash: CryptoHash::default(),
+                prev_state_root: CryptoHash::default(),
+                chunk_receipts_root: CryptoHash::default(),
+                chunk_headers_root: CryptoHash::default(),
+                chunk_tx_root: CryptoHash::default(),
+                outcome_root: CryptoHash::default(),
+                chunks_included: 0,
+                challenges_root: CryptoHash::default(),
+                timestamp: 123,
+                timestamp_nanosec: 123,
+                random_value: CryptoHash::default(),
+                validator_proposals: vec![],
+                chunk_mask: vec![],
+                gas_price: 0,
+                block_ordinal: None,
+                rent_paid: Balance::default(),
+                validator_reward: Balance::default(),
+                total_supply: Balance::default(),
+                challenges_result: vec![],
+                last_final_block: CryptoHash::default(),
+                last_ds_final_block: CryptoHash::default(),
+                next_bp_hash: CryptoHash::default(),
+                block_merkle_root: CryptoHash::default(),
+                epoch_sync_data_hash: None,
+                approvals: vec![],
+                signature: near_crypto::Signature::default(),
+                latest_protocol_version: 0,
+            },
+            chunks: vec![],
+        },
+    }
 }
