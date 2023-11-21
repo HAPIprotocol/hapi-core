@@ -13,7 +13,7 @@ use {
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData},
-    std::str::FromStr,
+    std::{str::FromStr, time::Duration},
     uuid::Uuid,
 };
 
@@ -53,6 +53,15 @@ pub trait RpcMock {
 
     // Should contain mocks to handle processing (not mandatory for all networks)
     fn processing_jobs_mock(&mut self, batch: &TestBatch);
+
+    // Should contains mocks to handle entity getters for client
+    fn entity_getters_mock(&mut self, data: Vec<PushData>);
+
+    fn get_fetching_delay_multiplier() -> u32;
+
+    fn get_fetching_delay() -> Duration {
+        Duration::from_millis(100)
+    }
 }
 
 pub type TestBatch = Vec<TestData>;
@@ -65,13 +74,7 @@ pub struct TestData {
     pub block: u64,
 }
 
-// Create test batches: 17 events structured into 3 batches:
-// 2 batches for the first launch of the indexer 1 batch for the second
-pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
-    let hashes = T::get_hashes();
-
-    // TODO: separate data and instructions
-    // TODO: update for solana (confirmation)
+pub fn create_pushdata<T: RpcMock>() -> Vec<PushData> {
     let reporter = Reporter {
         id: Uuid::new_v4(),
         account: T::generate_address(),
@@ -110,56 +113,47 @@ pub fn create_test_batches<T: RpcMock>() -> Vec<TestBatch> {
         confirmations: 3,
     };
 
+    vec![
+        PushData::Reporter(reporter.clone()),
+        PushData::Case(case.clone()),
+        PushData::Address(address.clone()),
+        PushData::Asset(asset.clone()),
+    ]
+}
+
+// Create test batches: 17 events structured into 3 batches:
+// 2 batches for the first launch of the indexer 1 batch for the second
+pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatch> {
+    let hashes = T::get_hashes();
+
+    let reporter = pushdata[0].clone();
+    let case = pushdata[1].clone();
+    let address = pushdata[2].clone();
+    let asset = pushdata[3].clone();
+
     let data = [
         // ==> First Run
         // First batch
         (EventName::Initialize, None),
         (EventName::SetAuthority, None),
-        (
-            EventName::CreateReporter,
-            Some(PushData::Reporter(reporter.clone())),
-        ),
+        (EventName::CreateReporter, Some(reporter.clone())),
         (EventName::UpdateStakeConfiguration, None),
-        (
-            EventName::ActivateReporter,
-            Some(PushData::Reporter(reporter.clone())),
-        ),
-        (
-            EventName::UpdateReporter,
-            Some(PushData::Reporter(reporter.clone())),
-        ),
+        (EventName::ActivateReporter, Some(reporter.clone())),
+        (EventName::UpdateReporter, Some(reporter.clone())),
         // Second batch
         (EventName::UpdateRewardConfiguration, None),
-        (EventName::CreateCase, Some(PushData::Case(case.clone()))),
-        (EventName::UpdateCase, Some(PushData::Case(case.clone()))),
-        (
-            EventName::CreateAddress,
-            Some(PushData::Address(address.clone())),
-        ),
-        (
-            EventName::UpdateAddress,
-            Some(PushData::Address(address.clone())),
-        ),
-        (
-            EventName::ConfirmAddress,
-            Some(PushData::Address(address.clone())),
-        ),
+        (EventName::CreateCase, Some(case.clone())),
+        (EventName::UpdateCase, Some(case)),
+        (EventName::CreateAddress, Some(address.clone())),
+        (EventName::UpdateAddress, Some(address)),
+        (EventName::ConfirmAddress, None),
         // ==> Second Run
         // First batch
-        (EventName::CreateAsset, Some(PushData::Asset(asset.clone()))),
-        (EventName::UpdateAsset, Some(PushData::Asset(asset.clone()))),
-        (
-            EventName::ConfirmAsset,
-            Some(PushData::Asset(asset.clone())),
-        ),
-        (
-            EventName::DeactivateReporter,
-            Some(PushData::Reporter(reporter.clone())),
-        ),
-        (
-            EventName::Unstake,
-            Some(PushData::Reporter(reporter.clone())),
-        ),
+        (EventName::CreateAsset, Some(asset.clone())),
+        (EventName::UpdateAsset, Some(asset)),
+        (EventName::ConfirmAsset, None),
+        (EventName::DeactivateReporter, Some(reporter.clone())),
+        (EventName::Unstake, Some(reporter)),
     ];
 
     let batches: TestBatch = hashes

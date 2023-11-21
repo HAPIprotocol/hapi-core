@@ -2,24 +2,27 @@ use {
     anyhow::{bail, Result},
     ethers::{abi::Token, providers::Middleware, types::Filter},
     hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
-    std::{cmp::min, str::FromStr},
+    std::{cmp::min, str::FromStr, time::Duration},
     tokio::time::sleep,
     uuid::Uuid,
 };
 
 use crate::{
     indexer::{
-        client::indexer_client::{ITERATION_INTERVAL, PAGE_SIZE},
+        client::indexer_client::PAGE_SIZE,
         push::{PushData, PushEvent, PushPayload},
         IndexerJob,
     },
     IndexingCursor,
 };
 
+use super::indexer_client::FetchingArtifacts;
+
 async fn get_event_list(
     client: &HapiCoreEvm,
     from_block: u64,
     latest_block: u64,
+    fetching_delay: Duration,
 ) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
     let filter = Filter::default().address(client.contract.address());
@@ -51,7 +54,8 @@ async fn get_event_list(
 pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
     current_cursor: &IndexingCursor,
-) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
     let current_block = match current_cursor {
         IndexingCursor::None => 0,
         IndexingCursor::Block(block) => *block + 1,
@@ -63,21 +67,22 @@ pub(super) async fn fetch_evm_jobs(
     if current_block < latest_block {
         tracing::info!(current_block, "Fetching evm jobs from");
 
-        let event_list = get_event_list(client, current_block, latest_block).await?;
+        let event_list =
+            get_event_list(client, current_block, latest_block, fetching_delay).await?;
         tracing::info!(count = event_list.len(), "Found jobs");
 
-        let new_cursor = if let Some(recent) = event_list.first() {
-            IndexingCursor::try_from(recent.clone())?
-        } else {
-            IndexingCursor::Block(latest_block)
-        };
-
-        return Ok((event_list, new_cursor));
+        return Ok(FetchingArtifacts {
+            jobs: event_list,
+            cursor: IndexingCursor::Block(latest_block),
+        });
     }
 
     tracing::trace!("No new blocks found");
 
-    Ok((vec![], current_cursor.clone()))
+    Ok(FetchingArtifacts {
+        jobs: vec![],
+        cursor: current_cursor.clone(),
+    })
 }
 
 pub(super) async fn process_evm_job(

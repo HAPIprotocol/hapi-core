@@ -21,6 +21,7 @@ impl Indexer {
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,
+            fetching_delay: cfg.fetching_delay,
         })
     }
 
@@ -50,7 +51,7 @@ impl Indexer {
             IndexerState::CheckForUpdates { cursor } => self.handle_check_for_updates(cursor).await,
             IndexerState::Processing { cursor } => self.handle_process(cursor).await,
             IndexerState::Waiting { until, cursor } => self.handle_waiting(until, cursor).await,
-            IndexerState::Stopped { .. } => bail!("Stoped indexer should not be running"),
+            IndexerState::Stopped { .. } => bail!("Stopped indexer should not be running"),
         }
     }
 
@@ -91,6 +92,11 @@ impl Indexer {
             let timestamp = now()? + self.wait_interval_ms.as_secs();
             tracing::info!(timestamp, %new_cursor, "New jobs not found, waiting until next check");
 
+            PersistedState {
+                cursor: new_cursor.clone(),
+            }
+            .to_file(&self.state_file)?;
+
             Ok(IndexerState::Waiting {
                 until: timestamp,
                 cursor: new_cursor,
@@ -100,10 +106,10 @@ impl Indexer {
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        let (new_jobs, new_cursor) = self.client.fetch_jobs(&cursor).await?;
-        let state = self.get_updated_state(&new_jobs, cursor, new_cursor)?;
+        let artifacts = self.client.fetch_jobs(&cursor, self.fetching_delay).await?;
+        let state = self.get_updated_state(&artifacts.jobs, cursor, artifacts.cursor.clone())?;
 
-        self.jobs.extend(new_jobs);
+        self.jobs.extend(artifacts.jobs);
 
         Ok(state)
     }
@@ -124,8 +130,13 @@ impl Indexer {
             }
             .to_file(&self.state_file)?;
 
-            return Ok(IndexerState::Processing { cursor: new_cursor });
+            return Ok(IndexerState::Processing { cursor });
         };
+
+        PersistedState {
+            cursor: cursor.clone(),
+        }
+        .to_file(&self.state_file)?;
 
         tracing::trace!("No more jobs in the queue");
 

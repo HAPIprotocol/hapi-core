@@ -10,6 +10,7 @@ pub const ERROR_REPORTER_IS_INACTIVE: &str = "Reporter is inactive";
 pub const ERROR_UNLOCK_DURATION_NOT_PASSED: &str = "Unlock duration not passed";
 pub const ERROR_LONG_NAME: &str = "Name is too long";
 pub const ERROR_CHANGE_TOKEN: &str = "Token cannot be changed";
+pub const ERROR_REPORT_CONFIRMATION: &str = "Reporter can't confirm report reported by himself";
 
 // Case errors
 pub const ERROR_INVALID_ROLE: &str = "Invalid role";

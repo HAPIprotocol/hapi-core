@@ -6,5 +6,5 @@ pub use indexer::{
     persistence::PersistedState,
     push::{PushData, PushEvent, PushPayload},
     state::IndexingCursor,
-    Indexer, ITERATION_INTERVAL,
+    Indexer,
 };

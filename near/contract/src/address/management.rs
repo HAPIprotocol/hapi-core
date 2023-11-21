@@ -4,6 +4,7 @@ use crate::{
     case::CaseId, reporter::Role, Category, Contract, ContractExt, RiskScore, StorageKey,
     ERROR_ADDRESS_ALREADY_EXISTS, ERROR_ALREADY_CONFIRMED, ERROR_CASE_NOT_FOUND,
     ERROR_INVALID_RISK_SCORE, ERROR_INVALID_ROLE, ERROR_REPORTER_IS_INACTIVE,
+    ERROR_REPORT_CONFIRMATION,
 };
 
 use super::Address;
@@ -97,6 +98,11 @@ impl Contract {
         }
 
         let mut address_entity: Address = self.get_address_internal(&address);
+
+        require!(
+            address_entity.reporter_id != reporter.id,
+            ERROR_REPORT_CONFIRMATION
+        );
 
         require!(
             address_entity.confirmations.insert(&reporter.id),

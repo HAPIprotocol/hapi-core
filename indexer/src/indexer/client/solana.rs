@@ -11,12 +11,14 @@ use {
     },
     solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
+    std::time::Duration,
     std::{collections::VecDeque, str::FromStr},
     tokio::time::sleep,
 };
 
 use crate::indexer::{
-    client::indexer_client::{ITERATION_INTERVAL, PAGE_SIZE},
+    client::indexer_client::FetchingArtifacts,
+    client::indexer_client::PAGE_SIZE,
     push::{PushData, PushEvent, PushPayload},
     IndexerJob, IndexingCursor,
 };
@@ -29,7 +31,8 @@ const ASSET_ACCOUNT_INDEX: usize = 4;
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: &IndexingCursor,
-) -> Result<(Vec<IndexerJob>, IndexingCursor)> {
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
     let signature_cursor = match &current_cursor {
         IndexingCursor::None => None,
         IndexingCursor::Transaction(tx) => Some(Signature::from_str(tx)?),
@@ -41,7 +44,7 @@ pub(super) async fn fetch_solana_jobs(
         "Fetching solana jobs"
     );
 
-    let signature_list = get_signature_list(client, signature_cursor).await?;
+    let signature_list = get_signature_list(client, signature_cursor, fetching_delay).await?;
     tracing::info!(count = signature_list.len(), "Found jobs");
 
     // TODO: describe this
@@ -51,12 +54,16 @@ pub(super) async fn fetch_solana_jobs(
         current_cursor.clone()
     };
 
-    Ok((signature_list, new_cursor))
+    Ok(FetchingArtifacts {
+        jobs: signature_list,
+        cursor: new_cursor,
+    })
 }
 
 async fn get_signature_list(
     client: &HapiCoreSolana,
     signature_cursor: Option<Signature>,
+    fetching_delay: Duration,
 ) -> Result<Vec<IndexerJob>> {
     let mut recent_tx = None;
     let mut signature_list = VecDeque::new();
@@ -89,7 +96,7 @@ async fn get_signature_list(
                 signature_list.push_front(IndexerJob::Transaction(sign.signature.to_string()));
             }
 
-            sleep(ITERATION_INTERVAL).await;
+            sleep(fetching_delay).await;
         } else {
             break;
         }

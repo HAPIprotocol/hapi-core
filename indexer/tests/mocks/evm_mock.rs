@@ -55,6 +55,11 @@ impl RpcMock for EvmMock {
         ethers::utils::to_checksum(&LocalWallet::new(&mut rand::thread_rng()).address(), None)
     }
 
+    fn get_fetching_delay_multiplier() -> u32 {
+        // Batch amount
+        3
+    }
+
     fn initialize() -> Self {
         let server = Server::new();
 
@@ -71,6 +76,10 @@ impl RpcMock for EvmMock {
         );
 
         Self { server, contract }
+    }
+
+    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
+        unimplemented!()
     }
 
     fn get_mock_url(&self) -> String {
