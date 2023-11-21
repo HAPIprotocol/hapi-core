@@ -19,9 +19,9 @@ pub mod utils;
 
 pub use address::{AddressView, VAddress};
 pub use assets::{AssetId, AssetView, VAsset};
-pub use case::{Case, CaseId, VCase};
+pub use case::{Case, CaseId, CaseStatus, VCase};
 pub use errors::*;
-pub use reporter::{Reporter, ReporterId, VReporter};
+pub use reporter::{Reporter, ReporterId, ReporterStatus, Role, VReporter};
 pub use reward::RewardConfiguration;
 pub use stake::StakeConfiguration;
 pub use utils::TimestampExtension;

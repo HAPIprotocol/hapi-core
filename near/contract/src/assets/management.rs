@@ -3,7 +3,7 @@ use near_sdk::{collections::UnorderedSet, env, json_types::U64, near_bindgen, re
 use crate::{
     reporter::Role, CaseId, Category, Contract, ContractExt, RiskScore, ERROR_ALREADY_CONFIRMED,
     ERROR_ASSET_ALREADY_EXISTS, ERROR_ASSET_NOT_FOUND, ERROR_CASE_NOT_FOUND, ERROR_INVALID_ROLE,
-    ERROR_REPORTER_IS_INACTIVE,
+    ERROR_REPORTER_IS_INACTIVE, ERROR_REPORT_CONFIRMATION,
 };
 
 use super::Asset;
@@ -103,6 +103,8 @@ impl Contract {
             .get(&asset_id)
             .expect(ERROR_ASSET_NOT_FOUND)
             .into();
+
+        require!(asset.reporter_id != reporter.id, ERROR_REPORT_CONFIRMATION);
 
         require!(
             asset.confirmations.insert(&reporter.id),

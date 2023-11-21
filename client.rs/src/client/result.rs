@@ -31,6 +31,8 @@ pub enum ClientError {
     // Near client errors
     #[error("ParseAccountError error: {0}")]
     ParseAccountError(#[from] near_primitives::account::id::ParseAccountError),
+    #[error("ParseAccountError error: {0}")]
+    ParseAccountIdError(#[from] near_sdk::ParseAccountIdError),
     #[error("TimeoutError error: {0}")]
     TimeoutError(String),
     #[error("Error parse signer PK")]

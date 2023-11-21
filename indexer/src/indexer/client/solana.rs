@@ -11,16 +11,19 @@ use {
     },
     solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
+    std::time::Duration,
     std::{collections::VecDeque, str::FromStr},
     tokio::time::sleep,
 };
 
-use crate::indexer::{
-    push::{PushData, PushEvent, PushPayload},
-    IndexerJob,
+use crate::{
+    indexer::{
+        client::indexer_client::FetchingArtifacts,
+        push::{PushData, PushEvent, PushPayload},
+        IndexerJob,
+    },
+    IndexingCursor,
 };
-
-use super::ITERATION_INTERVAL;
 
 pub const SOLANA_BATCH_SIZE: usize = 500;
 
@@ -32,7 +35,8 @@ const ASSET_ACCOUNT_INDEX: usize = 4;
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: Option<&str>,
-) -> Result<Vec<IndexerJob>> {
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
     let mut signature_list = VecDeque::new();
     let mut recent_tx = None;
 
@@ -75,7 +79,7 @@ pub(super) async fn fetch_solana_jobs(
                 signature_list.push_front(IndexerJob::Transaction(sign.signature.to_string()));
             }
 
-            sleep(ITERATION_INTERVAL).await;
+            sleep(fetching_delay).await;
         } else {
             break;
         }
@@ -83,7 +87,12 @@ pub(super) async fn fetch_solana_jobs(
 
     tracing::info!(count = signature_list.len(), "Found jobs");
 
-    Ok(signature_list.into())
+    let artifacts: FetchingArtifacts = FetchingArtifacts {
+        jobs: signature_list.into(),
+        cursor: IndexingCursor::None, // TODO: Implement cursor
+    };
+
+    Ok(artifacts)
 }
 
 pub(super) async fn process_solana_job(

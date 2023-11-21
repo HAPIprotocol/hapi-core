@@ -1,3 +1,4 @@
+use super::client::NearReceipt;
 use {
     ethers::types::Log,
     serde::{Deserialize, Serialize},
@@ -7,4 +8,5 @@ use {
 pub(crate) enum IndexerJob {
     Transaction(String),
     Log(Log),
+    TransactionReceipt(NearReceipt),
 }

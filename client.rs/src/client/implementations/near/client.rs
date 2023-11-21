@@ -42,10 +42,10 @@ use crate::{
 };
 
 pub struct HapiCoreNear {
-    client: JsonRpcClient,
-    contract_address: AccountId,
-    signer: Option<String>,
-    account_id: Option<String>,
+    pub client: JsonRpcClient,
+    pub contract_address: AccountId,
+    pub signer: Option<String>,
+    pub account_id: Option<String>,
 }
 
 impl HapiCoreNear {
@@ -615,5 +615,16 @@ impl HapiCoreNear {
                 "failed to extract current nonce".into(),
             )),
         }
+    }
+
+    pub async fn get_reporter_by_account(&self, account_id: &str) -> Result<Reporter> {
+        let request = self.view_request(
+            "get_reporter_by_account",
+            Some(json!({ "account_id": account_id })),
+        );
+
+        let reporter = self.get_response::<NearReporter>(request).await?;
+
+        reporter.try_into()
     }
 }
