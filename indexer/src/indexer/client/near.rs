@@ -39,49 +39,20 @@ pub struct NearReceipt {
     pub timestamp: u64,
 }
 
-pub(super) async fn fetch_near_jobs(
+async fn get_receipts_list(
     client: &HapiCoreNear,
-    current_cursor: &IndexingCursor,
+    start_block: u64,
+    final_block: u64,
     fetching_delay: Duration,
-) -> Result<FetchingArtifacts> {
-    let start_block_height = match current_cursor {
-        IndexingCursor::None => 0,
-        IndexingCursor::Block(block) => *block,
-        _ => bail!("Near network must have a block cursor"),
-    };
-
+) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
 
-    let latest_block = client
-        .client
-        .call(near_jsonrpc_primitives::types::blocks::RpcBlockRequest {
-            block_reference: BlockReference::Finality(Finality::Final),
-        })
-        .await?
-        .header
-        .height;
-
-    let final_block =
-        start_block_height + min(PAGE_SIZE.to_owned(), latest_block - start_block_height);
-
-    if start_block_height.eq(&final_block) {
-        return Ok(FetchingArtifacts {
-            jobs: vec![],
-            cursor: IndexingCursor::Block(start_block_height),
-        });
-    }
-
-    for block_height in start_block_height..final_block + 1 {
+    for block_height in start_block..final_block + 1 {
         let start_timestamp = std::time::Instant::now();
-
-        if block_height - start_block_height >= PAGE_SIZE.to_owned() {
-            break;
-        };
-
-        let rpc_client = &client.client;
         let block_id = BlockId::Height(block_height);
 
-        let changes_in_block = rpc_client
+        let changes_in_block = client
+            .client
             .call(RpcStateChangesInBlockByTypeRequest {
                 block_reference: BlockReference::BlockId(block_id.clone()),
                 state_changes_request: StateChangesRequestView::DataChanges {
@@ -94,7 +65,8 @@ pub(super) async fn fetch_near_jobs(
         match changes_in_block {
             Ok(changes) => {
                 if !changes.changes.is_empty() {
-                    let timestamp = rpc_client
+                    let timestamp = client
+                        .client
                         .call(near_jsonrpc_primitives::types::blocks::RpcBlockRequest {
                             block_reference: BlockReference::BlockId(block_id),
                         })
@@ -127,12 +99,52 @@ pub(super) async fn fetch_near_jobs(
             sleep(fetching_delay - time_passed).await;
         }
     }
-    tracing::info!(final_block, "Fetched until block {}", final_block);
 
-    Ok(FetchingArtifacts {
-        jobs: event_list,
-        cursor: IndexingCursor::Block(final_block),
-    })
+    Ok(event_list)
+}
+
+pub(super) async fn fetch_near_jobs(
+    client: &HapiCoreNear,
+    current_cursor: &IndexingCursor,
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
+    let start_block = match current_cursor {
+        IndexingCursor::None => 0,
+        IndexingCursor::Block(block) => *block,
+        _ => bail!("Near network must have a block cursor"),
+    };
+
+    let latest_block = client
+        .client
+        .call(near_jsonrpc_primitives::types::blocks::RpcBlockRequest {
+            block_reference: BlockReference::Finality(Finality::Final),
+        })
+        .await?
+        .header
+        .height;
+
+    if start_block < latest_block {
+        tracing::info!(start_block, "Fetching near jobs from");
+
+        let final_block = min(PAGE_SIZE.to_owned() + start_block, latest_block);
+
+        let event_list: Vec<IndexerJob> =
+            get_receipts_list(client, start_block, final_block, fetching_delay).await?;
+
+        tracing::info!(count = event_list.len(), "Found jobs");
+
+        return Ok(FetchingArtifacts {
+            jobs: event_list,
+            cursor: IndexingCursor::Block(final_block),
+        });
+    }
+
+    tracing::trace!("No new blocks found");
+
+    return Ok(FetchingArtifacts {
+        jobs: vec![],
+        cursor: current_cursor.clone(),
+    });
 }
 
 #[tracing::instrument(skip(client), fields(receipt_hash = %receipt.hash))]

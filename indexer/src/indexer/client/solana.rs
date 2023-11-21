@@ -28,38 +28,6 @@ const CASE_ACCOUNT_INDEX: usize = 3;
 const ADDRESS_ACCOUNT_INDEX: usize = 4;
 const ASSET_ACCOUNT_INDEX: usize = 4;
 
-pub(super) async fn fetch_solana_jobs(
-    client: &HapiCoreSolana,
-    current_cursor: &IndexingCursor,
-    fetching_delay: Duration,
-) -> Result<FetchingArtifacts> {
-    let signature_cursor = match &current_cursor {
-        IndexingCursor::None => None,
-        IndexingCursor::Transaction(tx) => Some(Signature::from_str(tx)?),
-        _ => bail!("Solana network must have a transaction cursor"),
-    };
-
-    tracing::info!(
-        current_cursor = %current_cursor,
-        "Fetching solana jobs"
-    );
-
-    let signature_list = get_signature_list(client, signature_cursor, fetching_delay).await?;
-    tracing::info!(count = signature_list.len(), "Found jobs");
-
-    // TODO: describe this
-    let new_cursor = if let Some(recent) = signature_list.last() {
-        IndexingCursor::try_from(recent.clone())?
-    } else {
-        current_cursor.clone()
-    };
-
-    Ok(FetchingArtifacts {
-        jobs: signature_list,
-        cursor: new_cursor,
-    })
-}
-
 async fn get_signature_list(
     client: &HapiCoreSolana,
     signature_cursor: Option<Signature>,
@@ -103,6 +71,38 @@ async fn get_signature_list(
     }
 
     Ok(signature_list.into())
+}
+
+pub(super) async fn fetch_solana_jobs(
+    client: &HapiCoreSolana,
+    current_cursor: &IndexingCursor,
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
+    let signature_cursor = match &current_cursor {
+        IndexingCursor::None => None,
+        IndexingCursor::Transaction(tx) => Some(Signature::from_str(tx)?),
+        _ => bail!("Solana network must have a transaction cursor"),
+    };
+
+    tracing::info!(
+        current_cursor = %current_cursor,
+        "Fetching solana jobs"
+    );
+
+    let signature_list = get_signature_list(client, signature_cursor, fetching_delay).await?;
+    tracing::info!(count = signature_list.len(), "Found jobs");
+
+    // TODO: describe this
+    let new_cursor = if let Some(recent) = signature_list.last() {
+        IndexingCursor::try_from(recent.clone())?
+    } else {
+        current_cursor.clone()
+    };
+
+    Ok(FetchingArtifacts {
+        jobs: signature_list,
+        cursor: new_cursor,
+    })
 }
 
 pub(super) async fn process_solana_job(
