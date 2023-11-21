@@ -52,7 +52,9 @@ pub trait RpcMock {
 
     fn get_fetching_delay_multiplier() -> u32;
 
-    fn get_fetching_delay() -> Duration;
+    fn get_fetching_delay() -> Duration {
+        Duration::from_millis(100)
+    }
 }
 
 pub type TestBatch = Vec<TestData>;

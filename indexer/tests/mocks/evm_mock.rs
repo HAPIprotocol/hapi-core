@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use {
     hapi_core::HapiCoreNetwork,
     hapi_indexer::{IndexingCursor, PushData},
@@ -48,9 +46,5 @@ impl RpcMock for EvmMock {
 
     fn get_fetching_delay_multiplier() -> u32 {
         unimplemented!()
-    }
-
-    fn get_fetching_delay() -> Duration {
-        Duration::from_millis(100)
     }
 }

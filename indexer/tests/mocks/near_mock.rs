@@ -12,7 +12,7 @@ use {
         views::{BlockHeaderView, CallResult},
     },
     serde_json::{json, Value},
-    std::{str::FromStr, time::Duration},
+    std::str::FromStr,
 };
 
 use {
@@ -168,10 +168,6 @@ impl RpcMock for NearMock {
 
     fn get_fetching_delay_multiplier() -> u32 {
         14
-    }
-
-    fn get_fetching_delay() -> Duration {
-        Duration::from_millis(100)
     }
 }
 
