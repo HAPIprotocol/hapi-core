@@ -55,7 +55,7 @@ impl RpcMock for EvmMock {
         ethers::utils::to_checksum(&LocalWallet::new(&mut rand::thread_rng()).address(), None)
     }
 
-    fn get_fetching_delay_multiplier() -> u32 {
+    fn get_delay_multiplier() -> u32 {
         // Batch amount
         3
     }
@@ -78,10 +78,6 @@ impl RpcMock for EvmMock {
         Self { server, contract }
     }
 
-    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
-        unimplemented!()
-    }
-
     fn get_mock_url(&self) -> String {
         self.server.url()
     }
@@ -94,6 +90,10 @@ impl RpcMock for EvmMock {
             .unwrap_or(IndexingCursor::None)
     }
 
+    fn entity_getters_mock(&mut self, data: Vec<PushData>) {
+        data.iter().for_each(|data| self.processing_data_mock(data));
+    }
+
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
         let mut to_block = 0;
         let mut from_block = match &cursor {
@@ -103,28 +103,20 @@ impl RpcMock for EvmMock {
         };
 
         for batch in batches {
-            to_block = from_block + PAGE_SIZE - 1;
+            to_block = from_block + batch.len() as u64 - 1;
 
             let logs = self.get_logs(batch);
             self.logs_request_mock(&logs, from_block, to_block);
 
             from_block = to_block + 1;
+            self.latest_block_mock(to_block);
         }
-
-        let latest_block = from_block - 1;
-
-        self.logs_request_mock(&vec![], latest_block, latest_block);
-        self.latest_block_mock(latest_block);
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
-        for event in batch {
-            self.block_request_mock(event.block);
-
-            if let Some(data) = &event.data {
-                self.processing_data_mock(data);
-            }
-        }
+        batch
+            .iter()
+            .for_each(|event| self.block_request_mock(event.block));
     }
 }
 

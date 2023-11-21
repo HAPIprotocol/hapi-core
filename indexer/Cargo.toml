@@ -17,7 +17,6 @@ hapi-core-cli = { path = "../client.rs" }
 anyhow = "1"
 axum = "0.6"
 config = "0.13"
-ethers = "2"
 hyper = { version = "0.14", features = ["tcp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
@@ -34,13 +33,17 @@ reqwest = "0.11"
 lazy_static = "1"
 enum_extract = "0.1"
 
-#NEAR dependencies
+# Evm dependencies
+ethers = "2"
+
+# NEAR dependencies
 near-jsonrpc-primitives = "0.17.0"
 near-jsonrpc-client = "0.6.0"
 near-primitives = "0.17.0"
 hapi-core-near = { path = "../near/contract/" }
 near-crypto = "0.17.0"
 
+# Solana dependencies
 [dependencies.solana-client]
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"

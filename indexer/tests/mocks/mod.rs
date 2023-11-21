@@ -57,11 +57,8 @@ pub trait RpcMock {
     // Should contains mocks to handle entity getters for client
     fn entity_getters_mock(&mut self, data: Vec<PushData>);
 
-    fn get_fetching_delay_multiplier() -> u32;
-
-    fn get_fetching_delay() -> Duration {
-        Duration::from_millis(100)
-    }
+    // Multiplier for the delay between fetching iterations
+    fn get_delay_multiplier() -> u32;
 }
 
 pub type TestBatch = Vec<TestData>;
@@ -145,13 +142,13 @@ pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatc
         (EventName::CreateCase, Some(case.clone())),
         (EventName::UpdateCase, Some(case)),
         (EventName::CreateAddress, Some(address.clone())),
-        (EventName::UpdateAddress, Some(address)),
-        (EventName::ConfirmAddress, None),
+        (EventName::UpdateAddress, Some(address.clone())),
+        (EventName::ConfirmAddress, Some(address)),
         // ==> Second Run
         // First batch
         (EventName::CreateAsset, Some(asset.clone())),
-        (EventName::UpdateAsset, Some(asset)),
-        (EventName::ConfirmAsset, None),
+        (EventName::UpdateAsset, Some(asset.clone())),
+        (EventName::ConfirmAsset, Some(asset)),
         (EventName::DeactivateReporter, Some(reporter.clone())),
         (EventName::Unstake, Some(reporter)),
     ];

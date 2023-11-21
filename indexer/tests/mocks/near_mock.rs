@@ -68,7 +68,12 @@ impl RpcMock for NearMock {
     }
 
     fn generate_address() -> String {
-        unimplemented!()
+        format!("{}.near", rand::random::<u16>())
+    }
+
+    fn get_delay_multiplier() -> u32 {
+        // Amount of events
+        17
     }
 
     fn initialize() -> Self {
@@ -87,6 +92,14 @@ impl RpcMock for NearMock {
             .map(|batch| batch.last().expect("Empty batch"))
             .map(|data| IndexingCursor::Block(data.block))
             .unwrap_or(IndexingCursor::None)
+    }
+
+    fn entity_getters_mock(&mut self, data: Vec<PushData>) {
+        self.mock_client_get_requests(&data[0], "get_reporter");
+        self.mock_client_get_requests(&data[0], "get_reporter_by_account");
+        self.mock_client_get_requests(&data[1], "get_case");
+        self.mock_client_get_requests(&data[2], "get_address");
+        self.mock_client_get_requests(&data[3], "get_asset");
     }
 
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], _cursor: &IndexingCursor) {
@@ -162,18 +175,6 @@ impl RpcMock for NearMock {
         for data in batch {
             self.mock_transaction(data);
         }
-    }
-
-    fn entity_getters_mock(&mut self, data: Vec<PushData>) {
-        self.mock_client_get_requests(&data[0], "get_reporter");
-        self.mock_client_get_requests(&data[0], "get_reporter_by_account");
-        self.mock_client_get_requests(&data[1], "get_case");
-        self.mock_client_get_requests(&data[2], "get_address");
-        self.mock_client_get_requests(&data[3], "get_asset");
-    }
-
-    fn get_fetching_delay_multiplier() -> u32 {
-        14
     }
 }
 

@@ -48,7 +48,7 @@ pub(super) async fn fetch_solana_jobs(
     tracing::info!(count = signature_list.len(), "Found jobs");
 
     // TODO: describe this
-    let new_cursor = if let Some(recent) = signature_list.first() {
+    let new_cursor = if let Some(recent) = signature_list.last() {
         IndexingCursor::try_from(recent.clone())?
     } else {
         current_cursor.clone()

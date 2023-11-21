@@ -61,6 +61,11 @@ impl RpcMock for SolanaMock {
         Keypair::new().pubkey().to_string()
     }
 
+    fn get_delay_multiplier() -> u32 {
+        // Batch amount
+        3
+    }
+
     fn initialize() -> Self {
         let mut server = Server::new();
 
@@ -94,6 +99,11 @@ impl RpcMock for SolanaMock {
             .map(|batch| batch.first().expect("Empty batch"))
             .map(|data: &TestData| IndexingCursor::Transaction(data.hash.clone()))
             .unwrap_or(IndexingCursor::None)
+    }
+
+    fn entity_getters_mock(&mut self, data: Vec<PushData>) {
+        // Mocking accounts request from payload data
+        data.iter().for_each(|data| self.mock_accounts(data));
     }
 
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
@@ -137,21 +147,10 @@ impl RpcMock for SolanaMock {
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
-        for event in batch {
-            // Mocking transaction request with instruction
-            self.mock_transaction(event.name.to_string(), &event.hash);
-
-            // Mocking accounts request from instruction
-            self.mock_accounts(event);
-        }
-    }
-
-    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
-        unimplemented!()
-    }
-
-    fn get_fetching_delay_multiplier() -> u32 {
-        6
+        // Mocking transaction request with instruction
+        batch
+            .iter()
+            .for_each(|event| self.mock_transaction(event.name.to_string(), &event.hash));
     }
 }
 
@@ -316,48 +315,46 @@ impl SolanaMock {
         (Pubkey::from_str(address).expect("Invalid address"), data)
     }
 
-    fn mock_accounts(&mut self, test_data: &TestData) {
-        if let Some(payload_data) = &test_data.data {
-            let (address, data) = SolanaMock::get_account_data(payload_data.clone());
+    fn mock_accounts(&mut self, payload_data: &PushData) {
+        let (address, data) = SolanaMock::get_account_data(payload_data.clone());
 
-            let account = Account {
-                lamports: 100,
-                data,
-                owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
-                executable: false,
-                rent_epoch: 123,
-            };
+        let account = Account {
+            lamports: 100,
+            data,
+            owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
+            executable: false,
+            rent_epoch: 123,
+        };
 
-            let encoded_account = UiAccount::encode(
-                &address,
-                &account,
-                UiAccountEncoding::Base64Zstd,
-                None,
-                None,
-            );
+        let encoded_account = UiAccount::encode(
+            &address,
+            &account,
+            UiAccountEncoding::Base64Zstd,
+            None,
+            None,
+        );
 
-            let response = json!({
-               "jsonrpc": "2.0",
-               "result": {
-                "context": { "apiVersion": "1.16.17", "slot": 252201350 },
-                "value": json!(encoded_account),
-               },
-               "id": 1
-            });
+        let response = json!({
+           "jsonrpc": "2.0",
+           "result": {
+            "context": { "apiVersion": "1.16.17", "slot": 252201350 },
+            "value": json!(encoded_account),
+           },
+           "id": 1
+        });
 
-            self.server
-                .mock("POST", "/")
-                .with_status(200)
-                .with_header("content-type", "application/json")
-                .with_body(&response.to_string())
-                .match_body(Matcher::PartialJson(json!({
-                    "method": "getAccountInfo",
-                    "params": [
-                        address.to_string(),
-                    ]
-                })))
-                .create();
-        }
+        self.server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(&response.to_string())
+            .match_body(Matcher::PartialJson(json!({
+                "method": "getAccountInfo",
+                "params": [
+                    address.to_string(),
+                ]
+            })))
+            .create();
     }
 }
 

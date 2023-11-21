@@ -26,7 +26,7 @@ async fn get_event_list(
 ) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
     let filter = Filter::default().address(client.contract.address());
-    // let start_timestamp = std::time::Instant::now();
+    let start_timestamp = std::time::Instant::now();
 
     // Substracting 1 from page size because the result will include filter limits
     let to_block = min(PAGE_SIZE.to_owned() - 1 + from_block, latest_block);
@@ -43,10 +43,10 @@ async fn get_event_list(
     });
 
     // TODO: handle it by indexer itself
-    // let time_passed = start_timestamp.elapsed();
-    // if start_timestamp.elapsed() < ITERATION_INTERVAL {
-    //     sleep(ITERATION_INTERVAL - time_passed).await;
-    // }
+    let time_passed = start_timestamp.elapsed();
+    if start_timestamp.elapsed() < fetching_delay {
+        sleep(fetching_delay - time_passed).await;
+    }
 
     Ok(event_list)
 }
