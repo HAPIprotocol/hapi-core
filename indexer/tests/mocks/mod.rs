@@ -13,7 +13,7 @@ use {
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData},
-    std::{str::FromStr, time::Duration},
+    std::str::FromStr,
     uuid::Uuid,
 };
 

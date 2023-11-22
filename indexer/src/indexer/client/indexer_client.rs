@@ -2,6 +2,7 @@ use {
     anyhow::Result,
     hapi_core::{HapiCoreEvm, HapiCoreNear, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
     std::time::Duration,
+    tokio::time::sleep,
 };
 
 use super::{
@@ -59,13 +60,17 @@ impl IndexerClient {
         cursor: &IndexingCursor,
         fetching_delay: Duration,
     ) -> Result<FetchingArtifacts> {
-        match self {
-            IndexerClient::Evm(client) => fetch_evm_jobs(client, cursor, fetching_delay).await,
+        let artifacts = match self {
+            IndexerClient::Evm(client) => fetch_evm_jobs(client, cursor).await?,
             IndexerClient::Solana(client) => {
-                fetch_solana_jobs(client, cursor, fetching_delay).await
+                fetch_solana_jobs(client, cursor, fetching_delay).await?
             }
-            IndexerClient::Near(client) => fetch_near_jobs(client, cursor, fetching_delay).await,
-        }
+            IndexerClient::Near(client) => fetch_near_jobs(client, cursor).await?,
+        };
+
+        sleep(fetching_delay).await;
+
+        Ok(artifacts)
     }
 
     pub(crate) async fn handle_process(

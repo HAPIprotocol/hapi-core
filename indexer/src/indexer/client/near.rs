@@ -16,8 +16,7 @@ use {
             ActionView, ReceiptEnumView, ReceiptView, StateChangeCauseView, StateChangesRequestView,
         },
     },
-    std::{cmp::min, collections::HashSet, time::Duration},
-    tokio::time::sleep,
+    std::{cmp::min, collections::HashSet},
     uuid::Uuid,
 };
 
@@ -43,12 +42,10 @@ async fn get_receipts_list(
     client: &HapiCoreNear,
     start_block: u64,
     final_block: u64,
-    fetching_delay: Duration,
 ) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
 
     for block_height in start_block..final_block + 1 {
-        let start_timestamp = std::time::Instant::now();
         let block_id = BlockId::Height(block_height);
 
         let changes_in_block = client
@@ -93,20 +90,15 @@ async fn get_receipts_list(
                 tracing::error!(block_height, "Failed to fetch near jobs: {:?}", e);
             }
         };
-
-        let time_passed = start_timestamp.elapsed();
-        if time_passed < fetching_delay {
-            sleep(fetching_delay - time_passed).await;
-        }
     }
 
     Ok(event_list)
 }
 
+#[tracing::instrument(skip(client))]
 pub(super) async fn fetch_near_jobs(
     client: &HapiCoreNear,
     current_cursor: &IndexingCursor,
-    fetching_delay: Duration,
 ) -> Result<FetchingArtifacts> {
     let start_block = match current_cursor {
         IndexingCursor::None => 0,
@@ -129,7 +121,7 @@ pub(super) async fn fetch_near_jobs(
         let final_block = min(PAGE_SIZE.to_owned() + start_block, latest_block);
 
         let event_list: Vec<IndexerJob> =
-            get_receipts_list(client, start_block, final_block, fetching_delay).await?;
+            get_receipts_list(client, start_block, final_block).await?;
 
         tracing::info!(count = event_list.len(), "Found jobs");
 
@@ -141,10 +133,10 @@ pub(super) async fn fetch_near_jobs(
 
     tracing::trace!("No new blocks found");
 
-    return Ok(FetchingArtifacts {
+    Ok(FetchingArtifacts {
         jobs: vec![],
         cursor: current_cursor.clone(),
-    });
+    })
 }
 
 #[tracing::instrument(skip(client), fields(receipt_hash = %receipt.hash))]

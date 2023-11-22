@@ -73,6 +73,7 @@ async fn get_signature_list(
     Ok(signature_list.into())
 }
 
+#[tracing::instrument(skip(client, fetching_delay))]
 pub(super) async fn fetch_solana_jobs(
     client: &HapiCoreSolana,
     current_cursor: &IndexingCursor,
@@ -92,7 +93,6 @@ pub(super) async fn fetch_solana_jobs(
     let signature_list = get_signature_list(client, signature_cursor, fetching_delay).await?;
     tracing::info!(count = signature_list.len(), "Found jobs");
 
-    // TODO: describe this
     let new_cursor = if let Some(recent) = signature_list.last() {
         IndexingCursor::try_from(recent.clone())?
     } else {
@@ -105,6 +105,7 @@ pub(super) async fn fetch_solana_jobs(
     })
 }
 
+#[tracing::instrument(skip(client))]
 pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,

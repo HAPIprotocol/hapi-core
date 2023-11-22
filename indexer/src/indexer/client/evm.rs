@@ -2,8 +2,7 @@ use {
     anyhow::{bail, Result},
     ethers::{abi::Token, providers::Middleware, types::Filter},
     hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
-    std::{cmp::min, str::FromStr, time::Duration},
-    tokio::time::sleep,
+    std::{cmp::min, str::FromStr},
     uuid::Uuid,
 };
 
@@ -22,11 +21,9 @@ async fn get_event_list(
     client: &HapiCoreEvm,
     from_block: u64,
     latest_block: u64,
-    fetching_delay: Duration,
 ) -> Result<Vec<IndexerJob>> {
     let mut event_list = vec![];
     let filter = Filter::default().address(client.contract.address());
-    let start_timestamp = std::time::Instant::now();
 
     // Substracting 1 from page size because the result will include filter limits
     let to_block = min(PAGE_SIZE.to_owned() - 1 + from_block, latest_block);
@@ -42,19 +39,13 @@ async fn get_event_list(
         event_list.push(IndexerJob::Log(log));
     });
 
-    // TODO: handle it by indexer itself
-    let time_passed = start_timestamp.elapsed();
-    if start_timestamp.elapsed() < fetching_delay {
-        sleep(fetching_delay - time_passed).await;
-    }
-
     Ok(event_list)
 }
 
+#[tracing::instrument(skip(client))]
 pub(super) async fn fetch_evm_jobs(
     client: &HapiCoreEvm,
     current_cursor: &IndexingCursor,
-    fetching_delay: Duration,
 ) -> Result<FetchingArtifacts> {
     let current_block = match current_cursor {
         IndexingCursor::None => 0,
@@ -67,8 +58,7 @@ pub(super) async fn fetch_evm_jobs(
     if current_block < latest_block {
         tracing::info!(current_block, "Fetching evm jobs from");
 
-        let event_list =
-            get_event_list(client, current_block, latest_block, fetching_delay).await?;
+        let event_list = get_event_list(client, current_block, latest_block).await?;
         tracing::info!(count = event_list.len(), "Found jobs");
 
         return Ok(FetchingArtifacts {
@@ -85,6 +75,8 @@ pub(super) async fn fetch_evm_jobs(
     })
 }
 
+#[tracing::instrument(skip(client),
+    fields(hash = log.transaction_hash.map_or("None".to_string(), |s| s.to_string())))]
 pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,

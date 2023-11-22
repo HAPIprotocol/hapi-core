@@ -156,6 +156,7 @@ impl HapiCoreSolana {
     }
 }
 
+#[allow(dead_code)]
 fn decode_instruction_data(
     hapi_instruction: &EventName,
     data_slice: &[u8],

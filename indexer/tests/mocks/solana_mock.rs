@@ -62,8 +62,7 @@ impl RpcMock for SolanaMock {
     }
 
     fn get_delay_multiplier() -> u32 {
-        // Batch amount
-        3
+        6
     }
 
     fn initialize() -> Self {

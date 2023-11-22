@@ -16,7 +16,7 @@ use {
     std::{str::FromStr, sync::Arc},
 };
 
-use super::{RpcMock, TestBatch, PAGE_SIZE};
+use super::{RpcMock, TestBatch};
 
 pub const CONTRACT_ADDRESS: &str = "0x2947F98C42597966a0ec25e92843c09ac18Fbab7";
 
@@ -56,8 +56,7 @@ impl RpcMock for EvmMock {
     }
 
     fn get_delay_multiplier() -> u32 {
-        // Batch amount
-        3
+        4
     }
 
     fn initialize() -> Self {

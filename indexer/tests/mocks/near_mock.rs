@@ -72,7 +72,6 @@ impl RpcMock for NearMock {
     }
 
     fn get_delay_multiplier() -> u32 {
-        // Amount of events
         17
     }
 
