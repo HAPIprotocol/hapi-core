@@ -56,10 +56,11 @@ impl Setup {
                 docker_output =
                     String::from_utf8(get_containers.stdout).expect("Failed to decode output")
             } else {
-                panic!(
-                    "Failed to check docker: {}",
-                    String::from_utf8(get_containers.stderr).expect("Failed to decode error")
-                );
+                let err = String::from_utf8(get_containers.stderr).expect("Failed to decode error");
+
+                if !err.contains("docker daemon running") {
+                    panic!("Failed to check docker: {}", err);
+                }
             }
 
             if docker_output.len() == 0 && docker_run_counter == 0 {

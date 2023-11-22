@@ -34,7 +34,7 @@ impl<T: RpcMock> IndexerTest<T> {
             }
         }
 
-        drop_srate_file(T::STATE_FILE);
+        drop_state_file(T::STATE_FILE);
         std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         Self {
@@ -149,11 +149,11 @@ impl<T: RpcMock> IndexerTest<T> {
 
 impl<T: RpcMock> Drop for IndexerTest<T> {
     fn drop(&mut self) {
-        drop_srate_file(T::STATE_FILE);
+        drop_state_file(T::STATE_FILE);
     }
 }
 
-fn drop_srate_file(file: &'static str) {
+fn drop_state_file(file: &'static str) {
     if PathBuf::from(file).exists() {
         std::fs::remove_file(file).expect("Failed to remove state file");
     }

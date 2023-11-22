@@ -94,7 +94,6 @@ impl RpcMock for EvmMock {
     }
 
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
-        let mut to_block = 0;
         let mut from_block = match &cursor {
             IndexingCursor::None => 0,
             IndexingCursor::Block(block) => *block + 1,
@@ -102,7 +101,7 @@ impl RpcMock for EvmMock {
         };
 
         for batch in batches {
-            to_block = from_block + batch.len() as u64 - 1;
+            let to_block = from_block + batch.len() as u64 - 1;
 
             let logs = self.get_logs(batch);
             self.logs_request_mock(&logs, from_block, to_block);

@@ -102,7 +102,7 @@ pub(super) async fn fetch_near_jobs(
 ) -> Result<FetchingArtifacts> {
     let start_block = match current_cursor {
         IndexingCursor::None => 0,
-        IndexingCursor::Block(block) => *block,
+        IndexingCursor::Block(block) => *block + 1,
         _ => bail!("Near network must have a block cursor"),
     };
 
@@ -118,7 +118,7 @@ pub(super) async fn fetch_near_jobs(
     if start_block < latest_block {
         tracing::info!(start_block, "Fetching near jobs from");
 
-        let final_block = min(PAGE_SIZE.to_owned() + start_block, latest_block);
+        let final_block = min(PAGE_SIZE.to_owned() - 1 + start_block, latest_block);
 
         let event_list: Vec<IndexerJob> =
             get_receipts_list(client, start_block, final_block).await?;
@@ -186,13 +186,13 @@ pub(super) async fn process_near_job(
                 client.get_reporter_by_account(&account_id).await?.into()
             }
             EventName::CreateCase | EventName::UpdateCase => {
-                tracing::info!("Case updated");
+                tracing::info!("Case is created or modified");
 
                 let id = get_id_from_args(&args).await?;
                 client.get_case(&id.to_string()).await?.into()
             }
             EventName::CreateAddress | EventName::UpdateAddress => {
-                tracing::info!("Address updated");
+                tracing::info!("Address is created or modified");
 
                 let address = get_field_from_args(&args, "address")?;
                 client.get_address(&address).await?.into()
@@ -202,7 +202,7 @@ pub(super) async fn process_near_job(
                 return Ok(None);
             }
             EventName::CreateAsset | EventName::UpdateAsset => {
-                tracing::info!("Asset updated");
+                tracing::info!("Asset is created or modified");
                 let addr = get_field_from_args(&args, "address")?;
                 let asset_id = get_field_from_args(&args, "id")?;
                 client
