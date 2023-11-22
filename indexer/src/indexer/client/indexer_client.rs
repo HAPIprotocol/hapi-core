@@ -13,7 +13,7 @@ use super::{
 
 use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
 
-pub const DEFAULT_PAGE_SIZE: u64 = 600;
+pub const DEFAULT_PAGE_SIZE: u64 = 500;
 lazy_static::lazy_static! {
     pub static ref PAGE_SIZE: u64 = std::env::var("INDEXER_PAGE_SIZE").map_or(DEFAULT_PAGE_SIZE, |s| s.parse::<u64>().unwrap_or(DEFAULT_PAGE_SIZE));
 }
