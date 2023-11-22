@@ -5,7 +5,7 @@ use {
 };
 
 async fn webhook_handler(body: String) -> impl IntoResponse {
-    println!("Received webhook: {}", body);
+    println!("Received webhook: {}\n", body);
 
     (StatusCode::OK, "Received webhook")
 }
