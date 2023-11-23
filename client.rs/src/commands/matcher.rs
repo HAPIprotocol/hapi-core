@@ -575,6 +575,15 @@ pub(crate) fn matcher() -> ArgMatches {
                         ),
                 )
                 .subcommand(
+                    Command::new("confirm").about("Confirm address").arg(
+                        Arg::new("address")
+                            .value_name("ADDRESS")
+                            .index(1)
+                            .required(true)
+                            .help("Address"),
+                    ),
+                )
+                .subcommand(
                     Command::new("get").about("Get address").arg(
                         Arg::new("address")
                             .value_name("ADDRESS")
@@ -781,6 +790,24 @@ pub(crate) fn matcher() -> ArgMatches {
                         ),
                 )
                 .subcommand(
+                    Command::new("confirm")
+                        .about("Confirm asset")
+                        .arg(
+                            Arg::new("address")
+                                .value_name("ADDRESS")
+                                .index(1)
+                                .required(true)
+                                .help("Asset contract address"),
+                        )
+                        .arg(
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
+                                .index(2)
+                                .required(true)
+                                .help("Asset ID"),
+                        ),
+                )
+                .subcommand(
                     Command::new("get")
                         .about("Get asset")
                         .arg(
@@ -791,8 +818,8 @@ pub(crate) fn matcher() -> ArgMatches {
                                 .help("Asset contract address"),
                         )
                         .arg(
-                            Arg::new("id")
-                                .value_name("ID")
+                            Arg::new("asset-id")
+                                .value_name("ASSET_ID")
                                 .index(2)
                                 .required(true)
                                 .help("Asset ID"),

@@ -1,6 +1,15 @@
-import { Contract, ContractFactory, JsonRpcProvider, Provider, Signer, Wallet } from "ethers";
+import {
+  Contract,
+  ContractFactory,
+  JsonRpcProvider,
+  Provider,
+  Signer,
+  Wallet,
+} from "ethers";
 
-const HapiCoreAbi = import("../../../../evm/artifacts/contracts/HapiCore.sol/HapiCore.json");
+const HapiCoreAbi = import(
+  "../../../../evm/artifacts/contracts/HapiCore.sol/HapiCore.json"
+);
 
 import {
   Addr,
@@ -66,7 +75,9 @@ export class HapiCoreEvm implements HapiCore {
       options.signer || (options.provider as Provider)
     );
 
-    this.contract = factory.attach(options.address || HapiCoreAddresses[options.network]);
+    this.contract = factory.attach(
+      options.address || HapiCoreAddresses[options.network]
+    );
   }
 
   async setAuthority(address: Addr): Promise<Result> {
@@ -128,11 +139,12 @@ export class HapiCoreEvm implements HapiCore {
       throw new Error("Signer is required to call this method");
     }
 
-    // TODO: update contract methods to update assetConfirmationReward and assetTracerReward
     const tx = await this.contract.updateRewardConfiguration(
       token,
       addressConfirmationReward,
-      addressTracerReward
+      addressTracerReward,
+      assetConfirmationReward,
+      assetTracerReward
     );
     return { transactionHash: tx.hash };
   }
@@ -413,7 +425,13 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAddress(address: Addr): Promise<Result> {
-    throw new Error("Method not implemented.");
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
+    const tx = await this.contract.confirmAddress(address);
+
+    return { transactionHash: tx.hash };
   }
 
   async createAsset(
@@ -488,6 +506,12 @@ export class HapiCoreEvm implements HapiCore {
   }
 
   async confirmAsset(address: string, assetId: string): Promise<Result> {
-    throw new Error("Method not implemented.");
+    if (!this.signer) {
+      throw new Error("Signer is required to call this method");
+    }
+
+    const tx = await this.contract.confirmAsset(address, assetId);
+
+    return { transactionHash: tx.hash };
   }
 }

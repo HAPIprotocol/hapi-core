@@ -181,6 +181,7 @@ impl TryFrom<SolanaAddress> for Address {
             reporter_id: Uuid::from_u128(addr.reporter_id),
             risk: addr.risk_score,
             category: (addr.category as u8).try_into()?,
+            confirmations: addr.confirmations,
         })
     }
 }
@@ -203,6 +204,7 @@ impl TryFrom<SolanaAsset> for Asset {
             reporter_id: Uuid::from_u128(asset.reporter_id),
             risk: asset.risk_score,
             category: (asset.category as u8).try_into()?,
+            confirmations: asset.confirmations,
         })
     }
 }

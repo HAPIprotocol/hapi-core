@@ -47,16 +47,21 @@ impl Setup {
 
         // check if docker is running
         while docker_output.len() == 0 {
-            docker_output = Command::new("docker")
+            let get_containers = Command::new("docker")
                 .args(["ps", "-a"])
                 .output()
-                .expect("Failed to execute command")
-                .stdout
-                .iter()
-                .map(|&x| x as char)
-                .collect::<String>()
-                .trim()
-                .to_string();
+                .expect("Failed to execute command");
+
+            if get_containers.status.success() {
+                docker_output =
+                    String::from_utf8(get_containers.stdout).expect("Failed to decode output")
+            } else {
+                let err = String::from_utf8(get_containers.stderr).expect("Failed to decode error");
+
+                if !err.contains("docker daemon running") {
+                    panic!("Failed to check docker: {}", err);
+                }
+            }
 
             if docker_output.len() == 0 && docker_run_counter == 0 {
                 println!("==> Opening docker");

@@ -14,8 +14,8 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
-            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
@@ -87,29 +87,29 @@ impl HapiCoreEvm {
         })
     }
 
-    pub fn decode_event(&self, log: &ethers::types::Log) -> Result<LogHeader> {
+    pub fn decode_event(&self, log: &ethers::types::Log) -> Result<Option<LogHeader>> {
         let signature = log.topics.first().ok_or(ClientError::Ethers(format!(
             "failed to decode event: no topics in log: {log:?}",
         )))?;
 
-        let name = self
+        if let Some(name) = self
             .contract
             .abi()
             .events()
             .find(|e| e.signature() == *signature)
             .map(|e| e.name.to_string())
-            .ok_or(ClientError::Ethers(format!(
-                "failed to decode event: no event with signature `{signature}`",
-            )))?;
+        {
+            let tokens = self
+                .contract
+                .decode_event_raw(&name, log.topics.clone(), log.data.clone())
+                .map_err(|error| {
+                    ClientError::Ethers(format!("failed to decode event `{name}`: {error}"))
+                })?;
 
-        let tokens = self
-            .contract
-            .decode_event_raw(&name, log.topics.clone(), log.data.clone())
-            .map_err(|error| {
-                ClientError::Ethers(format!("failed to decode event `{name}`: {error}"))
-            })?;
+            return Ok(Some(LogHeader { name, tokens }));
+        }
 
-        Ok(LogHeader { name, tokens })
+        Ok(None)
     }
 }
 
@@ -350,6 +350,17 @@ impl HapiCore for HapiCoreEvm {
         )
     }
 
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        handle_send!(self.contract.confirm_address(address), "confirm_address")
+    }
+
     async fn get_address(&self, address: &str) -> Result<Address> {
         let address = address.parse().map_err(|e| {
             ClientError::Ethers(format!("failed to parse address `{}`: {}", address, e))
@@ -407,6 +418,20 @@ impl HapiCore for HapiCoreEvm {
                 input.case_id.as_u128(),
             ),
             "update_asset"
+        )
+    }
+
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
+        let address = input.address.parse().map_err(|e| {
+            ClientError::Ethers(format!(
+                "failed to parse address `{}`: {}",
+                input.address, e
+            ))
+        })?;
+
+        handle_send!(
+            self.contract.confirm_asset(address, input.asset_id.into(),),
+            "confirm_asset"
         )
     }
 

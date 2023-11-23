@@ -52,6 +52,8 @@ pub struct IndexerConfiguration {
     pub state_file: String,
 
     /// The number of milliseconds between iterations in the fetching
+    #[serde_as(as = "DurationMilliSeconds<u64>")]
+    #[serde(default = "default_delay")]
     pub fetching_delay: Duration,
 }
 
@@ -69,6 +71,10 @@ fn default_listener() -> String {
 
 fn default_wait_tick() -> Duration {
     Duration::from_millis(1000)
+}
+
+fn default_delay() -> Duration {
+    Duration::from_millis(100)
 }
 
 fn default_state_file() -> String {

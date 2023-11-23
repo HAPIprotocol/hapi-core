@@ -75,7 +75,11 @@ pub struct UpdateAssetInput {
     pub case_id: Uuid,
     pub risk: u8,
     pub category: Category,
-    // TODO: add confirmations_count
+}
+
+pub struct ConfirmAssetInput {
+    pub address: String,
+    pub asset_id: AssetId,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -86,4 +90,5 @@ pub struct Asset {
     pub reporter_id: Uuid,
     pub risk: u8,
     pub category: Category,
+    pub confirmations: u64,
 }

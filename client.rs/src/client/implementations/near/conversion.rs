@@ -147,6 +147,7 @@ impl TryFrom<NearAddress> for Address {
             risk: address.risk_score,
             case_id: Uuid::from_u128(address.case_id.0),
             reporter_id: Uuid::from_u128(address.reporter_id.0),
+            confirmations: address.confirmations_count,
         })
     }
 }
@@ -161,7 +162,7 @@ impl TryFrom<Address> for NearAddress {
             risk_score: address.risk,
             case_id: address.case_id.as_u128().into(),
             reporter_id: address.reporter_id.as_u128().into(),
-            confirmations_count: 0, // TODO: add confirmations count
+            confirmations_count: address.confirmations,
         })
     }
 }
@@ -177,6 +178,7 @@ impl TryFrom<NearAsset> for Asset {
             risk: asset.risk_score,
             case_id: Uuid::from_u128(asset.case_id.0),
             reporter_id: Uuid::from_u128(asset.reporter_id.0),
+            confirmations: asset.confirmations_count,
         })
     }
 }
@@ -192,7 +194,7 @@ impl TryFrom<Asset> for NearAsset {
             risk_score: asset.risk,
             case_id: asset.case_id.as_u128().into(),
             reporter_id: asset.reporter_id.as_u128().into(),
-            confirmations_count: 0, // TODO: add confirmations count
+            confirmations_count: asset.confirmations,
         })
     }
 }

@@ -30,8 +30,8 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
-            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
         },
@@ -45,7 +45,8 @@ use super::{
     instruction_data::get_hapi_sighashes,
     utils::{
         byte_array_from_str, get_address_address, get_asset_address, get_case_address,
-        get_network_address, get_program_data_address, get_reporter_address, get_signer,
+        get_confirmation_address, get_network_address, get_program_data_address,
+        get_reporter_address, get_signer,
     },
 };
 
@@ -533,6 +534,35 @@ impl HapiCore for HapiCoreSolana {
         .await
     }
 
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let (address, _) = get_address_address(&addr, &self.network, &self.program_id)?;
+        let address_data = get_solana_account!(self, &address, Address)?;
+
+        let (reporter, _) = self.get_reporter().await?;
+        let reporter_data = get_solana_account!(self, &reporter, Reporter)?;
+
+        let (case, _) = get_case_address(address_data.case_id, &self.network, &self.program_id)?;
+        let (confirmation, bump) =
+            get_confirmation_address(&address, reporter_data.id, &self.program_id)?;
+
+        self.call_contract(
+            accounts::ConfirmAddress {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                address,
+                confirmation,
+                system_program: system_program::id(),
+            },
+            instruction::ConfirmAddress { bump },
+        )
+        .await
+    }
+
     async fn get_address(&self, addr: &str) -> Result<Address> {
         let mut address = [0u8; 64];
         byte_array_from_str(addr, &mut address)?;
@@ -605,6 +635,38 @@ impl HapiCore for HapiCoreSolana {
                 category: input.category.into(),
                 risk_score: input.risk,
             },
+        )
+        .await
+    }
+
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
+        let mut addr = [0u8; 64];
+        byte_array_from_str(&input.address, &mut addr)?;
+
+        let mut asset_id = [0u8; 32];
+        byte_array_from_str(&input.asset_id.to_string(), &mut asset_id)?;
+
+        let (asset, _) = get_asset_address(&addr, &asset_id, &self.network, &self.program_id)?;
+        let asset_data = get_solana_account!(self, &asset, Asset)?;
+
+        let (reporter, _) = self.get_reporter().await?;
+        let reporter_data = get_solana_account!(self, &reporter, Reporter)?;
+
+        let (case, _) = get_case_address(asset_data.case_id, &self.network, &self.program_id)?;
+        let (confirmation, bump) =
+            get_confirmation_address(&asset, reporter_data.id, &self.program_id)?;
+
+        self.call_contract(
+            accounts::ConfirmAsset {
+                sender: self.signer.pubkey(),
+                network: self.network,
+                reporter,
+                case,
+                asset,
+                confirmation,
+                system_program: system_program::id(),
+            },
+            instruction::ConfirmAsset { bump },
         )
         .await
     }

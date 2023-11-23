@@ -3,7 +3,7 @@ use {
         configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
         PersistedState, PushData,
     },
-    std::{env, path::PathBuf},
+    std::{env, path::PathBuf, time::Duration},
     tokio::time::sleep,
 };
 
@@ -14,11 +14,11 @@ mod simple_listener;
 
 use mocks::{
     create_pushdata, create_test_batches, evm_mock::EvmMock, near_mock::NearMock,
-    solana_mock::SolanaMock, webhook_mock::WebhookServiceMock, RpcMock, TestBatch,
+    solana_mock::SolanaMock, webhook_mock::WebhookServiceMock, RpcMock, TestBatch, PAGE_SIZE,
 };
 
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
-const STATE_FILE: &str = "data/state.json";
+const FETCHING_DELAY: Duration = Duration::from_millis(100);
 
 pub struct IndexerTest<T: RpcMock> {
     webhook_mock: WebhookServiceMock,
@@ -29,14 +29,13 @@ pub struct IndexerTest<T: RpcMock> {
 impl<T: RpcMock> IndexerTest<T> {
     pub fn new() -> Self {
         if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
-            if let Err(e) = setup_tracing("debug") {
+            if let Err(e) = setup_tracing("trace") {
                 println!("Failed to setup tracing: {}", e);
             }
         }
 
-        if PathBuf::from(STATE_FILE).exists() {
-            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
-        }
+        drop_state_file(T::STATE_FILE);
+        std::env::set_var("INDEXER_PAGE_SIZE", PAGE_SIZE.to_string());
 
         Self {
             webhook_mock: WebhookServiceMock::new(),
@@ -69,14 +68,14 @@ impl<T: RpcMock> IndexerTest<T> {
             rpc_node_url: self.rpc_mock.get_mock_url(),
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
-            wait_interval_ms: T::get_fetching_delay(),
-            state_file: STATE_FILE.to_string(),
-            fetching_delay: T::get_fetching_delay(),
+            wait_interval_ms: FETCHING_DELAY,
+            state_file: T::STATE_FILE.to_string(),
+            fetching_delay: FETCHING_DELAY,
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");
         let indexer_task = async move { indexer.run().await };
-        let timer = T::get_fetching_delay().saturating_mul(T::get_fetching_delay_multiplier());
+        let timer = FETCHING_DELAY.saturating_mul(T::get_delay_multiplier());
 
         println!(
             "==> Starting indexer with timer: {} millis",
@@ -95,7 +94,7 @@ impl<T: RpcMock> IndexerTest<T> {
     }
 
     fn check_cursor(&mut self, batches: &[TestBatch]) {
-        self.cursor = PersistedState::from_file(&PathBuf::from(STATE_FILE))
+        self.cursor = PersistedState::from_file(&PathBuf::from(T::STATE_FILE))
             .expect("Failed to get state")
             .cursor;
 
@@ -105,7 +104,7 @@ impl<T: RpcMock> IndexerTest<T> {
     pub async fn indexing_test(&mut self) {
         println!("\nIndexing test");
 
-        let pushdata = create_pushdata();
+        let pushdata = create_pushdata::<T>();
         let test_data = create_test_batches::<T>(&pushdata);
 
         for (index, batches) in test_data.chunks(2).enumerate() {
@@ -150,9 +149,13 @@ impl<T: RpcMock> IndexerTest<T> {
 
 impl<T: RpcMock> Drop for IndexerTest<T> {
     fn drop(&mut self) {
-        if PathBuf::from(STATE_FILE).exists() {
-            std::fs::remove_file(STATE_FILE).expect("Failed to remove state file");
-        }
+        drop_state_file(T::STATE_FILE);
+    }
+}
+
+fn drop_state_file(file: &'static str) {
+    if PathBuf::from(file).exists() {
+        std::fs::remove_file(file).expect("Failed to remove state file");
     }
 }
 

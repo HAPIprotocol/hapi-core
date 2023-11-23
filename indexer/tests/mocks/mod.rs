@@ -13,7 +13,7 @@ use {
         HapiCoreNetwork,
     },
     hapi_indexer::{IndexingCursor, PushData},
-    std::{str::FromStr, time::Duration},
+    std::str::FromStr,
     uuid::Uuid,
 };
 
@@ -22,7 +22,11 @@ pub mod near_mock;
 pub mod solana_mock;
 pub mod webhook_mock;
 
+pub const PAGE_SIZE: u64 = 6;
+
 pub trait RpcMock {
+    const STATE_FILE: &'static str;
+
     // Network mock server initialization
     fn initialize() -> Self;
 
@@ -34,6 +38,9 @@ pub trait RpcMock {
 
     // Returns network-specific hashes for 17 events
     fn get_hashes() -> [String; 17];
+
+    // Returns network-specific address
+    fn generate_address() -> String;
 
     // Returns the URL of the network mock server
     fn get_mock_url(&self) -> String;
@@ -50,11 +57,8 @@ pub trait RpcMock {
     // Should contains mocks to handle entity getters for client
     fn entity_getters_mock(&mut self, data: Vec<PushData>);
 
-    fn get_fetching_delay_multiplier() -> u32;
-
-    fn get_fetching_delay() -> Duration {
-        Duration::from_millis(100)
-    }
+    // Multiplier for the delay between fetching iterations
+    fn get_delay_multiplier() -> u32;
 }
 
 pub type TestBatch = Vec<TestData>;
@@ -67,10 +71,10 @@ pub struct TestData {
     pub block: u64,
 }
 
-pub fn create_pushdata() -> Vec<PushData> {
+pub fn create_pushdata<T: RpcMock>() -> Vec<PushData> {
     let reporter = Reporter {
         id: Uuid::new_v4(),
-        account: "reporter.near".to_string(),
+        account: T::generate_address(),
         role: ReporterRole::Publisher,
         status: ReporterStatus::Active,
         name: String::from("Publisher reporter"),
@@ -88,20 +92,22 @@ pub fn create_pushdata() -> Vec<PushData> {
     };
 
     let address = Address {
-        address: "address.near".to_string(),
+        address: T::generate_address(),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
         risk: 5,
         category: Category::ATM,
+        confirmations: 10,
     };
 
     let asset = Asset {
-        address: "asset.near".to_string(),
+        address: T::generate_address(),
         asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
         risk: 7,
         category: Category::DeFi,
+        confirmations: 3,
     };
 
     vec![
@@ -136,13 +142,13 @@ pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatc
         (EventName::CreateCase, Some(case.clone())),
         (EventName::UpdateCase, Some(case)),
         (EventName::CreateAddress, Some(address.clone())),
-        (EventName::UpdateAddress, Some(address)),
-        (EventName::ConfirmAddress, None),
+        (EventName::UpdateAddress, Some(address.clone())),
+        (EventName::ConfirmAddress, Some(address)),
         // ==> Second Run
         // First batch
         (EventName::CreateAsset, Some(asset.clone())),
-        (EventName::UpdateAsset, Some(asset)),
-        (EventName::ConfirmAsset, None),
+        (EventName::UpdateAsset, Some(asset.clone())),
+        (EventName::ConfirmAsset, Some(asset)),
         (EventName::DeactivateReporter, Some(reporter.clone())),
         (EventName::Unstake, Some(reporter)),
     ];

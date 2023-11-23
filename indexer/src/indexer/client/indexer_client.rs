@@ -2,6 +2,7 @@ use {
     anyhow::Result,
     hapi_core::{HapiCoreEvm, HapiCoreNear, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
     std::time::Duration,
+    tokio::time::sleep,
 };
 
 use super::{
@@ -12,15 +13,20 @@ use super::{
 
 use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
 
-pub(crate) struct FetchingArtifacts {
-    pub jobs: Vec<IndexerJob>,
-    pub cursor: IndexingCursor,
+pub const DEFAULT_PAGE_SIZE: u64 = 500;
+lazy_static::lazy_static! {
+    pub static ref PAGE_SIZE: u64 = std::env::var("INDEXER_PAGE_SIZE").map_or(DEFAULT_PAGE_SIZE, |s| s.parse::<u64>().unwrap_or(DEFAULT_PAGE_SIZE));
 }
 
 pub(crate) enum IndexerClient {
     Evm(HapiCoreEvm),
     Near(HapiCoreNear),
     Solana(HapiCoreSolana),
+}
+
+pub(crate) struct FetchingArtifacts {
+    pub jobs: Vec<IndexerJob>,
+    pub cursor: IndexingCursor,
 }
 
 impl IndexerClient {
@@ -54,29 +60,17 @@ impl IndexerClient {
         cursor: &IndexingCursor,
         fetching_delay: Duration,
     ) -> Result<FetchingArtifacts> {
-        match (self, cursor) {
-            (IndexerClient::Evm(client), IndexingCursor::Block(n)) => {
-                fetch_evm_jobs(client, Some(*n), fetching_delay).await
+        let artifacts = match self {
+            IndexerClient::Evm(client) => fetch_evm_jobs(client, cursor).await?,
+            IndexerClient::Solana(client) => {
+                fetch_solana_jobs(client, cursor, fetching_delay).await?
             }
-            (IndexerClient::Evm(client), IndexingCursor::None) => {
-                fetch_evm_jobs(client, None, fetching_delay).await
-            }
+            IndexerClient::Near(client) => fetch_near_jobs(client, cursor).await?,
+        };
 
-            (IndexerClient::Solana(client), IndexingCursor::Transaction(tx)) => {
-                fetch_solana_jobs(client, Some(tx), fetching_delay).await
-            }
-            (IndexerClient::Solana(client), IndexingCursor::None) => {
-                fetch_solana_jobs(client, None, fetching_delay).await
-            }
+        sleep(fetching_delay).await;
 
-            (IndexerClient::Near(client), IndexingCursor::Block(n)) => {
-                fetch_near_jobs(client, Some(*n), fetching_delay).await
-            }
-            (IndexerClient::Near(client), IndexingCursor::None) => {
-                fetch_near_jobs(client, None, fetching_delay).await
-            }
-            _ => unimplemented!(),
-        }
+        Ok(artifacts)
     }
 
     pub(crate) async fn handle_process(

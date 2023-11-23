@@ -250,7 +250,7 @@ describe("HapiCoreAsset ", () => {
       expect(
         fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAssetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
         decodeAddress(asset.address)
@@ -319,7 +319,7 @@ describe("HapiCoreAsset ", () => {
       expect(
         fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAssetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
         decodeAddress(asset.address)
@@ -388,7 +388,7 @@ describe("HapiCoreAsset ", () => {
       expect(
         fetchedAssetAccount.reporterId.eq(uuidToBn(reporter.id))
       ).toBeTruthy();
-      expect(fetchedAssetAccount.confirmations).toEqual(0);
+      expect(fetchedAssetAccount.confirmations.isZero()).toBeTruthy();
 
       expect(decodeAddress(fetchedAssetAccount.address)).toEqual(
         decodeAddress(asset.address)
@@ -1012,9 +1012,9 @@ describe("HapiCoreAsset ", () => {
         assetAccount
       );
 
-      expect(fetchedAssetAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
+      expect(
+        fetchedAssetAccount.confirmations.eq(confirmationsBefore.addn(1))
+      ).toBeTruthy();
 
       const assetInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
@@ -1083,10 +1083,9 @@ describe("HapiCoreAsset ", () => {
         assetAccount
       );
 
-      expect(fetchedAssetAccount.confirmations).toEqual(
-        confirmationsBefore + 1
-      );
-
+      expect(
+        fetchedAssetAccount.confirmations.eq(confirmationsBefore.addn(1))
+      ).toBeTruthy();
       const assetInfo = await provider.connection.getAccountInfoAndContext(
         confirmationAccount
       );

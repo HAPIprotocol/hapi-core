@@ -1,6 +1,9 @@
 use {
     anyhow::{bail, Result},
-    tokio::{task::spawn, try_join},
+    tokio::{
+        select,
+        task::{spawn, JoinError},
+    },
 };
 
 use hapi_indexer::{
@@ -31,12 +34,26 @@ async fn main() -> Result<()> {
     let server_task = indexer.spawn_server(&cfg.listener).await?;
     let indexer_task = spawn(async move { indexer.run().await });
 
-    match try_join!(server_task, indexer_task)? {
-        (Err(e), _) | (_, Err(e)) => {
-            tracing::error!(?e, "Indexer failed");
+    select! {
+        server_result = server_task => {
+            handle_result(server_result).await
+        }
+        indexer_result = indexer_task => {
+            handle_result(indexer_result).await
+        }
+    }
+}
 
+async fn handle_result(result: Result<Result<(), anyhow::Error>, JoinError>) -> Result<()> {
+    match result {
+        Ok(Ok(_)) => Ok(()),
+        Ok(Err(e)) => {
+            tracing::error!(?e, "Indexer failed");
             bail!("Indexer failed with error: {:?}", e);
         }
-        _ => Ok(()),
+        Err(e) => {
+            tracing::error!(?e, "Task failed to execute to completion");
+            bail!("Task failed to execute to completion: {:?}", e);
+        }
     }
 }

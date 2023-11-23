@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use super::{
     configuration::{RewardConfiguration, StakeConfiguration},
     entities::{
-        address::{Address, CreateAddressInput, UpdateAddressInput},
-        asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+        address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+        asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
         case::{Case, CreateCaseInput, UpdateCaseInput},
         network::HapiCoreNetwork,
         reporter::{CreateReporterInput, Reporter, UpdateReporterInput},
@@ -43,14 +43,14 @@ pub trait HapiCore {
 
     async fn create_address(&self, input: CreateAddressInput) -> Result<Tx>;
     async fn update_address(&self, input: UpdateAddressInput) -> Result<Tx>;
-    // TODO: add confirm_address method
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx>;
     async fn get_address(&self, addr: &str) -> Result<Address>;
     async fn get_address_count(&self) -> Result<u64>;
     async fn get_addresses(&self, skip: u64, take: u64) -> Result<Vec<Address>>;
 
     async fn create_asset(&self, input: CreateAssetInput) -> Result<Tx>;
     async fn update_asset(&self, input: UpdateAssetInput) -> Result<Tx>;
-    // TODO: add confirm_asset method
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx>;
     async fn get_asset(&self, addr: &str, id: &AssetId) -> Result<Asset>;
     async fn get_asset_count(&self) -> Result<u64>;
     async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>>;

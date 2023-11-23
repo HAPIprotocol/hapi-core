@@ -4,29 +4,35 @@ use {
         client::solana::{byte_array_from_str, test_helpers::create_test_tx, InstructionData},
         HapiCoreNetwork,
     },
-    hapi_indexer::{IndexingCursor, PushData, SOLANA_BATCH_SIZE},
+    hapi_indexer::{IndexingCursor, PushData},
     mockito::{Matcher, Server, ServerGuard},
     serde_json::{json, Value},
     solana_account_decoder::{UiAccount, UiAccountEncoding},
-    solana_sdk::{account::Account, pubkey::Pubkey},
+    solana_sdk::{
+        account::Account,
+        pubkey::Pubkey,
+        signature::{Keypair, Signature},
+        signer::Signer,
+    },
     solana_transaction_status::EncodedConfirmedTransactionWithStatusMeta,
     std::str::FromStr,
 };
 
-use solana_sdk::signature::Signature;
-
-use super::{RpcMock, TestBatch, TestData};
+use super::{RpcMock, TestBatch, TestData, PAGE_SIZE};
 
 pub const PROGRAM_ID: &str = "39WzZqJgkK2QuQxV9jeguKRgHE65Q3HywqPwBzdrKn2B";
 pub const REPORTER: &str = "C7DNJUKfDVpL9ZZqLnVTG1adj4Yu46JgDB6hiTdMEktX";
 pub const CASE: &str = "DTDk9GEQoVibTuHmTfDUwHehkH4WYd5fpawPfayGRVdi";
-pub const ADDRESS_OR_ASSET: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
+pub const ADDRESS: &str = "WN4cDdcxEEzCVyaFEuG4zzJB6QNqrahtfYpSeeecrmC";
+pub const ASSET: &str = "GsQmgPjFvA4cLqkTD5urwMmLPDiSA1cCxijRkofaLsC9";
 
 pub struct SolanaMock {
     server: ServerGuard,
 }
 
 impl RpcMock for SolanaMock {
+    const STATE_FILE: &'static str = "data/solana_state.json";
+
     fn get_contract_address() -> String {
         PROGRAM_ID.to_string()
     }
@@ -49,6 +55,14 @@ impl RpcMock for SolanaMock {
             .expect("Failed to create signatures");
 
         signatures
+    }
+
+    fn generate_address() -> String {
+        Keypair::new().pubkey().to_string()
+    }
+
+    fn get_delay_multiplier() -> u32 {
+        6
     }
 
     fn initialize() -> Self {
@@ -82,8 +96,13 @@ impl RpcMock for SolanaMock {
         batch
             .first()
             .map(|batch| batch.first().expect("Empty batch"))
-            .map(|tx| IndexingCursor::Transaction(tx.hash.clone()))
+            .map(|data: &TestData| IndexingCursor::Transaction(data.hash.clone()))
             .unwrap_or(IndexingCursor::None)
+    }
+
+    fn entity_getters_mock(&mut self, data: Vec<PushData>) {
+        // Mocking accounts request from payload data
+        data.iter().for_each(|data| self.mock_accounts(data));
     }
 
     fn fetching_jobs_mock(&mut self, batches: &[TestBatch], cursor: &IndexingCursor) {
@@ -127,35 +146,27 @@ impl RpcMock for SolanaMock {
     }
 
     fn processing_jobs_mock(&mut self, batch: &TestBatch) {
-        for event in batch {
-            // Mocking transaction request with instruction
-            self.mock_transaction(event.name.to_string(), &event.hash);
-
-            // Mocking accounts request from instruction
-            self.mock_accounts(event);
-        }
-    }
-
-    fn entity_getters_mock(&mut self, _data: Vec<PushData>) {
-        unimplemented!()
-    }
-
-    fn get_fetching_delay_multiplier() -> u32 {
-        6
+        // Mocking transaction request with instruction
+        batch
+            .iter()
+            .for_each(|event| self.mock_transaction(event.name.to_string(), &event.hash));
     }
 }
 
 impl SolanaMock {
     fn get_transaction(name: String, hash: &str) -> EncodedConfirmedTransactionWithStatusMeta {
-        // To reduce redundant code asset and address have common pubkey (same index in account list)
-        // It is important  to call them in different indexer launches
-        let account_keys = vec![
+        let mut account_keys = vec![
             String::from(PROGRAM_ID),
             String::default(),
             String::from(REPORTER),
             String::from(CASE),
-            String::from(ADDRESS_OR_ASSET),
         ];
+
+        if name.contains("address") {
+            account_keys.push(String::from(ADDRESS))
+        } else if name.contains("asset") {
+            account_keys.push(String::from(ASSET))
+        }
 
         create_test_tx(
             &vec![(
@@ -188,7 +199,7 @@ impl SolanaMock {
                 "method": "getSignaturesForAddress",
                 "params": [ PROGRAM_ID,
                 {
-                  "limit": SOLANA_BATCH_SIZE,
+                  "limit": PAGE_SIZE,
                   "until" : until,
                   "before" : before,
                   "commitment" : "confirmed"
@@ -233,12 +244,12 @@ impl SolanaMock {
                     risk_score: address.risk,
                     case_id: address.case_id.as_u128(),
                     reporter_id: address.reporter_id.as_u128(),
-                    confirmations: 0,
+                    confirmations: address.confirmations,
                 }
                 .try_serialize(&mut data)
                 .expect("Failed to serialize address");
 
-                ADDRESS_OR_ASSET
+                ADDRESS
             }
             PushData::Asset(asset) => {
                 let mut id = [0_u8; 32];
@@ -255,12 +266,12 @@ impl SolanaMock {
                     risk_score: asset.risk,
                     case_id: asset.case_id.as_u128(),
                     reporter_id: asset.reporter_id.as_u128(),
-                    confirmations: 0,
+                    confirmations: asset.confirmations,
                 }
                 .try_serialize(&mut data)
                 .expect("Failed to serialize asset");
 
-                ADDRESS_OR_ASSET
+                ASSET
             }
             PushData::Case(case) => {
                 hapi_core_solana::Case {
@@ -303,48 +314,46 @@ impl SolanaMock {
         (Pubkey::from_str(address).expect("Invalid address"), data)
     }
 
-    fn mock_accounts(&mut self, test_data: &TestData) {
-        if let Some(payload_data) = &test_data.data {
-            let (address, data) = SolanaMock::get_account_data(payload_data.clone());
+    fn mock_accounts(&mut self, payload_data: &PushData) {
+        let (address, data) = SolanaMock::get_account_data(payload_data.clone());
 
-            let account = Account {
-                lamports: 100,
-                data,
-                owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
-                executable: false,
-                rent_epoch: 123,
-            };
+        let account = Account {
+            lamports: 100,
+            data,
+            owner: Pubkey::from_str(PROGRAM_ID).expect("Invalid program id"),
+            executable: false,
+            rent_epoch: 123,
+        };
 
-            let encoded_account = UiAccount::encode(
-                &address,
-                &account,
-                UiAccountEncoding::Base64Zstd,
-                None,
-                None,
-            );
+        let encoded_account = UiAccount::encode(
+            &address,
+            &account,
+            UiAccountEncoding::Base64Zstd,
+            None,
+            None,
+        );
 
-            let response = json!({
-               "jsonrpc": "2.0",
-               "result": {
-                "context": { "apiVersion": "1.16.17", "slot": 252201350 },
-                "value": json!(encoded_account),
-               },
-               "id": 1
-            });
+        let response = json!({
+           "jsonrpc": "2.0",
+           "result": {
+            "context": { "apiVersion": "1.16.17", "slot": 252201350 },
+            "value": json!(encoded_account),
+           },
+           "id": 1
+        });
 
-            self.server
-                .mock("POST", "/")
-                .with_status(200)
-                .with_header("content-type", "application/json")
-                .with_body(&response.to_string())
-                .match_body(Matcher::PartialJson(json!({
-                    "method": "getAccountInfo",
-                    "params": [
-                        address.to_string(),
-                    ]
-                })))
-                .create();
-        }
+        self.server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(&response.to_string())
+            .match_body(Matcher::PartialJson(json!({
+                "method": "getAccountInfo",
+                "params": [
+                    address.to_string(),
+                ]
+            })))
+            .create();
     }
 }
 

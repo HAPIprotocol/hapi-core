@@ -34,6 +34,8 @@ listener                            # Address for the listener server
 
 ```
 
+To configure the indexing page limit, set the INDEXER_PAGE_SIZE env variable (default 500)
+
 Run indexer with:
 
 ```

@@ -1,5 +1,5 @@
 use {
-    anyhow::Result,
+    anyhow::{bail, Result},
     hapi_core::HapiCoreSolana,
     hapi_core::{
         client::{
@@ -16,46 +16,31 @@ use {
     tokio::time::sleep,
 };
 
-use crate::{
-    indexer::{
-        client::indexer_client::FetchingArtifacts,
-        push::{PushData, PushEvent, PushPayload},
-        IndexerJob,
-    },
-    IndexingCursor,
+use crate::indexer::{
+    client::indexer_client::FetchingArtifacts,
+    client::indexer_client::PAGE_SIZE,
+    push::{PushData, PushEvent, PushPayload},
+    IndexerJob, IndexingCursor,
 };
-
-pub const SOLANA_BATCH_SIZE: usize = 500;
 
 const REPORTER_ACCOUNT_INDEX: usize = 2;
 const CASE_ACCOUNT_INDEX: usize = 3;
 const ADDRESS_ACCOUNT_INDEX: usize = 4;
 const ASSET_ACCOUNT_INDEX: usize = 4;
 
-pub(super) async fn fetch_solana_jobs(
+async fn get_signature_list(
     client: &HapiCoreSolana,
-    current_cursor: Option<&str>,
+    signature_cursor: Option<Signature>,
     fetching_delay: Duration,
-) -> Result<FetchingArtifacts> {
-    let mut signature_list = VecDeque::new();
+) -> Result<Vec<IndexerJob>> {
     let mut recent_tx = None;
-
-    let signature_cursor = if let Some(cursor) = current_cursor {
-        Some(Signature::from_str(cursor)?)
-    } else {
-        None
-    };
-
-    tracing::info!(
-        current_cursor = %current_cursor.unwrap_or("Latest"),
-        "Fetching solana jobs"
-    );
+    let mut signature_list = VecDeque::new();
 
     loop {
         let config = GetConfirmedSignaturesForAddress2Config {
             before: recent_tx,
             until: signature_cursor,
-            limit: Some(SOLANA_BATCH_SIZE),
+            limit: Some(*PAGE_SIZE as usize),
             commitment: Some(CommitmentConfig::confirmed()),
         };
 
@@ -85,16 +70,42 @@ pub(super) async fn fetch_solana_jobs(
         }
     }
 
-    tracing::info!(count = signature_list.len(), "Found jobs");
-
-    let artifacts: FetchingArtifacts = FetchingArtifacts {
-        jobs: signature_list.into(),
-        cursor: IndexingCursor::None, // TODO: Implement cursor
-    };
-
-    Ok(artifacts)
+    Ok(signature_list.into())
 }
 
+#[tracing::instrument(skip(client, fetching_delay))]
+pub(super) async fn fetch_solana_jobs(
+    client: &HapiCoreSolana,
+    current_cursor: &IndexingCursor,
+    fetching_delay: Duration,
+) -> Result<FetchingArtifacts> {
+    let signature_cursor = match &current_cursor {
+        IndexingCursor::None => None,
+        IndexingCursor::Transaction(tx) => Some(Signature::from_str(tx)?),
+        _ => bail!("Solana network must have a transaction cursor"),
+    };
+
+    tracing::info!(
+        current_cursor = %current_cursor,
+        "Fetching solana jobs"
+    );
+
+    let signature_list = get_signature_list(client, signature_cursor, fetching_delay).await?;
+    tracing::info!(count = signature_list.len(), "Found jobs");
+
+    let new_cursor = if let Some(recent) = signature_list.last() {
+        IndexingCursor::try_from(recent.clone())?
+    } else {
+        current_cursor.clone()
+    };
+
+    Ok(FetchingArtifacts {
+        jobs: signature_list,
+        cursor: new_cursor,
+    })
+}
+
+#[tracing::instrument(skip(client))]
 pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,

@@ -112,6 +112,20 @@ pub fn get_asset_address(
     ))
 }
 
+/// Returns confirmation PDA address
+pub fn get_confirmation_address(
+    address: &Pubkey,
+    reporter_id: Uuid,
+    program_id: &Pubkey,
+) -> Result<(Pubkey, u8)> {
+    let id = reporter_id.as_bytes();
+
+    Ok(Pubkey::find_program_address(
+        &[b"confirmation", address.as_ref(), id],
+        program_id,
+    ))
+}
+
 pub fn byte_array_from_str(data: &str, bytes: &mut [u8]) -> Result<()> {
     let mut bytes = &mut bytes[..];
     bytes

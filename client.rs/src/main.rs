@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
         Some(("address", matches)) => match matches.subcommand() {
             Some(("create", matches)) => commands::create_address(matches).await?,
             Some(("update", matches)) => commands::update_address(matches).await?,
+            Some(("confirm", matches)) => commands::confirm_address(matches).await?,
             Some(("get", matches)) => commands::get_address(matches).await?,
             Some(("count", matches)) => commands::get_address_count(matches).await?,
             Some(("list", matches)) => commands::get_addresses(matches).await?,
@@ -49,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
         Some(("asset", matches)) => match matches.subcommand() {
             Some(("create", matches)) => commands::create_asset(matches).await?,
             Some(("update", matches)) => commands::update_asset(matches).await?,
+            Some(("confirm", matches)) => commands::confirm_asset(matches).await?,
             Some(("get", matches)) => commands::get_asset(matches).await?,
             Some(("count", matches)) => commands::get_asset_count(matches).await?,
             Some(("list", matches)) => commands::get_assets(matches).await?,

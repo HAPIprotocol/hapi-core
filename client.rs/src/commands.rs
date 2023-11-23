@@ -6,8 +6,8 @@ use hapi_core::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{CreateAddressInput, UpdateAddressInput},
-            asset::{CreateAssetInput, UpdateAssetInput},
+            address::{ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, UpdateReporterInput},
         },
@@ -649,6 +649,32 @@ pub async fn update_address(args: &ArgMatches) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub async fn confirm_address(args: &ArgMatches) -> anyhow::Result<()> {
+    let context = HapiCoreCommandContext::try_from(args)?;
+
+    let address = args
+        .get_one::<String>("address")
+        .ok_or(anyhow!("`address` is required"))?
+        .to_owned();
+
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .confirm_address(ConfirmAddressInput { address })
+        .await?;
+
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
+        CommandOutput::Plain => println!("{}", tx.hash),
+    }
+
+    Ok(())
+}
+
 pub async fn get_address(args: &ArgMatches) -> anyhow::Result<()> {
     let context = HapiCoreCommandContext::try_from(args)?;
 
@@ -813,6 +839,38 @@ pub async fn update_asset(args: &ArgMatches) -> anyhow::Result<()> {
             risk,
             category,
         })
+        .await?;
+
+    match context.output {
+        CommandOutput::Json => println!("{}", json!({ "tx": tx.hash })),
+        CommandOutput::Plain => println!("{}", tx.hash),
+    }
+
+    Ok(())
+}
+
+pub async fn confirm_asset(args: &ArgMatches) -> anyhow::Result<()> {
+    let context = HapiCoreCommandContext::try_from(args)?;
+
+    let address = args
+        .get_one::<String>("address")
+        .ok_or(anyhow!("`address` is required"))?
+        .to_owned();
+
+    context
+        .hapi_core
+        .is_valid_address(&address.clone())
+        .map_err(|e| anyhow!("Invalid address in `address`: {e}"))?;
+
+    let asset_id = args
+        .get_one::<String>("asset-id")
+        .ok_or(anyhow!("`asset-id` is required"))?
+        .parse()
+        .map_err(|e| anyhow!("`asset-id`: {e}"))?;
+
+    let tx = context
+        .hapi_core
+        .confirm_asset(ConfirmAssetInput { address, asset_id })
         .await?;
 
     match context.output {

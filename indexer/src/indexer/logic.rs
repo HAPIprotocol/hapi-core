@@ -81,25 +81,27 @@ impl Indexer {
         new_cursor: IndexingCursor,
     ) -> Result<IndexerState> {
         if !jobs.is_empty() {
-            return Ok(IndexerState::Processing { cursor: new_cursor });
+            tracing::info!(%new_cursor, "Earliest cursor found");
+
+            Ok(IndexerState::Processing { cursor: new_cursor })
         } else if old_cursor == IndexingCursor::None {
-            return Ok(IndexerState::Stopped {
+            Ok(IndexerState::Stopped {
                 message: "No valid transactions found on the contract address".to_string(),
-            });
+            })
+        } else {
+            let timestamp = now()? + self.wait_interval_ms.as_secs();
+            tracing::info!(timestamp, %new_cursor, "New jobs not found, waiting until next check");
+
+            PersistedState {
+                cursor: new_cursor.clone(),
+            }
+            .to_file(&self.state_file)?;
+
+            Ok(IndexerState::Waiting {
+                until: timestamp,
+                cursor: new_cursor,
+            })
         }
-
-        let timestamp = now()? + self.wait_interval_ms.as_secs();
-        tracing::info!(timestamp, "New jobs not found, waiting until next check");
-
-        PersistedState {
-            cursor: new_cursor.clone(),
-        }
-        .to_file(&self.state_file)?;
-
-        Ok(IndexerState::Waiting {
-            until: timestamp,
-            cursor: new_cursor,
-        })
     }
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]

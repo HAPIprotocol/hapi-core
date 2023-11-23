@@ -772,7 +772,7 @@ contract HapiCore is OwnableUpgradeable {
         /// The UUID of the reporter that submitted the address
         uint128 reporter_id;
         /// The number of confirmations for the address
-        uint confirmations;
+        uint64 confirmations;
         /// Risk score for the address (0..10)
         uint8 risk;
         /// Category of activity associated with the address
@@ -784,6 +784,9 @@ contract HapiCore is OwnableUpgradeable {
 
     /// A list of all addresses
     address[] private _address_addrs;
+
+    // Mapping to keep track of address confirmations
+    mapping(address => mapping(uint128 => bool)) private _address_confirmations;
 
     /**
      * @param addr Address
@@ -892,6 +895,47 @@ contract HapiCore is OwnableUpgradeable {
     }
 
     /**
+     * @param addr Address
+     */
+    event AddressConfirmed(address indexed addr);
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Address
+     *
+     * @dev Panics if the address does not exist
+     * @dev Panics if the caller is not a publisher or a validator
+     * @dev Panics if the caller already confirmed the address
+     */
+    function confirmAddress(address addr) public {
+        require(_addresses[addr].addr != address(0), "Address does not exist");
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher || role == ReporterRole.Validator,
+            "Reporter is not publisher or validator"
+        );
+
+        require(
+            reporter_id != _addresses[addr].reporter_id,
+            "Cannot confirm the address reported by himself"
+        );
+
+        require(
+            !_address_confirmations[addr][reporter_id],
+            "The reporter has already confirmed the address"
+        );
+
+        _address_confirmations[addr][reporter_id] = true;
+        _addresses[addr].confirmations++;
+
+        emit AddressConfirmed(addr);
+    }
+
+    /**
      * Retrieves address data
      *
      * @param addr Address
@@ -952,7 +996,7 @@ contract HapiCore is OwnableUpgradeable {
         /// The UUID of the reporter that submitted the address
         uint128 reporter_id;
         /// The number of confirmations for the address
-        uint confirmations;
+        uint64 confirmations;
         /// Risk score for the address (0..10)
         uint8 risk;
         /// Category of activity associated with the address
@@ -969,6 +1013,10 @@ contract HapiCore is OwnableUpgradeable {
 
     /// A list of all assets
     AssetKey[] private _asset_addrs;
+
+    // Mapping to keep track of asset confirmations
+    mapping(address => mapping(uint256 => mapping(uint256 => bool)))
+        private _asset_confirmations;
 
     /**
      * @param addr Asset contract address
@@ -1097,6 +1145,52 @@ contract HapiCore is OwnableUpgradeable {
         _assets[addr][asset_id].category = category;
 
         emit AssetUpdated(addr, asset_id, risk, category);
+    }
+
+    /**
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     */
+    event AssetConfirmed(address indexed addr, uint256 asset_id);
+
+    /**
+     * Updates an existing address
+     *
+     * @param addr Asset contract address
+     * @param asset_id Asset ID (ERC-721 compatible)
+     *
+     * @dev Panics if the asset does not exist
+     * @dev Panics if the caller is not a publisher or a validator
+     * @dev Panics if the caller already confirmed the asset
+     */
+    function confirmAsset(address addr, uint256 asset_id) public {
+        require(
+            _assets[addr][asset_id].addr != address(0),
+            "Address does not exist"
+        );
+
+        uint128 reporter_id = getMyReporterId();
+        ReporterRole role = getMyRole();
+
+        require(
+            role == ReporterRole.Publisher || role == ReporterRole.Validator,
+            "Reporter is not publisher or validator"
+        );
+
+        require(
+            reporter_id != _assets[addr][asset_id].reporter_id,
+            "Cannot confirm the asset reported by himself"
+        );
+
+        require(
+            !_asset_confirmations[addr][asset_id][reporter_id],
+            "The reporter has already confirmed the asset"
+        );
+
+        _asset_confirmations[addr][asset_id][reporter_id] = true;
+        _assets[addr][asset_id].confirmations++;
+
+        emit AssetConfirmed(addr, asset_id);
     }
 
     /**

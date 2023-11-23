@@ -30,8 +30,8 @@ use crate::{
     client::{
         configuration::{RewardConfiguration, StakeConfiguration},
         entities::{
-            address::{Address, CreateAddressInput, UpdateAddressInput},
-            asset::{Asset, AssetId, CreateAssetInput, UpdateAssetInput},
+            address::{Address, ConfirmAddressInput, CreateAddressInput, UpdateAddressInput},
+            asset::{Asset, AssetId, ConfirmAssetInput, CreateAssetInput, UpdateAssetInput},
             case::{Case, CreateCaseInput, UpdateCaseInput},
             reporter::{CreateReporterInput, Reporter, ReporterRole, UpdateReporterInput},
         },
@@ -460,6 +460,23 @@ impl HapiCore for HapiCoreNear {
         Ok(execute_transaction(transaction, signer, &self.client).await?)
     }
 
+    async fn confirm_address(&self, input: ConfirmAddressInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "confirm_address",
+            json!({
+                "address": input.address,
+            })
+        );
+
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
+    }
+
     async fn get_address(&self, addr: &str) -> Result<Address> {
         let request = self.view_request("get_address", Some(json!({ "address": addr })));
 
@@ -522,6 +539,24 @@ impl HapiCore for HapiCoreNear {
                 "category": input.category,
                 "case_id": uuid_to_u128!(input.case_id),
                 "risk_score": input.risk,
+            })
+        );
+
+        Ok(execute_transaction(transaction, signer, &self.client).await?)
+    }
+
+    async fn confirm_asset(&self, input: ConfirmAssetInput) -> Result<Tx> {
+        let signer = self.get_signer()?;
+        let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;
+
+        let transaction = build_tx!(
+            self,
+            signer,
+            access_key_query_response,
+            "confirm_asset",
+            json!({
+                "address": input.address,
+                "id": input.asset_id,
             })
         );
 
