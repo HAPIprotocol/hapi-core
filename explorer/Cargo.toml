@@ -30,6 +30,7 @@ sea-orm = "0.12.7"
 
 migration = { path = "./migration" }
 hapi_indexer = { path = "../indexer" }
+hapi-core-cli = { path = "../client.rs" }
 
 [dev-dependencies]
 reqwest = "0.11.12"

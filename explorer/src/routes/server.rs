@@ -1,6 +1,10 @@
 use {
     anyhow::{Error, Result},
-    axum::{middleware, routing::get, serve, Router},
+    axum::{
+        middleware,
+        routing::{get, post},
+        serve, Router,
+    },
     std::future::ready,
     tokio::task::{spawn, JoinHandle},
 };
@@ -25,7 +29,7 @@ impl Application {
     fn create_router(&self) -> Router {
         let router = Router::new()
             .route("/health", get(health))
-            .route("/entities", get(entities))
+            .route("/entities", post(entities))
             .route("/stats", get(stats))
             .with_state(self.database_conn.clone());
 

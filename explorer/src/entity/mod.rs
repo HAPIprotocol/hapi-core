@@ -1,10 +1,10 @@
-mod address;
-mod asset;
-mod case;
-mod reporter;
-mod types;
+pub mod address;
+pub mod asset;
+pub mod case;
+pub mod reporter;
+pub mod types;
 
-pub use address::Entity as Address;
-pub use asset::Entity as Asset;
-pub use case::Entity as Case;
-pub use reporter::Entity as Reporter;
+// pub use address::{ActiveModel as AddressActiveModel, Entity as Address};
+// pub use asset::{ActiveModel as AssetActiveModel, Entity as Asset};
+// pub use case::{ActiveModel as CaseActiveModel, Entity as Case};
+// pub use reporter::{ActiveModel as ReporterActiveModel, Entity as Reporter};

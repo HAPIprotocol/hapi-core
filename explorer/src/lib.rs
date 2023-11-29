@@ -3,3 +3,4 @@ pub mod configuration;
 pub mod entity;
 pub mod observability;
 pub mod routes;
+pub mod service;

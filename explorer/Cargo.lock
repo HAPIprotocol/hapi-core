@@ -3333,6 +3333,7 @@ dependencies = [
  "anyhow",
  "axum 0.7.1",
  "config",
+ "hapi-core-cli",
  "hapi_indexer",
  "metrics",
  "metrics-exporter-prometheus",

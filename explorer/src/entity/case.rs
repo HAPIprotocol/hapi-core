@@ -1,5 +1,8 @@
 use super::types::CaseStatus;
-use sea_orm::entity::prelude::*;
+use {
+    hapi_core::client::entities::case::Case as CasePayload,
+    sea_orm::{entity::prelude::*, Set},
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "case")]
@@ -16,3 +19,15 @@ pub struct Model {
 pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
+
+impl From<CasePayload> for ActiveModel {
+    fn from(payload: CasePayload) -> Self {
+        Self {
+            id: Set(payload.id.to_owned()),
+            name: Set(payload.name.to_owned()),
+            url: Set(payload.url.to_owned()),
+            status: Set(payload.status.into()),
+            reporter_id: Set(payload.reporter_id.to_owned()),
+        }
+    }
+}
