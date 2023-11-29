@@ -26,10 +26,11 @@ enum_extract = "0.1"
 dirs = "5.0.1"
 
 # EVM dependencies
-ethers = "=2.0.4"
-ethers-providers = "=2.0.4"
-ethers-signers = "=2.0.4"
-ethers-contract = "=2.0.4"
+ethers = "=2.0.8"
+ethers-providers = "=2.0.8"
+ethers-signers = "=2.0.8"
+ethers-contract = "=2.0.8"
+ethers-core = "=2.0.8"
 
 # NEAR dependencies
 near-sdk = "4.1.1"

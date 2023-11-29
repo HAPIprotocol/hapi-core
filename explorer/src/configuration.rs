@@ -19,11 +19,16 @@ pub struct Configuration {
     pub is_json_logging: bool,
 
     /// Whether to enable metrics
+    #[serde(default = "default_enable_metrics")]
     pub enable_metrics: bool,
 
     /// The address to listen on
     #[serde(default = "default_listener")]
     pub listener: String,
+
+    // TODO: move to separate struct
+    /// The database url
+    pub database_url: String,
 }
 
 pub fn get_configuration() -> Result<Configuration, ConfigError> {
@@ -50,4 +55,8 @@ fn default_is_json_logging() -> bool {
 
 fn default_listener() -> String {
     String::from("0.0.0.0:3000")
+}
+
+fn default_enable_metrics() -> bool {
+    true
 }

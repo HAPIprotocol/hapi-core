@@ -32,8 +32,9 @@ impl TestApp {
     }
 
     pub async fn from_configuration(settings: Configuration) -> Self {
-        let application =
-            Application::from_configuration(settings).expect("Failed to build application");
+        let application = Application::from_configuration(settings)
+            .await
+            .expect("Failed to build application");
         let port = application.port();
 
         spawn(application.run());
@@ -48,6 +49,8 @@ impl TestApp {
     pub fn generate_configuration() -> Configuration {
         let mut configuration = Configuration::default();
         configuration.listener = "127.0.0.1:0".parse().expect("Failed to parse address");
+        configuration.database_url =
+            "postgresql://postgres:postgres@localhost:5432/explorer".to_string();
 
         configuration
     }

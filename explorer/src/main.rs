@@ -9,6 +9,7 @@ async fn main() {
         .expect("Failed to set up tracing");
 
     let app = Application::from_configuration(configuration)
+        .await
         .unwrap()
         .run()
         .await

@@ -1,4 +1,6 @@
-use axum::{extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse};
+use axum::{
+    body::Body, extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse,
+};
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::time::Instant;
 
@@ -24,7 +26,7 @@ pub(crate) fn setup_metrics() -> PrometheusHandle {
         .expect("Could not install the Prometheus recorder")
 }
 
-pub(crate) async fn track_metrics<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
+pub(crate) async fn track_metrics(req: Request<Body>, next: Next) -> impl IntoResponse {
     let start = Instant::now();
     let path = if let Some(matched_path) = req.extensions().get::<MatchedPath>() {
         matched_path.as_str().to_owned()

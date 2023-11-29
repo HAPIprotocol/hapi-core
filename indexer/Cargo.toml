@@ -34,7 +34,7 @@ lazy_static = "1"
 enum_extract = "0.1"
 
 # Evm dependencies
-ethers = "2"
+ethers = "=2.0.8"
 
 # NEAR dependencies
 near-jsonrpc-primitives = "0.17.0"
