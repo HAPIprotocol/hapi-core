@@ -1,8 +1,10 @@
-use axum::{
-    body::Body, extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse,
+use {
+    axum::{
+        body::Body, extract::MatchedPath, http::Request, middleware::Next, response::IntoResponse,
+    },
+    metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle},
+    std::time::Instant,
 };
-use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
-use std::time::Instant;
 
 const REQUEST_DURATION_METRIC_NAME: &str = "http_requests_duration_seconds";
 

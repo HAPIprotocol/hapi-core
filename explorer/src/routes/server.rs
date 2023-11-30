@@ -1,16 +1,16 @@
 use {
-    anyhow::{Error, Result},
+    anyhow::Result,
     axum::{
         middleware,
         routing::{get, post},
         serve, Router,
     },
     std::future::ready,
-    tokio::task::{spawn, JoinHandle},
+    tokio::{
+        net::TcpListener,
+        task::{spawn, JoinHandle},
+    },
 };
-
-use sea_orm::DatabaseConnection;
-use tokio::net::TcpListener;
 
 use super::{entities, health, stats};
 use crate::{
