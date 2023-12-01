@@ -1,7 +1,7 @@
 use {
     anyhow::{bail, Result},
     ethers::{abi::Token, providers::Middleware, types::Filter},
-    hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
+    hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm, HapiCoreNetwork},
     std::{cmp::min, str::FromStr},
     uuid::Uuid,
 };
@@ -75,11 +75,12 @@ pub(super) async fn fetch_evm_jobs(
     })
 }
 
-#[tracing::instrument(skip(client),
+#[tracing::instrument(skip(client, network),
     fields(hash = log.transaction_hash.map_or("None".to_string(), |s| s.to_string())))]
 pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
+    network: &HapiCoreNetwork,
 ) -> Result<Option<Vec<PushPayload>>> {
     let log_header = if let Some(header) = client.decode_event(log)? {
         header
@@ -142,6 +143,7 @@ pub(super) async fn process_evm_job(
 
     if let Some(data) = data {
         Ok(Some(vec![PushPayload {
+            network: network.clone(),
             event: PushEvent {
                 name: EventName::from_str(&log_header.name)?,
                 tx_hash,

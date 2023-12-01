@@ -1,12 +1,12 @@
 use {
     serde::{
         de::{self, Visitor},
-        Deserialize,
+        Deserialize, Serialize,
     },
     std::{fmt, str::FromStr},
 };
 
-#[derive(Default, Debug, Clone)]
+#[derive(Serialize, Default, Debug, Clone, PartialEq)]
 pub enum HapiCoreNetwork {
     #[default]
     Sepolia,
@@ -22,12 +22,12 @@ impl FromStr for HapiCoreNetwork {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "sepolia" => Ok(Self::Sepolia),
-            "ethereum" => Ok(Self::Ethereum),
-            "bsc" => Ok(Self::Bsc),
-            "solana" => Ok(Self::Solana),
-            "bitcoin" => Ok(Self::Bitcoin),
-            "near" => Ok(Self::Near),
+            "Sepolia" | "sepolia" => Ok(Self::Sepolia),
+            "Ethereum" | "ethereum" => Ok(Self::Ethereum),
+            "Bsc" | "bsc" => Ok(Self::Bsc),
+            "Solana" | "solana" => Ok(Self::Solana),
+            "Bitcoin" | "bitcoin" => Ok(Self::Bitcoin),
+            "Near" | "near" => Ok(Self::Near),
             _ => Err(anyhow::anyhow!("Invalid network: {}", s)),
         }
     }

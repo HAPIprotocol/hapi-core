@@ -49,6 +49,4 @@ pub struct Indexer {
 
     /// The URL to send webhooks to
     webhook_url: String,
-
-    fetching_delay: Duration,
 }

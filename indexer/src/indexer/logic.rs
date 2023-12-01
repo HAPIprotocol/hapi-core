@@ -17,11 +17,15 @@ impl Indexer {
             wait_interval_ms: cfg.wait_interval_ms,
             state: Arc::new(Mutex::new(IndexerState::Init)),
             jobs: VecDeque::new(),
-            client: IndexerClient::new(cfg.network, &cfg.rpc_node_url, &cfg.contract_address)?,
+            client: IndexerClient::new(
+                cfg.network,
+                &cfg.rpc_node_url,
+                &cfg.contract_address,
+                cfg.fetching_delay,
+            )?,
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,
-            fetching_delay: cfg.fetching_delay,
         })
     }
 
@@ -106,7 +110,7 @@ impl Indexer {
 
     #[tracing::instrument(name = "check_for_updates", skip(self))]
     async fn handle_check_for_updates(&mut self, cursor: IndexingCursor) -> Result<IndexerState> {
-        let artifacts = self.client.fetch_jobs(&cursor, self.fetching_delay).await?;
+        let artifacts = self.client.fetch_jobs(&cursor).await?;
         let state = self.get_updated_state(&artifacts.jobs, cursor, artifacts.cursor.clone())?;
 
         self.jobs.extend(artifacts.jobs);

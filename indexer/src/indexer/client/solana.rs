@@ -7,7 +7,7 @@ use {
             events::EventName,
             solana::DecodedInstruction,
         },
-        get_solana_account,
+        get_solana_account, HapiCoreNetwork,
     },
     solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
@@ -105,10 +105,11 @@ pub(super) async fn fetch_solana_jobs(
     })
 }
 
-#[tracing::instrument(skip(client))]
+#[tracing::instrument(skip(client, network))]
 pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,
+    network: &HapiCoreNetwork,
 ) -> Result<Option<Vec<PushPayload>>> {
     let instructions = client.get_hapi_instructions(signature).await?;
 
@@ -134,6 +135,7 @@ pub(super) async fn process_solana_job(
             );
 
             payloads.push(PushPayload {
+                network: network.clone(),
                 event: PushEvent {
                     name: instruction.name,
                     tx_hash: signature.to_string(),
