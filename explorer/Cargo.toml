@@ -34,3 +34,4 @@ hapi-core-cli = { path = "../client.rs" }
 
 [dev-dependencies]
 reqwest = "0.11.12"
+uuid = "1"

@@ -17,7 +17,7 @@ pub struct PushPayload {
 }
 
 /// Event data
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct PushEvent {
     /// Event name
     pub name: EventName,

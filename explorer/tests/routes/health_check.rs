@@ -1,7 +1,7 @@
 use crate::helpers::TestApp;
 
 #[tokio::test]
-async fn health_check_works() {
+async fn health_check_test() {
     let test_app = TestApp::start().await;
     let client = reqwest::Client::new();
 
@@ -12,5 +12,4 @@ async fn health_check_works() {
         .expect("Failed to execute request.");
 
     assert!(response.status().is_success());
-    println!("{:?}", response.text().await);
 }
