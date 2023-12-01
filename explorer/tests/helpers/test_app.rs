@@ -1,19 +1,20 @@
-use hapi_core::HapiCoreNetwork;
-use hapi_explorer::{
-    application::Application,
-    configuration::Configuration,
-    entity::{address, asset, case, reporter},
-    observability::setup_tracing,
-};
-use hapi_indexer::PushData;
-use sea_orm::{Database, DatabaseConnection, EntityTrait};
-
-use migration::{Migrator, MigratorTrait};
 use {
-    std::env,
-    tokio::{
-        spawn,
-        time::{sleep, Duration},
+    hapi_core::HapiCoreNetwork,
+    hapi_explorer::{
+        application::Application,
+        configuration::Configuration,
+        entity::{address, asset, case, reporter},
+        observability::setup_tracing,
+    },
+    hapi_indexer::PushData,
+    migration::{Migrator, MigratorTrait},
+    sea_orm::{Database, DatabaseConnection, EntityTrait},
+    {
+        std::env,
+        tokio::{
+            spawn,
+            time::{sleep, Duration},
+        },
     },
 };
 

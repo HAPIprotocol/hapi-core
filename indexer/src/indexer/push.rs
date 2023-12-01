@@ -1,5 +1,5 @@
 use {
-    anyhow::Result,
+    anyhow::{bail, Result},
     hapi_core::{
         client::{
             entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
@@ -67,11 +67,16 @@ impl From<Reporter> for PushData {
 
 impl Indexer {
     pub(crate) async fn send_webhook(&self, payload: &PushPayload) -> Result<()> {
-        self.web_client
+        let response = self
+            .web_client
             .post(&self.webhook_url)
             .json(payload)
             .send()
             .await?;
+
+        if !response.status().is_success() {
+            bail!("Webhook request failed: {:?}", response.text().await?);
+        }
 
         Ok(())
     }
