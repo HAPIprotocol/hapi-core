@@ -1,6 +1,6 @@
-use super::types::CaseStatus;
+use super::{types::CaseStatus, FromPayload};
 use {
-    hapi_core::client::entities::case::Case as CasePayload,
+    hapi_core::{client::entities::case::Case as CasePayload, HapiCoreNetwork},
     sea_orm::{entity::prelude::*, Set},
 };
 
@@ -8,7 +8,8 @@ use {
 #[sea_orm(table_name = "case")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: Uuid,
+    pub id: String,
+    pub case_id: Uuid,
     pub name: String,
     pub url: String,
     pub status: CaseStatus,
@@ -20,10 +21,13 @@ pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
 
-impl From<CasePayload> for ActiveModel {
-    fn from(payload: CasePayload) -> Self {
+impl FromPayload<CasePayload> for ActiveModel {
+    fn from(network: &HapiCoreNetwork, payload: CasePayload) -> Self {
+        let id = format!("{}.{}", network, payload.id.to_owned());
+
         Self {
-            id: Set(payload.id.to_owned()),
+            id: Set(id),
+            case_id: Set(payload.id.to_owned()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),
             status: Set(payload.status.into()),

@@ -14,7 +14,8 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Case::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Case::Id).uuid().not_null().primary_key())
+                    .col(ColumnDef::new(Case::Id).string().not_null().primary_key())
+                    .col(ColumnDef::new(Case::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Case::Name).string().not_null())
                     .col(ColumnDef::new(Case::Url).string().not_null())
                     .col(
@@ -39,6 +40,7 @@ impl MigrationTrait for Migration {
 enum Case {
     Table,
     Id,
+    CaseId,
     Name,
     Url,
     Status,

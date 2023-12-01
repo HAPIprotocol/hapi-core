@@ -17,7 +17,13 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Reporter::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Reporter::Id).uuid().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Reporter::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Reporter::Account).string().not_null())
                     .col(
                         ColumnDef::new(Reporter::Role)
@@ -34,7 +40,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Reporter::Stake).string().not_null())
                     .col(
                         ColumnDef::new(Reporter::UnlockTimestamp)
-                            .big_unsigned()
+                            .string()
                             .not_null(),
                     )
                     .to_owned(),
@@ -53,6 +59,7 @@ impl MigrationTrait for Migration {
 enum Reporter {
     Table,
     Id,
+    ReporterId,
     Account,
     Role,
     Status,

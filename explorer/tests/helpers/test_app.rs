@@ -1,3 +1,4 @@
+use hapi_core::HapiCoreNetwork;
 use hapi_explorer::{
     application::Application,
     configuration::Configuration,
@@ -7,6 +8,7 @@ use hapi_explorer::{
 use hapi_indexer::PushData;
 use sea_orm::{Database, DatabaseConnection, EntityTrait};
 
+use migration::{Migrator, MigratorTrait};
 use {
     std::env,
     tokio::{
@@ -15,7 +17,7 @@ use {
     },
 };
 
-const WAITING_TIMESTAMP: u64 = 100;
+pub const WAITING_TIMESTAMP: u64 = 100;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 
 pub struct TestApp {
@@ -41,6 +43,10 @@ impl TestApp {
             .await
             .expect("Failed to connect to database");
 
+        Migrator::down(&db_connection, None)
+            .await
+            .expect("Failed to migrate down");
+
         let application = Application::from_configuration(configuration)
             .await
             .expect("Failed to build application");
@@ -55,10 +61,10 @@ impl TestApp {
         }
     }
 
-    pub async fn check_entity(&self, data: PushData) {
+    pub async fn check_entity(&self, data: PushData, network: &HapiCoreNetwork) {
         match data {
             PushData::Address(address) => {
-                let id = format!("{}", address.address);
+                let id = format!("{}.{}", network, address.address);
 
                 let result = address::Entity::find_by_id(&id)
                     .all(&self.db_connection)
@@ -72,12 +78,15 @@ impl TestApp {
                 assert_eq!(address_model.address, address.address);
                 assert_eq!(address_model.case_id, address.case_id);
                 assert_eq!(address_model.reporter_id, address.reporter_id);
-                assert_eq!(address_model.risk, address.risk);
+                assert_eq!(address_model.risk, address.risk as i16);
                 assert_eq!(address_model.category, address.category.into());
-                assert_eq!(address_model.confirmations, address.confirmations);
+                assert_eq!(
+                    address_model.confirmations,
+                    address.confirmations.to_string()
+                );
             }
             PushData::Asset(asset) => {
-                let id = format!("{}.{}", asset.address, asset.asset_id);
+                let id = format!("{}.{}.{}", network, asset.address, asset.asset_id);
 
                 let result = asset::Entity::find_by_id(&id)
                     .all(&self.db_connection)
@@ -92,12 +101,12 @@ impl TestApp {
                 assert_eq!(asset_model.asset_id, asset.asset_id.to_string());
                 assert_eq!(asset_model.case_id, asset.case_id);
                 assert_eq!(asset_model.reporter_id, asset.reporter_id);
-                assert_eq!(asset_model.risk, asset.risk);
+                assert_eq!(asset_model.risk, asset.risk as i16);
                 assert_eq!(asset_model.category, asset.category.into());
-                assert_eq!(asset_model.confirmations, asset.confirmations);
+                assert_eq!(asset_model.confirmations, asset.confirmations.to_string());
             }
             PushData::Case(case) => {
-                let id = format!("{}", case.id);
+                let id = format!("{}.{}", network, case.id);
 
                 let result = case::Entity::find_by_id(&id)
                     .all(&self.db_connection)
@@ -114,7 +123,7 @@ impl TestApp {
                 assert_eq!(case_model.reporter_id, case.reporter_id);
             }
             PushData::Reporter(reporter) => {
-                let id = format!("{}", reporter.id);
+                let id = format!("{}.{}", network, reporter.id);
 
                 let result = reporter::Entity::find_by_id(&id)
                     .all(&self.db_connection)
@@ -131,7 +140,10 @@ impl TestApp {
                 assert_eq!(reporter_model.name, reporter.name);
                 assert_eq!(reporter_model.url, reporter.url);
                 assert_eq!(reporter_model.stake, reporter.stake.to_string());
-                assert_eq!(reporter_model.unlock_timestamp, reporter.unlock_timestamp);
+                assert_eq!(
+                    reporter_model.unlock_timestamp,
+                    reporter.unlock_timestamp.to_string()
+                );
             }
         }
     }

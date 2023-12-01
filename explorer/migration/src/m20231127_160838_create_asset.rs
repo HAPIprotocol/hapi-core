@@ -19,17 +19,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Asset::AssetId).string().not_null())
                     .col(ColumnDef::new(Asset::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Asset::ReporterId).uuid().not_null())
-                    .col(ColumnDef::new(Asset::Risk).tiny_unsigned().not_null())
+                    .col(ColumnDef::new(Asset::Risk).small_integer().not_null())
                     .col(
                         ColumnDef::new(Asset::Category)
                             .enumeration(Category::Type, Category::iter().skip(1))
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Asset::Confirmations)
-                            .big_unsigned()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Asset::Confirmations).string().not_null())
                     .to_owned(),
             )
             .await

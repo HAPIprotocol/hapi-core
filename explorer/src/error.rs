@@ -24,6 +24,7 @@ impl AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        tracing::error!(code = ?self.code, description = ?self.description);
         (
             self.code,
             format!("Something went wrong: {}", self.description),

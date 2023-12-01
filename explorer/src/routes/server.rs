@@ -12,7 +12,7 @@ use {
     },
 };
 
-use super::{entities, health, stats};
+use super::{events, health, stats};
 use crate::{
     application::Application,
     observability::{setup_metrics, track_metrics},
@@ -29,7 +29,7 @@ impl Application {
     fn create_router(&self) -> Router {
         let router = Router::new()
             .route("/health", get(health))
-            .route("/entities", post(entities))
+            .route("/events", post(events))
             .route("/stats", get(stats))
             .with_state(self.database_conn.clone());
 

@@ -8,3 +8,7 @@ pub mod types;
 // pub use asset::{ActiveModel as AssetActiveModel, Entity as Asset};
 // pub use case::{ActiveModel as CaseActiveModel, Entity as Case};
 // pub use reporter::{ActiveModel as ReporterActiveModel, Entity as Reporter};
+
+pub trait FromPayload<T>: Sized {
+    fn from(network: &hapi_core::HapiCoreNetwork, value: T) -> Self;
+}

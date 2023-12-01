@@ -1,20 +1,26 @@
-use super::types::{ReporterRole, ReporterStatus};
+use super::{
+    types::{ReporterRole, ReporterStatus},
+    FromPayload,
+};
 use {
-    hapi_core::client::entities::reporter::Reporter as ReporterPayload,
+    hapi_core::{client::entities::reporter::Reporter as ReporterPayload, HapiCoreNetwork},
     sea_orm::{entity::prelude::*, Set},
 };
+
+//TODO: update unlock_timestamp and stake types
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: Uuid,
+    pub id: String,
+    pub reporter_id: Uuid,
     pub account: String,
     pub role: ReporterRole,
     pub status: ReporterStatus,
     pub name: String,
     pub url: String,
     pub stake: String,
-    pub unlock_timestamp: u64,
+    pub unlock_timestamp: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -22,17 +28,20 @@ pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
 
-impl From<ReporterPayload> for ActiveModel {
-    fn from(payload: ReporterPayload) -> Self {
+impl FromPayload<ReporterPayload> for ActiveModel {
+    fn from(network: &HapiCoreNetwork, payload: ReporterPayload) -> Self {
+        let id = format!("{}.{}", network, payload.id.to_owned());
+
         Self {
-            id: Set(payload.id.to_owned()),
+            id: Set(id),
+            reporter_id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),
             status: Set(payload.status.into()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),
             stake: Set(payload.stake.to_string()),
-            unlock_timestamp: Set(payload.unlock_timestamp.to_owned()),
+            unlock_timestamp: Set(payload.unlock_timestamp.to_string()),
         }
     }
 }

@@ -1,13 +1,16 @@
 use {
-    hapi_core::client::{
-        entities::{
-            address::Address,
-            asset::{Asset, AssetId},
-            case::{Case, CaseStatus},
-            category::Category,
-            reporter::{Reporter, ReporterRole, ReporterStatus},
+    hapi_core::{
+        client::{
+            entities::{
+                address::Address,
+                asset::{Asset, AssetId},
+                case::{Case, CaseStatus},
+                category::Category,
+                reporter::{Reporter, ReporterRole, ReporterStatus},
+            },
+            events::EventName,
         },
-        events::EventName,
+        HapiCoreNetwork,
     },
     hapi_indexer::{PushData, PushEvent, PushPayload},
     reqwest::Client,
@@ -28,16 +31,19 @@ impl IndexerMock {
         }
     }
     pub(crate) async fn send_webhook(&self, payload: &PushPayload) {
-        self.web_client
+        let response = self
+            .web_client
             .post(&self.webhook_url)
             .json(payload)
             .send()
             .await
             .expect("Failed to send request");
+
+        assert!(response.status().is_success());
     }
 }
 
-pub(crate) fn get_test_data() -> Vec<PushPayload> {
+pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     let mut events = vec![];
 
     let mut default_event = PushEvent {
@@ -49,7 +55,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
 
     let mut reporter_payload = Reporter {
         id: Uuid::new_v4(),
-        account: "".to_string(),
+        account: "0x922ffdfcb57de5dd6f641f275e98b684ce5576a3".to_string(),
         role: ReporterRole::Publisher,
         status: ReporterStatus::Inactive,
         name: String::from("Publisher reporter"),
@@ -67,7 +73,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     };
 
     let mut address_payload = Address {
-        address: "".to_string(),
+        address: "0x9e833a87087efd527b1a842742eb0f3548cd82ab".to_string(),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
         risk: 6,
@@ -76,7 +82,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     };
 
     let mut asset_payload = Asset {
-        address: "".to_string(),
+        address: "0xe9dbfa9e9d48393d9d22de10051dcbd91267b756".to_string(),
         asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
         case_id: Uuid::new_v4(),
         reporter_id: Uuid::new_v4(),
@@ -88,24 +94,28 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     // Create events
     default_event.name = EventName::CreateReporter;
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
 
     default_event.name = EventName::CreateCase;
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Case(case_payload.clone()),
     });
 
     default_event.name = EventName::CreateAddress;
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Address(address_payload.clone()),
     });
 
     default_event.name = EventName::CreateAsset;
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Asset(asset_payload.clone()),
     });
@@ -117,6 +127,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     reporter_payload.url = String::from("https://authority.com");
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -125,6 +136,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     reporter_payload.status = ReporterStatus::Active;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -135,6 +147,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 12345;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -145,6 +158,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 0;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -155,6 +169,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     case_payload.status = CaseStatus::Closed;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Case(case_payload.clone()),
     });
@@ -165,6 +180,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     address_payload.confirmations = 20;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Address(address_payload.clone()),
     });
@@ -175,6 +191,7 @@ pub(crate) fn get_test_data() -> Vec<PushPayload> {
     asset_payload.confirmations = 25;
 
     events.push(PushPayload {
+        network: network.clone(),
         event: default_event.clone(),
         data: PushData::Asset(asset_payload.clone()),
     });

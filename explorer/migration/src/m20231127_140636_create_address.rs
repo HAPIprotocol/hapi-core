@@ -23,17 +23,13 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Address::Address).string().not_null())
                     .col(ColumnDef::new(Address::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Address::ReporterId).uuid().not_null())
-                    .col(ColumnDef::new(Address::Risk).tiny_unsigned().not_null())
+                    .col(ColumnDef::new(Address::Risk).small_integer().not_null())
                     .col(
                         ColumnDef::new(Address::Category)
                             .enumeration(Category::Type, Category::iter().skip(1))
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Address::Confirmations)
-                            .big_unsigned()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Address::Confirmations).string().not_null())
                     .to_owned(),
             )
             .await
