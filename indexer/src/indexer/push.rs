@@ -1,8 +1,11 @@
 use {
-    anyhow::Result,
-    hapi_core::client::{
-        entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
-        events::EventName,
+    anyhow::{bail, Result},
+    hapi_core::{
+        client::{
+            entities::{address::Address, asset::Asset, case::Case, reporter::Reporter},
+            events::EventName,
+        },
+        HapiCoreNetwork,
     },
     serde::{Deserialize, Serialize},
 };
@@ -12,12 +15,13 @@ use super::Indexer;
 /// Webhook payload
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PushPayload {
+    pub network: HapiCoreNetwork,
     pub event: PushEvent,
     pub data: PushData,
 }
 
 /// Event data
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct PushEvent {
     /// Event name
     pub name: EventName,
@@ -63,11 +67,16 @@ impl From<Reporter> for PushData {
 
 impl Indexer {
     pub(crate) async fn send_webhook(&self, payload: &PushPayload) -> Result<()> {
-        self.web_client
+        let response = self
+            .web_client
             .post(&self.webhook_url)
             .json(payload)
             .send()
             .await?;
+
+        if !response.status().is_success() {
+            bail!("Webhook request failed: {:?}", response.text().await?);
+        }
 
         Ok(())
     }
@@ -83,6 +92,7 @@ mod tests {
     fn test_push_payload_serialization() {
         // Create a sample PushPayload
         let payload = PushPayload {
+            network: HapiCoreNetwork::Ethereum,
             event: PushEvent {
                 name: EventName::CreateAddress,
                 tx_hash: "acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f"
@@ -105,7 +115,7 @@ mod tests {
 
         assert_eq!(
             json,
-            r#"{"event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":1690888679},"data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","risk":0,"category":"None","confirmations":3}}}"#
+            r#"{"network":"Ethereum","event":{"name":"create_address","tx_hash":"acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f","tx_index":0,"timestamp":1690888679},"data":{"Address":{"address":"0x922ffdfcb57de5dd6f641f275e98b684ce5576a3","case_id":"de1659f2-b802-49ee-98dd-6e4ce0453067","reporter_id":"1466cf4f-1d71-4153-b9ad-4a9c1b48101e","risk":0,"category":"None","confirmations":3}}}"#
         );
 
         // Deserialize the JSON back into a PushPayload

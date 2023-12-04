@@ -2,3 +2,4 @@
 /data
 /configuration.toml
 /secret.toml
+.vscode

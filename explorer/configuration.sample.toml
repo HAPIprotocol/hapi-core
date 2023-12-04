@@ -1,0 +1,4 @@
+log_level = "info"
+is_json_logging = true
+listener = "0.0.0.0:3000"
+database_url = "postgres://postgres:postgres@localhost:5432/explorer"

@@ -65,6 +65,7 @@ pub type TestBatch = Vec<TestData>;
 
 #[derive(Debug, Clone)]
 pub struct TestData {
+    pub network: HapiCoreNetwork,
     pub hash: String,
     pub name: EventName,
     pub data: Option<PushData>,
@@ -158,6 +159,7 @@ pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatc
         .enumerate()
         .zip(data.iter())
         .map(|((index, hash), (name, data))| TestData {
+            network: T::get_network(),
             hash: hash.clone(),
             name: name.clone(),
             data: data.clone(),
