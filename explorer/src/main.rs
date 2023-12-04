@@ -3,14 +3,11 @@ use hapi_explorer::{
 };
 
 #[tokio::main]
-async fn main() {
-    let configuration = get_configuration().expect("Failed to read configuration.");
-    setup_tracing(&configuration.log_level, configuration.is_json_logging)
-        .expect("Failed to set up tracing");
+async fn main() -> anyhow::Result<()> {
+    let configuration = get_configuration()?;
+    setup_tracing(&configuration.log_level, configuration.is_json_logging)?;
 
-    let app = Application::from_configuration(configuration)
-        .await
-        .expect("Failed to build application");
+    let app = Application::from_configuration(configuration).await?;
 
-    app.run_server().await.expect("Failed to run server");
+    app.run_server().await
 }
