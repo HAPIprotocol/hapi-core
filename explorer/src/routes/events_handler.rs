@@ -53,10 +53,10 @@ async fn process_address_payload(
 
     match event_name {
         EventName::CreateAddress => {
-            Mutation::create_entity::<address::ActiveModel, _>(&db, address, network).await?;
+            Mutation::create_entity::<address::ActiveModel, _>(db, address, network).await?;
         }
         EventName::UpdateAddress => {
-            Mutation::update_entity::<address::ActiveModel, _>(&db, address, network).await?;
+            Mutation::update_entity::<address::ActiveModel, _>(db, address, network).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -79,10 +79,10 @@ async fn process_asset_payload(
 
     match event_name {
         EventName::CreateAsset => {
-            Mutation::create_entity::<asset::ActiveModel, _>(&db, asset, network).await?;
+            Mutation::create_entity::<asset::ActiveModel, _>(db, asset, network).await?;
         }
         EventName::UpdateAsset => {
-            Mutation::update_entity::<asset::ActiveModel, _>(&db, asset, network).await?;
+            Mutation::update_entity::<asset::ActiveModel, _>(db, asset, network).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -105,10 +105,10 @@ async fn process_case_payload(
 
     match event_name {
         EventName::CreateCase => {
-            Mutation::create_entity::<case::ActiveModel, _>(&db, case, network).await?;
+            Mutation::create_entity::<case::ActiveModel, _>(db, case, network).await?;
         }
         EventName::UpdateCase => {
-            Mutation::update_entity::<case::ActiveModel, _>(&db, case, network).await?;
+            Mutation::update_entity::<case::ActiveModel, _>(db, case, network).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -131,13 +131,13 @@ async fn process_reporter_payload(
 
     match event_name {
         EventName::CreateReporter => {
-            Mutation::create_entity::<reporter::ActiveModel, _>(&db, reporter, network).await?;
+            Mutation::create_entity::<reporter::ActiveModel, _>(db, reporter, network).await?;
         }
         EventName::UpdateReporter
         | EventName::ActivateReporter
         | EventName::DeactivateReporter
         | EventName::Unstake => {
-            Mutation::update_entity::<reporter::ActiveModel, _>(&db, reporter, network).await?;
+            Mutation::update_entity::<reporter::ActiveModel, _>(db, reporter, network).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
