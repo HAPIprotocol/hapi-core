@@ -41,7 +41,7 @@ impl MigrationTrait for Migration {
 #[derive(DeriveIden)]
 enum Asset {
     Table,
-    // Network + Asset + asset_id
+    // Network + address + asset_id
     Id,
     Address,
     AssetId,
