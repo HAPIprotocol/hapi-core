@@ -53,7 +53,7 @@ impl TestApp {
             .expect("Failed to build application");
         let port = application.port();
 
-        spawn(application.run());
+        spawn(application.run_server());
         sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
 
         TestApp {

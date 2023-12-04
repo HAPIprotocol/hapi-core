@@ -30,10 +30,6 @@ impl Application {
         })
     }
 
-    pub async fn run(self) -> Result<()> {
-        self.spawn_server().await?.await?
-    }
-
     pub fn port(&self) -> u16 {
         self.socket.port()
     }

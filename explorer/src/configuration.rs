@@ -26,7 +26,6 @@ pub struct Configuration {
     #[serde(default = "default_listener")]
     pub listener: String,
 
-    // TODO: move to separate struct
     /// The database url
     pub database_url: String,
 }

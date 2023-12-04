@@ -4,7 +4,7 @@ use {
     sea_orm::{entity::prelude::*, Set},
 };
 
-//TODO: update risk and confirmations types
+// Risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "address")]
 pub struct Model {

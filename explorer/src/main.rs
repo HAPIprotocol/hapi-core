@@ -10,11 +10,7 @@ async fn main() {
 
     let app = Application::from_configuration(configuration)
         .await
-        .unwrap()
-        .run()
-        .await
-        .expect("Failed to build application.");
+        .expect("Failed to build application");
 
-    // TODO: implement rt handling
-    loop {}
+    app.run_server().await.expect("Failed to run server");
 }

@@ -6,10 +6,7 @@ use {
         serve, Router,
     },
     std::future::ready,
-    tokio::{
-        net::TcpListener,
-        task::{spawn, JoinHandle},
-    },
+    tokio::net::TcpListener,
 };
 
 use super::{events, health, stats};
@@ -19,13 +16,6 @@ use crate::{
 };
 
 impl Application {
-    async fn shutdown_signal(self) {
-        self.database_conn
-            .close()
-            .await
-            .expect("Failed to close database connection");
-    }
-
     fn create_router(&self) -> Router {
         let router = Router::new()
             .route("/health", get(health))
@@ -45,20 +35,15 @@ impl Application {
         router
     }
 
-    pub async fn spawn_server(self) -> Result<JoinHandle<Result<()>>> {
+    pub async fn run_server(self) -> Result<()> {
         tracing::info!(address = ?self.socket, "Start server");
 
-        // let server = Server::bind(&self.socket).serve(self.create_router().into_make_service());
-        // // TODO: fix graceful shutdown
-        // // .with_graceful_shutdown(self.shutdown_signal());
-
-        let server = serve(
+        // TODO: implement graceful shutdown
+        let server: serve::Serve<axum::routing::IntoMakeService<Router>, Router> = serve(
             TcpListener::bind(self.socket).await?,
             self.create_router().into_make_service(),
         );
 
-        Ok(spawn(
-            async move { server.await.map_err(anyhow::Error::from) },
-        ))
+        server.await.map_err(anyhow::Error::from)
     }
 }

@@ -7,7 +7,7 @@ use {
     sea_orm::{entity::prelude::*, Set},
 };
 
-//TODO: update unlock_timestamp and stake types
+// Unlock_timestamp and stake do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
