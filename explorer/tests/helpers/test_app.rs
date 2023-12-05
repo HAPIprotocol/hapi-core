@@ -3,7 +3,7 @@ use {
     hapi_explorer::{
         application::Application,
         configuration::Configuration,
-        entity::{address, asset, case, reporter},
+        entity::{address, asset, case, reporter, types},
         observability::setup_tracing,
     },
     hapi_indexer::PushData,
@@ -63,20 +63,21 @@ impl TestApp {
     }
 
     pub async fn check_entity(&self, data: PushData, network: &HapiCoreNetwork) {
+        let network: types::Network = network.clone().into();
+
         match data {
             PushData::Address(address) => {
-                let id = format!("{}.{}", network, address.address);
-
-                let result = address::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
-                    .await
-                    .expect("Failed to find address by id");
+                let result =
+                    address::Entity::find_by_id((network.clone(), address.address.clone()))
+                        .all(&self.db_connection)
+                        .await
+                        .expect("Failed to find address by id");
 
                 assert_eq!(result.len(), 1);
 
                 let address_model = result.first().unwrap();
-                assert_eq!(address_model.id, id);
                 assert_eq!(address_model.address, address.address);
+                assert_eq!(address_model.network, network);
                 assert_eq!(address_model.case_id, address.case_id);
                 assert_eq!(address_model.reporter_id, address.reporter_id);
                 assert_eq!(address_model.risk, address.risk as i16);
@@ -87,17 +88,18 @@ impl TestApp {
                 );
             }
             PushData::Asset(asset) => {
-                let id = format!("{}.{}.{}", network, asset.address, asset.asset_id);
-
-                let result = asset::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
-                    .await
-                    .expect("Failed to find asset by id");
+                let result = asset::Entity::find_by_id((
+                    network.clone(),
+                    asset.address.clone(),
+                    asset.asset_id.to_string(),
+                ))
+                .all(&self.db_connection)
+                .await
+                .expect("Failed to find asset by id");
 
                 assert_eq!(result.len(), 1);
 
                 let asset_model = result.first().unwrap();
-                assert_eq!(asset_model.id, id);
                 assert_eq!(asset_model.address, asset.address);
                 assert_eq!(asset_model.asset_id, asset.asset_id.to_string());
                 assert_eq!(asset_model.case_id, asset.case_id);
@@ -107,9 +109,7 @@ impl TestApp {
                 assert_eq!(asset_model.confirmations, asset.confirmations.to_string());
             }
             PushData::Case(case) => {
-                let id = format!("{}.{}", network, case.id);
-
-                let result = case::Entity::find_by_id(&id)
+                let result = case::Entity::find_by_id((network.clone(), case.id.clone()))
                     .all(&self.db_connection)
                     .await
                     .expect("Failed to find case by id");
@@ -117,16 +117,13 @@ impl TestApp {
                 assert_eq!(result.len(), 1);
 
                 let case_model = result.first().unwrap();
-                assert_eq!(case_model.id, id);
                 assert_eq!(case_model.name, case.name);
                 assert_eq!(case_model.url, case.url);
                 assert_eq!(case_model.status, case.status.into());
                 assert_eq!(case_model.reporter_id, case.reporter_id);
             }
             PushData::Reporter(reporter) => {
-                let id = format!("{}.{}", network, reporter.id);
-
-                let result = reporter::Entity::find_by_id(&id)
+                let result = reporter::Entity::find_by_id((network.clone(), reporter.id.clone()))
                     .all(&self.db_connection)
                     .await
                     .expect("Failed to find reporter by id");
@@ -134,7 +131,6 @@ impl TestApp {
                 assert_eq!(result.len(), 1);
 
                 let reporter_model = result.first().unwrap();
-                assert_eq!(reporter_model.id, id);
                 assert_eq!(reporter_model.account, reporter.account);
                 assert_eq!(reporter_model.role, reporter.role.into());
                 assert_eq!(reporter_model.status, reporter.status.into());

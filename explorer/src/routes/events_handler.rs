@@ -43,6 +43,7 @@ pub(crate) async fn events(
     }
 }
 
+// TODO: add tracing
 async fn process_address_payload(
     address: AddressPayload,
     event_name: EventName,

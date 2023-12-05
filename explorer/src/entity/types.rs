@@ -1,11 +1,46 @@
 use {
-    hapi_core::client::entities::{
-        case::CaseStatus as CaseStatusPayload,
-        category::Category as CategoryPayload,
-        reporter::{ReporterRole as ReporterRolePayload, ReporterStatus as ReporterStatusPayload},
+    hapi_core::{
+        client::entities::{
+            case::CaseStatus as CaseStatusPayload,
+            category::Category as CategoryPayload,
+            reporter::{
+                ReporterRole as ReporterRolePayload, ReporterStatus as ReporterStatusPayload,
+            },
+        },
+        HapiCoreNetwork,
     },
     sea_orm::entity::prelude::*,
 };
+
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network")]
+pub enum Network {
+    #[sea_orm(string_value = "sepolia")]
+    Sepolia,
+    #[sea_orm(string_value = "ethereum")]
+    Ethereum,
+    #[sea_orm(string_value = "bsc")]
+    Bsc,
+    #[sea_orm(string_value = "solana")]
+    Solana,
+    #[sea_orm(string_value = "bitcoin")]
+    Bitcoin,
+    #[sea_orm(string_value = "near")]
+    Near,
+}
+
+impl From<HapiCoreNetwork> for Network {
+    fn from(payload: HapiCoreNetwork) -> Self {
+        match payload {
+            HapiCoreNetwork::Sepolia => Network::Sepolia,
+            HapiCoreNetwork::Ethereum => Network::Ethereum,
+            HapiCoreNetwork::Bsc => Network::Bsc,
+            HapiCoreNetwork::Solana => Network::Solana,
+            HapiCoreNetwork::Bitcoin => Network::Bitcoin,
+            HapiCoreNetwork::Near => Network::Near,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "category")]

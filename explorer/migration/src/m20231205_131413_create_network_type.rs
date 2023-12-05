@@ -12,8 +12,8 @@ impl MigrationTrait for Migration {
         manager
             .create_type(
                 Type::create()
-                    .as_enum(CaseStatus::Type)
-                    .values(CaseStatus::iter().skip(1))
+                    .as_enum(Network::Type)
+                    .values(Network::iter().skip(1))
                     .to_owned(),
             )
             .await
@@ -21,15 +21,19 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_type(Type::drop().name(CaseStatus::Type).to_owned())
+            .drop_type(Type::drop().name(Network::Type).to_owned())
             .await
     }
 }
 
 #[derive(Iden, EnumIter)]
-pub enum CaseStatus {
-    #[iden = "case_status"]
+pub enum Network {
+    #[iden = "network"]
     Type,
-    Closed,
-    Open,
+    Sepolia,
+    Ethereum,
+    Bsc,
+    Solana,
+    Bitcoin,
+    Near,
 }

@@ -1,7 +1,5 @@
-use sea_orm::Iterable;
-use sea_orm_migration::prelude::*;
-
-use crate::m20231127_162603_create_category_type::Category;
+use crate::{Category, Network};
+use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,13 +12,18 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Address::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Address::Id)
-                            .string()
-                            .not_null()
-                            .primary_key(),
-                    )
                     .col(ColumnDef::new(Address::Address).string().not_null())
+                    .col(
+                        ColumnDef::new(Address::Network)
+                            .enumeration(Network::Type, Network::iter().skip(1))
+                            .not_null(),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .name("address_id")
+                            .col(Address::Network)
+                            .col(Address::Address),
+                    )
                     .col(ColumnDef::new(Address::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Address::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Address::Risk).small_integer().not_null())
@@ -44,9 +47,9 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden)]
 enum Address {
+    // Composite key: network + address
     Table,
-    // Network + address
-    Id,
+    Network,
     Address,
     CaseId,
     ReporterId,

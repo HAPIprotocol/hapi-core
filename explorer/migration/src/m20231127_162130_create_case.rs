@@ -1,7 +1,5 @@
-use sea_orm::Iterable;
-use sea_orm_migration::prelude::*;
-
-use crate::m20231127_170630_create_case_status_type::CaseStatus;
+use crate::{CaseStatus, Network};
+use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,8 +12,18 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Case::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Case::Id).string().not_null().primary_key())
                     .col(ColumnDef::new(Case::CaseId).uuid().not_null())
+                    .col(
+                        ColumnDef::new(Case::Network)
+                            .enumeration(Network::Type, Network::iter().skip(1))
+                            .not_null(),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .name("case_id")
+                            .col(Case::Network)
+                            .col(Case::CaseId),
+                    )
                     .col(ColumnDef::new(Case::Name).string().not_null())
                     .col(ColumnDef::new(Case::Url).string().not_null())
                     .col(
@@ -38,8 +46,9 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden)]
 enum Case {
+    // Composite key: network + case_id
     Table,
-    Id,
+    Network,
     CaseId,
     Name,
     Url,

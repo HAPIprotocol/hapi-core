@@ -1,5 +1,5 @@
 use super::{
-    types::{ReporterRole, ReporterStatus},
+    types::{Network, ReporterRole, ReporterStatus},
     FromPayload,
 };
 use {
@@ -12,7 +12,8 @@ use {
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: String,
+    pub network: Network,
+    #[sea_orm(primary_key, auto_increment = false)]
     pub reporter_id: Uuid,
     pub account: String,
     pub role: ReporterRole,
@@ -30,10 +31,8 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<ReporterPayload> for ActiveModel {
     fn from(network: &HapiCoreNetwork, payload: ReporterPayload) -> Self {
-        let id = format!("{}.{}", network, payload.id.to_owned());
-
         Self {
-            id: Set(id),
+            network: Set(network.clone().into()),
             reporter_id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),
