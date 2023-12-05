@@ -1,4 +1,4 @@
-use crate::{CaseStatus, Network};
+use crate::{CaseStatus, Network, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -18,20 +18,28 @@ impl MigrationTrait for Migration {
                             .enumeration(Network::Type, Network::iter().skip(1))
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Case::Name).string().not_null())
+                    .col(ColumnDef::new(Case::Url).string().not_null())
+                    .col(ColumnDef::new(Case::ReporterId).uuid().not_null())
+                    .col(
+                        ColumnDef::new(Case::Status)
+                            .enumeration(CaseStatus::Type, CaseStatus::iter().skip(1))
+                            .not_null(),
+                    )
                     .primary_key(
                         Index::create()
                             .name("case_id")
                             .col(Case::Network)
                             .col(Case::CaseId),
                     )
-                    .col(ColumnDef::new(Case::Name).string().not_null())
-                    .col(ColumnDef::new(Case::Url).string().not_null())
-                    .col(
-                        ColumnDef::new(Case::Status)
-                            .enumeration(CaseStatus::Type, CaseStatus::iter().skip(1))
-                            .not_null(),
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-asset_reporter_id")
+                            .from(Case::Table, (Case::Network, Case::ReporterId))
+                            .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
                     )
-                    .col(ColumnDef::new(Case::ReporterId).uuid().not_null())
                     .to_owned(),
             )
             .await
@@ -45,7 +53,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Case {
+pub(crate) enum Case {
     // Composite key: network + case_id
     Table,
     Network,

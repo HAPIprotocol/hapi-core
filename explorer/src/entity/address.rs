@@ -29,7 +29,6 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AddressPayload> for ActiveModel {
     fn from(network: &HapiCoreNetwork, payload: AddressPayload) -> Self {
-        // let id = format!("{}.{}", network, payload.address);
         Self {
             network: Set(network.clone().into()),
             address: Set(payload.address.to_owned()),

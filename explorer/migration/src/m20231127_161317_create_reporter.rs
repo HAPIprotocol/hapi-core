@@ -12,19 +12,16 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Reporter::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
                     .col(
                         ColumnDef::new(Reporter::Network)
                             .enumeration(Network::Type, Network::iter().skip(1))
                             .not_null(),
                     )
-                    .primary_key(
-                        Index::create()
-                            .name("reporter_id")
-                            .col(Reporter::Network)
-                            .col(Reporter::ReporterId),
-                    )
+                    .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Reporter::Account).string().not_null())
+                    .col(ColumnDef::new(Reporter::Name).string().not_null())
+                    .col(ColumnDef::new(Reporter::Url).string().not_null())
+                    .col(ColumnDef::new(Reporter::Stake).string().not_null())
                     .col(
                         ColumnDef::new(Reporter::Role)
                             .enumeration(ReporterRole::Type, ReporterRole::iter().skip(1))
@@ -35,13 +32,16 @@ impl MigrationTrait for Migration {
                             .enumeration(ReporterStatus::Type, ReporterStatus::iter().skip(1))
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Reporter::Name).string().not_null())
-                    .col(ColumnDef::new(Reporter::Url).string().not_null())
-                    .col(ColumnDef::new(Reporter::Stake).string().not_null())
                     .col(
                         ColumnDef::new(Reporter::UnlockTimestamp)
                             .string()
                             .not_null(),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .name("reporter_id")
+                            .col(Reporter::Network)
+                            .col(Reporter::ReporterId),
                     )
                     .to_owned(),
             )
@@ -56,7 +56,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Reporter {
+pub(crate) enum Reporter {
     // Composite key: network + reporter_id
     Table,
     Network,

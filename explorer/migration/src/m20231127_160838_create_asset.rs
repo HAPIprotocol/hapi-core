@@ -1,4 +1,4 @@
-use crate::{Category, Network};
+use crate::{Case, Category, Network, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,20 +12,13 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Asset::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Asset::Address).string().not_null())
-                    .col(ColumnDef::new(Asset::AssetId).string().not_null())
                     .col(
                         ColumnDef::new(Asset::Network)
                             .enumeration(Network::Type, Network::iter().skip(1))
                             .not_null(),
                     )
-                    .primary_key(
-                        Index::create()
-                            .name("asset_id")
-                            .col(Asset::Network)
-                            .col(Asset::Address)
-                            .col(Asset::AssetId),
-                    )
+                    .col(ColumnDef::new(Asset::Address).string().not_null())
+                    .col(ColumnDef::new(Asset::AssetId).string().not_null())
                     .col(ColumnDef::new(Asset::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Asset::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Asset::Risk).small_integer().not_null())
@@ -35,6 +28,29 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Asset::Confirmations).string().not_null())
+                    .primary_key(
+                        Index::create()
+                            .name("asset_id")
+                            .col(Asset::Network)
+                            .col(Asset::Address)
+                            .col(Asset::AssetId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-asset_reporter_id")
+                            .from(Asset::Table, (Asset::Network, Asset::ReporterId))
+                            .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-asset_case_id")
+                            .from(Asset::Table, (Asset::Network, Asset::CaseId))
+                            .to(Case::Table, (Case::Network, Case::CaseId))
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
                     .to_owned(),
             )
             .await
@@ -48,7 +64,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Asset {
+pub(crate) enum Asset {
     // Composite key: network + address + asset_id
     Table,
     Network,

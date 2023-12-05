@@ -16,6 +16,9 @@ pub(crate) use m20231127_170357_create_reporter_status_type::ReporterStatus;
 pub(crate) use m20231127_170630_create_case_status_type::CaseStatus;
 pub(crate) use m20231205_131413_create_network_type::Network;
 
+pub(crate) use m20231127_161317_create_reporter::Reporter;
+pub(crate) use m20231127_162130_create_case::Case;
+
 pub struct Migrator;
 
 #[async_trait::async_trait]
