@@ -55,6 +55,9 @@ pub struct IndexerConfiguration {
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     #[serde(default = "default_delay")]
     pub fetching_delay: Duration,
+
+    /// The JWT secret
+    pub jwt_secret: String,
 }
 
 fn default_is_json_logging() -> bool {

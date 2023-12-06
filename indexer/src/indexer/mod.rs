@@ -16,6 +16,7 @@ pub(crate) mod persistence;
 pub(crate) mod push;
 pub(crate) mod server;
 pub(crate) mod state;
+pub(crate) mod jwt;
 
 pub(crate) use {
     client::IndexerClient,
@@ -49,4 +50,7 @@ pub struct Indexer {
 
     /// The URL to send webhooks to
     webhook_url: String,
+
+    /// JWT token to use for webhooks
+    jwt_token: String,
 }

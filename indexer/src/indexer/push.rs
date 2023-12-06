@@ -66,10 +66,11 @@ impl From<Reporter> for PushData {
 }
 
 impl Indexer {
-    pub(crate) async fn send_webhook(&self, payload: &PushPayload) -> Result<()> {
+    pub(crate) async fn send_webhook(&self, payload: &PushPayload, token: &str) -> Result<()> {
         let response = self
             .web_client
             .post(&self.webhook_url)
+            .bearer_auth(token)
             .json(payload)
             .send()
             .await?;

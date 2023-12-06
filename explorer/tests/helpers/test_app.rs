@@ -158,5 +158,7 @@ pub fn generate_configuration() -> Configuration {
     configuration.database_url = env::var("DATABASE_URL")
         .unwrap_or("postgresql://postgres:postgres@localhost:5432/explorer".to_string());
 
+    configuration.jwt_secret = "my_ultra_secure_secret".to_string();
+
     configuration
 }

@@ -32,6 +32,7 @@ uuid = { version = "1", features = ["serde", "v4"] }
 reqwest = "0.11"
 lazy_static = "1"
 enum_extract = "0.1"
+jsonwebtoken = "9.2.0"
 
 # Evm dependencies
 ethers = "=2.0.8"
