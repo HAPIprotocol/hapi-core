@@ -12,6 +12,7 @@ pub struct Application {
     pub socket: SocketAddr,
     pub enable_metrics: bool,
     pub database_conn: DatabaseConnection,
+    pub jwt_secret: String,
 }
 
 impl Application {
@@ -27,6 +28,7 @@ impl Application {
             socket,
             enable_metrics: configuration.enable_metrics,
             database_conn,
+            jwt_secret: configuration.jwt_secret,
         })
     }
 

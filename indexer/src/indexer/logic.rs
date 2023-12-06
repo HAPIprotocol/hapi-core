@@ -4,7 +4,7 @@ use {
     tokio::{sync::Mutex, time::sleep},
 };
 
-use crate::configuration::IndexerConfiguration;
+use crate::{configuration::IndexerConfiguration, indexer::jwt::create_jwt};
 
 use super::{
     now, Indexer, IndexerClient, IndexerJob, IndexerState, IndexingCursor, PersistedState,
@@ -26,6 +26,7 @@ impl Indexer {
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,
+            jwt_token: create_jwt(&cfg.jwt_secret)?,
         })
     }
 
@@ -123,7 +124,7 @@ impl Indexer {
         if let Some(job) = self.jobs.pop_front() {
             if let Some(payload) = self.client.handle_process(&job).await? {
                 for event in payload {
-                    self.send_webhook(&event).await?;
+                    self.send_webhook(&event, &self.jwt_token).await?;
                 }
             }
 

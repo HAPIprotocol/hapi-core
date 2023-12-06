@@ -71,6 +71,7 @@ impl<T: RpcMock> IndexerTest<T> {
             wait_interval_ms: FETCHING_DELAY,
             state_file: T::STATE_FILE.to_string(),
             fetching_delay: FETCHING_DELAY,
+            jwt_secret: "my_ultra_secure_secret".to_string(),
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");

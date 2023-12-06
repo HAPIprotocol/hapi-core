@@ -6,6 +6,7 @@ use {
 };
 
 const CONFIG_PATH: &str = "configuration.toml";
+const SECRET_PATH: &str = "secret.toml";
 
 #[serde_as]
 #[derive(Default, Deserialize, Clone)]
@@ -28,14 +29,24 @@ pub struct Configuration {
 
     /// The database url
     pub database_url: String,
+
+    /// secret for jwt
+    #[serde(default = "default_jwt_secret")]
+    pub jwt_secret: String,
 }
 
 pub fn get_configuration() -> Result<Configuration, ConfigError> {
     let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| CONFIG_PATH.to_string());
+    let secret_path = env::var("SECRET_PATH").unwrap_or_else(|_| SECRET_PATH.to_string());
 
     let settings = Config::builder()
         .add_source(
             File::with_name(&config_path)
+                .format(FileFormat::Toml)
+                .required(true),
+        )
+        .add_source(
+            File::with_name(&secret_path)
                 .format(FileFormat::Toml)
                 .required(true),
         )
@@ -58,4 +69,8 @@ fn default_listener() -> String {
 
 fn default_enable_metrics() -> bool {
     true
+}
+
+fn default_jwt_secret() -> String {
+    String::from("my_ultra_secure_secret")
 }
