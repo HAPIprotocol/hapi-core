@@ -1,7 +1,8 @@
-use crate::indexer::now;
+use anyhow::{anyhow, Result};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use anyhow::{anyhow, Result};
+
+use crate::indexer::now;
 
 const TOKEN_DURATION: u64 = 365 * 24 * 60 * 60; // 1 year
 
@@ -13,7 +14,6 @@ pub struct TokenClaims {
 }
 
 pub(crate) fn create_jwt(secret: &str) -> Result<String> {
-
     let now = now()?;
     let claims = TokenClaims {
         sub: "indexer".to_string(),
@@ -21,9 +21,10 @@ pub(crate) fn create_jwt(secret: &str) -> Result<String> {
         exp: (now + TOKEN_DURATION) as usize,
     };
 
-    Ok(encode(
+    encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(secret.as_ref()),
-    ).map_err(|e| anyhow!("Failed to generate JWT: {}", e))?)
+    )
+    .map_err(|e| anyhow!("Failed to generate JWT: {}", e))
 }

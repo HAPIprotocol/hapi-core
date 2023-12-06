@@ -1,11 +1,10 @@
-use crate::helpers::{get_test_data, IndexerMock, TestApp, WAITING_TIMESTAMP};
-use {
-    hapi_core::HapiCoreNetwork,
-    tokio::time::{sleep, Duration},
-};
+use tokio::time::{sleep, Duration};
+
+use crate::helpers::{create_jwt, get_test_data, IndexerMock, TestApp, WAITING_INTERVAL};
+use hapi_core::HapiCoreNetwork;
 
 #[tokio::test]
-async fn webhoock_processing_test() {
+async fn webhook_processing_test() {
     let test_app = TestApp::start().await;
     let indexer_mock = IndexerMock::new(&test_app.server_addr);
     let networks = vec![
@@ -20,26 +19,9 @@ async fn webhoock_processing_test() {
 
         for payload in test_data {
             indexer_mock.send_webhook(&payload, &token).await;
-            sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
+            sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
             test_app.check_entity(payload.data, &network).await;
         }
     }
-}
-
-pub(crate) fn create_jwt(secret: &str) -> String {
-    use jsonwebtoken::{encode, EncodingKey, Header};
-
-    let claims = hapi_explorer::routes::jwt_auth::TokenClaims {
-        sub: "indexer".to_string(),
-        iat: 1,
-        exp: 10000000000,
-    };
-
-    encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )
-    .expect("Failed to generate JWT")
 }

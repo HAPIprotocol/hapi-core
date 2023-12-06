@@ -1,5 +1,6 @@
 use {
     anyhow::{bail, Result},
+    secrecy::ExposeSecret,
     std::{collections::VecDeque, path::PathBuf, sync::Arc},
     tokio::{sync::Mutex, time::sleep},
 };
@@ -26,7 +27,7 @@ impl Indexer {
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,
-            jwt_token: create_jwt(&cfg.jwt_secret)?,
+            jwt_token: create_jwt(cfg.jwt_secret.expose_secret())?,
         })
     }
 
