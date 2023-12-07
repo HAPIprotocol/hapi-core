@@ -32,6 +32,11 @@ migration = { path = "./migration" }
 hapi_indexer = { path = "../indexer" }
 hapi-core-cli = { path = "../client.rs" }
 
+#jwt dependencies
+jsonwebtoken = "9.1.0"
+axum-extra = { version = "0.9.0", features = ["cookie"] }
+secrecy = "0.8.0"
+
 [dev-dependencies]
 reqwest = "0.11.12"
 uuid = "1"

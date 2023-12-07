@@ -1,7 +1,8 @@
 use {
     config::{Config, ConfigError, File, FileFormat},
     hapi_core::HapiCoreNetwork,
-    serde::Deserialize,
+    secrecy::SecretString,
+    serde::{Deserialize, Deserializer},
     serde_with::{serde_as, DurationMilliSeconds},
     std::{env, time::Duration},
 };
@@ -10,7 +11,7 @@ pub const CONFIG_PATH: &str = "configuration.toml";
 pub const SECRET_PATH: &str = "secret.toml";
 
 #[serde_as]
-#[derive(Default, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
     /// Log level for the application layer
     #[serde(default = "default_loglevel")]
@@ -28,7 +29,7 @@ pub struct Configuration {
 }
 
 #[serde_as]
-#[derive(Default, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct IndexerConfiguration {
     /// The network to use
     pub network: HapiCoreNetwork,
@@ -55,6 +56,10 @@ pub struct IndexerConfiguration {
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     #[serde(default = "default_delay")]
     pub fetching_delay: Duration,
+
+    /// The secret to use for JWT.
+    #[serde(deserialize_with = "deserialize_secret_string")]
+    pub jwt_secret: SecretString,
 }
 
 fn default_is_json_logging() -> bool {
@@ -99,4 +104,12 @@ pub fn get_configuration() -> Result<Configuration, ConfigError> {
         .build()?;
 
     settings.try_deserialize::<Configuration>()
+}
+
+fn deserialize_secret_string<'de, D>(deserializer: D) -> Result<SecretString, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(SecretString::new(s))
 }

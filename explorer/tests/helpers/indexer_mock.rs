@@ -30,10 +30,11 @@ impl IndexerMock {
             webhook_url: format!("{}/{}", server_addr, "events"),
         }
     }
-    pub(crate) async fn send_webhook(&self, payload: &PushPayload) {
+    pub(crate) async fn send_webhook(&self, payload: &PushPayload, token: &str) {
         let response = self
             .web_client
             .post(&self.webhook_url)
+            .bearer_auth(token)
             .json(payload)
             .send()
             .await

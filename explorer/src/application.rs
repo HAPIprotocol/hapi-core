@@ -4,6 +4,7 @@ use {
     sea_orm::{Database, DatabaseConnection},
     std::net::SocketAddr,
     tokio::net::TcpListener,
+    secrecy::SecretString,
 };
 
 use crate::configuration::Configuration;
@@ -12,6 +13,7 @@ pub struct Application {
     pub socket: SocketAddr,
     pub enable_metrics: bool,
     pub database_conn: DatabaseConnection,
+    pub jwt_secret: SecretString,
 }
 
 impl Application {
@@ -27,6 +29,7 @@ impl Application {
             socket,
             enable_metrics: configuration.enable_metrics,
             database_conn,
+            jwt_secret: configuration.jwt_secret,
         })
     }
 

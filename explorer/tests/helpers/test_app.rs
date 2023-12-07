@@ -18,7 +18,7 @@ use {
     },
 };
 
-pub const WAITING_TIMESTAMP: u64 = 100;
+pub const WAITING_INTERVAL: u64 = 100;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 
 pub struct TestApp {
@@ -54,7 +54,7 @@ impl TestApp {
         let port = application.port();
 
         spawn(application.run_server());
-        sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
+        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
         TestApp {
             server_addr: format!("http://127.0.0.1:{port}"),

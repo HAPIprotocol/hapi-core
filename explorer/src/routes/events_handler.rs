@@ -20,25 +20,27 @@ use {
 use crate::{
     entity::{address, asset, case, reporter},
     error::AppError,
+    routes::server::AppState,
     service::Mutation,
 };
 
 pub(crate) async fn events(
-    db: State<DatabaseConnection>,
+    state: State<AppState>,
     Json(payload): Json<PushPayload>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(event = ?payload.event, "Received event");
     let event_name = payload.event.name;
     let network = &payload.network;
+    let db = &state.database_conn;
 
     match payload.data {
         PushData::Address(address) => {
-            process_address_payload(address, event_name, &db, network).await
+            process_address_payload(address, event_name, db, network).await
         }
-        PushData::Asset(asset) => process_asset_payload(asset, event_name, &db, network).await,
-        PushData::Case(case) => process_case_payload(case, event_name, &db, network).await,
+        PushData::Asset(asset) => process_asset_payload(asset, event_name, db, network).await,
+        PushData::Case(case) => process_case_payload(case, event_name, db, network).await,
         PushData::Reporter(reporter) => {
-            process_reporter_payload(reporter, event_name, &db, network).await
+            process_reporter_payload(reporter, event_name, db, network).await
         }
     }
 }
