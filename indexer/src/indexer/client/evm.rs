@@ -81,6 +81,7 @@ pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
     network: &HapiCoreNetwork,
+    id: &Uuid,
 ) -> Result<Option<Vec<PushPayload>>> {
     let log_header = if let Some(header) = client.decode_event(log)? {
         header
@@ -143,6 +144,7 @@ pub(super) async fn process_evm_job(
 
     if let Some(data) = data {
         Ok(Some(vec![PushPayload {
+            id: id.clone(),
             network: network.clone(),
             event: PushEvent {
                 name: EventName::from_str(&log_header.name)?,

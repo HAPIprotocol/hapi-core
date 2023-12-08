@@ -14,6 +14,7 @@ use {
     std::time::Duration,
     std::{collections::VecDeque, str::FromStr},
     tokio::time::sleep,
+    uuid::Uuid,
 };
 
 use crate::indexer::{
@@ -110,6 +111,7 @@ pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,
     network: &HapiCoreNetwork,
+    id: &Uuid,
 ) -> Result<Option<Vec<PushPayload>>> {
     let instructions = client.get_hapi_instructions(signature).await?;
 
@@ -135,6 +137,7 @@ pub(super) async fn process_solana_job(
             );
 
             payloads.push(PushPayload {
+                id: id.clone(),
                 network: network.clone(),
                 event: PushEvent {
                     name: instruction.name,
