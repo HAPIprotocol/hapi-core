@@ -3,16 +3,17 @@ use {
         configuration::IndexerConfiguration, observability::setup_tracing, Indexer, IndexingCursor,
         PersistedState, PushData,
     },
-    secrecy::SecretString,
     std::{env, path::PathBuf, time::Duration},
     tokio::time::sleep,
 };
 
+mod jwt;
 mod mocks;
 
 #[cfg(feature = "manual-helper")]
 mod simple_listener;
 
+use jwt::{get_jwt, get_jwt_id};
 use mocks::{
     create_pushdata, create_test_batches, evm_mock::EvmMock, near_mock::NearMock,
     solana_mock::SolanaMock, webhook_mock::WebhookServiceMock, RpcMock, TestBatch, PAGE_SIZE,
@@ -46,6 +47,15 @@ impl<T: RpcMock> IndexerTest<T> {
     }
 
     fn create_mocks(&mut self, batches: &[TestBatch], pushdata: Option<Vec<PushData>>) {
+        self.webhook_mock
+            .server
+            .mock(
+                "PUT",
+                format!("/indexer/{}/heartbeat", get_jwt_id()).as_str(),
+            )
+            .with_status(200)
+            .create();
+
         self.rpc_mock.fetching_jobs_mock(batches, &self.cursor);
 
         if let Some(data) = pushdata {
@@ -72,7 +82,7 @@ impl<T: RpcMock> IndexerTest<T> {
             wait_interval_ms: FETCHING_DELAY,
             state_file: T::STATE_FILE.to_string(),
             fetching_delay: FETCHING_DELAY,
-            jwt_secret: SecretString::new("my_ultra_secure_secret".to_string()),
+            jwt_token: get_jwt(),
         };
 
         let mut indexer = Indexer::new(cfg).expect("Failed to initialize indexer");

@@ -1,14 +1,12 @@
 use {
     config::{Config, ConfigError, File, FileFormat},
     hapi_core::HapiCoreNetwork,
-    secrecy::SecretString,
-    serde::{Deserialize, Deserializer},
+    serde::Deserialize,
     serde_with::{serde_as, DurationMilliSeconds},
     std::{env, time::Duration},
 };
 
 pub const CONFIG_PATH: &str = "configuration.toml";
-pub const SECRET_PATH: &str = "secret.toml";
 
 #[serde_as]
 #[derive(Deserialize, Clone)]
@@ -57,9 +55,8 @@ pub struct IndexerConfiguration {
     #[serde(default = "default_delay")]
     pub fetching_delay: Duration,
 
-    /// The secret to use for JWT.
-    #[serde(deserialize_with = "deserialize_secret_string")]
-    pub jwt_secret: SecretString,
+    /// JWT token to use for the webhook
+    pub jwt_token: String,
 }
 
 fn default_is_json_logging() -> bool {
@@ -88,7 +85,6 @@ fn default_state_file() -> String {
 
 pub fn get_configuration() -> Result<Configuration, ConfigError> {
     let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| CONFIG_PATH.to_string());
-    let secret_path = env::var("SECRET_PATH").unwrap_or_else(|_| SECRET_PATH.to_string());
 
     let settings = Config::builder()
         .add_source(
@@ -96,20 +92,7 @@ pub fn get_configuration() -> Result<Configuration, ConfigError> {
                 .format(FileFormat::Toml)
                 .required(true),
         )
-        .add_source(
-            File::with_name(&secret_path)
-                .format(FileFormat::Toml)
-                .required(false),
-        )
         .build()?;
 
     settings.try_deserialize::<Configuration>()
-}
-
-fn deserialize_secret_string<'de, D>(deserializer: D) -> Result<SecretString, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(SecretString::new(s))
 }

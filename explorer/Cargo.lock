@@ -1611,9 +1611,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.4.10"
+version = "4.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41fffed7514f420abec6d183b1d3acfd9099c79c3a10a06ade4f8203f1411272"
+checksum = "bfaff671f6b22ca62406885ece523383b9b64022e341e53e009a62ebc47a45f2"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1621,9 +1621,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.4.9"
+version = "4.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63361bae7eef3771745f02d8d892bec2fee5f6e34af316ba556e7f97a7069ff1"
+checksum = "a216b506622bb1d316cd51328dce24e07bdff4a6128a47c7e7fad11878d5adbb"
 dependencies = [
  "anstream",
  "anstyle",
@@ -3321,7 +3321,7 @@ dependencies = [
  "async-trait",
  "borsh 0.10.3",
  "bs58 0.5.0",
- "clap 4.4.10",
+ "clap 4.4.11",
  "dirs",
  "enum_extract",
  "ethers",
@@ -3366,6 +3366,8 @@ dependencies = [
  "anyhow",
  "axum 0.7.1",
  "axum-extra",
+ "chrono",
+ "clap 4.4.11",
  "config",
  "hapi-core-cli",
  "hapi_indexer",
@@ -3400,6 +3402,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum 0.6.20",
+ "base64 0.21.5",
  "config",
  "enum_extract",
  "ethers",
@@ -3414,7 +3417,6 @@ dependencies = [
  "near-jsonrpc-primitives",
  "near-primitives 0.17.0",
  "reqwest",
- "secrecy",
  "serde",
  "serde_json",
  "serde_with 3.4.0",
@@ -4628,7 +4630,7 @@ checksum = "af7d35397b02b131c188c72f3885e97daeccab134ec2fc8cc0073a94cf1cfe19"
 dependencies = [
  "actix",
  "atty",
- "clap 4.4.10",
+ "clap 4.4.11",
  "near-crypto 0.17.0",
  "near-primitives-core 0.17.0",
  "once_cell",
@@ -6835,7 +6837,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507c2b99f83129f4d5d511012ab47c9f40d1c7923fd4698c19fae23f0bf62913"
 dependencies = [
  "chrono",
- "clap 4.4.10",
+ "clap 4.4.11",
  "dotenvy",
  "glob",
  "regex",
@@ -6866,7 +6868,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d45937e5d4869a0dcf0222bb264df564c077cbe9b312265f3717401d023a633"
 dependencies = [
  "async-trait",
- "clap 4.4.10",
+ "clap 4.4.11",
  "dotenvy",
  "futures",
  "sea-orm",

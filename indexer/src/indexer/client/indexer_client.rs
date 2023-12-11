@@ -39,6 +39,7 @@ pub(crate) struct IndexerClient {
 
 impl IndexerClient {
     pub fn new(
+        id: Uuid,
         network: HapiCoreNetwork,
         rpc_node_url: &str,
         contract_address: &str,
@@ -64,7 +65,7 @@ impl IndexerClient {
         };
 
         Ok(Self {
-            id: Uuid::new_v4(),
+            id,
             client,
             network,
             fetching_delay,
@@ -101,5 +102,9 @@ impl IndexerClient {
             }
             _ => unimplemented!(),
         }
+    }
+
+    pub(crate) fn get_id(&self) -> Uuid {
+        self.id
     }
 }
