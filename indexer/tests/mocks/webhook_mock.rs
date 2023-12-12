@@ -24,7 +24,7 @@ impl WebhookServiceMock {
                 if event.name != EventName::ConfirmAddress && event.name != EventName::ConfirmAsset
                 {
                     let payload = PushPayload {
-                        network: event.network.clone(),
+                        network_id: event.network_id,
                         event: PushEvent {
                             name: event.name.clone(),
                             tx_hash: event.hash.clone(),
@@ -37,6 +37,7 @@ impl WebhookServiceMock {
                     let mock = self
                         .server
                         .mock("POST", "/")
+                        .with_status(200)
                         .match_body(Matcher::PartialJsonString(
                             serde_json::to_string(&payload).expect("Failed to serialize payload"),
                         ))

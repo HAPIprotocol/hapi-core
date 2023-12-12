@@ -1,9 +1,9 @@
 use super::{
-    types::{Network, ReporterRole, ReporterStatus},
+    types::{ReporterRole, ReporterStatus},
     FromPayload,
 };
 use {
-    hapi_core::{client::entities::reporter::Reporter as ReporterPayload, HapiCoreNetwork},
+    hapi_core::client::entities::reporter::Reporter as ReporterPayload,
     sea_orm::{entity::prelude::*, Set},
 };
 
@@ -12,7 +12,7 @@ use {
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Network,
+    pub network: Uuid,
     #[sea_orm(primary_key, auto_increment = false)]
     pub reporter_id: Uuid,
     pub account: String,
@@ -30,9 +30,9 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<ReporterPayload> for ActiveModel {
-    fn from(network: &HapiCoreNetwork, payload: ReporterPayload) -> Self {
+    fn from(network_id: Uuid, payload: ReporterPayload) -> Self {
         Self {
-            network: Set(network.clone().into()),
+            network: Set(network_id),
             reporter_id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),

@@ -19,6 +19,7 @@ impl Indexer {
             jobs: VecDeque::new(),
             client: IndexerClient::new(
                 cfg.network,
+                cfg.network_id,
                 &cfg.rpc_node_url,
                 &cfg.contract_address,
                 cfg.fetching_delay,

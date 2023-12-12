@@ -1,10 +1,7 @@
-use super::{
-    types::{CaseStatus, Network},
-    FromPayload,
-};
+use super::{types::CaseStatus, FromPayload};
 
 use {
-    hapi_core::{client::entities::case::Case as CasePayload, HapiCoreNetwork},
+    hapi_core::client::entities::case::Case as CasePayload,
     sea_orm::{entity::prelude::*, Set},
 };
 
@@ -12,7 +9,7 @@ use {
 #[sea_orm(table_name = "case")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Network,
+    pub network: Uuid,
     #[sea_orm(primary_key, auto_increment = false)]
     pub case_id: Uuid,
     pub name: String,
@@ -27,9 +24,9 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<CasePayload> for ActiveModel {
-    fn from(network: &HapiCoreNetwork, payload: CasePayload) -> Self {
+    fn from(network_id: Uuid, payload: CasePayload) -> Self {
         Self {
-            network: Set(network.clone().into()),
+            network: Set(network_id),
             case_id: Set(payload.id.to_owned()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),

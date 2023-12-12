@@ -12,11 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Address::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Address::Network)
-                            .enumeration(Network::Type, Network::iter().skip(1))
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Address::Network).uuid().not_null())
                     .col(ColumnDef::new(Address::Address).string().not_null())
                     .col(ColumnDef::new(Address::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Address::ReporterId).uuid().not_null())
@@ -35,6 +31,14 @@ impl MigrationTrait for Migration {
                     )
                     .foreign_key(
                         ForeignKey::create()
+                            .name("fk-address_network")
+                            .from(Address::Table, Address::Network)
+                            .to(Network::Table, Network::Id)
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
                             .name("fk-address_reporter_id")
                             .from(Address::Table, (Address::Network, Address::ReporterId))
                             .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
@@ -44,7 +48,7 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-address_case_id")
-                            .from(Address::Table, (Address::Network, Address::ReporterId))
+                            .from(Address::Table, (Address::Network, Address::CaseId))
                             .to(Case::Table, (Case::Network, Case::CaseId))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),

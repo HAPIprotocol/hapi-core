@@ -4,6 +4,7 @@ use {
     serde::Deserialize,
     serde_with::{serde_as, DurationMilliSeconds},
     std::{env, time::Duration},
+    uuid::Uuid,
 };
 
 pub const CONFIG_PATH: &str = "configuration.toml";
@@ -32,6 +33,9 @@ pub struct Configuration {
 pub struct IndexerConfiguration {
     /// The network to use
     pub network: HapiCoreNetwork,
+
+    /// The network uuid
+    pub network_id: Uuid,
 
     /// The RPC node URL
     pub rpc_node_url: String,

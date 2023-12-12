@@ -1,16 +1,15 @@
+use core::panic;
+
 use {
-    hapi_core::{
-        client::{
-            entities::{
-                address::Address,
-                asset::{Asset, AssetId},
-                case::{Case, CaseStatus},
-                category::Category,
-                reporter::{Reporter, ReporterRole, ReporterStatus},
-            },
-            events::EventName,
+    hapi_core::client::{
+        entities::{
+            address::Address,
+            asset::{Asset, AssetId},
+            case::{Case, CaseStatus},
+            category::Category,
+            reporter::{Reporter, ReporterRole, ReporterStatus},
         },
-        HapiCoreNetwork,
+        events::EventName,
     },
     hapi_indexer::{PushData, PushEvent, PushPayload},
     reqwest::Client,
@@ -39,11 +38,17 @@ impl IndexerMock {
             .await
             .expect("Failed to send request");
 
-        assert!(response.status().is_success());
+        if !response.status().is_success() {
+            panic!(
+                "Failed to send webhook, status: {}, error: {}",
+                response.status().as_str(),
+                response.text().await.expect("Failed to get response text")
+            );
+        }
     }
 }
 
-pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
+pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     let mut events = vec![];
 
     let mut default_event = PushEvent {
@@ -69,13 +74,13 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
         name: String::from("Case 1"),
         url: String::from("https://case1.com"),
         status: CaseStatus::Open,
-        reporter_id: Uuid::new_v4(),
+        reporter_id: reporter_payload.id.to_owned(),
     };
 
     let mut address_payload = Address {
         address: "0x9e833a87087efd527b1a842742eb0f3548cd82ab".to_string(),
-        case_id: Uuid::new_v4(),
-        reporter_id: Uuid::new_v4(),
+        case_id: case_payload.id.to_owned(),
+        reporter_id: reporter_payload.id.to_owned(),
         risk: 6,
         category: Category::DeFi,
         confirmations: 0,
@@ -84,8 +89,8 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     let mut asset_payload = Asset {
         address: "0xe9dbfa9e9d48393d9d22de10051dcbd91267b756".to_string(),
         asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
-        case_id: Uuid::new_v4(),
-        reporter_id: Uuid::new_v4(),
+        case_id: case_payload.id.to_owned(),
+        reporter_id: reporter_payload.id.to_owned(),
         risk: 8,
         category: Category::Gambling,
         confirmations: 0,
@@ -94,28 +99,28 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     // Create events
     default_event.name = EventName::CreateReporter;
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
 
     default_event.name = EventName::CreateCase;
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Case(case_payload.clone()),
     });
 
     default_event.name = EventName::CreateAddress;
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Address(address_payload.clone()),
     });
 
     default_event.name = EventName::CreateAsset;
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Asset(asset_payload.clone()),
     });
@@ -127,7 +132,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.url = String::from("https://authority.com");
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -136,7 +141,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.status = ReporterStatus::Active;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -147,7 +152,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 12345;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -158,7 +163,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 0;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Reporter(reporter_payload.clone()),
     });
@@ -169,7 +174,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     case_payload.status = CaseStatus::Closed;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Case(case_payload.clone()),
     });
@@ -180,7 +185,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     address_payload.confirmations = 20;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Address(address_payload.clone()),
     });
@@ -191,7 +196,7 @@ pub(crate) fn get_test_data(network: &HapiCoreNetwork) -> Vec<PushPayload> {
     asset_payload.confirmations = 25;
 
     events.push(PushPayload {
-        network: network.clone(),
+        network_id,
         event: default_event.clone(),
         data: PushData::Asset(asset_payload.clone()),
     });

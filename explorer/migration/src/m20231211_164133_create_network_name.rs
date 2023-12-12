@@ -12,8 +12,8 @@ impl MigrationTrait for Migration {
         manager
             .create_type(
                 Type::create()
-                    .as_enum(Network::Type)
-                    .values(Network::iter().skip(1))
+                    .as_enum(NetworkName::Type)
+                    .values(NetworkName::iter().skip(1))
                     .to_owned(),
             )
             .await
@@ -21,14 +21,14 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_type(Type::drop().name(Network::Type).to_owned())
+            .drop_type(Type::drop().name(NetworkName::Type).to_owned())
             .await
     }
 }
 
 #[derive(Iden, EnumIter)]
-pub enum Network {
-    #[iden = "network"]
+pub enum NetworkName {
+    #[iden = "network_name"]
     Type,
     Sepolia,
     Ethereum,

@@ -1,9 +1,6 @@
-use super::{
-    types::{Category, Network},
-    FromPayload,
-};
+use super::{types::Category, FromPayload};
 use {
-    hapi_core::{client::entities::address::Address as AddressPayload, HapiCoreNetwork},
+    hapi_core::client::entities::address::Address as AddressPayload,
     sea_orm::{entity::prelude::*, Set},
 };
 
@@ -12,7 +9,7 @@ use {
 #[sea_orm(table_name = "address")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Network,
+    pub network: Uuid,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     pub case_id: Uuid,
@@ -28,9 +25,9 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AddressPayload> for ActiveModel {
-    fn from(network: &HapiCoreNetwork, payload: AddressPayload) -> Self {
+    fn from(network_id: Uuid, payload: AddressPayload) -> Self {
         Self {
-            network: Set(network.clone().into()),
+            network: Set(network_id),
             address: Set(payload.address.to_owned()),
             case_id: Set(payload.case_id.to_owned()),
             reporter_id: Set(payload.reporter_id.to_owned()),
