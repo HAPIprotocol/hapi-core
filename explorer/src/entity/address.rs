@@ -1,4 +1,4 @@
-use super::{types::Category, FromPayload};
+use super::{reporter, types::Category, FromPayload};
 use {
     hapi_core::client::entities::address::Address as AddressPayload,
     sea_orm::{entity::prelude::*, Set},
@@ -20,7 +20,20 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "reporter::Entity",
+        from = "Column::ReporterId",
+        to = "reporter::Column::ReporterId"
+    )]
+    Reporter,
+}
+
+impl Related<reporter::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Reporter.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 

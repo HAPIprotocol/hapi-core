@@ -9,30 +9,38 @@ use {
     tokio::net::TcpListener,
 };
 
-use super::{events, health, stats};
+use axum::Extension;
+
+use super::handlers::{
+    create_graphql_schema, event_handler, graphiql, graphql_handler, health_handler, stats_handler,
+};
 use crate::{
     application::Application,
     observability::{setup_metrics, track_metrics},
 };
 
 impl Application {
-    fn create_router(&self) -> Router {
+    fn create_router(&self) -> Result<Router> {
+        let schema = create_graphql_schema()?;
+
         let router = Router::new()
-            .route("/health", get(health))
-            .route("/events", post(events))
-            .route("/stats", get(stats))
-            .with_state(self.database_conn.clone());
+            .route("/health", get(health_handler))
+            .route("/events", post(event_handler))
+            .route("/stats", get(stats_handler))
+            .route("/api/graphql", get(graphiql).post(graphql_handler))
+            .with_state(self.database_conn.clone())
+            .with_state(schema);
 
         if self.enable_metrics {
             let prometheus_recorder = setup_metrics();
 
             // TODO: allow access only to the admin
-            return router
+            return Ok(router
                 .route("/metrics", get(move || ready(prometheus_recorder.render())))
-                .route_layer(middleware::from_fn(track_metrics));
+                .route_layer(middleware::from_fn(track_metrics)));
         }
 
-        router
+        Ok(router)
     }
 
     pub async fn run_server(self) -> Result<()> {

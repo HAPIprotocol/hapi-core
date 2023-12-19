@@ -1,4 +1,5 @@
 use super::{
+    address,
     types::{ReporterRole, ReporterStatus},
     FromPayload,
 };
@@ -25,7 +26,16 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "address::Entity")]
+    Address,
+}
+
+impl Related<address::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Address.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 

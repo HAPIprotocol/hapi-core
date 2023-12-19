@@ -2,7 +2,7 @@ use crate::helpers::{get_test_data, IndexerMock, TestApp, WAITING_TIMESTAMP};
 use tokio::time::{sleep, Duration};
 
 #[tokio::test]
-async fn webhoock_processing_test() {
+async fn webhook_processing_test() {
     let test_app = TestApp::start().await;
     let indexer_mock = IndexerMock::new(&test_app.server_addr);
 

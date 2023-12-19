@@ -21,7 +21,7 @@ use crate::{
     service::Mutation,
 };
 
-pub(crate) async fn events(
+pub(crate) async fn event_handler(
     db: State<DatabaseConnection>,
     Json(payload): Json<PushPayload>,
 ) -> Result<StatusCode, AppError> {
