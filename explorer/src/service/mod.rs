@@ -1,5 +1,5 @@
 mod mutation;
 mod query;
 
-pub use mutation::Mutation;
-pub use query::Query;
+pub use mutation::EntityMutation;
+pub use query::EntityQuery;

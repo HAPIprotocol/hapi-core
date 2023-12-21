@@ -3,6 +3,7 @@ use {
     migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection},
     std::net::SocketAddr,
+    std::sync::Arc,
     tokio::net::TcpListener,
 };
 
@@ -11,7 +12,7 @@ use crate::configuration::Configuration;
 pub struct Application {
     pub socket: SocketAddr,
     pub enable_metrics: bool,
-    pub database_conn: DatabaseConnection,
+    pub database_conn: Arc<DatabaseConnection>,
 }
 
 impl Application {
@@ -20,8 +21,8 @@ impl Application {
             .await?
             .local_addr()?;
 
-        let database_conn = Database::connect(configuration.database_url.as_str()).await?;
-        Migrator::up(&database_conn, None).await?;
+        let database_conn = Arc::new(Database::connect(configuration.database_url.as_str()).await?);
+        Migrator::up(&*database_conn, None).await?;
 
         Ok(Self {
             socket,

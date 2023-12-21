@@ -12,17 +12,18 @@ use {
     },
     hapi_indexer::{PushData, PushPayload},
     sea_orm::DatabaseConnection,
+    std::sync::Arc,
     uuid::Uuid,
 };
 
 use crate::{
     entity::{address, asset, case, reporter},
     error::AppError,
-    service::Mutation,
+    service::EntityMutation,
 };
 
 pub(crate) async fn event_handler(
-    db: State<DatabaseConnection>,
+    db: State<Arc<DatabaseConnection>>,
     Json(payload): Json<PushPayload>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(event = ?payload.event, "Received event");
@@ -52,10 +53,12 @@ async fn process_address_payload(
 
     match event_name {
         EventName::CreateAddress => {
-            Mutation::create_entity::<address::ActiveModel, _>(db, address, network_id).await?;
+            EntityMutation::create_entity::<address::ActiveModel, _>(db, address, network_id)
+                .await?;
         }
         EventName::UpdateAddress => {
-            Mutation::update_entity::<address::ActiveModel, _>(db, address, network_id).await?;
+            EntityMutation::update_entity::<address::ActiveModel, _>(db, address, network_id)
+                .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -78,10 +81,10 @@ async fn process_asset_payload(
 
     match event_name {
         EventName::CreateAsset => {
-            Mutation::create_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
+            EntityMutation::create_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
         }
         EventName::UpdateAsset => {
-            Mutation::update_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
+            EntityMutation::update_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -104,10 +107,10 @@ async fn process_case_payload(
 
     match event_name {
         EventName::CreateCase => {
-            Mutation::create_entity::<case::ActiveModel, _>(db, case, network_id).await?;
+            EntityMutation::create_entity::<case::ActiveModel, _>(db, case, network_id).await?;
         }
         EventName::UpdateCase => {
-            Mutation::update_entity::<case::ActiveModel, _>(db, case, network_id).await?;
+            EntityMutation::update_entity::<case::ActiveModel, _>(db, case, network_id).await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -130,13 +133,15 @@ async fn process_reporter_payload(
 
     match event_name {
         EventName::CreateReporter => {
-            Mutation::create_entity::<reporter::ActiveModel, _>(db, reporter, network_id).await?;
+            EntityMutation::create_entity::<reporter::ActiveModel, _>(db, reporter, network_id)
+                .await?;
         }
         EventName::UpdateReporter
         | EventName::ActivateReporter
         | EventName::DeactivateReporter
         | EventName::Unstake => {
-            Mutation::update_entity::<reporter::ActiveModel, _>(db, reporter, network_id).await?;
+            EntityMutation::update_entity::<reporter::ActiveModel, _>(db, reporter, network_id)
+                .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(

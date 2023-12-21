@@ -1,29 +1,32 @@
-use anyhow::Result;
-use async_graphql::{http::GraphiQLSource, EmptyMutation, EmptySubscription, MergedObject, Schema};
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::{
-    extract::State,
-    response::{Html, IntoResponse},
+use {
+    async_graphql_axum::{GraphQLRequest, GraphQLResponse},
+    axum::{
+        response::{Html, IntoResponse},
+        Extension,
+    },
 };
 
-#[derive(MergedObject, Default)]
-pub struct Query();
+use crate::server::schema::AppSchema;
 
-pub type GraphQLSchema = Schema<Query, EmptyMutation, EmptySubscription>;
-
-pub(crate) fn create_schema() -> Result<GraphQLSchema> {
-    Ok(Schema::build(Query::default(), EmptyMutation, EmptySubscription).finish())
-}
+// /// Handle GraphiQL Requests
+// pub(crate) async fn graphiql() -> impl IntoResponse {
+//     println!("I am here 12345");
+//     Html(GraphiQLSource::build().endpoint("/graphql").finish())
+// }
 
 /// Handle GraphiQL Requests
 pub(crate) async fn graphiql() -> impl IntoResponse {
-    Html(GraphiQLSource::build().endpoint("/graphql").finish())
+    println!("I am here 12345");
+    Html(async_graphql::http::playground_source(
+        async_graphql::http::GraphQLPlaygroundConfig::new("/graphql"),
+    ))
 }
 
 /// Handle GraphQL Requests
 pub(crate) async fn graphql_handler(
-    schema: State<GraphQLSchema>,
+    schema: Extension<AppSchema>,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
+    println!("I am here");
     schema.execute(req.into_inner()).await.into()
 }

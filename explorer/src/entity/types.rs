@@ -1,4 +1,5 @@
 use {
+    async_graphql::Enum,
     hapi_core::{
         client::entities::{
             case::CaseStatus as CaseStatusPayload,
@@ -12,7 +13,7 @@ use {
     sea_orm::entity::prelude::*,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_name")]
 pub enum NetworkName {
     #[sea_orm(string_value = "sepolia")]
@@ -42,7 +43,7 @@ impl From<HapiCoreNetwork> for NetworkName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "category")]
 pub enum Category {
     #[sea_orm(string_value = "none")]
@@ -117,7 +118,7 @@ impl From<CategoryPayload> for Category {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "reporter_role")]
 pub enum ReporterRole {
     #[sea_orm(string_value = "authority")]
@@ -141,7 +142,7 @@ impl From<ReporterRolePayload> for ReporterRole {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "reporter_status")]
 pub enum ReporterStatus {
     #[sea_orm(string_value = "active")]
@@ -162,7 +163,7 @@ impl From<ReporterStatusPayload> for ReporterStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "case_status")]
 pub enum CaseStatus {
     #[sea_orm(string_value = "closed")]
