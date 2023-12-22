@@ -2,7 +2,7 @@ use super::{types::CaseStatus, FromPayload};
 
 use {
     hapi_core::client::entities::case::Case as CasePayload,
-    sea_orm::{entity::prelude::*, Set},
+    sea_orm::{entity::prelude::*, NotSet, Set},
 };
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
@@ -16,6 +16,8 @@ pub struct Model {
     pub url: String,
     pub status: CaseStatus,
     pub reporter_id: Uuid,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -24,7 +26,15 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<CasePayload> for ActiveModel {
-    fn from(network_id: Uuid, payload: CasePayload) -> Self {
+    fn from(
+        network_id: uuid::Uuid,
+        created_at: Option<DateTime>,
+        updated_at: Option<DateTime>,
+        payload: CasePayload,
+    ) -> Self {
+        let created_at = created_at.map_or(NotSet, Set);
+        let updated_at = updated_at.map_or(NotSet, Set);
+
         Self {
             network: Set(network_id),
             case_id: Set(payload.id.to_owned()),
@@ -32,6 +42,8 @@ impl FromPayload<CasePayload> for ActiveModel {
             url: Set(payload.url.to_owned()),
             status: Set(payload.status.into()),
             reporter_id: Set(payload.reporter_id.to_owned()),
+            created_at,
+            updated_at,
         }
     }
 }

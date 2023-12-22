@@ -1,7 +1,7 @@
 use super::{types::Category, FromPayload};
 use {
     hapi_core::client::entities::asset::Asset as AssetPayload,
-    sea_orm::{entity::prelude::*, Set},
+    sea_orm::{entity::prelude::*, NotSet, Set},
 };
 
 // Risk and confirmations types do not correspond to the types of contracts (due to Postgresql restrictions)
@@ -19,6 +19,8 @@ pub struct Model {
     pub risk: i16,
     pub category: Category,
     pub confirmations: String,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -27,7 +29,15 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AssetPayload> for ActiveModel {
-    fn from(network_id: Uuid, payload: AssetPayload) -> Self {
+    fn from(
+        network_id: uuid::Uuid,
+        created_at: Option<DateTime>,
+        updated_at: Option<DateTime>,
+        payload: AssetPayload,
+    ) -> Self {
+        let created_at = created_at.map_or(NotSet, Set);
+        let updated_at = updated_at.map_or(NotSet, Set);
+
         Self {
             network: Set(network_id),
             address: Set(payload.address.to_owned()),
@@ -37,6 +47,8 @@ impl FromPayload<AssetPayload> for ActiveModel {
             risk: Set(payload.risk.into()),
             category: Set(payload.category.into()),
             confirmations: Set(payload.confirmations.to_string()),
+            created_at,
+            updated_at,
         }
     }
 }

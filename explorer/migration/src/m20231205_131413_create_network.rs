@@ -18,6 +18,7 @@ impl MigrationTrait for Migration {
                             .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Network::CreatedAt).timestamp().not_null())
                     .to_owned(),
             )
             .await
@@ -35,4 +36,5 @@ pub(crate) enum Network {
     Table,
     Id,
     Name,
+    CreatedAt,
 }

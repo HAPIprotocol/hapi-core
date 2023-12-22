@@ -50,7 +50,7 @@ impl EntityQuery {
         M::Model: OutputType,
     {
         let page = if let Some(pagination) = pagination {
-            let paginator = query.paginate(&*db, pagination.page_size);
+            let paginator = query.paginate(db, pagination.page_size);
             let total = paginator.num_items().await?;
             let data = paginator.fetch_page(pagination.page_num - 1).await?;
 
@@ -63,7 +63,7 @@ impl EntityQuery {
                 page_count,
             }
         } else {
-            let data = query.all(&*db).await?;
+            let data = query.all(db).await?;
             let total = data.len() as u64;
 
             EntityPage {

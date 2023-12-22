@@ -22,6 +22,8 @@ impl MigrationTrait for Migration {
                             .enumeration(CaseStatus::Type, CaseStatus::iter().skip(1))
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Case::CreatedAt).timestamp().not_null())
+                    .col(ColumnDef::new(Case::UpdatedAt).timestamp().not_null())
                     .primary_key(
                         Index::create()
                             .name("case_id")
@@ -66,4 +68,6 @@ pub(crate) enum Case {
     Url,
     Status,
     ReporterId,
+    CreatedAt,
+    UpdatedAt,
 }

@@ -1,6 +1,5 @@
-use core::panic;
-
 use {
+    core::panic,
     hapi_core::client::{
         entities::{
             address::Address,
@@ -12,6 +11,7 @@ use {
         events::EventName,
     },
     hapi_indexer::{PushData, PushEvent, PushPayload},
+    rand::{distributions::Alphanumeric, thread_rng, Rng},
     reqwest::Client,
     std::str::FromStr,
     uuid::Uuid,
@@ -50,13 +50,6 @@ impl IndexerMock {
 
 pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     let mut events = vec![];
-
-    let mut default_event = PushEvent {
-        name: EventName::Initialize,
-        tx_hash: "".to_string(),
-        tx_index: 0,
-        timestamp: 12345,
-    };
 
     let mut reporter_payload = Reporter {
         id: Uuid::new_v4(),
@@ -97,109 +90,119 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     };
 
     // Create events
-    default_event.name = EventName::CreateReporter;
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Reporter(reporter_payload.clone()),
-    });
+        EventName::CreateReporter,
+        PushData::Reporter(reporter_payload.clone()),
+    ));
 
-    default_event.name = EventName::CreateCase;
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Case(case_payload.clone()),
-    });
+        EventName::CreateCase,
+        PushData::Case(case_payload.clone()),
+    ));
 
-    default_event.name = EventName::CreateAddress;
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Address(address_payload.clone()),
-    });
+        EventName::CreateAddress,
+        PushData::Address(address_payload.clone()),
+    ));
 
-    default_event.name = EventName::CreateAsset;
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Asset(asset_payload.clone()),
-    });
+        EventName::CreateAsset,
+        PushData::Asset(asset_payload.clone()),
+    ));
 
     // Update events
-    default_event.name = EventName::UpdateReporter;
     reporter_payload.role = ReporterRole::Authority;
     reporter_payload.name = String::from("Authority reporter");
     reporter_payload.url = String::from("https://authority.com");
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Reporter(reporter_payload.clone()),
-    });
+        EventName::UpdateReporter,
+        PushData::Reporter(reporter_payload.clone()),
+    ));
 
-    default_event.name = EventName::ActivateReporter;
     reporter_payload.status = ReporterStatus::Active;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Reporter(reporter_payload.clone()),
-    });
+        EventName::ActivateReporter,
+        PushData::Reporter(reporter_payload.clone()),
+    ));
 
-    default_event.name = EventName::DeactivateReporter;
     reporter_payload.status = ReporterStatus::Unstaking;
     reporter_payload.stake = 12345.into();
     reporter_payload.unlock_timestamp = 12345;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Reporter(reporter_payload.clone()),
-    });
+        EventName::DeactivateReporter,
+        PushData::Reporter(reporter_payload.clone()),
+    ));
 
-    default_event.name = EventName::Unstake;
     reporter_payload.status = ReporterStatus::Inactive;
     reporter_payload.stake = 0.into();
     reporter_payload.unlock_timestamp = 0;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Reporter(reporter_payload.clone()),
-    });
+        EventName::Unstake,
+        PushData::Reporter(reporter_payload.clone()),
+    ));
 
-    default_event.name = EventName::UpdateCase;
     case_payload.name = String::from("Closed case 1");
     case_payload.url = String::from("https://closed_case1.com");
     case_payload.status = CaseStatus::Closed;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Case(case_payload.clone()),
-    });
+        EventName::UpdateCase,
+        PushData::Case(case_payload.clone()),
+    ));
 
-    default_event.name = EventName::UpdateAddress;
     address_payload.risk = 10;
     address_payload.category = Category::Sanctions;
     address_payload.confirmations = 20;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Address(address_payload.clone()),
-    });
+        EventName::UpdateAddress,
+        PushData::Address(address_payload.clone()),
+    ));
 
-    default_event.name = EventName::UpdateAsset;
     asset_payload.risk = 9;
     asset_payload.category = Category::Scam;
     asset_payload.confirmations = 25;
 
-    events.push(PushPayload {
+    events.push(create_payload(
         network_id,
-        event: default_event.clone(),
-        data: PushData::Asset(asset_payload.clone()),
-    });
+        EventName::UpdateAsset,
+        PushData::Asset(asset_payload.clone()),
+    ));
 
     events
+}
+
+fn create_payload(network_id: Uuid, name: EventName, data: PushData) -> PushPayload {
+    let tx_hash: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+
+    let event = PushEvent {
+        name,
+        tx_hash,
+        tx_index: 0,
+        timestamp: thread_rng().gen::<u32>() as u64,
+    };
+
+    PushPayload {
+        network_id,
+        event,
+        data,
+    }
 }

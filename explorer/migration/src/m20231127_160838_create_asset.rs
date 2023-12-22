@@ -24,6 +24,8 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(Asset::Confirmations).string().not_null())
+                    .col(ColumnDef::new(Asset::CreatedAt).timestamp().not_null())
+                    .col(ColumnDef::new(Asset::UpdatedAt).timestamp().not_null())
                     .primary_key(
                         Index::create()
                             .name("asset_id")
@@ -79,4 +81,6 @@ pub(crate) enum Asset {
     Risk,
     Category,
     Confirmations,
+    CreatedAt,
+    UpdatedAt,
 }

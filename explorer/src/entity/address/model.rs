@@ -1,7 +1,7 @@
 use {
     async_graphql::SimpleObject,
     hapi_core::client::entities::address::Address as AddressPayload,
-    sea_orm::{entity::prelude::*, QueryOrder, Set},
+    sea_orm::{entity::prelude::*, NotSet, QueryOrder, Set},
 };
 
 use super::query_utils::{AddressCondition, AddressFilter};
@@ -23,6 +23,8 @@ pub struct Model {
     pub risk: i16,
     pub category: Category,
     pub confirmations: String,
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
 }
 
 impl EntityFilter for Entity {
@@ -93,7 +95,15 @@ impl Related<reporter::Entity> for Entity {
 impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AddressPayload> for ActiveModel {
-    fn from(network_id: Uuid, payload: AddressPayload) -> Self {
+    fn from(
+        network_id: uuid::Uuid,
+        created_at: Option<DateTime>,
+        updated_at: Option<DateTime>,
+        payload: AddressPayload,
+    ) -> Self {
+        let created_at = created_at.map_or(NotSet, Set);
+        let updated_at = updated_at.map_or(NotSet, Set);
+
         Self {
             network: Set(network_id),
             address: Set(payload.address.to_owned()),
@@ -102,6 +112,8 @@ impl FromPayload<AddressPayload> for ActiveModel {
             risk: Set(payload.risk.into()),
             category: Set(payload.category.into()),
             confirmations: Set(payload.confirmations.to_string()),
+            created_at,
+            updated_at,
         }
     }
 }

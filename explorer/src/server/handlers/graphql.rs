@@ -16,7 +16,6 @@ use crate::server::schema::AppSchema;
 
 /// Handle GraphiQL Requests
 pub(crate) async fn graphiql() -> impl IntoResponse {
-    println!("I am here 12345");
     Html(async_graphql::http::playground_source(
         async_graphql::http::GraphQLPlaygroundConfig::new("/graphql"),
     ))
@@ -27,6 +26,5 @@ pub(crate) async fn graphql_handler(
     schema: Extension<AppSchema>,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
-    println!("I am here");
     schema.execute(req.into_inner()).await.into()
 }

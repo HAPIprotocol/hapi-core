@@ -28,16 +28,21 @@ pub(crate) async fn event_handler(
 ) -> Result<StatusCode, AppError> {
     tracing::info!(event = ?payload.event, "Received event");
     let event_name = payload.event.name;
+    let timestamp = payload.event.timestamp;
     let network_id = payload.network_id;
 
     match payload.data {
         PushData::Address(address) => {
-            process_address_payload(address, event_name, &db, network_id).await
+            process_address_payload(address, event_name, &db, network_id, timestamp).await
         }
-        PushData::Asset(asset) => process_asset_payload(asset, event_name, &db, network_id).await,
-        PushData::Case(case) => process_case_payload(case, event_name, &db, network_id).await,
+        PushData::Asset(asset) => {
+            process_asset_payload(asset, event_name, &db, network_id, timestamp).await
+        }
+        PushData::Case(case) => {
+            process_case_payload(case, event_name, &db, network_id, timestamp).await
+        }
         PushData::Reporter(reporter) => {
-            process_reporter_payload(reporter, event_name, &db, network_id).await
+            process_reporter_payload(reporter, event_name, &db, network_id, timestamp).await
         }
     }
 }
@@ -48,17 +53,22 @@ async fn process_address_payload(
     event_name: EventName,
     db: &DatabaseConnection,
     network_id: Uuid,
+    timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(address = ?address, "Received address");
 
     match event_name {
         EventName::CreateAddress => {
-            EntityMutation::create_entity::<address::ActiveModel, _>(db, address, network_id)
-                .await?;
+            EntityMutation::create_entity::<address::ActiveModel, _>(
+                db, address, network_id, timestamp,
+            )
+            .await?;
         }
         EventName::UpdateAddress => {
-            EntityMutation::update_entity::<address::ActiveModel, _>(db, address, network_id)
-                .await?;
+            EntityMutation::update_entity::<address::ActiveModel, _>(
+                db, address, network_id, timestamp,
+            )
+            .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -76,15 +86,22 @@ async fn process_asset_payload(
     event_name: EventName,
     db: &DatabaseConnection,
     network_id: Uuid,
+    timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(asset = ?asset, "Received asset");
 
     match event_name {
         EventName::CreateAsset => {
-            EntityMutation::create_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
+            EntityMutation::create_entity::<asset::ActiveModel, _>(
+                db, asset, network_id, timestamp,
+            )
+            .await?;
         }
         EventName::UpdateAsset => {
-            EntityMutation::update_entity::<asset::ActiveModel, _>(db, asset, network_id).await?;
+            EntityMutation::update_entity::<asset::ActiveModel, _>(
+                db, asset, network_id, timestamp,
+            )
+            .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -102,15 +119,18 @@ async fn process_case_payload(
     event_name: EventName,
     db: &DatabaseConnection,
     network_id: Uuid,
+    timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(case = ?case, "Received case");
 
     match event_name {
         EventName::CreateCase => {
-            EntityMutation::create_entity::<case::ActiveModel, _>(db, case, network_id).await?;
+            EntityMutation::create_entity::<case::ActiveModel, _>(db, case, network_id, timestamp)
+                .await?;
         }
         EventName::UpdateCase => {
-            EntityMutation::update_entity::<case::ActiveModel, _>(db, case, network_id).await?;
+            EntityMutation::update_entity::<case::ActiveModel, _>(db, case, network_id, timestamp)
+                .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
@@ -128,20 +148,25 @@ async fn process_reporter_payload(
     event_name: EventName,
     db: &DatabaseConnection,
     network_id: Uuid,
+    timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(reporter = ?reporter, "Received reporter");
 
     match event_name {
         EventName::CreateReporter => {
-            EntityMutation::create_entity::<reporter::ActiveModel, _>(db, reporter, network_id)
-                .await?;
+            EntityMutation::create_entity::<reporter::ActiveModel, _>(
+                db, reporter, network_id, timestamp,
+            )
+            .await?;
         }
         EventName::UpdateReporter
         | EventName::ActivateReporter
         | EventName::DeactivateReporter
         | EventName::Unstake => {
-            EntityMutation::update_entity::<reporter::ActiveModel, _>(db, reporter, network_id)
-                .await?;
+            EntityMutation::update_entity::<reporter::ActiveModel, _>(
+                db, reporter, network_id, timestamp,
+            )
+            .await?;
         }
         _ => {
             return Err(AppError::invalid_request(&format!(

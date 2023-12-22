@@ -33,6 +33,8 @@ impl MigrationTrait for Migration {
                             .string()
                             .not_null(),
                     )
+                    .col(ColumnDef::new(Reporter::CreatedAt).timestamp().not_null())
+                    .col(ColumnDef::new(Reporter::UpdatedAt).timestamp().not_null())
                     .primary_key(
                         Index::create()
                             .name("reporter_id")
@@ -72,4 +74,6 @@ pub(crate) enum Reporter {
     Url,
     Stake,
     UnlockTimestamp,
+    CreatedAt,
+    UpdatedAt,
 }

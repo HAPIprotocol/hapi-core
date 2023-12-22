@@ -54,6 +54,7 @@ impl TestApp {
             let network_model = hapi_explorer::entity::network::ActiveModel {
                 id: Set(network_id.to_owned()),
                 name: Set(network_name.clone().into()),
+                created_at: Set(chrono::Utc::now().naive_utc()),
             };
 
             network_model

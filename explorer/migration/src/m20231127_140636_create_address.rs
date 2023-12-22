@@ -23,6 +23,8 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Address::Risk).small_integer().not_null())
                     .col(ColumnDef::new(Address::Confirmations).string().not_null())
+                    .col(ColumnDef::new(Address::CreatedAt).timestamp().not_null())
+                    .col(ColumnDef::new(Address::UpdatedAt).timestamp().not_null())
                     .primary_key(
                         Index::create()
                             .name("address_id")
@@ -76,4 +78,6 @@ pub(crate) enum Address {
     Risk,
     Category,
     Confirmations,
+    CreatedAt,
+    UpdatedAt,
 }

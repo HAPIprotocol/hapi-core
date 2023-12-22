@@ -36,7 +36,7 @@ pub enum AddressCondition {
     /// Order by the time when entity was created
     CreatedAt,
     /// Order by the time when entity was updated
-    UpdatedAtDesc,
+    UpdatedAt,
 }
 
 impl From<AddressCondition> for Column {
@@ -48,9 +48,8 @@ impl From<AddressCondition> for Column {
             AddressCondition::Category => Column::Category,
             AddressCondition::Risk => Column::Risk,
             AddressCondition::Confirmations => Column::Confirmations,
-            // AddressCondition::CreatedAt => Column::CreatedAt,
-            // AddressCondition::UpdatedAtDesc => Column::UpdatedAt,
-            _ => unimplemented!(),
+            AddressCondition::CreatedAt => Column::CreatedAt,
+            AddressCondition::UpdatedAt => Column::UpdatedAt,
         }
     }
 }

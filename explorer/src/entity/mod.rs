@@ -7,10 +7,15 @@ pub mod reporter;
 pub mod types;
 
 use self::pagination::Ordering;
-use sea_orm::{EntityTrait, Select};
+use sea_orm::{prelude::DateTime, EntityTrait, Select};
 
 pub trait FromPayload<T>: Sized {
-    fn from(network_id: uuid::Uuid, value: T) -> Self;
+    fn from(
+        network_id: uuid::Uuid,
+        created_at: Option<DateTime>,
+        updated_at: Option<DateTime>,
+        value: T,
+    ) -> Self;
 }
 
 pub trait EntityFilter: Sized + EntityTrait {
