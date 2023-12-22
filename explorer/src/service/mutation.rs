@@ -4,6 +4,7 @@ use {chrono::NaiveDateTime, sea_orm::*, uuid::Uuid};
 pub struct EntityMutation;
 
 impl EntityMutation {
+    /// Universal method for inserting entities to database
     pub async fn create_entity<M, T>(
         db: &DbConn,
         payload: T,
@@ -24,6 +25,7 @@ impl EntityMutation {
             .await
     }
 
+    /// Universal method for updating entities in database
     pub async fn update_entity<M, T>(
         db: &DbConn,
         payload: T,

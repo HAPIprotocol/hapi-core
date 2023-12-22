@@ -6,7 +6,7 @@ use {
 };
 
 use super::{
-    model,
+    model::Model,
     query_utils::{AddressCondition, AddressFilter},
 };
 use crate::{
@@ -26,11 +26,9 @@ impl AddressQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Address address")] address: String,
-        // #[graphql(desc = "Address network")] network: NetworkName,
         #[graphql(desc = "Address network")] network: Uuid,
-    ) -> Result<Option<model::Address>> {
+    ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
-
         let address =
             EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network, address))
                 .await?;
@@ -46,9 +44,8 @@ impl AddressQuery {
             AddressFilter,
             AddressCondition,
         >,
-    ) -> Result<EntityPage<model::Address>> {
+    ) -> Result<EntityPage<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
-
         let page = EntityQuery::find_many::<super::model::Entity>(db, input).await?;
 
         Ok(page)

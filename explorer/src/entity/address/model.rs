@@ -1,14 +1,11 @@
 use {
     async_graphql::SimpleObject,
     hapi_core::client::entities::address::Address as AddressPayload,
-    sea_orm::{entity::prelude::*, NotSet, QueryOrder, Set},
+    sea_orm::{entity::prelude::*, NotSet, Set},
 };
 
 use super::query_utils::{AddressCondition, AddressFilter};
-use crate::entity::{pagination::Ordering, reporter, types::Category, EntityFilter, FromPayload};
-
-/// The Address GraphQL type is the same as the database Model
-pub type Address = Model;
+use crate::entity::{reporter, types::Category, EntityFilter, FromPayload};
 
 // Risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
@@ -60,19 +57,6 @@ impl EntityFilter for Entity {
         }
 
         query
-    }
-
-    // Ordering query
-    fn order_by(
-        query: Select<Entity>,
-        ordering: Ordering,
-        condition: AddressCondition,
-    ) -> Select<Entity> {
-        let column = Column::from(condition);
-        match ordering {
-            Ordering::Asc => query.order_by_asc(column),
-            Ordering::Desc => query.order_by_desc(column),
-        }
     }
 }
 

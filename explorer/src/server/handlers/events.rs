@@ -22,6 +22,7 @@ use crate::{
     service::EntityMutation,
 };
 
+/// Handle events Requests
 pub(crate) async fn event_handler(
     db: State<Arc<DatabaseConnection>>,
     Json(payload): Json<PushPayload>,

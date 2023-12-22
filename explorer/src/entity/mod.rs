@@ -6,7 +6,6 @@ pub mod pagination;
 pub mod reporter;
 pub mod types;
 
-use self::pagination::Ordering;
 use sea_orm::{prelude::DateTime, EntityTrait, Select};
 
 pub trait FromPayload<T>: Sized {
@@ -18,17 +17,10 @@ pub trait FromPayload<T>: Sized {
     ) -> Self;
 }
 
+// Trait for fitlering query
 pub trait EntityFilter: Sized + EntityTrait {
     type Filter;
     type Condition;
 
-    // Fitlering query
     fn filter(selected: Select<Self>, filter_options: &Self::Filter) -> Select<Self>;
-
-    // Ordering query
-    fn order_by(
-        query: Select<Self>,
-        ordering: Ordering,
-        condition: Self::Condition,
-    ) -> Select<Self>;
 }

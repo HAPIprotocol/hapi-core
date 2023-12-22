@@ -17,7 +17,7 @@ pub struct AddressFilter {
     pub confirmations: Option<String>,
 }
 
-/// The available ordering values
+/// Available ordering values for address
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default)]
 pub enum AddressCondition {
     #[default]

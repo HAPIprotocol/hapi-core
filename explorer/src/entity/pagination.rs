@@ -40,25 +40,19 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
     pub page_count: u64,
 }
 
-/// The address input type
+/// Reusable input type for all entities
 #[derive(Clone, Default, Eq, PartialEq, InputObject)]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]
 pub struct EntityInput<F: InputType, C: InputType> {
+    /// Conditions to filter entities by
     pub filtering: Option<F>,
 
+    /// Available ordering
     pub ordering: Ordering,
 
+    /// Available ordering values for entities
     pub ordering_condition: C,
 
+    /// Pagination options
     pub pagination: Option<Paginator>,
 }
-
-// /// The entity input type
-// #[derive(Clone, Default, Eq, PartialEq)]
-// pub struct EntityInput<OrderBy: InputObjectType, Filter: InputObjectType> {
-//     pub filtering: Option<Filter>,
-
-//     pub ordering: (Ordering, OrderBy),
-
-//     pub pagination: Option<Paginator>,
-// }

@@ -7,19 +7,14 @@ use {
 
 use crate::entity::address::AddressQuery;
 
+/// Top-level application Query type
 #[derive(Default, MergedObject)]
 pub struct Query(AddressQuery);
 
-// #[Object]
-// impl Query {
-//     /// Get the current User from the GraphQL context
-//     async fn versions(&self, ctx: &Context<'_>) -> u8 {
-//         5
-//     }
-// }
-
+/// Top-level merged application schema
 pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
+/// Building the GraphQL application schema, attaching the Database to the context
 pub(crate) fn create_graphql_schema(db: Arc<DatabaseConnection>) -> Result<AppSchema> {
     Ok(
         Schema::build(Query::default(), EmptyMutation, EmptySubscription)
