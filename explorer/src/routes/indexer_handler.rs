@@ -10,6 +10,8 @@ pub(crate) async fn indexer(state: State<AppState>) -> Result<impl IntoResponse,
 
     const MESSAGE: &str = "Indexer is not implemented yet";
 
+    //TODO: return indexer struct from database
+
     let json_response = serde_json::json!({
         "status": "success",
         "message": MESSAGE
@@ -23,6 +25,7 @@ pub(crate) async fn indexer_heartbeat(state: State<AppState>, id: String) -> Res
     let _db = &state.database_conn;
 
     let msg = format!("Indexer {} heartbeat received", id);
+    // TODO: Update indexer heartbeat in database
 
     let json_response = serde_json::json!({
         "status": "success",
