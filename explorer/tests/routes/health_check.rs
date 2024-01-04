@@ -1,15 +1,9 @@
-use crate::helpers::TestApp;
+use crate::helpers::{RequestSender, TestApp};
 
 #[tokio::test]
 async fn health_check_test() {
     let test_app = TestApp::start().await;
-    let client = reqwest::Client::new();
+    let client = RequestSender::new(test_app.server_addr);
 
-    let response = client
-        .get(&format!("{}/health", &test_app.server_addr))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert!(response.status().is_success());
+    client.get("health").await;
 }

@@ -1,7 +1,7 @@
-use sea_orm::{ActiveModelTrait, Set};
+use super::{get_test_data, RequestSender};
 
 use {
-    hapi_core::HapiCoreNetwork,
+    hapi_core::{client::events::EventName, HapiCoreNetwork},
     hapi_explorer::{
         application::Application,
         configuration::Configuration,
@@ -10,7 +10,7 @@ use {
     },
     hapi_indexer::PushData,
     migration::{Migrator, MigratorTrait},
-    sea_orm::{Database, DatabaseConnection, EntityTrait},
+    sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set},
     uuid::Uuid,
     {
         std::env,
@@ -48,6 +48,7 @@ impl TestApp {
             (HapiCoreNetwork::Ethereum, Uuid::new_v4()),
             (HapiCoreNetwork::Solana, Uuid::new_v4()),
             (HapiCoreNetwork::Near, Uuid::new_v4()),
+            (HapiCoreNetwork::Sepolia, Uuid::new_v4()),
         ];
 
         for (network_name, network_id) in &networks {
@@ -170,6 +171,35 @@ impl TestApp {
                 );
             }
         }
+    }
+
+    pub async fn setup_entities(
+        &self,
+        sender: &RequestSender,
+        event: EventName,
+    ) -> Vec<(PushData, &Uuid)> {
+        let mut data = vec![];
+
+        for (_, network_id) in &self.networks {
+            let test_data = get_test_data(network_id.to_owned());
+
+            for payload in test_data {
+                sender.send("events", &payload).await;
+                sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
+
+                if event == payload.event.name {
+                    // if let PushData::Address(addr_payload) = payload.data {
+                    //     data.push(payload.data);
+                    // } else {
+                    //     panic!("Wrong payload type");
+                    // }
+
+                    data.push((payload.data, network_id));
+                }
+            }
+        }
+
+        data
     }
 }
 

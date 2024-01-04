@@ -1,5 +1,5 @@
 use {
-    core::panic,
+    chrono::Utc,
     hapi_core::client::{
         entities::{
             address::Address,
@@ -12,41 +12,9 @@ use {
     },
     hapi_indexer::{PushData, PushEvent, PushPayload},
     rand::{distributions::Alphanumeric, thread_rng, Rng},
-    reqwest::Client,
     std::str::FromStr,
     uuid::Uuid,
 };
-
-pub struct IndexerMock {
-    pub web_client: Client,
-    webhook_url: String,
-}
-
-impl IndexerMock {
-    pub(crate) fn new(server_addr: &str) -> Self {
-        Self {
-            web_client: Client::new(),
-            webhook_url: format!("{}/{}", server_addr, "events"),
-        }
-    }
-    pub(crate) async fn send_webhook(&self, payload: &PushPayload) {
-        let response = self
-            .web_client
-            .post(&self.webhook_url)
-            .json(payload)
-            .send()
-            .await
-            .expect("Failed to send request");
-
-        if !response.status().is_success() {
-            panic!(
-                "Failed to send webhook, status: {}, error: {}",
-                response.status().as_str(),
-                response.text().await.expect("Failed to get response text")
-            );
-        }
-    }
-}
 
 pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     let mut events = vec![];
@@ -197,7 +165,7 @@ fn create_payload(network_id: Uuid, name: EventName, data: PushData) -> PushPayl
         name,
         tx_hash,
         tx_index: 0,
-        timestamp: thread_rng().gen::<u32>() as u64,
+        timestamp: Utc::now().timestamp() as u64,
     };
 
     PushPayload {
