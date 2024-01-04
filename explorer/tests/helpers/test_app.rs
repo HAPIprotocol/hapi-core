@@ -93,10 +93,11 @@ impl TestApp {
         }
     }
 
-    pub async fn check_entity(&self, data: PushData, network_id: Uuid) {
+    pub async fn check_entity(&self, data: PushData, network: HapiCoreNetwork) {
+        let network = network.into();
         match data {
             PushData::Address(address) => {
-                let result = address::Entity::find_by_id((network_id, address.address.clone()))
+                let result = address::Entity::find_by_id((network, address.address.clone()))
                     .all(&self.db_connection)
                     .await
                     .expect("Failed to find address by id");
@@ -105,7 +106,7 @@ impl TestApp {
 
                 let address_model = result.first().unwrap();
                 assert_eq!(address_model.address, address.address);
-                assert_eq!(address_model.network, network_id);
+                assert_eq!(address_model.network, network);
                 assert_eq!(address_model.case_id, address.case_id);
                 assert_eq!(address_model.reporter_id, address.reporter_id);
                 assert_eq!(address_model.risk, address.risk as i16);
@@ -117,7 +118,7 @@ impl TestApp {
             }
             PushData::Asset(asset) => {
                 let result = asset::Entity::find_by_id((
-                    network_id,
+                    network,
                     asset.address.clone(),
                     asset.asset_id.to_string(),
                 ))
@@ -137,7 +138,7 @@ impl TestApp {
                 assert_eq!(asset_model.confirmations, asset.confirmations.to_string());
             }
             PushData::Case(case) => {
-                let result = case::Entity::find_by_id((network_id, case.id.clone()))
+                let result = case::Entity::find_by_id((network, case.id.clone()))
                     .all(&self.db_connection)
                     .await
                     .expect("Failed to find case by id");
@@ -151,7 +152,7 @@ impl TestApp {
                 assert_eq!(case_model.reporter_id, case.reporter_id);
             }
             PushData::Reporter(reporter) => {
-                let result = reporter::Entity::find_by_id((network_id, reporter.id.clone()))
+                let result = reporter::Entity::find_by_id((network, reporter.id.clone()))
                     .all(&self.db_connection)
                     .await
                     .expect("Failed to find reporter by id");
@@ -177,11 +178,11 @@ impl TestApp {
         &self,
         sender: &RequestSender,
         event: EventName,
-    ) -> Vec<(PushData, &Uuid)> {
+    ) -> Vec<(PushData, &HapiCoreNetwork)> {
         let mut data = vec![];
 
-        for (_, network_id) in &self.networks {
-            let test_data = get_test_data(network_id.to_owned());
+        for (network, _) in &self.networks {
+            let test_data = get_test_data(network.to_owned());
 
             for payload in test_data {
                 sender.send("events", &payload).await;
@@ -194,7 +195,7 @@ impl TestApp {
                     //     panic!("Wrong payload type");
                     // }
 
-                    data.push((payload.data, network_id));
+                    data.push((payload.data, network));
                 }
             }
         }

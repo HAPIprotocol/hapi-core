@@ -1,6 +1,6 @@
 use super::{
     address,
-    types::{ReporterRole, ReporterStatus},
+    types::{NetworkName, ReporterRole, ReporterStatus},
     FromPayload,
 };
 use {
@@ -13,7 +13,7 @@ use {
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Uuid,
+    pub network: NetworkName,
     #[sea_orm(primary_key, auto_increment = false)]
     pub reporter_id: Uuid,
     pub account: String,
@@ -43,7 +43,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<ReporterPayload> for ActiveModel {
     fn from(
-        network_id: uuid::Uuid,
+        network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: ReporterPayload,
@@ -52,7 +52,7 @@ impl FromPayload<ReporterPayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network_id),
+            network: Set(network),
             reporter_id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),

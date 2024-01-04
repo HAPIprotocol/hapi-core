@@ -66,7 +66,6 @@ pub type TestBatch = Vec<TestData>;
 #[derive(Debug, Clone)]
 pub struct TestData {
     pub network: HapiCoreNetwork,
-    pub network_id: Uuid,
     pub hash: String,
     pub name: EventName,
     pub data: Option<PushData>,
@@ -122,10 +121,7 @@ pub fn create_pushdata<T: RpcMock>() -> Vec<PushData> {
 
 // Create test batches: 17 events structured into 3 batches:
 // 2 batches for the first launch of the indexer 1 batch for the second
-pub fn create_test_batches<T: RpcMock>(
-    pushdata: &Vec<PushData>,
-    network_id: Uuid,
-) -> Vec<TestBatch> {
+pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatch> {
     let hashes = T::get_hashes();
 
     let reporter = pushdata[0].clone();
@@ -164,7 +160,6 @@ pub fn create_test_batches<T: RpcMock>(
         .zip(data.iter())
         .map(|((index, hash), (name, data))| TestData {
             network: T::get_network(),
-            network_id,
             hash: hash.clone(),
             name: name.clone(),
             data: data.clone(),

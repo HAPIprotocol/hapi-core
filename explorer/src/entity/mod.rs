@@ -6,11 +6,12 @@ pub mod pagination;
 pub mod reporter;
 pub mod types;
 
+use self::types::NetworkName;
 use sea_orm::{prelude::DateTime, EntityTrait, Select};
 
 pub trait FromPayload<T>: Sized {
     fn from(
-        network_id: uuid::Uuid,
+        network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         value: T,

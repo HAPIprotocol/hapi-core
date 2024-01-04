@@ -1,5 +1,5 @@
-use crate::entity::FromPayload;
-use {chrono::NaiveDateTime, sea_orm::*, uuid::Uuid};
+use crate::entity::{types::NetworkName, FromPayload};
+use {chrono::NaiveDateTime, sea_orm::*};
 
 pub struct EntityMutation;
 
@@ -8,7 +8,7 @@ impl EntityMutation {
     pub async fn create_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network_id: Uuid,
+        network: NetworkName,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
@@ -20,7 +20,7 @@ impl EntityMutation {
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
         );
 
-        M::from(network_id, created_at, created_at, payload)
+        M::from(network, created_at, created_at, payload)
             .insert(db)
             .await
     }
@@ -29,7 +29,7 @@ impl EntityMutation {
     pub async fn update_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network_id: Uuid,
+        network: NetworkName,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
@@ -41,8 +41,6 @@ impl EntityMutation {
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
         );
 
-        M::from(network_id, None, updated_at, payload)
-            .update(db)
-            .await
+        M::from(network, None, updated_at, payload).update(db).await
     }
 }

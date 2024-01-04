@@ -1,10 +1,12 @@
 use crate::helpers::{RequestSender, TestApp};
 
 use {
-    hapi_core::client::{entities::address::Address, events::EventName},
+    hapi_core::{
+        client::{entities::address::Address, events::EventName},
+        HapiCoreNetwork,
+    },
     hapi_indexer::PushData,
     serde_json::{json, Value},
-    uuid::Uuid,
 };
 
 const GET_ADDRESS_QUERY: &str = "
@@ -46,18 +48,24 @@ const GET_MANY_ADDRESSES: &str = "
     }
 ";
 
-fn check_address(payload: &Address, address: &Value, network_id: &Uuid) {
-    assert_eq!(address["network"], network_id.to_string());
+fn check_address(payload: &Address, address: &Value, network_id: &HapiCoreNetwork) {
+    let replacer = |v: &Value| {
+        v.to_string()
+            .replace("\"", "")
+            .replace("_", "")
+            .to_lowercase()
+    };
+
+    assert_eq!(
+        replacer(&address["network"]),
+        network_id.to_string().to_lowercase()
+    );
     assert_eq!(address["address"], payload.address);
     assert_eq!(address["caseId"], payload.case_id.to_string());
     assert_eq!(address["reporterId"], payload.reporter_id.to_string());
     assert_eq!(address["risk"], payload.risk);
     assert_eq!(
-        address["category"]
-            .to_string()
-            .replace("_", "")
-            .replace("\"", "")
-            .to_lowercase(),
+        replacer(&address["category"]),
         payload.category.to_string().to_lowercase()
     );
     assert_eq!(address["confirmations"], payload.confirmations.to_string());
@@ -82,12 +90,12 @@ async fn get_address_test() {
                 GET_ADDRESS_QUERY,
                 json!({
                     "address": addr_payload.address,
-                    "network": network.to_owned()
+                    "network": network.to_string().to_uppercase()
                 }),
             )
             .await;
 
-        let address = &response["data"]["getAddress"];
+        let address = &response["getAddress"];
         check_address(&addr_payload, address, &network);
     }
 }
@@ -114,7 +122,7 @@ async fn get_many_addresses_test() {
         )
         .await;
 
-    let addresses_response = &response["data"]["getManyAddresses"];
+    let addresses_response = &response["getManyAddresses"];
     assert_eq!(addresses_response["total"], addresses.len());
 
     for (index, address) in addresses_response["data"]
@@ -154,7 +162,7 @@ async fn get_filtered_addresses_test() {
                 "input":
                 {
                     "filtering": {
-                        "network": network
+                        "network": network.to_string().to_uppercase(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -164,7 +172,7 @@ async fn get_filtered_addresses_test() {
             )
             .await;
 
-        let addresses_response = &response["data"]["getManyAddresses"];
+        let addresses_response = &response["getManyAddresses"];
         assert_eq!(addresses_response["total"], 1);
 
         let address = addresses_response["data"]
@@ -209,7 +217,7 @@ async fn get_paginated_addresses_test() {
         )
         .await;
 
-    let addresses_response = &response["data"]["getManyAddresses"];
+    let addresses_response = &response["getManyAddresses"];
     assert_eq!(addresses_response["total"], addresses.len());
     assert_eq!(addresses_response["pageCount"], addresses.len() / page_size);
 

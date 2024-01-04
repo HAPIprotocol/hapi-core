@@ -1,4 +1,7 @@
-use super::{types::Category, FromPayload};
+use super::{
+    types::{Category, NetworkName},
+    FromPayload,
+};
 use {
     hapi_core::client::entities::asset::Asset as AssetPayload,
     sea_orm::{entity::prelude::*, NotSet, Set},
@@ -9,7 +12,7 @@ use {
 #[sea_orm(table_name = "asset")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Uuid,
+    pub network: NetworkName,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     #[sea_orm(primary_key, auto_increment = false)]
@@ -30,7 +33,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AssetPayload> for ActiveModel {
     fn from(
-        network_id: uuid::Uuid,
+        network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: AssetPayload,
@@ -39,7 +42,7 @@ impl FromPayload<AssetPayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network_id),
+            network: Set(network),
             address: Set(payload.address.to_owned()),
             asset_id: Set(payload.asset_id.to_string()),
             case_id: Set(payload.case_id.to_owned()),

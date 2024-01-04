@@ -22,15 +22,21 @@ impl RequestSender {
         let body = serde_json::to_string(&json!({ "query": query, "variables": variables }))
             .expect("Failed to serialize body");
 
-        let response = self
-            .web_client
-            .post(format!("{}/{}", &self.address, "graphql"))
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to send request");
+        let response = RequestSender::check_response(
+            self.web_client
+                .post(format!("{}/{}", &self.address, "graphql"))
+                .body(body)
+                .send()
+                .await
+                .expect("Failed to send request"),
+        )
+        .await;
 
-        RequestSender::check_response(response).await
+        if let Some(errors) = response.get("errors") {
+            panic!("GraphQL request failed: {:?}", errors);
+        }
+
+        response["data"].clone()
     }
 
     pub(crate) async fn send<T: Serialize + ?Sized>(&self, url: &str, body: &T) -> Value {

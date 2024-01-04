@@ -1,14 +1,17 @@
 use {
     chrono::Utc,
-    hapi_core::client::{
-        entities::{
-            address::Address,
-            asset::{Asset, AssetId},
-            case::{Case, CaseStatus},
-            category::Category,
-            reporter::{Reporter, ReporterRole, ReporterStatus},
+    hapi_core::{
+        client::{
+            entities::{
+                address::Address,
+                asset::{Asset, AssetId},
+                case::{Case, CaseStatus},
+                category::Category,
+                reporter::{Reporter, ReporterRole, ReporterStatus},
+            },
+            events::EventName,
         },
-        events::EventName,
+        HapiCoreNetwork,
     },
     hapi_indexer::{PushData, PushEvent, PushPayload},
     rand::{distributions::Alphanumeric, thread_rng, Rng},
@@ -16,7 +19,7 @@ use {
     uuid::Uuid,
 };
 
-pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
+pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     let mut events = vec![];
 
     let mut reporter_payload = Reporter {
@@ -59,25 +62,25 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
 
     // Create events
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::CreateReporter,
         PushData::Reporter(reporter_payload.clone()),
     ));
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::CreateCase,
         PushData::Case(case_payload.clone()),
     ));
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::CreateAddress,
         PushData::Address(address_payload.clone()),
     ));
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::CreateAsset,
         PushData::Asset(asset_payload.clone()),
     ));
@@ -88,7 +91,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     reporter_payload.url = String::from("https://authority.com");
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::UpdateReporter,
         PushData::Reporter(reporter_payload.clone()),
     ));
@@ -96,7 +99,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     reporter_payload.status = ReporterStatus::Active;
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::ActivateReporter,
         PushData::Reporter(reporter_payload.clone()),
     ));
@@ -106,7 +109,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 12345;
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::DeactivateReporter,
         PushData::Reporter(reporter_payload.clone()),
     ));
@@ -116,7 +119,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 0;
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::Unstake,
         PushData::Reporter(reporter_payload.clone()),
     ));
@@ -126,7 +129,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     case_payload.status = CaseStatus::Closed;
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::UpdateCase,
         PushData::Case(case_payload.clone()),
     ));
@@ -136,7 +139,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     address_payload.confirmations = 20;
 
     events.push(create_payload(
-        network_id,
+        network.clone(),
         EventName::UpdateAddress,
         PushData::Address(address_payload.clone()),
     ));
@@ -146,7 +149,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     asset_payload.confirmations = 25;
 
     events.push(create_payload(
-        network_id,
+        network,
         EventName::UpdateAsset,
         PushData::Asset(asset_payload.clone()),
     ));
@@ -154,7 +157,7 @@ pub(crate) fn get_test_data(network_id: Uuid) -> Vec<PushPayload> {
     events
 }
 
-fn create_payload(network_id: Uuid, name: EventName, data: PushData) -> PushPayload {
+fn create_payload(network: HapiCoreNetwork, name: EventName, data: PushData) -> PushPayload {
     let tx_hash: String = thread_rng()
         .sample_iter(&Alphanumeric)
         .take(32)
@@ -169,7 +172,7 @@ fn create_payload(network_id: Uuid, name: EventName, data: PushData) -> PushPayl
     };
 
     PushPayload {
-        network_id,
+        network,
         event,
         data,
     }

@@ -1,4 +1,4 @@
-use crate::{Case, Category, Network, Reporter};
+use crate::{Case, Category, NetworkName, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,7 +12,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Asset::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Asset::Network).uuid().not_null())
+                    .col(
+                        ColumnDef::new(Asset::Network)
+                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Asset::Address).string().not_null())
                     .col(ColumnDef::new(Asset::AssetId).string().not_null())
                     .col(ColumnDef::new(Asset::CaseId).uuid().not_null())
@@ -32,14 +36,6 @@ impl MigrationTrait for Migration {
                             .col(Asset::Network)
                             .col(Asset::Address)
                             .col(Asset::AssetId),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-asset_network")
-                            .from(Asset::Table, Asset::Network)
-                            .to(Network::Table, Network::Id)
-                            .on_delete(ForeignKeyAction::NoAction)
-                            .on_update(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()

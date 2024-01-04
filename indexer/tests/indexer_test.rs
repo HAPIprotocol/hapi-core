@@ -5,7 +5,6 @@ use {
     },
     std::{env, path::PathBuf, time::Duration},
     tokio::time::sleep,
-    uuid::Uuid,
 };
 
 mod mocks;
@@ -25,7 +24,6 @@ pub struct IndexerTest<T: RpcMock> {
     webhook_mock: WebhookServiceMock,
     rpc_mock: T,
     cursor: IndexingCursor,
-    network_id: Uuid,
 }
 
 impl<T: RpcMock> IndexerTest<T> {
@@ -43,7 +41,6 @@ impl<T: RpcMock> IndexerTest<T> {
             webhook_mock: WebhookServiceMock::new(),
             rpc_mock: T::initialize(),
             cursor: IndexingCursor::None,
-            network_id: Uuid::new_v4(),
         }
     }
 
@@ -68,7 +65,6 @@ impl<T: RpcMock> IndexerTest<T> {
     async fn indexing_iteration(&self) -> anyhow::Result<()> {
         let cfg = IndexerConfiguration {
             network: T::get_network(),
-            network_id: self.network_id,
             rpc_node_url: self.rpc_mock.get_mock_url(),
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
@@ -109,7 +105,7 @@ impl<T: RpcMock> IndexerTest<T> {
         println!("\nIndexing test");
 
         let pushdata = create_pushdata::<T>();
-        let test_data = create_test_batches::<T>(&pushdata, self.network_id);
+        let test_data = create_test_batches::<T>(&pushdata);
 
         for (index, batches) in test_data.chunks(2).enumerate() {
             println!("==> Running indexer for {} time", index + 1);

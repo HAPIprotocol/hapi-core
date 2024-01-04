@@ -1,4 +1,7 @@
-use super::{types::CaseStatus, FromPayload};
+use super::{
+    types::{CaseStatus, NetworkName},
+    FromPayload,
+};
 
 use {
     hapi_core::client::entities::case::Case as CasePayload,
@@ -9,7 +12,7 @@ use {
 #[sea_orm(table_name = "case")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Uuid,
+    pub network: NetworkName,
     #[sea_orm(primary_key, auto_increment = false)]
     pub case_id: Uuid,
     pub name: String,
@@ -27,7 +30,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<CasePayload> for ActiveModel {
     fn from(
-        network_id: uuid::Uuid,
+        network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: CasePayload,
@@ -36,7 +39,7 @@ impl FromPayload<CasePayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network_id),
+            network: Set(network),
             case_id: Set(payload.id.to_owned()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),

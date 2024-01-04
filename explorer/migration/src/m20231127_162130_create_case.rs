@@ -1,4 +1,4 @@
-use crate::{CaseStatus, Network, Reporter};
+use crate::{CaseStatus, NetworkName, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,8 +12,12 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Case::Table)
                     .if_not_exists()
+                    .col(
+                        ColumnDef::new(Case::Network)
+                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Case::CaseId).uuid().not_null())
-                    .col(ColumnDef::new(Case::Network).uuid().not_null())
                     .col(ColumnDef::new(Case::Name).string().not_null())
                     .col(ColumnDef::new(Case::Url).string().not_null())
                     .col(ColumnDef::new(Case::ReporterId).uuid().not_null())
@@ -35,14 +39,6 @@ impl MigrationTrait for Migration {
                             .name("fk-asset_reporter_id")
                             .from(Case::Table, (Case::Network, Case::ReporterId))
                             .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
-                            .on_delete(ForeignKeyAction::NoAction)
-                            .on_update(ForeignKeyAction::Cascade),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-case_network")
-                            .from(Case::Table, Case::Network)
-                            .to(Network::Table, Network::Id)
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )

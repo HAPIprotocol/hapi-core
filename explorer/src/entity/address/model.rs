@@ -5,14 +5,18 @@ use {
 };
 
 use super::query_utils::{AddressCondition, AddressFilter};
-use crate::entity::{reporter, types::Category, EntityFilter, FromPayload};
+use crate::entity::{
+    reporter,
+    types::{Category, NetworkName},
+    EntityFilter, FromPayload,
+};
 
 // Risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
 #[sea_orm(table_name = "address")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: Uuid,
+    pub network: NetworkName,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     pub case_id: Uuid,
@@ -80,7 +84,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AddressPayload> for ActiveModel {
     fn from(
-        network_id: uuid::Uuid,
+        network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: AddressPayload,
@@ -89,7 +93,7 @@ impl FromPayload<AddressPayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network_id),
+            network: Set(network),
             address: Set(payload.address.to_owned()),
             case_id: Set(payload.case_id.to_owned()),
             reporter_id: Set(payload.reporter_id.to_owned()),

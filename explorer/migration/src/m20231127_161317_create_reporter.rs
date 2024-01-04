@@ -1,4 +1,4 @@
-use crate::{Network, ReporterRole, ReporterStatus};
+use crate::{NetworkName, ReporterRole, ReporterStatus};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,7 +12,11 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Reporter::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Reporter::Network).uuid().not_null())
+                    .col(
+                        ColumnDef::new(Reporter::Network)
+                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Reporter::Account).string().not_null())
                     .col(ColumnDef::new(Reporter::Name).string().not_null())
@@ -40,14 +44,6 @@ impl MigrationTrait for Migration {
                             .name("reporter_id")
                             .col(Reporter::Network)
                             .col(Reporter::ReporterId),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-reporter_network")
-                            .from(Reporter::Table, Reporter::Network)
-                            .to(Network::Table, Network::Id)
-                            .on_delete(ForeignKeyAction::NoAction)
-                            .on_update(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )

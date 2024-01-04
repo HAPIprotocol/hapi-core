@@ -2,7 +2,6 @@ use {
     async_graphql::{Context, Object, Result},
     sea_orm::DatabaseConnection,
     std::sync::Arc,
-    uuid::Uuid,
 };
 
 use super::{
@@ -10,7 +9,10 @@ use super::{
     query_utils::{AddressCondition, AddressFilter},
 };
 use crate::{
-    entity::pagination::{EntityInput, EntityPage},
+    entity::{
+        pagination::{EntityInput, EntityPage},
+        types::NetworkName,
+    },
     service::EntityQuery,
 };
 
@@ -26,7 +28,7 @@ impl AddressQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Address address")] address: String,
-        #[graphql(desc = "Address network")] network: Uuid,
+        #[graphql(desc = "Address network")] network: NetworkName,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
         let address =

@@ -4,12 +4,12 @@ use {
 };
 
 use super::model::Column;
-use crate::entity::types::Category;
+use crate::entity::types::{Category, NetworkName};
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject)]
 pub struct AddressFilter {
-    pub network: Option<Uuid>,
+    pub network: Option<NetworkName>,
     pub case_id: Option<Uuid>,
     pub reporter_id: Option<Uuid>,
     pub category: Option<Category>,

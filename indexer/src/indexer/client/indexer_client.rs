@@ -3,7 +3,6 @@ use {
     hapi_core::{HapiCoreEvm, HapiCoreNear, HapiCoreNetwork, HapiCoreOptions, HapiCoreSolana},
     std::time::Duration,
     tokio::time::sleep,
-    uuid::Uuid,
 };
 
 use super::{
@@ -32,14 +31,13 @@ pub(crate) struct FetchingArtifacts {
 
 pub(crate) struct IndexerClient {
     client: HapiClient,
-    network_id: Uuid,
+    network: HapiCoreNetwork,
     fetching_delay: Duration,
 }
 
 impl IndexerClient {
     pub fn new(
         network: HapiCoreNetwork,
-        network_id: Uuid,
         rpc_node_url: &str,
         contract_address: &str,
         fetching_delay: Duration,
@@ -65,7 +63,7 @@ impl IndexerClient {
 
         Ok(Self {
             client,
-            network_id,
+            network,
             fetching_delay,
         })
     }
@@ -90,13 +88,13 @@ impl IndexerClient {
     ) -> Result<Option<Vec<PushPayload>>> {
         match (&self.client, job) {
             (HapiClient::Evm(client), IndexerJob::Log(log)) => {
-                process_evm_job(client, log, self.network_id).await
+                process_evm_job(client, log, self.network.to_owned()).await
             }
             (HapiClient::Solana(client), IndexerJob::Transaction(hash)) => {
-                process_solana_job(client, hash, self.network_id).await
+                process_solana_job(client, hash, self.network.to_owned()).await
             }
             (HapiClient::Near(client), IndexerJob::TransactionReceipt(receipt)) => {
-                process_near_job(client, receipt, self.network_id).await
+                process_near_job(client, receipt, self.network.to_owned()).await
             }
             _ => unimplemented!(),
         }
