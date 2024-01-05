@@ -2,18 +2,19 @@ use crate::helpers::{RequestSender, TestApp};
 
 use {
     hapi_core::{
-        client::{entities::address::Address, events::EventName},
+        client::{entities::asset::Asset, events::EventName},
         HapiCoreNetwork,
     },
     hapi_indexer::PushData,
     serde_json::{json, Value},
 };
 
-const GET_ADDRESS_QUERY: &str = "
-    query GetAddress($address: String!, $network: UUID!) {
-        getAddress(address: $address, network: $network) {
+const GET_ASSET_QUERY: &str = "
+    query GetAsset($address: String!, $assetId: String!, $network: UUID!) {
+        getAsset(address: $address, assetId: $assetId, network: $network) {
             network
             address
+            assetId
             caseId
             reporterId
             risk
@@ -24,16 +25,17 @@ const GET_ADDRESS_QUERY: &str = "
         }
     }
 ";
-const GET_MANY_ADDRESSES: &str = "
-    query GetManyAddresses(
-        $input: AddressInput!
+const GET_MANY_ASSETS: &str = "
+    query GetManyAssets(
+        $input: AssetInput!
     ) {
-        getManyAddresses(
+        getManyAssets(
             input: $input
         ) {
             data {
                 network
                 address
+                assetId
                 caseId
                 reporterId
                 risk
@@ -48,7 +50,7 @@ const GET_MANY_ADDRESSES: &str = "
     }
 ";
 
-fn check_address(payload: &Address, value: &Value, network_id: &HapiCoreNetwork) {
+fn check_asset(payload: &Asset, value: &Value, network_id: &HapiCoreNetwork) {
     let replacer = |v: &Value| {
         v.to_string()
             .replace("\"", "")
@@ -61,6 +63,7 @@ fn check_address(payload: &Address, value: &Value, network_id: &HapiCoreNetwork)
         network_id.to_string().to_lowercase()
     );
     assert_eq!(value["address"], payload.address);
+    assert_eq!(value["assetId"], payload.asset_id.to_string());
     assert_eq!(value["caseId"], payload.case_id.to_string());
     assert_eq!(value["reporterId"], payload.reporter_id.to_string());
     assert_eq!(value["risk"], payload.risk);
@@ -72,45 +75,46 @@ fn check_address(payload: &Address, value: &Value, network_id: &HapiCoreNetwork)
 }
 
 #[tokio::test]
-async fn get_address_test() {
+async fn get_asset_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+    let assets = test_app
+        .setup_entities(&sender, EventName::UpdateAsset)
         .await;
 
-    for (payload, network) in addresses {
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
+    for (payload, network) in assets {
+        let asset_payload = match payload {
+            PushData::Asset(asset) => asset,
             _ => panic!("Invalid type"),
         };
 
         let response = sender
             .send_graphql(
-                GET_ADDRESS_QUERY,
+                GET_ASSET_QUERY,
                 json!({
-                    "address": addr_payload.address,
+                    "address": asset_payload.address,
+                    "assetId": asset_payload.asset_id,
                     "network": network.to_string().to_uppercase()
                 }),
             )
             .await;
 
-        let address = &response["getAddress"];
-        check_address(&addr_payload, address, &network);
+        let asset = &response["getAsset"];
+        check_asset(&asset_payload, asset, &network);
     }
 }
 
 #[tokio::test]
-async fn get_many_addresses_test() {
+async fn get_many_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+    let assets = test_app
+        .setup_entities(&sender, EventName::UpdateAsset)
         .await;
 
     let response = sender
         .send_graphql(
-            GET_MANY_ADDRESSES,
+            GET_MANY_ASSETS,
             json!({
             "input":
             {
@@ -122,47 +126,47 @@ async fn get_many_addresses_test() {
         )
         .await;
 
-    let addresses_response = &response["getManyAddresses"];
-    assert_eq!(addresses_response["total"], addresses.len());
+    let assets_response = &response["getManyassets"];
+    assert_eq!(assets_response["total"], assets.len());
 
-    for (index, address) in addresses_response["data"]
+    for (index, asset) in assets_response["data"]
         .as_array()
         .expect("Empty response")
         .iter()
         .enumerate()
     {
-        let (payload, network) = addresses.get(index).expect("Invalid index");
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
+        let (payload, network) = assets.get(index).expect("Invalid index");
+        let asset_payload = match payload {
+            PushData::Asset(asset) => asset,
             _ => panic!("Invalid type"),
         };
 
-        check_address(addr_payload, address, network)
+        check_asset(asset_payload, asset, network)
     }
 }
 
 #[tokio::test]
-async fn get_filtered_addresses_test() {
+async fn get_filtered_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+    let assets = test_app
+        .setup_entities(&sender, EventName::UpdateAsset)
         .await;
 
-    for (payload, network) in addresses {
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
+    for (payload, network) in assets {
+        let asset_payload = match payload {
+            PushData::Asset(asset) => asset,
             _ => panic!("Invalid type"),
         };
 
         let response = sender
             .send_graphql(
-                GET_MANY_ADDRESSES,
+                GET_MANY_ASSETS,
                 json!({
                 "input":
                 {
                     "filtering": {
-                        "reporterId": addr_payload.reporter_id.to_string(),
+                        "reporterId": asset_payload.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -172,44 +176,44 @@ async fn get_filtered_addresses_test() {
             )
             .await;
 
-        let addresses_response = &response["getManyAddresses"];
-        assert_eq!(addresses_response["total"], 1);
+        let assets_response = &response["getManyAssets"];
+        assert_eq!(assets_response["total"], 1);
 
-        let address = addresses_response["data"]
+        let asset = assets_response["data"]
             .as_array()
             .expect("Empty response")
             .first()
             .unwrap();
 
-        check_address(&addr_payload, address, network)
+        check_asset(&asset_payload, asset, network)
     }
 }
 
 #[tokio::test]
-async fn get_paginated_addresses_test() {
+async fn get_paginated_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+    let assets = test_app
+        .setup_entities(&sender, EventName::UpdateAsset)
         .await;
 
-    let (payload, network) = addresses.last().expect("Invalid index");
-    let addr_payload = match payload {
-        PushData::Address(addr) => addr,
+    let (payload, network) = assets.last().expect("Invalid index");
+    let asset_payload = match payload {
+        PushData::Asset(asset) => asset,
         _ => panic!("Invalid type"),
     };
 
     let page_size = 2;
     let response = sender
         .send_graphql(
-            GET_MANY_ADDRESSES,
+            GET_MANY_ASSETS,
             json!({
             "input":
             {
                 "ordering": "ASC",
                 "orderingCondition": "UPDATED_AT",
                 "pagination": {
-                    "pageNum": addresses.len() / page_size,
+                    "pageNum": assets.len() / page_size,
                     "pageSize": page_size
                 }
             }
@@ -217,14 +221,12 @@ async fn get_paginated_addresses_test() {
         )
         .await;
 
-    let addresses_response = &response["getManyAddresses"];
-    assert_eq!(addresses_response["total"], addresses.len());
-    assert_eq!(addresses_response["pageCount"], addresses.len() / page_size);
+    let assets_response = &response["getManyassets"];
+    assert_eq!(assets_response["total"], assets.len());
+    assert_eq!(assets_response["pageCount"], assets.len() / page_size);
 
-    let addresses = addresses_response["data"]
-        .as_array()
-        .expect("Empty response");
+    let assets = assets_response["data"].as_array().expect("Empty response");
 
-    assert_eq!(addresses.len(), page_size);
-    check_address(&addr_payload, addresses.last().unwrap(), network)
+    assert_eq!(assets.len(), page_size);
+    check_asset(&asset_payload, assets.last().unwrap(), network)
 }
