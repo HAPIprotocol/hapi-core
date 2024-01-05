@@ -10,7 +10,7 @@ use {
 };
 
 const GET_CASE_QUERY: &str = "
-    query GetCase($caseId: String!, $network: UUID!) {
+    query GetCase($caseId: UUID!, $network: UUID!) {
         getCase(caseId: $caseId, network: $network) {
             network
             caseId
