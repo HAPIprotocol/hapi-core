@@ -1,25 +1,27 @@
 use {
     async_graphql::SimpleObject,
-    hapi_core::client::entities::address::Address as AddressPayload,
+    hapi_core::client::entities::asset::Asset as AssetPayload,
     sea_orm::{entity::prelude::*, NotSet, Set},
 };
 
-use super::query_utils::{AddressCondition, AddressFilter};
+use super::query_utils::{AssetCondition, AssetFilter};
 use crate::entity::{
     reporter,
     types::{Category, NetworkName},
     EntityFilter, FromPayload,
 };
 
-// Risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
+// Risk and confirmations types do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
-#[graphql(name = "Address")]
-#[sea_orm(table_name = "address")]
+#[graphql(name = "Asset")]
+#[sea_orm(table_name = "asset")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub network: NetworkName,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub asset_id: String,
     pub case_id: Uuid,
     pub reporter_id: Uuid,
     pub risk: i16,
@@ -30,15 +32,19 @@ pub struct Model {
 }
 
 impl EntityFilter for Entity {
-    type Filter = AddressFilter;
-    type Condition = AddressCondition;
+    type Filter = AssetFilter;
+    type Condition = AssetCondition;
 
     // Fitlering query
-    fn filter(selected: Select<Entity>, filter_options: &AddressFilter) -> Select<Entity> {
+    fn filter(selected: Select<Entity>, filter_options: &AssetFilter) -> Select<Entity> {
         let mut query = selected;
 
         if let Some(network) = filter_options.network {
             query = query.filter(Column::Network.eq(network));
+        }
+
+        if let Some(address) = &filter_options.address {
+            query = query.filter(Column::Address.eq(address));
         }
 
         if let Some(case_id) = filter_options.case_id {
@@ -83,12 +89,12 @@ impl Related<reporter::Entity> for Entity {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-impl FromPayload<AddressPayload> for ActiveModel {
+impl FromPayload<AssetPayload> for ActiveModel {
     fn from(
         network: NetworkName,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
-        payload: AddressPayload,
+        payload: AssetPayload,
     ) -> Self {
         let created_at = created_at.map_or(NotSet, Set);
         let updated_at = updated_at.map_or(NotSet, Set);
@@ -96,6 +102,7 @@ impl FromPayload<AddressPayload> for ActiveModel {
         Self {
             network: Set(network),
             address: Set(payload.address.to_owned()),
+            asset_id: Set(payload.asset_id.to_string()),
             case_id: Set(payload.case_id.to_owned()),
             reporter_id: Set(payload.reporter_id.to_owned()),
             risk: Set(payload.risk.into()),

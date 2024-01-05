@@ -126,7 +126,7 @@ async fn get_many_assets_test() {
         )
         .await;
 
-    let assets_response = &response["getManyassets"];
+    let assets_response = &response["getManyAssets"];
     assert_eq!(assets_response["total"], assets.len());
 
     for (index, asset) in assets_response["data"]
@@ -221,7 +221,7 @@ async fn get_paginated_assets_test() {
         )
         .await;
 
-    let assets_response = &response["getManyassets"];
+    let assets_response = &response["getManyAssets"];
     assert_eq!(assets_response["total"], assets.len());
     assert_eq!(assets_response["pageCount"], assets.len() / page_size);
 

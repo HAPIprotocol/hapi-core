@@ -1,6 +1,15 @@
 use async_graphql::{Enum, InputObject, InputType, OutputType, SimpleObject};
 
-use super::address::query_utils::{AddressCondition, AddressFilter};
+use super::{
+    address::{
+        model::Model as Address,
+        query_utils::{AddressCondition, AddressFilter},
+    },
+    asset::{
+        model::Model as Asset,
+        query_utils::{AssetCondition, AssetFilter},
+    },
+};
 
 const DEFAULT_PAGE_NUM: u64 = 1;
 const DEFAULT_PAGE_SIZE: u64 = 25;
@@ -31,6 +40,8 @@ pub enum Ordering {
 
 /// A paginated response for an entity
 #[derive(Clone, Debug, Eq, PartialEq, SimpleObject)]
+#[graphql(concrete(name = "AddressPage", params(Address)))]
+#[graphql(concrete(name = "AssetPage", params(Asset)))]
 pub struct EntityPage<Entity: Send + Sync + OutputType> {
     /// The page of data being returned
     pub data: Vec<Entity>,
@@ -43,6 +54,7 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
 /// Reusable input type for all entities
 #[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]
+#[graphql(concrete(name = "AssetInput", params(AssetFilter, AssetCondition)))]
 pub struct EntityInput<F: InputType, C: InputType> {
     /// Conditions to filter entities by
     pub filtering: Option<F>,
