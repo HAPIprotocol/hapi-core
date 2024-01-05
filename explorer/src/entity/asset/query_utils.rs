@@ -18,7 +18,6 @@ pub struct AssetFilter {
     pub confirmations: Option<String>,
 }
 
-/// TODO: add address as filtering condition
 /// Available ordering values for asset
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum AssetCondition {

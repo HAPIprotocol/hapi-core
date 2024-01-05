@@ -23,6 +23,8 @@ pub enum AddressCondition {
     #[default]
     /// Order by network
     Network,
+    /// Order by address
+    Address,
     /// Order by case id
     CaseId,
     /// Order by reporter id
@@ -43,6 +45,7 @@ impl From<AddressCondition> for Column {
     fn from(condition: AddressCondition) -> Self {
         match condition {
             AddressCondition::Network => Column::Network,
+            AddressCondition::Address => Column::Address,
             AddressCondition::CaseId => Column::CaseId,
             AddressCondition::ReporterId => Column::ReporterId,
             AddressCondition::Category => Column::Category,
