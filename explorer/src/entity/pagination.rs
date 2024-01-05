@@ -13,6 +13,10 @@ use super::{
         model::Model as Case,
         query_utils::{CaseCondition, CaseFilter},
     },
+    reporter::{
+        model::Model as Reporter,
+        query_utils::{ReporterCondition, ReporterFilter},
+    },
 };
 
 const DEFAULT_PAGE_NUM: u64 = 1;
@@ -44,9 +48,10 @@ pub enum Ordering {
 
 /// A paginated response for an entity
 #[derive(Clone, Debug, Eq, PartialEq, SimpleObject)]
+#[graphql(concrete(name = "ReporterPage", params(Reporter)))]
+#[graphql(concrete(name = "CasePage", params(Case)))]
 #[graphql(concrete(name = "AddressPage", params(Address)))]
 #[graphql(concrete(name = "AssetPage", params(Asset)))]
-#[graphql(concrete(name = "CasePage", params(Case)))]
 pub struct EntityPage<Entity: Send + Sync + OutputType> {
     /// The page of data being returned
     pub data: Vec<Entity>,
@@ -58,9 +63,10 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
 
 /// Reusable input type for all entities
 #[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
+#[graphql(concrete(name = "ReporterInput", params(ReporterFilter, ReporterCondition)))]
+#[graphql(concrete(name = "CaseInput", params(CaseFilter, CaseCondition)))]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]
 #[graphql(concrete(name = "AssetInput", params(AssetFilter, AssetCondition)))]
-#[graphql(concrete(name = "CaseInput", params(CaseFilter, CaseCondition)))]
 pub struct EntityInput<F: InputType, C: InputType> {
     /// Conditions to filter entities by
     pub filtering: Option<F>,

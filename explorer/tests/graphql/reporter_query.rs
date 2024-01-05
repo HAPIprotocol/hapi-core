@@ -173,7 +173,7 @@ async fn get_filtered_reporters_test() {
                 "input":
                 {
                     "filtering": {
-                        "reporterId": reporters_payload.id.to_string(),
+                        "network": network.to_string().to_uppercase(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",

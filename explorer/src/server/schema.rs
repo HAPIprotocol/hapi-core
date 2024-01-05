@@ -5,11 +5,13 @@ use {
     std::sync::Arc,
 };
 
-use crate::entity::{address::AddressQuery, asset::AssetQuery, case::CaseQuery};
+use crate::entity::{
+    address::AddressQuery, asset::AssetQuery, case::CaseQuery, reporter::ReporterQuery,
+};
 
 /// Top-level application Query type
 #[derive(Default, MergedObject)]
-pub struct Query(AddressQuery, AssetQuery, CaseQuery);
+pub struct Query(AddressQuery, AssetQuery, CaseQuery, ReporterQuery);
 
 /// Top-level merged application schema
 pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;

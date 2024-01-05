@@ -1,15 +1,19 @@
-use super::{
-    address, asset, case,
-    types::{NetworkName, ReporterRole, ReporterStatus},
-    FromPayload,
-};
 use {
+    async_graphql::SimpleObject,
     hapi_core::client::entities::reporter::Reporter as ReporterPayload,
     sea_orm::{entity::prelude::*, NotSet, Set},
 };
 
+use super::query_utils::{ReporterCondition, ReporterFilter};
+use crate::entity::{
+    address, asset, case,
+    types::{NetworkName, ReporterRole, ReporterStatus},
+    EntityFilter, FromPayload,
+};
+
 // Unlock_timestamp and stake do not correspond to the types of contracts (due to Postgresql restrictions)
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
+#[graphql(name = "Reporter")]
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -25,6 +29,42 @@ pub struct Model {
     pub unlock_timestamp: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
+}
+
+impl EntityFilter for Entity {
+    type Filter = ReporterFilter;
+    type Condition = ReporterCondition;
+
+    // Fitlering query
+    fn filter(selected: Select<Entity>, filter_options: &ReporterFilter) -> Select<Entity> {
+        let mut query = selected;
+
+        if let Some(network) = filter_options.network {
+            query = query.filter(Column::Network.eq(network));
+        }
+
+        if let Some(account) = &filter_options.account {
+            query = query.filter(Column::Account.eq(account));
+        }
+
+        if let Some(role) = filter_options.role {
+            query = query.filter(Column::Role.eq(role));
+        }
+
+        if let Some(status) = filter_options.status {
+            query = query.filter(Column::Status.eq(status));
+        }
+
+        if let Some(name) = &filter_options.name {
+            query = query.filter(Column::Name.eq(name));
+        }
+
+        if let Some(url) = &filter_options.url {
+            query = query.filter(Column::Url.eq(url));
+        }
+
+        query
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
