@@ -61,7 +61,10 @@ fn check_case(payload: &Case, value: &Value, network_id: &HapiCoreNetwork) {
     assert_eq!(value["caseId"], payload.id.to_string());
     assert_eq!(value["name"], payload.name);
     assert_eq!(value["url"], payload.url);
-    assert_eq!(replacer(&value["status"]), payload.status.to_string());
+    assert_eq!(
+        replacer(&value["status"]),
+        payload.status.to_string().to_lowercase()
+    );
     assert_eq!(value["reporterId"], payload.reporter_id.to_string());
 }
 

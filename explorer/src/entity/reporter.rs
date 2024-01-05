@@ -1,5 +1,5 @@
 use super::{
-    address, asset,
+    address, asset, case,
     types::{NetworkName, ReporterRole, ReporterStatus},
     FromPayload,
 };
@@ -33,6 +33,8 @@ pub enum Relation {
     Address,
     #[sea_orm(has_many = "asset::Entity")]
     Asset,
+    #[sea_orm(has_many = "case::Entity")]
+    Case,
 }
 
 impl Related<address::Entity> for Entity {
@@ -44,6 +46,12 @@ impl Related<address::Entity> for Entity {
 impl Related<asset::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Asset.def()
+    }
+}
+
+impl Related<case::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Case.def()
     }
 }
 
