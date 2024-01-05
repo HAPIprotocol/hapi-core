@@ -2,6 +2,7 @@ use {
     async_graphql::{Context, Object, Result},
     sea_orm::DatabaseConnection,
     std::sync::Arc,
+    tracing::instrument,
 };
 
 use super::{
@@ -24,6 +25,7 @@ pub struct AddressQuery {}
 #[Object]
 impl AddressQuery {
     /// Get a single address
+    #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_address(
         &self,
         ctx: &Context<'_>,
@@ -39,6 +41,7 @@ impl AddressQuery {
     }
 
     /// Get multiple addresses
+    #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
     pub async fn get_many_addresses(
         &self,
         ctx: &Context<'_>,

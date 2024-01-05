@@ -13,6 +13,7 @@ use {
     hapi_indexer::{PushData, PushPayload},
     sea_orm::DatabaseConnection,
     std::sync::Arc,
+    tracing::instrument,
 };
 
 use crate::{
@@ -22,6 +23,7 @@ use crate::{
 };
 
 /// Handle events Requests
+#[instrument(level = "info", skip(db))]
 pub(crate) async fn event_handler(
     db: State<Arc<DatabaseConnection>>,
     Json(payload): Json<PushPayload>,
@@ -47,7 +49,7 @@ pub(crate) async fn event_handler(
     }
 }
 
-// TODO: add tracing
+#[instrument(level = "trace", skip(db))]
 async fn process_address_payload(
     address: AddressPayload,
     event_name: EventName,
@@ -81,6 +83,7 @@ async fn process_address_payload(
     Ok(StatusCode::OK)
 }
 
+#[instrument(level = "trace", skip(db))]
 async fn process_asset_payload(
     asset: AssetPayload,
     event_name: EventName,
@@ -110,6 +113,7 @@ async fn process_asset_payload(
     Ok(StatusCode::OK)
 }
 
+#[instrument(level = "trace", skip(db))]
 async fn process_case_payload(
     case: CasePayload,
     event_name: EventName,
@@ -139,6 +143,7 @@ async fn process_case_payload(
     Ok(StatusCode::OK)
 }
 
+#[instrument(level = "trace", skip(db))]
 async fn process_reporter_payload(
     reporter: ReporterPayload,
     event_name: EventName,

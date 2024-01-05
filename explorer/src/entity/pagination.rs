@@ -6,7 +6,7 @@ const DEFAULT_PAGE_NUM: u64 = 1;
 const DEFAULT_PAGE_SIZE: u64 = 25;
 
 /// A convenience wrapper for pagination
-#[derive(Clone, Eq, PartialEq, InputObject)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct Paginator {
     pub page_num: u64,
     pub page_size: u64,
@@ -22,7 +22,7 @@ impl Default for Paginator {
 }
 
 /// A convenience wrapper for ordering
-#[derive(Enum, Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum Ordering {
     #[default]
     Asc,
@@ -41,7 +41,7 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
 }
 
 /// Reusable input type for all entities
-#[derive(Clone, Default, Eq, PartialEq, InputObject)]
+#[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]
 pub struct EntityInput<F: InputType, C: InputType> {
     /// Conditions to filter entities by

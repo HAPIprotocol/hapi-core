@@ -7,7 +7,7 @@ use super::model::Column;
 use crate::entity::types::{Category, NetworkName};
 
 /// Conditions to filter address listings by
-#[derive(Clone, Eq, PartialEq, InputObject)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct AddressFilter {
     pub network: Option<NetworkName>,
     pub case_id: Option<Uuid>,
@@ -18,7 +18,7 @@ pub struct AddressFilter {
 }
 
 /// Available ordering values for address
-#[derive(Enum, Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum AddressCondition {
     #[default]
     /// Order by network
