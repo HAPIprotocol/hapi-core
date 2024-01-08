@@ -13,7 +13,7 @@ use super::{
 use crate::{
     entity::{
         pagination::{EntityInput, EntityPage},
-        types::NetworkName,
+        types::NetworkBackend,
     },
     service::EntityQuery,
 };
@@ -31,7 +31,7 @@ impl ReporterQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Reporter id")] reporter_id: Uuid,
-        #[graphql(desc = "Reporter network")] network: NetworkName,
+        #[graphql(desc = "Reporter network")] network: NetworkBackend,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
         let address =

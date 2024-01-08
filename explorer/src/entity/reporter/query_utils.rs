@@ -1,12 +1,12 @@
 use async_graphql::{Enum, InputObject};
 
 use super::model::Column;
-use crate::entity::types::{NetworkName, ReporterRole, ReporterStatus};
+use crate::entity::types::{NetworkBackend, ReporterRole, ReporterStatus};
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct ReporterFilter {
-    pub network: Option<NetworkName>,
+    pub network: Option<NetworkBackend>,
     pub account: Option<String>,
     pub role: Option<ReporterRole>,
     pub status: Option<ReporterStatus>,

@@ -7,7 +7,7 @@ use {
 use super::query_utils::{CaseCondition, CaseFilter};
 use crate::entity::{
     reporter,
-    types::{CaseStatus, NetworkName},
+    types::{CaseStatus, NetworkBackend},
     EntityFilter, FromPayload,
 };
 
@@ -16,7 +16,7 @@ use crate::entity::{
 #[sea_orm(table_name = "case")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: NetworkName,
+    pub network: NetworkBackend,
     #[sea_orm(primary_key, auto_increment = false)]
     pub case_id: Uuid,
     pub name: String,
@@ -79,7 +79,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<CasePayload> for ActiveModel {
     fn from(
-        network: NetworkName,
+        network: NetworkBackend,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: CasePayload,

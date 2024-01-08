@@ -1,4 +1,4 @@
-use crate::{NetworkName, ReporterRole, ReporterStatus};
+use crate::{NetworkBackend, ReporterRole, ReporterStatus};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Reporter::Network)
-                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
                             .not_null(),
                     )
                     .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())

@@ -7,7 +7,7 @@ use {
 use super::query_utils::{AddressCondition, AddressFilter};
 use crate::entity::{
     reporter,
-    types::{Category, NetworkName},
+    types::{Category, NetworkBackend},
     EntityFilter, FromPayload,
 };
 
@@ -17,7 +17,7 @@ use crate::entity::{
 #[sea_orm(table_name = "address")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: NetworkName,
+    pub network: NetworkBackend,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     pub case_id: Uuid,
@@ -85,7 +85,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AddressPayload> for ActiveModel {
     fn from(
-        network: NetworkName,
+        network: NetworkBackend,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: AddressPayload,

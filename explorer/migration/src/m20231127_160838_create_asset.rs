@@ -1,4 +1,4 @@
-use crate::{Case, Category, NetworkName, Reporter};
+use crate::{Case, Category, NetworkBackend, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Asset::Network)
-                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
                             .not_null(),
                     )
                     .col(ColumnDef::new(Asset::Address).string().not_null())

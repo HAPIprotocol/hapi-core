@@ -12,8 +12,8 @@ impl MigrationTrait for Migration {
         manager
             .create_type(
                 Type::create()
-                    .as_enum(NetworkName::Type)
-                    .values(NetworkName::iter().skip(1))
+                    .as_enum(NetworkBackend::Type)
+                    .values(NetworkBackend::iter().skip(1))
                     .to_owned(),
             )
             .await
@@ -21,13 +21,13 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_type(Type::drop().name(NetworkName::Type).to_owned())
+            .drop_type(Type::drop().name(NetworkBackend::Type).to_owned())
             .await
     }
 }
 
 #[derive(Iden, EnumIter)]
-pub enum NetworkName {
+pub enum NetworkBackend {
     #[iden = "network_name"]
     Type,
     Sepolia,

@@ -17,7 +17,7 @@ use {
 };
 
 use crate::{
-    entity::{address, asset, case, reporter, types::NetworkName},
+    entity::{address, asset, case, reporter, types::NetworkBackend},
     error::AppError,
     service::EntityMutation,
 };
@@ -54,7 +54,7 @@ async fn process_address_payload(
     address: AddressPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkName,
+    network: NetworkBackend,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(address = ?address, "Received address");
@@ -88,7 +88,7 @@ async fn process_asset_payload(
     asset: AssetPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkName,
+    network: NetworkBackend,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(asset = ?asset, "Received asset");
@@ -118,7 +118,7 @@ async fn process_case_payload(
     case: CasePayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkName,
+    network: NetworkBackend,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(case = ?case, "Received case");
@@ -148,7 +148,7 @@ async fn process_reporter_payload(
     reporter: ReporterPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkName,
+    network: NetworkBackend,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(reporter = ?reporter, "Received reporter");

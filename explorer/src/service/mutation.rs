@@ -1,4 +1,4 @@
-use crate::entity::{types::NetworkName, FromPayload};
+use crate::entity::{types::NetworkBackend, FromPayload};
 use {chrono::NaiveDateTime, sea_orm::*};
 
 pub struct EntityMutation;
@@ -8,7 +8,7 @@ impl EntityMutation {
     pub async fn create_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkName,
+        network: NetworkBackend,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
@@ -29,7 +29,7 @@ impl EntityMutation {
     pub async fn update_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkName,
+        network: NetworkBackend,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where

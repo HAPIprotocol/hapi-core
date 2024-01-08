@@ -4,12 +4,12 @@ use {
 };
 
 use super::model::Column;
-use crate::entity::types::{CaseStatus, NetworkName};
+use crate::entity::types::{CaseStatus, NetworkBackend};
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct CaseFilter {
-    pub network: Option<NetworkName>,
+    pub network: Option<NetworkBackend>,
     pub name: Option<String>,
     pub url: Option<String>,
     pub status: Option<CaseStatus>,

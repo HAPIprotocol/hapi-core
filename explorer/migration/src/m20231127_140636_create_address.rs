@@ -1,4 +1,4 @@
-use crate::{m20231211_164133_create_network_name::NetworkName, Case, Category, Reporter};
+use crate::{m20231211_164133_create_network_backend::NetworkBackend, Case, Category, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(
                         ColumnDef::new(Address::Network)
-                            .enumeration(NetworkName::Type, NetworkName::iter().skip(1))
+                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
                             .not_null(),
                     )
                     .col(ColumnDef::new(Address::Address).string().not_null())

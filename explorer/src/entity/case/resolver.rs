@@ -13,7 +13,7 @@ use super::{
 use crate::{
     entity::{
         pagination::{EntityInput, EntityPage},
-        types::NetworkName,
+        types::NetworkBackend,
     },
     service::EntityQuery,
 };
@@ -31,7 +31,7 @@ impl CaseQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Case id")] case_id: Uuid,
-        #[graphql(desc = "Case network")] network: NetworkName,
+        #[graphql(desc = "Case network")] network: NetworkBackend,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
         let address =

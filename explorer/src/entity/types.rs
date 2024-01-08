@@ -15,7 +15,7 @@ use {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_name")]
-pub enum NetworkName {
+pub enum NetworkBackend {
     #[sea_orm(string_value = "sepolia")]
     Sepolia,
     #[sea_orm(string_value = "ethereum")]
@@ -30,15 +30,15 @@ pub enum NetworkName {
     Near,
 }
 
-impl From<HapiCoreNetwork> for NetworkName {
+impl From<HapiCoreNetwork> for NetworkBackend {
     fn from(payload: HapiCoreNetwork) -> Self {
         match payload {
-            HapiCoreNetwork::Sepolia => NetworkName::Sepolia,
-            HapiCoreNetwork::Ethereum => NetworkName::Ethereum,
-            HapiCoreNetwork::Bsc => NetworkName::Bsc,
-            HapiCoreNetwork::Solana => NetworkName::Solana,
-            HapiCoreNetwork::Bitcoin => NetworkName::Bitcoin,
-            HapiCoreNetwork::Near => NetworkName::Near,
+            HapiCoreNetwork::Sepolia => NetworkBackend::Sepolia,
+            HapiCoreNetwork::Ethereum => NetworkBackend::Ethereum,
+            HapiCoreNetwork::Bsc => NetworkBackend::Bsc,
+            HapiCoreNetwork::Solana => NetworkBackend::Solana,
+            HapiCoreNetwork::Bitcoin => NetworkBackend::Bitcoin,
+            HapiCoreNetwork::Near => NetworkBackend::Near,
         }
     }
 }
