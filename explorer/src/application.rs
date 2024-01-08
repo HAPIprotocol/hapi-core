@@ -2,9 +2,9 @@ use {
     anyhow::Result,
     migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection},
+    secrecy::SecretString,
     std::net::SocketAddr,
     tokio::net::TcpListener,
-    secrecy::SecretString,
 };
 
 use crate::configuration::Configuration;

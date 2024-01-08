@@ -1,41 +1,38 @@
 use crate::application::Application;
+use crate::entity::indexer;
 use crate::routes::jwt_auth::TokenClaims;
+use anyhow::Result;
+use chrono::NaiveDateTime;
 use hapi_core::HapiCoreNetwork;
-use hapi_indexer::IndexingCursor;
 use jsonwebtoken::{encode, EncodingKey, Header};
+use sea_orm::{ActiveModelTrait, Set};
 use secrecy::ExposeSecret;
 use uuid::Uuid;
 
-pub struct Indexer {
-    id: Uuid,
-    network: HapiCoreNetwork,
-    last_heartbeat: u64,
-    cursor: IndexingCursor,
-}
-
-impl Indexer {
-    pub fn new(network: HapiCoreNetwork) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            network,
-            last_heartbeat: 0,
-            cursor: IndexingCursor::None,
-        }
-    }
-}
+const JWT_VALIDITY_DAYS: i64 = 365;
 
 impl Application {
-    pub fn create_indexer(&self, network: HapiCoreNetwork) {
-        println!("Create indexer {}", network);
-        let indexer = Indexer::new(network);
+    pub async fn create_indexer(&self, network: HapiCoreNetwork) -> Result<()> {
+        tracing::info!("Create indexer {}", network);
 
-        // TODO: Save indexer to database
-
+        let db = &self.database_conn;
         let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+
+        indexer::ActiveModel {
+            id: Set(id),
+            network: Set(network.into()),
+            created_at: Set(now.naive_utc()),
+            last_heartbeat: Set(NaiveDateTime::default()),
+            cursor: Set("".to_string()),
+        }
+        .insert(db)
+        .await?;
+
         let iat = now.timestamp() as usize;
-        let exp = (now + chrono::Duration::days(365)).timestamp() as usize;
+        let exp = (now + chrono::Duration::days(JWT_VALIDITY_DAYS)).timestamp() as usize;
         let claims: TokenClaims = TokenClaims {
-            id: indexer.id.to_string(),
+            id: id.to_string(),
             exp,
             iat,
         };
@@ -47,6 +44,8 @@ impl Application {
         )
         .unwrap();
 
-        println!("Token: {}", token);
+        tracing::info!("IndexerId: {}. Token: {}", id, token);
+
+        Ok(())
     }
 }

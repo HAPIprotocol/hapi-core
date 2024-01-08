@@ -8,6 +8,10 @@ mod m20231127_162603_create_category_type;
 mod m20231127_165849_create_reporter_role_type;
 mod m20231127_170357_create_reporter_status_type;
 mod m20231127_170630_create_case_status_type;
+mod m20231205_131413_create_indexer;
+mod m20231211_164133_create_network_name;
+
+pub(crate) use m20231211_164133_create_network_name::NetworkName;
 
 pub struct Migrator;
 
@@ -15,6 +19,8 @@ pub struct Migrator;
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
+            Box::new(m20231211_164133_create_network_name::Migration),
+            Box::new(m20231205_131413_create_indexer::Migration),
             Box::new(m20231127_162603_create_category_type::Migration),
             Box::new(m20231127_165849_create_reporter_role_type::Migration),
             Box::new(m20231127_170357_create_reporter_status_type::Migration),

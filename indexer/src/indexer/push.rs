@@ -69,9 +69,14 @@ impl From<Reporter> for PushData {
 
 impl Indexer {
     pub(crate) async fn send_webhook(&self, payload: &PushPayload) -> Result<()> {
+        let url = format!(
+            "{}/events",
+            self.webhook_url,
+        );
+
         let response = self
             .web_client
-            .post(&self.webhook_url)
+            .post(url)
             .bearer_auth(self.jwt_token.as_str())
             .json(payload)
             .send()

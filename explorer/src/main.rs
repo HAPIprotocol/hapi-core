@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
             let network = args
                 .get_one::<HapiCoreNetwork>("network")
                 .expect("Network is required");
-            Ok(app.create_indexer(network.clone()))
+            Ok(app.create_indexer(network.clone()).await?)
         }
         Some(("server", _)) => Ok(app.run_server().await?),
         _ => unreachable!(),

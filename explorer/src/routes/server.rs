@@ -11,7 +11,7 @@ use {
     tokio::net::TcpListener,
 };
 
-use super::{auth, events, health, stats, indexer, indexer_heartbeat};
+use super::{auth, events, health, indexer, indexer_heartbeat, stats};
 use crate::{
     application::Application,
     observability::{setup_metrics, track_metrics},
