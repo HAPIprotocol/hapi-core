@@ -6,12 +6,19 @@ use {
 };
 
 use crate::entity::{
-    address::AddressQuery, asset::AssetQuery, case::CaseQuery, reporter::ReporterQuery,
+    address::AddressQuery, asset::AssetQuery, case::CaseQuery, network::NetworkQuery,
+    reporter::ReporterQuery,
 };
 
 /// Top-level application Query type
 #[derive(Default, MergedObject)]
-pub struct Query(AddressQuery, AssetQuery, CaseQuery, ReporterQuery);
+pub struct Query(
+    AddressQuery,
+    AssetQuery,
+    CaseQuery,
+    ReporterQuery,
+    NetworkQuery,
+);
 
 /// Top-level merged application schema
 pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;

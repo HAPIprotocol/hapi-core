@@ -1,4 +1,7 @@
-use crate::entity::{types::NetworkBackend, FromPayload};
+use crate::entity::{
+    network,
+    {types::NetworkBackend, FromPayload},
+};
 use {chrono::NaiveDateTime, sea_orm::*};
 
 pub struct EntityMutation;
@@ -42,5 +45,55 @@ impl EntityMutation {
         );
 
         M::from(network, None, updated_at, payload).update(db).await
+    }
+
+    /// Method for creating network in database
+    pub async fn create_network(
+        db: &DbConn,
+        id: String,
+        name: String,
+        backend: NetworkBackend,
+        chain_id: Option<String>,
+        authority: String,
+        stake_token: String,
+    ) -> Result<network::Model, DbErr> {
+        let model = network::ActiveModel {
+            id: Set(id),
+            name: Set(name),
+            backend: Set(backend),
+            chain_id: Set(chain_id),
+            authority: Set(authority),
+            stake_token: Set(stake_token),
+            created_at: Set(chrono::Utc::now().naive_utc()),
+            updated_at: Set(chrono::Utc::now().naive_utc()),
+        };
+
+        model.insert(db).await
+    }
+
+    /// Method for updating network in database
+    pub async fn update_network(
+        db: &DbConn,
+        id: String,
+        name: Option<String>,
+        authority: Option<String>,
+        stake_token: Option<String>,
+    ) -> Result<network::Model, DbErr> {
+        let name = name.map_or(NotSet, Set);
+        let stake_token = stake_token.map_or(NotSet, Set);
+        let authority = authority.map_or(NotSet, Set);
+
+        let model = network::ActiveModel {
+            id: Set(id),
+            name,
+            backend: NotSet,
+            chain_id: NotSet,
+            authority,
+            stake_token,
+            created_at: Set(chrono::Utc::now().naive_utc()),
+            updated_at: Set(chrono::Utc::now().naive_utc()),
+        };
+
+        model.update(db).await
     }
 }

@@ -1,5 +1,6 @@
 use {
-    anyhow::Result,
+    anyhow::{anyhow, Result},
+    clap::ArgMatches,
     migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection},
     std::net::SocketAddr,
@@ -7,7 +8,7 @@ use {
     tokio::net::TcpListener,
 };
 
-use crate::configuration::Configuration;
+use crate::{configuration::Configuration, entity::types::NetworkBackend, service::EntityMutation};
 
 pub struct Application {
     pub socket: SocketAddr,
@@ -33,5 +34,41 @@ impl Application {
 
     pub fn port(&self) -> u16 {
         self.socket.port()
+    }
+
+    pub async fn create_network(
+        &self,
+        id: String,
+        name: String,
+        backend: NetworkBackend,
+        chain_id: Option<String>,
+        authority: String,
+        stake_token: String,
+    ) -> Result<()> {
+        EntityMutation::create_network(
+            &self.database_conn,
+            id,
+            name,
+            backend,
+            chain_id,
+            authority,
+            stake_token,
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn update_network(
+        &self,
+        id: String,
+        name: Option<String>,
+        authority: Option<String>,
+        stake_token: Option<String>,
+    ) -> Result<()> {
+        EntityMutation::update_network(&self.database_conn, id, name, authority, stake_token)
+            .await?;
+
+        Ok(())
     }
 }

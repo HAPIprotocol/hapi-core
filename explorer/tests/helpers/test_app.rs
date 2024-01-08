@@ -10,8 +10,7 @@ use {
     },
     hapi_indexer::PushData,
     migration::{Migrator, MigratorTrait},
-    sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, Set},
-    uuid::Uuid,
+    sea_orm::{Database, DatabaseConnection, EntityTrait},
     {
         std::env,
         tokio::{
@@ -27,7 +26,7 @@ const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 pub struct TestApp {
     pub server_addr: String,
     pub db_connection: DatabaseConnection,
-    pub networks: Vec<(HapiCoreNetwork, Uuid)>,
+    pub networks: Vec<HapiCoreNetwork>,
 }
 
 impl TestApp {
@@ -43,25 +42,25 @@ impl TestApp {
         Self::from_configuration(configuration).await
     }
 
-    async fn prepare_networks(db_connection: &DatabaseConnection) -> Vec<(HapiCoreNetwork, Uuid)> {
+    async fn prepare_networks(app: &Application) -> Vec<HapiCoreNetwork> {
         let networks = vec![
-            (HapiCoreNetwork::Ethereum, Uuid::new_v4()),
-            (HapiCoreNetwork::Solana, Uuid::new_v4()),
-            (HapiCoreNetwork::Near, Uuid::new_v4()),
-            (HapiCoreNetwork::Sepolia, Uuid::new_v4()),
+            HapiCoreNetwork::Ethereum,
+            HapiCoreNetwork::Solana,
+            HapiCoreNetwork::Near,
+            HapiCoreNetwork::Sepolia,
         ];
 
-        for (network_name, network_id) in &networks {
-            let network_model = hapi_explorer::entity::network::ActiveModel {
-                id: Set(network_id.to_owned()),
-                name: Set(network_name.clone().into()),
-                created_at: Set(chrono::Utc::now().naive_utc()),
-            };
-
-            network_model
-                .insert(db_connection)
-                .await
-                .expect("Failed to insert network");
+        for network in &networks {
+            app.create_network(
+                network.to_string(),
+                "name".to_string(),
+                network.clone().into(),
+                None,
+                "authority".to_string(),
+                "stake_token".to_string(),
+            )
+            .await
+            .expect("Failed to create network")
         }
 
         networks
@@ -80,11 +79,10 @@ impl TestApp {
             .await
             .expect("Failed to build application");
         let port = application.port();
+        let networks = Self::prepare_networks(&application).await;
 
         spawn(application.run_server());
         sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
-
-        let networks = Self::prepare_networks(&db_connection).await;
 
         TestApp {
             server_addr: format!("http://127.0.0.1:{port}"),
@@ -181,7 +179,7 @@ impl TestApp {
     ) -> Vec<(PushData, &HapiCoreNetwork)> {
         let mut data = vec![];
 
-        for (network, _) in &self.networks {
+        for network in &self.networks {
             let test_data = get_test_data(network.to_owned());
 
             for payload in test_data {

@@ -1640,9 +1640,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.4.10"
+version = "4.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41fffed7514f420abec6d183b1d3acfd9099c79c3a10a06ade4f8203f1411272"
+checksum = "52bdc885e4cacc7f7c9eedc1ef6da641603180c783c41a15c264944deeaab642"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1650,9 +1650,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.4.9"
+version = "4.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63361bae7eef3771745f02d8d892bec2fee5f6e34af316ba556e7f97a7069ff1"
+checksum = "fb7fb5e4e979aec3be7791562fcba452f94ad85e954da024396433e0e25a79e9"
 dependencies = [
  "anstream",
  "anstyle",
@@ -3343,7 +3343,7 @@ dependencies = [
  "async-trait",
  "borsh 0.10.3",
  "bs58 0.5.0",
- "clap 4.4.10",
+ "clap 4.4.13",
  "dirs",
  "enum_extract",
  "ethers",
@@ -3390,6 +3390,7 @@ dependencies = [
  "async-graphql-axum",
  "axum",
  "chrono",
+ "clap 4.4.13",
  "config",
  "hapi-core-cli",
  "hapi_indexer",
@@ -4603,7 +4604,7 @@ checksum = "af7d35397b02b131c188c72f3885e97daeccab134ec2fc8cc0073a94cf1cfe19"
 dependencies = [
  "actix",
  "atty",
- "clap 4.4.10",
+ "clap 4.4.13",
  "near-crypto 0.17.0",
  "near-primitives-core 0.17.0",
  "once_cell",
@@ -6800,7 +6801,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507c2b99f83129f4d5d511012ab47c9f40d1c7923fd4698c19fae23f0bf62913"
 dependencies = [
  "chrono",
- "clap 4.4.10",
+ "clap 4.4.13",
  "dotenvy",
  "glob",
  "regex",
@@ -6831,7 +6832,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d45937e5d4869a0dcf0222bb264df564c077cbe9b312265f3717401d023a633"
 dependencies = [
  "async-trait",
- "clap 4.4.10",
+ "clap 4.4.13",
  "dotenvy",
  "futures",
  "sea-orm",

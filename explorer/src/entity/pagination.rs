@@ -13,6 +13,10 @@ use super::{
         model::Model as Case,
         query_utils::{CaseCondition, CaseFilter},
     },
+    network::{
+        model::Model as Network,
+        query_utils::{NetworkCondition, NetworkFilter},
+    },
     reporter::{
         model::Model as Reporter,
         query_utils::{ReporterCondition, ReporterFilter},
@@ -48,6 +52,7 @@ pub enum Ordering {
 
 /// A paginated response for an entity
 #[derive(Clone, Debug, Eq, PartialEq, SimpleObject)]
+#[graphql(concrete(name = "NetworkPage", params(Network)))]
 #[graphql(concrete(name = "ReporterPage", params(Reporter)))]
 #[graphql(concrete(name = "CasePage", params(Case)))]
 #[graphql(concrete(name = "AddressPage", params(Address)))]
@@ -63,6 +68,7 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
 
 /// Reusable input type for all entities
 #[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
+#[graphql(concrete(name = "Networknput", params(NetworkFilter, NetworkCondition)))]
 #[graphql(concrete(name = "ReporterInput", params(ReporterFilter, ReporterCondition)))]
 #[graphql(concrete(name = "CaseInput", params(CaseFilter, CaseCondition)))]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]
