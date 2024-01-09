@@ -1,14 +1,17 @@
 use {
     anyhow::{anyhow, Result},
-    clap::ArgMatches,
-    migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection},
-    std::net::SocketAddr,
-    std::sync::Arc,
+    sea_orm_cli::MigrateSubcommands,
+    sea_orm_migration::{cli::run_migrate, MigratorTrait},
+    std::{net::SocketAddr, sync::Arc},
     tokio::net::TcpListener,
+    tracing::instrument,
 };
 
-use crate::{configuration::Configuration, entity::types::NetworkBackend, service::EntityMutation};
+use crate::{
+    configuration::Configuration, entity::types::NetworkBackend, migrations::Migrator,
+    service::EntityMutation,
+};
 
 pub struct Application {
     pub socket: SocketAddr,
@@ -36,6 +39,14 @@ impl Application {
         self.socket.port()
     }
 
+    #[instrument(level = "info", skip(self))]
+    pub async fn migrate(&self, command: Option<MigrateSubcommands>) -> Result<()> {
+        run_migrate(Migrator, &*self.database_conn, command, false)
+            .await
+            .map_err(|e| anyhow!(e.to_string()))
+    }
+
+    #[instrument(level = "info", skip(self))]
     pub async fn create_network(
         &self,
         id: String,
@@ -59,6 +70,7 @@ impl Application {
         Ok(())
     }
 
+    #[instrument(level = "info", skip(self))]
     pub async fn update_network(
         &self,
         id: String,

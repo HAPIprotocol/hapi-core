@@ -1,4 +1,4 @@
-use crate::NetworkBackend;
+use super::NetworkBackend;
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]

@@ -1,4 +1,4 @@
-use crate::{CaseStatus, NetworkBackend, Reporter};
+use super::{CaseStatus, NetworkBackend, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]

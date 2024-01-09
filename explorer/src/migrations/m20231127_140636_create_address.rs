@@ -1,4 +1,4 @@
-use crate::{m20231211_164133_create_network_backend::NetworkBackend, Case, Category, Reporter};
+use super::{Case, Category, NetworkBackend, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]

@@ -1,4 +1,5 @@
 use {
+    anyhow::{anyhow, Error, Result},
     async_graphql::Enum,
     hapi_core::{
         client::entities::{
@@ -11,6 +12,7 @@ use {
         HapiCoreNetwork,
     },
     sea_orm::entity::prelude::*,
+    std::str::FromStr,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
@@ -28,6 +30,22 @@ pub enum NetworkBackend {
     Bitcoin,
     #[sea_orm(string_value = "near")]
     Near,
+}
+
+impl FromStr for NetworkBackend {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "sepolia" => Ok(NetworkBackend::Sepolia),
+            "ethereum" => Ok(NetworkBackend::Ethereum),
+            "bsc" => Ok(NetworkBackend::Bsc),
+            "solana" => Ok(NetworkBackend::Solana),
+            "bitcoin" => Ok(NetworkBackend::Bitcoin),
+            "near" => Ok(NetworkBackend::Near),
+            _ => Err(anyhow!("Unknown network: {}", s)),
+        }
+    }
 }
 
 impl From<HapiCoreNetwork> for NetworkBackend {

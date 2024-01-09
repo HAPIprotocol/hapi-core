@@ -30,12 +30,17 @@ chrono = "0.4.19"
 metrics-exporter-prometheus = "0.12.1"
 metrics = "0.21.1"
 
-sea-orm = "0.12.7"
+sea-orm = "0.12.0"
+sea-orm-migration = { version = "0.12.0" }
+# features = [
+#     "runtime-tokio-rustls",
+#     "sqlx-postgres",
+# ]
+sea-orm-cli = "0.12.0"
 
 async-graphql = { version = "6.0.11", features = ["uuid", "chrono"] }
 async-graphql-axum = "6.0.11"
 
-migration = { path = "./migration" }
 hapi_indexer = { path = "../indexer" }
 hapi-core-cli = { path = "../client.rs" }
 
