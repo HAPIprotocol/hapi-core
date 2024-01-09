@@ -10,6 +10,8 @@ use crate::{entity::indexer, error::AppError};
 
 use super::AppState;
 
+const DEFAULT_PAGE_SIZE: u64 = 25;
+
 #[derive(serde::Deserialize)]
 pub struct PaginationParams {
     page: Option<u64>,
@@ -23,8 +25,8 @@ pub(crate) async fn indexer(
     tracing::info!("Received indexer request");
     let db = &state.database_conn;
 
-    let page = pagination.page.unwrap_or(0);
-    let page_size = pagination.page_size.unwrap_or(10);
+    let page = pagination.page.unwrap_or_default();
+    let page_size = pagination.page_size.unwrap_or(DEFAULT_PAGE_SIZE);
 
     let indexers_count = indexer::Entity::find().count(db).await?;
 
