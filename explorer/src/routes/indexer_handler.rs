@@ -12,8 +12,8 @@ use super::AppState;
 
 #[derive(serde::Deserialize)]
 pub struct PaginationParams {
-    take: Option<u64>,
-    skip: Option<u64>,
+    page: Option<u64>,
+    page_size: Option<u64>,
 }
 
 pub(crate) async fn indexer(
@@ -23,22 +23,22 @@ pub(crate) async fn indexer(
     tracing::info!("Received indexer request");
     let db = &state.database_conn;
 
-    let take = pagination.take.unwrap_or(10);
-    let skip = pagination.skip.unwrap_or(0);
+    let page = pagination.page.unwrap_or(0);
+    let page_size = pagination.page_size.unwrap_or(10);
 
     let indexers_count = indexer::Entity::find().count(db).await?;
 
     let result = indexer::Entity::find()
-        .paginate(db, take)
-        .fetch_page(skip / take)
+        .paginate(db, page_size)
+        .fetch_page(page)
         .await?;
 
     let json_response = serde_json::json!({
         "data": result,
         "meta": {
             "total": indexers_count,
-            "skip": skip,
-            "take": take,
+            "page": page,
+            "page_size": page_size,
         }
     });
 
