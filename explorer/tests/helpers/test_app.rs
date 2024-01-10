@@ -36,10 +36,33 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        Self::from_configuration(configuration).await
+        let db_connection = TestApp::prepare_database(configuration.clone()).await;
+        let app = TestApp::get_application(configuration).await;
+        let port = app.port();
+
+        spawn(app.run_server());
+        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+        TestApp {
+            server_addr: format!("http://127.0.0.1:{}", port),
+            db_connection,
+        }
     }
 
-    pub async fn from_configuration(configuration: Configuration) -> Self {
+    pub async fn create_indexer(network: HapiCoreNetwork) -> String {
+        let app = TestApp::get_application(generate_configuration()).await;
+
+        let token = app
+            .create_indexer(network)
+            .await
+            .expect("Failed to create indexer");
+
+        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+        token
+    }
+
+    pub async fn prepare_database(configuration: Configuration) -> DatabaseConnection {
         let db_connection = Database::connect(configuration.database_url.as_str())
             .await
             .expect("Failed to connect to database");
@@ -48,18 +71,13 @@ impl TestApp {
             .await
             .expect("Failed to migrate down");
 
-        let application = Application::from_configuration(configuration)
+        db_connection
+    }
+
+    pub async fn get_application(configuration: Configuration) -> Application {
+        Application::from_configuration(configuration)
             .await
-            .expect("Failed to build application");
-        let port = application.port();
-
-        spawn(application.run_server());
-        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
-        TestApp {
-            server_addr: format!("http://127.0.0.1:{port}"),
-            db_connection,
-        }
+            .expect("Failed to build application")
     }
 
     pub async fn check_entity(&self, data: PushData, network: &HapiCoreNetwork) {
@@ -156,7 +174,7 @@ pub fn generate_configuration() -> Configuration {
 
     // TODO: implement db docker setup script
     configuration.database_url = env::var("DATABASE_URL")
-        .unwrap_or("postgresql://postgres:postgres@localhost:5432/explorer".to_string());
+        .unwrap_or("postgresql://admin:password123@localhost:6500/rust_hs256".to_string());
 
     configuration
 }

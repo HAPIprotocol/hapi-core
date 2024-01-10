@@ -12,28 +12,32 @@ use {
         },
         HapiCoreNetwork,
     },
+    hapi_indexer::get_id_from_jwt,
     hapi_indexer::{PushData, PushEvent, PushPayload},
-    reqwest::Client,
+    reqwest::{Client, Response},
+    serde_json::json,
     std::str::FromStr,
     uuid::Uuid,
 };
 
 pub struct IndexerMock {
     pub web_client: Client,
-    webhook_url: String,
+    server_addr: String,
 }
 
 impl IndexerMock {
     pub(crate) fn new(server_addr: &str) -> Self {
         Self {
             web_client: Client::new(),
-            webhook_url: format!("{}/{}", server_addr, "events"),
+            server_addr: server_addr.to_string(),
         }
     }
     pub(crate) async fn send_webhook(&self, payload: &PushPayload, token: &str) {
+        let webhook_url = format!("{}/{}", self.server_addr, "events");
+
         let response = self
             .web_client
-            .post(&self.webhook_url)
+            .post(webhook_url)
             .bearer_auth(token)
             .json(payload)
             .send()
@@ -41,6 +45,29 @@ impl IndexerMock {
             .expect("Failed to send request");
 
         assert!(response.status().is_success());
+    }
+
+    pub(crate) async fn send_heartbeat(&self, token: &str) -> Response {
+        let id = get_id_from_jwt(token).expect("Failed to get id from jwt");
+        let heartbeat_url = format!("{}/indexer/{}/heartbeat", self.server_addr, id);
+
+        self.web_client
+            .put(heartbeat_url)
+            .bearer_auth(token)
+            .json(&json!({"cursor": "Block: 12345"}))
+            .send()
+            .await
+            .expect("Failed to send heartbeat request")
+    }
+
+    pub(crate) async fn get_indexers(&self) -> Response {
+        let indexers_url = format!("{}/indexer", self.server_addr);
+
+        self.web_client
+            .get(indexers_url)
+            .send()
+            .await
+            .expect("Failed to send get indexers request")
     }
 }
 

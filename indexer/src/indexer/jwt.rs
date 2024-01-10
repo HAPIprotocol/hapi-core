@@ -16,7 +16,7 @@ pub struct TokenClaims {
     pub exp: usize,
 }
 
-pub(crate) fn get_id_from_jwt(token: &str) -> Result<Uuid> {
+pub fn get_id_from_jwt(token: &str) -> Result<Uuid> {
     let token_data = token.split('.').nth(1).unwrap();
 
     let bytes = engine::GeneralPurpose::new(&alphabet::STANDARD, general_purpose::NO_PAD)

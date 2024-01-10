@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use hapi_core::HapiCoreNetwork;
 use hapi_explorer::{
     application::Application, configuration::get_configuration, observability::setup_tracing,
@@ -27,7 +28,8 @@ async fn main() -> anyhow::Result<()> {
             let network = args
                 .get_one::<HapiCoreNetwork>("network")
                 .expect("Network is required");
-            Ok(app.create_indexer(network.clone()).await?)
+            app.create_indexer(network.clone()).await?;
+            Ok(())
         }
         Some(("server", _)) => Ok(app.run_server().await?),
         _ => unreachable!(),

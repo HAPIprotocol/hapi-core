@@ -46,7 +46,7 @@ impl Application {
         self.socket.port()
     }
 
-    pub async fn create_indexer(&self, network: HapiCoreNetwork) -> Result<()> {
+    pub async fn create_indexer(&self, network: HapiCoreNetwork) -> Result<String> {
         tracing::info!("Create indexer {}", network);
 
         let now = chrono::Utc::now();
@@ -70,6 +70,6 @@ impl Application {
 
         tracing::info!("IndexerId: {}. Token: {}", id, token);
 
-        Ok(())
+        Ok(token)
     }
 }
