@@ -81,14 +81,14 @@ impl TokenContract for TokenContractNear {
             nonce: nonce + 1,
             receiver_id: self.contract_address.clone(),
             block_hash: access_key_query_response.block_hash,
-            actions: vec![Action::FunctionCall(FunctionCallAction {
+            actions: vec![Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: "ft_transfer_call".to_string(),
                 args: json!({"receiver_id": to, "amount": amount})
                     .to_string()
                     .into_bytes(),
                 gas: GAS_FOR_TX,
                 deposit: 1, // one yoctoNear is required by contract
-            })],
+            }))],
         };
 
         Ok(execute_transaction(transaction, signer, &self.client).await?)
@@ -102,7 +102,7 @@ impl TokenContract for TokenContractNear {
         let request = RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::CallFunction {
-                account_id: self.contract_address.parse().unwrap(),
+                account_id: self.contract_address.to_owned(),
                 method_name: "ft_balance_of".to_string(),
                 args: FunctionArgs::from(json!({ "account_id" : addr }).to_string().into_bytes()),
             },

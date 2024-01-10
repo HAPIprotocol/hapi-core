@@ -10,15 +10,21 @@ readme = "README.md"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-near-sdk = { version = "4.1.1" }
-near-contract-standards = "4.1.1"
+borsh = { version = "1.0.0", features = ["derive"] }
+
+# TODO: Replace with the latest stable version of near-sdk-rs
+[dependencies.near-sdk]
+git = "https://github.com/near/near-sdk-rs.git"
+
+[dependencies.near-contract-standards]
+git = "https://github.com/near/near-sdk-rs.git"
 
 [dev-dependencies]
-uuid= { version = "1.4.0", features = [
+uuid = { version = "1.4.0", features = [
     "v4",                # Lets you generate random UUIDs
     "fast-rng",          # Use a faster (but still sufficiently random) RNG
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
-]}
+] }
 workspaces = "0.7.0"
-tokio = { version = "1.29.1", features = ["full"] }
+tokio = { version = "1.28.0", features = ["full"] }
 anyhow = "1.0.71"

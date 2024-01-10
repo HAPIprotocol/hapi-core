@@ -2,7 +2,7 @@ use super::{
     CallExecutionDetailsExtension, GasExtension, U128Extension, ViewResultDetailsExtension,
 };
 use near_contract_standards::storage_management::StorageBalanceBounds;
-use near_sdk::{json_types::U128, serde_json::json, ONE_YOCTO};
+use near_sdk::{json_types::U128, serde_json::json, NearToken};
 use workspaces::{result::ExecutionFinalResult, AccountId, Contract};
 
 use crate::context::TestContext;
@@ -51,7 +51,7 @@ impl TestContext {
             .contract
             .call("storage_deposit")
             .args_json(json!({ "account_id": account_id }))
-            .deposit(storage_deposit.min.0)
+            .deposit(storage_deposit.min.as_yoctonear())
             .transact()
             .await
             .assert_success("storage deposit");
@@ -78,7 +78,7 @@ impl TestContext {
                 "receiver_id": receiver_id,
                 "amount": amount.to_decimals(token.decimals).to_string()
             }))
-            .deposit(ONE_YOCTO)
+            .deposit(NearToken::from_yoctonear(1).as_yoctonear())
             .transact()
             .await
             .assert_success("transfer token");
@@ -97,7 +97,7 @@ impl TestContext {
                 "amount": amount.to_string(),
                 "msg": format!("")
             }))
-            .deposit(ONE_YOCTO)
+            .deposit(NearToken::from_yoctonear(1).as_yoctonear())
             .gas(60.to_tgas())
             .transact()
             .await

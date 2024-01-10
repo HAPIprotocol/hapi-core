@@ -927,7 +927,7 @@ pub(crate) fn matcher() -> ArgMatches {
             eprintln!("{}", e);
             exit(1);
         })
-        .unwrap()
+        .expect("Failed to parse CLI arguments")
 }
 
 fn risk_parser(val: &str) -> Result<u8, String> {
