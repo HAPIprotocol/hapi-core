@@ -174,7 +174,7 @@ pub fn generate_configuration() -> Configuration {
 
     // TODO: implement db docker setup script
     configuration.database_url = env::var("DATABASE_URL")
-        .unwrap_or("postgresql://admin:password123@localhost:6500/rust_hs256".to_string());
+        .unwrap_or("postgresql://postgres:postgres@localhost:5432/explorer".to_string());
 
     configuration
 }
