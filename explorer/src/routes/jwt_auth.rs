@@ -15,7 +15,7 @@ use crate::error::AppError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
-    pub sub: String,
+    pub id: String,
     pub iat: usize,
     pub exp: usize,
 }

@@ -24,6 +24,7 @@ impl WebhookServiceMock {
                 if event.name != EventName::ConfirmAddress && event.name != EventName::ConfirmAsset
                 {
                     let payload = PushPayload {
+                        id: uuid::Uuid::default(),
                         network: event.network.clone(),
                         event: PushEvent {
                             name: event.name.clone(),
@@ -34,12 +35,16 @@ impl WebhookServiceMock {
                         data: data.clone(),
                     };
 
+                    let mut payload_json =
+                        serde_json::to_value(&payload).expect("Failed to serialize payload");
+
+                    // delete id field from request because it generates randomly and we can't predict it
+                    payload_json.as_object_mut().unwrap().remove("id");
+
                     let mock = self
                         .server
                         .mock("POST", "/")
-                        .match_body(Matcher::PartialJsonString(
-                            serde_json::to_string(&payload).expect("Failed to serialize payload"),
-                        ))
+                        .match_body(Matcher::PartialJson(payload_json))
                         .expect(1)
                         .create();
 

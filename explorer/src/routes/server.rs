@@ -2,7 +2,7 @@ use {
     anyhow::Result,
     axum::{
         middleware,
-        routing::{get, post},
+        routing::{get, post, put},
         serve, Router,
     },
     secrecy::SecretString,
@@ -11,7 +11,7 @@ use {
     tokio::net::TcpListener,
 };
 
-use super::{auth, events, health, stats};
+use super::{auth, events, health, indexer, indexer_heartbeat, stats};
 use crate::{
     application::Application,
     observability::{setup_metrics, track_metrics},
@@ -36,6 +36,8 @@ impl Application {
                 post(events).route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
             )
             .route("/stats", get(stats))
+            .route("/indexer", get(indexer))
+            .route("/indexer/:id/heartbeat", put(indexer_heartbeat))
             .with_state(app_state);
 
         if self.enable_metrics {

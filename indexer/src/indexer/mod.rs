@@ -10,6 +10,7 @@ use {
 };
 
 pub(crate) mod client;
+pub(crate) mod heartbeat;
 pub(crate) mod jobs;
 pub(crate) mod jwt;
 pub(crate) mod logic;

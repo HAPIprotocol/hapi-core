@@ -1,13 +1,22 @@
 use {
     anyhow::Result,
+    hapi_core::HapiCoreNetwork,
+    jsonwebtoken::{encode, EncodingKey, Header},
     migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection},
+    secrecy::ExposeSecret,
+    secrecy::SecretString,
     std::net::SocketAddr,
     tokio::net::TcpListener,
-    secrecy::SecretString,
+    uuid::Uuid,
 };
 
-use crate::configuration::Configuration;
+use anyhow::Ok;
+
+use crate::routes::jwt_auth::TokenClaims;
+use crate::{configuration::Configuration, service::Mutation};
+
+const JWT_VALIDITY_DAYS: i64 = 365;
 
 pub struct Application {
     pub socket: SocketAddr,
@@ -35,5 +44,32 @@ impl Application {
 
     pub fn port(&self) -> u16 {
         self.socket.port()
+    }
+
+    pub async fn create_indexer(&self, network: HapiCoreNetwork) -> Result<String> {
+        tracing::info!("Create indexer {}", network);
+
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+
+        Mutation::create_indexer(&self.database_conn, network, id, now).await?;
+
+        let iat = now.timestamp() as usize;
+        let exp = (now + chrono::Duration::days(JWT_VALIDITY_DAYS)).timestamp() as usize;
+        let claims: TokenClaims = TokenClaims {
+            id: id.to_string(),
+            exp,
+            iat,
+        };
+
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.jwt_secret.expose_secret().as_ref()),
+        )?;
+
+        tracing::info!("IndexerId: {}. Token: {}", id, token);
+
+        Ok(token)
     }
 }

@@ -9,3 +9,4 @@ webhook_url = "http://localhost:3000"
 fetching_delay = 100
 contract_address = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
 state_file = "data/state.json"
+jwt_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjFhODgzNDhlLTEwNzItNDVlYi04MWZlLWMzOTNhM2Q2YmFhMCIsImlhdCI6MTcwNDI5MTExNSwiZXhwIjoxNzM1ODI3MTE1fQ._cc3zp58ZSPsyFHNjZUkj4jluXp2BbZjL0grDtmN12w"

@@ -1,30 +1,40 @@
-use anyhow::{anyhow, Result};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::{Deserialize, Serialize};
-
-use crate::indexer::now;
-
-const TOKEN_DURATION: u64 = 365 * 24 * 60 * 60; // 1 year
+use {
+    anyhow::Result,
+    base64::{
+        alphabet,
+        engine::{self, general_purpose},
+        Engine as _,
+    },
+    serde::{Deserialize, Serialize},
+    uuid::Uuid,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
-    pub sub: String,
+    pub id: Uuid,
     pub iat: usize,
     pub exp: usize,
 }
 
-pub(crate) fn create_jwt(secret: &str) -> Result<String> {
-    let now = now()?;
-    let claims = TokenClaims {
-        sub: "indexer".to_string(),
-        iat: now as usize,
-        exp: (now + TOKEN_DURATION) as usize,
-    };
+pub fn get_id_from_jwt(token: &str) -> Result<Uuid> {
+    let token_data = token.split('.').nth(1).unwrap();
 
-    encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(secret.as_ref()),
-    )
-    .map_err(|e| anyhow!("Failed to generate JWT: {}", e))
+    let bytes = engine::GeneralPurpose::new(&alphabet::STANDARD, general_purpose::NO_PAD)
+        .decode(token_data)
+        .unwrap();
+
+    let claims: TokenClaims = serde_json::from_slice(&bytes)?;
+
+    Ok(claims.id)
+}
+
+#[test]
+fn test_jwt() {
+    let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE0NjZjZjRmLTFkNzEtNDE1My1iOWFkLTRhOWMxYjQ4MTAxZSIsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjoxNTE2MjM5MDIyfQ.weKNyTDqRCHMnEmN1RNsKI5vD24w-qesqf9EMoqJz1M";
+
+    let id = get_id_from_jwt(token).unwrap();
+    assert_eq!(
+        id,
+        Uuid::parse_str("1466cf4f-1d71-4153-b9ad-4a9c1b48101e").unwrap()
+    );
 }
