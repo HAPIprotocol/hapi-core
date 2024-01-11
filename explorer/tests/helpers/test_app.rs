@@ -5,11 +5,10 @@ use {
     hapi_explorer::{
         application::Application,
         configuration::Configuration,
-        entity::{address, asset, case, reporter},
+        entity::{address, asset, case, network::Model as NetworkModel, reporter},
         observability::setup_tracing,
     },
     hapi_indexer::PushData,
-    migration::{Migrator, MigratorTrait},
     sea_orm::{Database, DatabaseConnection, EntityTrait},
     {
         std::env,
@@ -22,11 +21,12 @@ use {
 
 pub const WAITING_TIMESTAMP: u64 = 100;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
+const MIGRATION_COUNT: u32 = 10;
 
 pub struct TestApp {
     pub server_addr: String,
     pub db_connection: DatabaseConnection,
-    pub networks: Vec<HapiCoreNetwork>,
+    pub networks: Vec<(HapiCoreNetwork, NetworkModel)>,
 }
 
 impl TestApp {
@@ -42,28 +42,48 @@ impl TestApp {
         Self::from_configuration(configuration).await
     }
 
-    async fn prepare_networks(app: &Application) -> Vec<HapiCoreNetwork> {
-        let networks = vec![
+    async fn prepare_networks(app: &Application) -> Vec<(HapiCoreNetwork, NetworkModel)> {
+        let backends = vec![
             HapiCoreNetwork::Ethereum,
             HapiCoreNetwork::Solana,
             HapiCoreNetwork::Near,
             HapiCoreNetwork::Sepolia,
         ];
 
-        for network in &networks {
+        let mut models = vec![];
+
+        for backend in &backends {
+            let id = backend.to_string();
+            let name = "test_name".to_string();
+            let backend = backend.clone().into();
+            let chain_id = Some("test_chain_id".to_string());
+            let authority = "test_authority".to_string();
+            let stake_token = "test_stake_token".to_string();
+
             app.create_network(
-                network.to_string(),
-                "name".to_string(),
-                network.clone().into(),
-                None,
-                "authority".to_string(),
-                "stake_token".to_string(),
+                id.clone(),
+                name.clone(),
+                backend,
+                chain_id.clone(),
+                authority.clone(),
+                stake_token.clone(),
             )
             .await
-            .expect("Failed to create network")
+            .expect("Failed to create network");
+
+            models.push(NetworkModel {
+                id,
+                name,
+                backend,
+                chain_id,
+                authority,
+                stake_token,
+                created_at: chrono::Utc::now().naive_utc(),
+                updated_at: chrono::Utc::now().naive_utc(),
+            })
         }
 
-        networks
+        backends.into_iter().zip(models).collect()
     }
 
     pub async fn from_configuration(configuration: Configuration) -> Self {
@@ -71,14 +91,23 @@ impl TestApp {
             .await
             .expect("Failed to connect to database");
 
-        Migrator::down(&db_connection, None)
-            .await
-            .expect("Failed to migrate down");
-
         let application = Application::from_configuration(configuration)
             .await
             .expect("Failed to build application");
         let port = application.port();
+
+        application
+            .migrate(Some(sea_orm_cli::MigrateSubcommands::Down {
+                num: MIGRATION_COUNT,
+            }))
+            .await
+            .expect("Failed to migrate down");
+
+        application
+            .migrate(None)
+            .await
+            .expect("Failed to migrate up");
+
         let networks = Self::prepare_networks(&application).await;
 
         spawn(application.run_server());
@@ -179,7 +208,7 @@ impl TestApp {
     ) -> Vec<(PushData, &HapiCoreNetwork)> {
         let mut data = vec![];
 
-        for network in &self.networks {
+        for (network, _) in &self.networks {
             let test_data = get_test_data(network.to_owned());
 
             for payload in test_data {
@@ -187,12 +216,6 @@ impl TestApp {
                 sleep(Duration::from_millis(WAITING_TIMESTAMP)).await;
 
                 if event == payload.event.name {
-                    // if let PushData::Address(addr_payload) = payload.data {
-                    //     data.push(payload.data);
-                    // } else {
-                    //     panic!("Wrong payload type");
-                    // }
-
                     data.push((payload.data, network));
                 }
             }

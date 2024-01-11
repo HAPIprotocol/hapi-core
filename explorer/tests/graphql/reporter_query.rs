@@ -1,3 +1,4 @@
+use super::replacer;
 use crate::helpers::{RequestSender, TestApp};
 
 use {
@@ -52,17 +53,10 @@ const GET_MANY_REPORTERS: &str = "
     }
 ";
 
-fn check_reporter(payload: &Reporter, value: &Value, network_id: &HapiCoreNetwork) {
-    let replacer = |v: &Value| {
-        v.to_string()
-            .replace("\"", "")
-            .replace("_", "")
-            .to_lowercase()
-    };
-
+fn check_reporter(payload: &Reporter, value: &Value, network: &HapiCoreNetwork) {
     assert_eq!(
         replacer(&value["network"]),
-        network_id.to_string().to_lowercase()
+        network.to_string().to_lowercase()
     );
     assert_eq!(value["reporterId"], payload.id.to_string());
     assert_eq!(value["account"], payload.account);

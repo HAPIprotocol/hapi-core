@@ -68,7 +68,7 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
 
 /// Reusable input type for all entities
 #[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
-#[graphql(concrete(name = "Networknput", params(NetworkFilter, NetworkCondition)))]
+#[graphql(concrete(name = "NetworkInput", params(NetworkFilter, NetworkCondition)))]
 #[graphql(concrete(name = "ReporterInput", params(ReporterFilter, ReporterCondition)))]
 #[graphql(concrete(name = "CaseInput", params(CaseFilter, CaseCondition)))]
 #[graphql(concrete(name = "AddressInput", params(AddressFilter, AddressCondition)))]

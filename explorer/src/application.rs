@@ -1,8 +1,8 @@
 use {
-    anyhow::{anyhow, Result},
+    anyhow::{bail, Result},
     sea_orm::{Database, DatabaseConnection},
     sea_orm_cli::MigrateSubcommands,
-    sea_orm_migration::{cli::run_migrate, MigratorTrait},
+    sea_orm_migration::MigratorTrait,
     std::{net::SocketAddr, sync::Arc},
     tokio::net::TcpListener,
     tracing::instrument,
@@ -41,9 +41,20 @@ impl Application {
 
     #[instrument(level = "info", skip(self))]
     pub async fn migrate(&self, command: Option<MigrateSubcommands>) -> Result<()> {
-        run_migrate(Migrator, &*self.database_conn, command, false)
-            .await
-            .map_err(|e| anyhow!(e.to_string()))
+        let db = &*self.database_conn;
+
+        match command {
+            None => Migrator::up(db, None).await?,
+            Some(MigrateSubcommands::Up { num }) => Migrator::up(db, num).await?,
+            Some(MigrateSubcommands::Fresh) => Migrator::fresh(db).await?,
+            Some(MigrateSubcommands::Refresh) => Migrator::refresh(db).await?,
+            Some(MigrateSubcommands::Reset) => Migrator::reset(db).await?,
+            Some(MigrateSubcommands::Status) => Migrator::status(db).await?,
+            Some(MigrateSubcommands::Down { num }) => Migrator::down(db, Some(num)).await?,
+            _ => bail!("This command is not supported"),
+        };
+
+        Ok(())
     }
 
     #[instrument(level = "info", skip(self))]

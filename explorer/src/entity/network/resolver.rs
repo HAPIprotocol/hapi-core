@@ -3,7 +3,6 @@ use {
     sea_orm::DatabaseConnection,
     std::sync::Arc,
     tracing::instrument,
-    uuid::Uuid,
 };
 
 use super::{
@@ -28,7 +27,7 @@ impl NetworkQuery {
     pub async fn get_network(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Network id")] id: Uuid,
+        #[graphql(desc = "Network id")] id: String,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
         let address = EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, id).await?;
@@ -38,7 +37,7 @@ impl NetworkQuery {
 
     /// Get multiple addresses
     #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
-    pub async fn get_many_networkss(
+    pub async fn get_many_networks(
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Network input parameters")] input: EntityInput<
