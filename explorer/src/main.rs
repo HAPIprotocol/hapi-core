@@ -12,36 +12,36 @@ use {
 pub enum NetworkSubcommands {
     #[command(about = "Create new network")]
     Create {
-        #[arg(long, help = "Network id")]
+        #[arg(long, help = "Network string identifier ")]
         id: String,
 
-        #[arg(long, help = "Network name")]
+        #[arg(long, help = "Network display name")]
         name: String,
 
-        #[arg(long, help = "Network backend")]
+        #[arg(long, help = "Network backend type")]
         backend: NetworkBackend,
 
         #[arg(long, default_value = None, help = "Network chain id (optional)")]
         chain_id: Option<String>,
 
-        #[arg(long, help = "Network authority")]
+        #[arg(long, help = "Network authority address")]
         authority: String,
 
-        #[arg(long, help = "Network stake token")]
+        #[arg(long, help = "Stake token contract address")]
         stake_token: String,
     },
     #[command(about = "Update existing network")]
     Update {
-        #[arg(long, help = "Network id")]
+        #[arg(long, help = "Network string identifier ")]
         id: String,
 
-        #[arg(long, default_value = None, help = "Network name")]
+        #[arg(long, default_value = None, help = "Network display name")]
         name: Option<String>,
 
-        #[arg(long, default_value = None, help = "Network stake token")]
+        #[arg(long, default_value = None, help = "Stake token contract address")]
         stake_token: Option<String>,
 
-        #[arg(long, default_value = None, help = "Network authority")]
+        #[arg(long, default_value = None, help = "Network authority address")]
         authority: Option<String>,
     },
 }
