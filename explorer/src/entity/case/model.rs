@@ -6,7 +6,7 @@ use {
 
 use super::query_utils::{CaseCondition, CaseFilter};
 use crate::entity::{
-    reporter,
+    address, asset, reporter,
     types::{CaseStatus, NetworkBackend},
     EntityFilter, FromPayload,
 };
@@ -67,11 +67,27 @@ pub enum Relation {
         to = "reporter::model::Column::ReporterId"
     )]
     Reporter,
+    #[sea_orm(has_many = "address::Entity")]
+    Address,
+    #[sea_orm(has_many = "asset::Entity")]
+    Asset,
 }
 
 impl Related<reporter::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Reporter.def()
+    }
+}
+
+impl Related<address::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Address.def()
+    }
+}
+
+impl Related<asset::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Asset.def()
     }
 }
 
