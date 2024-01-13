@@ -25,7 +25,7 @@ clap = { version = "4.4.13", features = ["cargo"] }
 
 anyhow = "1"
 uuid = "1"
-chrono = "0.4.19"
+chrono = { version = "0.4", features = ["serde"] }
 
 metrics-exporter-prometheus = "0.12.1"
 metrics = "0.21.1"
@@ -43,7 +43,11 @@ async-graphql-axum = "6.0.11"
 hapi_indexer = { path = "../indexer" }
 hapi-core-cli = { path = "../client.rs" }
 
+#jwt dependencies
+jsonwebtoken = "9.1.0"
+axum-extra = { version = "0.9.0", features = ["cookie"] }
+secrecy = "0.8.0"
+
 [dev-dependencies]
 reqwest = "0.11.12"
-uuid = "1"
 rand = "0.8.5"

@@ -87,7 +87,8 @@ async fn get_address_test() {
                     "network": network.to_string().to_uppercase()
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let address = &response["getAddress"];
         check_address(&addr_payload, address, &network);
@@ -114,7 +115,8 @@ async fn get_many_addresses_test() {
 
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let addresses_response = &response["getManyAddresses"];
     assert_eq!(addresses_response["total"], addresses.len());
@@ -164,7 +166,8 @@ async fn get_filtered_addresses_test() {
 
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let addresses_response = &response["getManyAddresses"];
         assert_eq!(addresses_response["total"], 1);
@@ -209,7 +212,8 @@ async fn get_paginated_addresses_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let addresses_response = &response["getManyAddresses"];
     assert_eq!(addresses_response["total"], addresses.len());

@@ -60,6 +60,10 @@ enum ExplorerCli {
         #[command(subcommand)]
         subcommand: Option<MigrateSubcommands>,
     },
+    CreateIndexer {
+        #[arg(long, help = "Network backend type")]
+        backend: NetworkBackend,
+    },
 }
 
 #[tokio::main]
@@ -91,5 +95,10 @@ async fn main() -> Result<()> {
                 authority,
             } => app.update_network(id, name, authority, stake_token).await,
         },
+        ExplorerCli::CreateIndexer { backend } => {
+            app.create_indexer(backend).await?;
+
+            Ok(())
+        }
     }
 }

@@ -36,12 +36,13 @@ cd ./target/debug && hapi-explorer
 
 HAPI explorer cli includes the following commands:
 
-| Command    | Description                                              |
-| ---------- | -------------------------------------------------------- |
-| server     | Runs HAPI Explorer multichain backend                    |
-| network    | Contains a set of subcommands for for network management |
-| migrations | Contains a set of subcommands for managing migrations    |
-| help       | Display available commands                               |
+| Command        | Description                                              |
+| -------------- | -------------------------------------------------------- |
+| server         | Runs HAPI Explorer multichain backend                    |
+| migrations     | Contains a set of subcommands for managing migrations    |
+| network        | Contains a set of subcommands for for network management |
+| create-indexer | Creates indexer for the given network                    |
+| help           | Display available commands                               |
 
 ### Running explorer server
 
@@ -98,6 +99,21 @@ Network options:
 | --authority   | Network authority address                                           |
 | --stake-token | Stake token contract address                                        |
 | --chain-id    | Optional chain id                                                   |
+
+### Creating a new indexer
+
+This command will create a new indexer for the given network. The indexer will be added to the `indexers` table in the database.
+Program, will log the indexer's jwt token to the console. This token should be used to create a new indexer client.
+
+```sh
+cargo run create-indexer --network=near
+```
+
+To use custom secret_phrase, set the `SECRET_PATH` environment variable to the path of the file containing the secret phrase. It must be .toml file with the following format:
+
+```toml
+jwt_secret="secret_phrase"
+```
 
 ## Running tests
 

@@ -60,29 +60,35 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         confirmations: 0,
     };
 
+    let indexer_id = Uuid::new_v4();
+
     // Create events
     events.push(create_payload(
         network.clone(),
         EventName::CreateReporter,
         PushData::Reporter(reporter_payload.clone()),
+        indexer_id,
     ));
 
     events.push(create_payload(
         network.clone(),
         EventName::CreateCase,
         PushData::Case(case_payload.clone()),
+        indexer_id,
     ));
 
     events.push(create_payload(
         network.clone(),
         EventName::CreateAddress,
         PushData::Address(address_payload.clone()),
+        indexer_id,
     ));
 
     events.push(create_payload(
         network.clone(),
         EventName::CreateAsset,
         PushData::Asset(asset_payload.clone()),
+        indexer_id,
     ));
 
     // Update events
@@ -94,6 +100,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::UpdateReporter,
         PushData::Reporter(reporter_payload.clone()),
+        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Active;
@@ -102,6 +109,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::ActivateReporter,
         PushData::Reporter(reporter_payload.clone()),
+        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Unstaking;
@@ -112,6 +120,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::DeactivateReporter,
         PushData::Reporter(reporter_payload.clone()),
+        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Inactive;
@@ -122,6 +131,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::Unstake,
         PushData::Reporter(reporter_payload.clone()),
+        indexer_id,
     ));
 
     case_payload.name = String::from("Closed case 1");
@@ -132,6 +142,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::UpdateCase,
         PushData::Case(case_payload.clone()),
+        indexer_id,
     ));
 
     address_payload.risk = 10;
@@ -142,6 +153,7 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network.clone(),
         EventName::UpdateAddress,
         PushData::Address(address_payload.clone()),
+        indexer_id,
     ));
 
     asset_payload.risk = 9;
@@ -152,12 +164,18 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         network,
         EventName::UpdateAsset,
         PushData::Asset(asset_payload.clone()),
+        indexer_id,
     ));
 
     events
 }
 
-fn create_payload(network: HapiCoreNetwork, name: EventName, data: PushData) -> PushPayload {
+fn create_payload(
+    network: HapiCoreNetwork,
+    name: EventName,
+    data: PushData,
+    indexer_id: Uuid,
+) -> PushPayload {
     let tx_hash: String = thread_rng()
         .sample_iter(&Alphanumeric)
         .take(32)
@@ -172,6 +190,7 @@ fn create_payload(network: HapiCoreNetwork, name: EventName, data: PushData) -> 
     };
 
     PushPayload {
+        id: indexer_id,
         network,
         event,
         data,

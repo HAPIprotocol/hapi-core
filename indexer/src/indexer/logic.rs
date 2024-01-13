@@ -4,7 +4,7 @@ use {
     tokio::{sync::Mutex, time::sleep},
 };
 
-use crate::configuration::IndexerConfiguration;
+use crate::{configuration::IndexerConfiguration, indexer::jwt::get_id_from_jwt};
 
 use super::{
     now, Indexer, IndexerClient, IndexerJob, IndexerState, IndexingCursor, PersistedState,
@@ -18,6 +18,7 @@ impl Indexer {
             state: Arc::new(Mutex::new(IndexerState::Init)),
             jobs: VecDeque::new(),
             client: IndexerClient::new(
+                get_id_from_jwt(&cfg.jwt_token)?,
                 cfg.network,
                 &cfg.rpc_node_url,
                 &cfg.contract_address,
@@ -26,6 +27,7 @@ impl Indexer {
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,
+            jwt_token: cfg.jwt_token,
         })
     }
 
@@ -149,6 +151,8 @@ impl Indexer {
 
     #[tracing::instrument(name = "waiting", skip(self))]
     async fn handle_waiting(&mut self, until: u64, cursor: IndexingCursor) -> Result<IndexerState> {
+        self.send_heartbeat(&cursor).await?;
+
         if now()? > until {
             Ok(IndexerState::CheckForUpdates { cursor })
         } else {

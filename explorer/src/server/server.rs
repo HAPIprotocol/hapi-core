@@ -2,14 +2,17 @@ use {
     anyhow::Result,
     axum::{
         middleware,
-        routing::{get, post},
+        routing::{get, post, put},
         Extension, Router, Server,
     },
     std::future::ready,
 };
 
 use super::{
-    handlers::{event_handler, graphiql, graphql_handler, health_handler, stats_handler},
+    handlers::{
+        auth_handler, event_handler, graphiql, graphql_handler, health_handler, indexer_handler,
+        indexer_heartbeat_handler, stats_handler,
+    },
     schema::create_graphql_schema,
 };
 use crate::{
@@ -19,14 +22,22 @@ use crate::{
 
 impl Application {
     fn create_router(&self) -> Result<Router> {
-        let schema = create_graphql_schema(self.database_conn.clone())?;
+        let schema = create_graphql_schema(self.state.database_conn.clone())?;
 
         let router = Router::new()
             .route("/health", get(health_handler))
-            .route("/events", post(event_handler))
+            .route(
+                "/events",
+                post(event_handler).route_layer(middleware::from_fn_with_state(
+                    self.state.clone(),
+                    auth_handler,
+                )),
+            )
             .route("/stats", get(stats_handler))
             .route("/graphql", get(graphiql).post(graphql_handler))
-            .with_state(self.database_conn.clone())
+            .route("/indexer", get(indexer_handler))
+            .route("/indexer/:id/heartbeat", put(indexer_heartbeat_handler))
+            .with_state(self.state.clone())
             .layer(Extension(schema));
 
         if self.enable_metrics {
@@ -41,7 +52,7 @@ impl Application {
         Ok(router)
     }
 
-    pub async fn run_server(self) -> Result<()> {
+    pub async fn run_server(&self) -> Result<()> {
         tracing::info!(address = ?self.socket, "Start server");
 
         // TODO: implement graceful shutdown

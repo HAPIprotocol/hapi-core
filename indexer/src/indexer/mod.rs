@@ -10,7 +10,9 @@ use {
 };
 
 pub(crate) mod client;
+pub(crate) mod heartbeat;
 pub(crate) mod jobs;
+pub(crate) mod jwt;
 pub(crate) mod logic;
 pub(crate) mod persistence;
 pub(crate) mod push;
@@ -49,4 +51,7 @@ pub struct Indexer {
 
     /// The URL to send webhooks to
     webhook_url: String,
+
+    /// JWT token to use for webhooks
+    jwt_token: String,
 }

@@ -12,11 +12,12 @@ use {
         HapiCoreNetwork,
     },
     sea_orm::entity::prelude::*,
+    serde::Serialize,
     std::str::FromStr,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_name")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum, Serialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_backend")]
 pub enum NetworkBackend {
     #[sea_orm(string_value = "sepolia")]
     Sepolia,

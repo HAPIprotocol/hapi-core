@@ -1,6 +1,7 @@
 pub mod address;
 pub mod asset;
 pub mod case;
+pub mod indexer;
 pub mod network;
 pub mod pagination;
 pub mod reporter;

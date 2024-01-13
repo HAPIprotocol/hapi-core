@@ -1,8 +1,13 @@
 use crate::entity::{
-    network,
+    indexer, network,
     {types::NetworkBackend, FromPayload},
 };
-use {chrono::NaiveDateTime, sea_orm::*};
+
+use {
+    chrono::{DateTime, NaiveDateTime, Utc},
+    sea_orm::*,
+    uuid::Uuid,
+};
 
 pub struct EntityMutation;
 
@@ -95,5 +100,22 @@ impl EntityMutation {
         };
 
         model.update(db).await
+    }
+
+    pub async fn create_indexer(
+        db: &DbConn,
+        network: NetworkBackend,
+        id: Uuid,
+        timestamp: DateTime<Utc>,
+    ) -> Result<indexer::Model, DbErr> {
+        indexer::ActiveModel {
+            id: Set(id),
+            network: Set(network),
+            created_at: Set(timestamp.naive_utc()),
+            last_heartbeat: Set(NaiveDateTime::default()),
+            cursor: Set("".to_string()),
+        }
+        .insert(db)
+        .await
     }
 }

@@ -1,22 +1,34 @@
 use {
     anyhow::{bail, Result},
+    jsonwebtoken::{encode, EncodingKey, Header},
     sea_orm::{Database, DatabaseConnection},
     sea_orm_cli::MigrateSubcommands,
     sea_orm_migration::MigratorTrait,
+    secrecy::{ExposeSecret, SecretString},
     std::{net::SocketAddr, sync::Arc},
     tokio::net::TcpListener,
     tracing::instrument,
+    uuid::Uuid,
 };
 
 use crate::{
     configuration::Configuration, entity::types::NetworkBackend, migrations::Migrator,
-    service::EntityMutation,
+    server::handlers::TokenClaims, service::EntityMutation,
 };
+
+const JWT_VALIDITY_DAYS: i64 = 365;
+
+// TODO: what if i remove arcs?
+#[derive(Clone)]
+pub struct AppState {
+    pub database_conn: Arc<DatabaseConnection>,
+    pub jwt_secret: Arc<SecretString>,
+}
 
 pub struct Application {
     pub socket: SocketAddr,
     pub enable_metrics: bool,
-    pub database_conn: Arc<DatabaseConnection>,
+    pub state: AppState,
 }
 
 impl Application {
@@ -26,12 +38,16 @@ impl Application {
             .local_addr()?;
 
         let database_conn = Arc::new(Database::connect(configuration.database_url.as_str()).await?);
-        Migrator::up(&*database_conn, None).await?;
+
+        let state = AppState {
+            database_conn,
+            jwt_secret: Arc::new(configuration.jwt_secret.to_owned()),
+        };
 
         Ok(Self {
             socket,
             enable_metrics: configuration.enable_metrics,
-            database_conn,
+            state,
         })
     }
 
@@ -41,7 +57,7 @@ impl Application {
 
     #[instrument(level = "info", skip(self))]
     pub async fn migrate(&self, command: Option<MigrateSubcommands>) -> Result<()> {
-        let db = &*self.database_conn;
+        let db = &*self.state.database_conn;
 
         match command {
             None => Migrator::up(db, None).await?,
@@ -68,7 +84,7 @@ impl Application {
         stake_token: String,
     ) -> Result<()> {
         EntityMutation::create_network(
-            &self.database_conn,
+            &self.state.database_conn,
             id,
             name,
             backend,
@@ -89,9 +105,36 @@ impl Application {
         authority: Option<String>,
         stake_token: Option<String>,
     ) -> Result<()> {
-        EntityMutation::update_network(&self.database_conn, id, name, authority, stake_token)
+        EntityMutation::update_network(&self.state.database_conn, id, name, authority, stake_token)
             .await?;
 
         Ok(())
+    }
+
+    pub async fn create_indexer(&self, network: NetworkBackend) -> Result<String> {
+        tracing::info!("Create indexer for {:?} backend", network);
+
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+
+        EntityMutation::create_indexer(&self.state.database_conn, network, id, now).await?;
+
+        let iat = now.timestamp() as usize;
+        let exp = (now + chrono::Duration::days(JWT_VALIDITY_DAYS)).timestamp() as usize;
+        let claims: TokenClaims = TokenClaims {
+            id: id.to_string(),
+            exp,
+            iat,
+        };
+
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.state.jwt_secret.expose_secret().as_ref()),
+        )?;
+
+        tracing::info!("IndexerId: {}. Token: {}", id, token);
+
+        Ok(token)
     }
 }

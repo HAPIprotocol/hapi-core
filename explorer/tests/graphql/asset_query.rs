@@ -91,7 +91,8 @@ async fn get_asset_test() {
                     "network": network.to_string().to_uppercase()
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let asset = &response["getAsset"];
         check_asset(&asset_payload, asset, &network);
@@ -118,7 +119,8 @@ async fn get_many_assets_test() {
 
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let assets_response = &response["getManyAssets"];
     assert_eq!(assets_response["total"], assets.len());
@@ -168,7 +170,8 @@ async fn get_filtered_assets_test() {
 
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let assets_response = &response["getManyAssets"];
         assert_eq!(assets_response["total"], 1);
@@ -213,7 +216,8 @@ async fn get_paginated_assets_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let assets_response = &response["getManyAssets"];
     assert_eq!(assets_response["total"], assets.len());

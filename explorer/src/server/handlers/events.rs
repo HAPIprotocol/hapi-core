@@ -12,26 +12,27 @@ use {
     },
     hapi_indexer::{PushData, PushPayload},
     sea_orm::DatabaseConnection,
-    std::sync::Arc,
     tracing::instrument,
 };
 
 use crate::{
+    application::AppState,
     entity::{address, asset, case, reporter, types::NetworkBackend},
     error::AppError,
     service::EntityMutation,
 };
 
 /// Handle events Requests
-#[instrument(level = "info", skip(db))]
+#[instrument(level = "info", skip(state))]
 pub(crate) async fn event_handler(
-    db: State<Arc<DatabaseConnection>>,
+    state: State<AppState>,
     Json(payload): Json<PushPayload>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(event = ?payload.event, "Received event");
     let event_name = payload.event.name;
     let timestamp = payload.event.timestamp;
     let network = payload.network.into();
+    let db = &state.database_conn;
 
     match payload.data {
         PushData::Address(address) => {

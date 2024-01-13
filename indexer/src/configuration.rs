@@ -7,10 +7,9 @@ use {
 };
 
 pub const CONFIG_PATH: &str = "configuration.toml";
-pub const SECRET_PATH: &str = "secret.toml";
 
 #[serde_as]
-#[derive(Default, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct Configuration {
     /// Log level for the application layer
     #[serde(default = "default_loglevel")]
@@ -28,7 +27,7 @@ pub struct Configuration {
 }
 
 #[serde_as]
-#[derive(Default, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 pub struct IndexerConfiguration {
     /// The network to use
     pub network: HapiCoreNetwork,
@@ -55,6 +54,9 @@ pub struct IndexerConfiguration {
     #[serde_as(as = "DurationMilliSeconds<u64>")]
     #[serde(default = "default_delay")]
     pub fetching_delay: Duration,
+
+    /// JWT token to use for the webhook
+    pub jwt_token: String,
 }
 
 fn default_is_json_logging() -> bool {
@@ -83,18 +85,12 @@ fn default_state_file() -> String {
 
 pub fn get_configuration() -> Result<Configuration, ConfigError> {
     let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| CONFIG_PATH.to_string());
-    let secret_path = env::var("SECRET_PATH").unwrap_or_else(|_| SECRET_PATH.to_string());
 
     let settings = Config::builder()
         .add_source(
             File::with_name(&config_path)
                 .format(FileFormat::Toml)
                 .required(true),
-        )
-        .add_source(
-            File::with_name(&secret_path)
-                .format(FileFormat::Toml)
-                .required(false),
         )
         .build()?;
 

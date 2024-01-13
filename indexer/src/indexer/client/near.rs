@@ -143,7 +143,8 @@ pub(super) async fn fetch_near_jobs(
 pub(super) async fn process_near_job(
     client: &HapiCoreNear,
     receipt: &NearReceipt,
-    network: HapiCoreNetwork,
+    network: &HapiCoreNetwork,
+    id: &Uuid,
 ) -> Result<Option<Vec<PushPayload>>> {
     let receipt_view = client
         .client
@@ -225,7 +226,8 @@ pub(super) async fn process_near_job(
         };
 
         return Ok(Some(vec![PushPayload {
-            network,
+            id: id.clone(),
+            network: network.clone(),
             event: PushEvent {
                 name: event_name,
                 tx_hash: receipt.hash.to_string(),

@@ -84,7 +84,8 @@ async fn get_case_test() {
                     "network": network.to_string().to_uppercase()
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let case = &response["getCase"];
         check_case(&cases_payload, case, &network);
@@ -110,7 +111,8 @@ async fn get_many_cases_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let cases_response = &response["getManyCases"];
     assert_eq!(cases_response["total"], cases.len());
@@ -159,7 +161,8 @@ async fn get_filtered_cases_test() {
                 }
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let cases_response = &response["getManyCases"];
         assert_eq!(cases_response["total"], 1);
@@ -204,7 +207,8 @@ async fn get_paginated_cases_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let cases_response = &response["getManyCases"];
     assert_eq!(cases_response["total"], cases.len());

@@ -99,7 +99,8 @@ async fn get_reporter_test() {
                     "network": network.to_string().to_uppercase()
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let reporter = &response["getReporter"];
         check_reporter(&reporters_payload, reporter, &network);
@@ -125,7 +126,8 @@ async fn get_many_reporters_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let reporters_response = &response["getManyReporters"];
     assert_eq!(reporters_response["total"], reporters.len());
@@ -174,7 +176,8 @@ async fn get_filtered_reporters_test() {
                 }
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let reporters_response = &response["getManyReporters"];
         assert_eq!(reporters_response["total"], 1);
@@ -219,7 +222,8 @@ async fn get_paginated_reporters_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let reporters_response = &response["getManyReporters"];
     assert_eq!(reporters_response["total"], reporters.len());

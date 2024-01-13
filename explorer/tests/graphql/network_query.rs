@@ -69,7 +69,8 @@ async fn get_network_test() {
                     "id": model.id,
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let network = &response["getNetwork"];
         check_network(&model, network, &backend);
@@ -94,7 +95,8 @@ async fn get_many_networks_test() {
 
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let networks_response = &response["getManyNetworks"];
     assert_eq!(networks_response["total"], networks.len());
@@ -135,7 +137,8 @@ async fn get_filtered_networks_test() {
 
                 }),
             )
-            .await;
+            .await
+            .unwrap();
 
         let networks_response = &response["getManyNetworks"];
         assert_eq!(networks_response["total"], 1);
@@ -174,7 +177,8 @@ async fn get_paginated_networks_test() {
             }
             }),
         )
-        .await;
+        .await
+        .unwrap();
 
     let networks_response = &response["getManyNetworks"];
     assert_eq!(networks_response["total"], networks.len());

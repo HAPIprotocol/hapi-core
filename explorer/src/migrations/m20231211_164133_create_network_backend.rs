@@ -28,7 +28,7 @@ impl MigrationTrait for Migration {
 
 #[derive(Iden, EnumIter)]
 pub enum NetworkBackend {
-    #[iden = "network_name"]
+    #[iden = "network_backend"]
     Type,
     Sepolia,
     Ethereum,

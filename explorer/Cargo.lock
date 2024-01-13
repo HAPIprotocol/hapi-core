@@ -372,9 +372,9 @@ dependencies = [
 
 [[package]]
 name = "anstream"
-version = "0.6.5"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d664a92ecae85fd0a7392615844904654d1d5f5514837f471ddef4a057aba1b6"
+checksum = "4cd2405b3ac1faab2990b74d728624cd9fd115651fcecc7c2d8daf01376275ba"
 dependencies = [
  "anstyle",
  "anstyle-parse",
@@ -736,7 +736,7 @@ dependencies = [
  "fnv",
  "futures-util",
  "handlebars",
- "http",
+ "http 0.2.11",
  "indexmap 2.1.0",
  "mime",
  "multer",
@@ -761,7 +761,7 @@ checksum = "01a1c20a2059bffbc95130715b23435a05168c518fba9709c81fa2a38eed990c"
 dependencies = [
  "async-graphql",
  "async-trait",
- "axum",
+ "axum 0.6.20",
  "bytes",
  "futures-util",
  "serde_json",
@@ -1018,14 +1018,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b829e4e32b91e643de6eafe82b1d90675f5874230191a4ffbc1b336dec4d6bf"
 dependencies = [
  "async-trait",
- "axum-core",
- "base64 0.21.6",
+ "axum-core 0.3.4",
+ "base64 0.21.7",
  "bitflags 1.3.2",
  "bytes",
  "futures-util",
  "headers",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "itoa",
  "matchit",
@@ -1048,6 +1048,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d09dbe0e490df5da9d69b36dca48a76635288a82f92eca90024883a56202026d"
+dependencies = [
+ "async-trait",
+ "axum-core 0.4.2",
+ "bytes",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "http-body-util",
+ "itoa",
+ "matchit",
+ "memchr",
+ "mime",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "sync_wrapper",
+ "tower",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "axum-core"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1056,10 +1083,52 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "mime",
  "rustversion",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum-core"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e87c8503f93e6d144ee5690907ba22db7ba79ab001a932ab99034f0fe836b3df"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "rustversion",
+ "sync_wrapper",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum-extra"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "881348a37b079994894b6e5e46edcc4b8a60e1c0333669a65b810abeed780598"
+dependencies = [
+ "axum 0.7.3",
+ "axum-core 0.4.2",
+ "bytes",
+ "cookie",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "http-body-util",
+ "mime",
+ "pin-project-lite",
+ "serde",
+ "tower",
  "tower-layer",
  "tower-service",
 ]
@@ -1093,9 +1162,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.21.6"
+version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c79fed4cdb43e993fcdadc7e58a09fd0e3e649c4436fa11da71c9f1f3ee7feb9"
+checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
 name = "base64ct"
@@ -1661,9 +1730,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.4.14"
+version = "4.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33e92c5c1a78c62968ec57dbc2440366a2d6e5a23faf829970ff1585dc6b18e2"
+checksum = "58e54881c004cec7895b0068a0a954cd5d62da01aef83fa35b1e594497bf5445"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1671,9 +1740,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.4.14"
+version = "4.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4323769dc8a61e2c39ad7dc26f6f2800524691a44d74fe3d1071a5c24db6370"
+checksum = "59cb82d7f531603d2fd1f507441cdd35184fa81beff7bd489570de7f773460bb"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1755,7 +1824,7 @@ version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5286a0843c21f8367f7be734f89df9b822e0321d8bcce8d6e735aadff7d74979"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "bech32",
  "bs58 0.5.0",
  "digest 0.10.7",
@@ -1878,6 +1947,17 @@ name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
+name = "cookie"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cd91cf61412820176e137621345ee43b3f4423e589e7ae4e50d601d93e35ef8"
+dependencies = [
+ "percent-encoding",
+ "time",
+ "version_check",
+]
 
 [[package]]
 name = "core-foundation"
@@ -3042,7 +3122,7 @@ checksum = "b411b119f1cf0efb69e2190883dee731251882bb21270f893ee9513b3a697c48"
 dependencies = [
  "async-trait",
  "auto_impl",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bytes",
  "enr",
  "ethers-core",
@@ -3052,7 +3132,7 @@ dependencies = [
  "futures-util",
  "hashers",
  "hex",
- "http",
+ "http 0.2.11",
  "instant",
  "once_cell",
  "pin-project",
@@ -3606,16 +3686,16 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.22"
+version = "0.3.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d6250322ef6e60f93f9a2162799302cd6f68f79f6e5d85c8c16f14d1d958178"
+checksum = "b553656127a00601c8ae5590fcfdc118e4083a7924b6cf4ffc1ea4b99dc429d7"
 dependencies = [
  "bytes",
  "fnv",
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap 2.1.0",
  "slab",
  "tokio",
@@ -3646,7 +3726,7 @@ dependencies = [
  "async-trait",
  "borsh 0.10.3",
  "bs58 0.5.0",
- "clap 4.4.14",
+ "clap 4.4.16",
  "dirs",
  "enum_extract",
  "ethers",
@@ -3692,12 +3772,14 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-axum",
- "axum",
+ "axum 0.6.20",
+ "axum-extra",
  "chrono",
- "clap 4.4.14",
+ "clap 4.4.16",
  "config",
  "hapi-core-cli",
  "hapi_indexer",
+ "jsonwebtoken",
  "metrics",
  "metrics-exporter-prometheus",
  "rand 0.8.5",
@@ -3705,6 +3787,7 @@ dependencies = [
  "sea-orm",
  "sea-orm-cli",
  "sea-orm-migration",
+ "secrecy",
  "serde",
  "serde_json",
  "serde_with 3.4.0",
@@ -3728,7 +3811,8 @@ name = "hapi_indexer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "axum",
+ "axum 0.6.20",
+ "base64 0.21.7",
  "config",
  "enum_extract",
  "ethers",
@@ -3736,6 +3820,7 @@ dependencies = [
  "hapi-core-near",
  "hapi_core_solana",
  "hyper",
+ "jsonwebtoken",
  "lazy_static",
  "near-crypto 0.19.0",
  "near-jsonrpc-client",
@@ -3825,10 +3910,10 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06683b93020a07e3dbcf5f8c0f6d40080d725bea7936fc01ad345c01b97dc270"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "bytes",
  "headers-core",
- "http",
+ "http 0.2.11",
  "httpdate",
  "mime",
  "sha1",
@@ -3840,7 +3925,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
 dependencies = [
- "http",
+ "http 0.2.11",
 ]
 
 [[package]]
@@ -3951,13 +4036,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.11",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "http-body"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
+dependencies = [
+ "bytes",
+ "http 1.0.0",
+]
+
+[[package]]
+name = "http-body-util"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41cb79eb393015dadd30fc252023adb0b2400a0caee0fa2a077e6e21a551e840"
+dependencies = [
+ "bytes",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
  "pin-project-lite",
 ]
 
@@ -3990,8 +4109,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "httparse",
  "httpdate",
  "itoa",
@@ -4010,7 +4129,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
+ "http 0.2.11",
  "hyper",
  "rustls 0.21.10",
  "tokio",
@@ -4305,6 +4424,21 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "jsonwebtoken"
+version = "9.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c7ea04a7c5c055c175f189b6dc6ba036fd62306b58c66c9f6389036c503a3f4"
+dependencies = [
+ "base64 0.21.7",
+ "js-sys",
+ "pem 3.0.3",
+ "ring 0.17.7",
+ "serde",
+ "serde_json",
+ "simple_asn1",
 ]
 
 [[package]]
@@ -4678,7 +4812,7 @@ version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d4fa7ce7c4862db464a37b0b31d89bca874562f034bd7993895572783d02950"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "hyper",
  "indexmap 1.9.3",
  "ipnet",
@@ -4763,7 +4897,7 @@ dependencies = [
  "bytes",
  "encoding_rs",
  "futures-util",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "memchr",
@@ -4879,7 +5013,7 @@ dependencies = [
 [[package]]
 name = "near-contract-standards"
 version = "5.0.0-alpha.1"
-source = "git+https://github.com/near/near-sdk-rs.git#8dd5d49f9c09aae24ce7acf4f74a17024e9648f2"
+source = "git+https://github.com/near/near-sdk-rs.git#13430592a7be246dd5a29439791f4081e0107ff3"
 dependencies = [
  "near-sdk",
 ]
@@ -5010,7 +5144,7 @@ checksum = "af7d35397b02b131c188c72f3885e97daeccab134ec2fc8cc0073a94cf1cfe19"
 dependencies = [
  "actix",
  "atty",
- "clap 4.4.14",
+ "clap 4.4.16",
  "near-crypto 0.17.0",
  "near-primitives-core 0.17.0",
  "once_cell",
@@ -5035,8 +5169,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dd1e98a5d3ecd782dc59abe6341c30b4072e32b5b353a0073fe238fbb641a2a"
 dependencies = [
  "actix",
- "base64 0.21.6",
- "clap 4.4.14",
+ "base64 0.21.7",
+ "clap 4.4.16",
  "near-crypto 0.19.0",
  "near-fmt 0.19.0",
  "near-primitives-core 0.19.0",
@@ -5119,7 +5253,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44419e132fe6c2cda430dcb5935d9f2eba9505a69a6c641ffc76a37802c2f98d"
 dependencies = [
  "arbitrary",
- "base64 0.21.6",
+ "base64 0.21.7",
  "borsh 1.3.1",
  "bytesize",
  "cfg-if 1.0.0",
@@ -5161,7 +5295,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "775fec19ef51a341abdbf792a9dda5b4cb89f488f681b2fd689b9321d24db47b"
 dependencies = [
  "arbitrary",
- "base64 0.21.6",
+ "base64 0.21.7",
  "borsh 0.10.3",
  "bs58 0.4.0",
  "derive_more",
@@ -5183,7 +5317,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99513c0a2b28e2bdf6998b8cc5a84eacfd54f0d2694bb40e19ac34a14c19d73c"
 dependencies = [
  "arbitrary",
- "base64 0.21.6",
+ "base64 0.21.7",
  "borsh 1.3.1",
  "bs58 0.4.0",
  "derive_more",
@@ -5247,7 +5381,7 @@ dependencies = [
 [[package]]
 name = "near-sdk"
 version = "5.0.0-alpha.1"
-source = "git+https://github.com/near/near-sdk-rs.git#8dd5d49f9c09aae24ce7acf4f74a17024e9648f2"
+source = "git+https://github.com/near/near-sdk-rs.git#13430592a7be246dd5a29439791f4081e0107ff3"
 dependencies = [
  "base64 0.13.1",
  "borsh 1.3.1",
@@ -5272,7 +5406,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "5.0.0-alpha.1"
-source = "git+https://github.com/near/near-sdk-rs.git#8dd5d49f9c09aae24ce7acf4f74a17024e9648f2"
+source = "git+https://github.com/near/near-sdk-rs.git#13430592a7be246dd5a29439791f4081e0107ff3"
 dependencies = [
  "Inflector",
  "darling",
@@ -5300,7 +5434,7 @@ checksum = "8ae2d331bd3597b4ed6b2e00b37b04231f37d1f8ba9a3fa1e8968a2345f68932"
 [[package]]
 name = "near-sys"
 version = "0.2.1"
-source = "git+https://github.com/near/near-sdk-rs.git#8dd5d49f9c09aae24ce7acf4f74a17024e9648f2"
+source = "git+https://github.com/near/near-sdk-rs.git#13430592a7be246dd5a29439791f4081e0107ff3"
 
 [[package]]
 name = "near-token"
@@ -5423,7 +5557,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21ff5288c4ace5124e9e2a88bade90363ff4e348f4e1074b909e9f699a156793"
 dependencies = [
  "anyhow",
- "base64 0.21.6",
+ "base64 0.21.7",
  "borsh 1.3.1",
  "ed25519-dalek 2.1.0",
  "enum-map",
@@ -5897,7 +6031,7 @@ dependencies = [
  "async-trait",
  "futures",
  "futures-util",
- "http",
+ "http 0.2.11",
  "opentelemetry",
  "prost",
  "thiserror",
@@ -6144,6 +6278,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8835c273a76a90455d7344889b0964598e3316e2a79ede8e36f16bdcf2228b8"
 dependencies = [
  "base64 0.13.1",
+]
+
+[[package]]
+name = "pem"
+version = "3.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b8fcc794035347fb64beda2d3b462595dd2753e3f268d89c5aae77e8cf2c310"
+dependencies = [
+ "base64 0.21.7",
+ "serde",
 ]
 
 [[package]]
@@ -6872,7 +7016,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffbe84efe2f38dea12e9bfc1f65377fdf03e53a18cb3b995faedf7934c7e785b"
 dependencies = [
- "pem",
+ "pem 1.1.1",
  "ring 0.16.20",
  "time",
  "yasna",
@@ -7004,14 +7148,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b1ae8d9ac08420c66222fb9096fc5de435c3c48542bc5336c51892cffafb41"
 dependencies = [
  "async-compression",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bytes",
  "encoding_rs",
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "hyper-rustls",
  "hyper-tls",
@@ -7333,7 +7477,7 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
 ]
 
 [[package]]
@@ -7540,7 +7684,7 @@ checksum = "acc21813f3a91462280bee40632298a555eafe9dd8feb74917f9c24514214c2e"
 dependencies = [
  "async-std",
  "chrono",
- "clap 4.4.14",
+ "clap 4.4.16",
  "dotenvy",
  "glob",
  "regex",
@@ -7587,7 +7731,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d06dac448288ceb630994b420cd8d5410543c0b09367f40ed505c2f03b266a"
 dependencies = [
  "async-trait",
- "clap 4.4.14",
+ "clap 4.4.16",
  "dotenvy",
  "futures",
  "sea-orm",
@@ -7706,6 +7850,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "zeroize",
 ]
 
 [[package]]
@@ -7886,7 +8039,7 @@ version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64cd236ccc1b7a29e7e2739f27c0b2dd199804abc4290e32f59f3b68d6405c23"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "chrono",
  "hex",
  "indexmap 1.9.3",
@@ -8037,6 +8190,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27f6278552951f1f2b8cf9da965d10969b2efdea95a6ec47987ab46edfe263a"
 
 [[package]]
+name = "simple_asn1"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
+dependencies = [
+ "num-bigint 0.4.4",
+ "num-traits",
+ "thiserror",
+ "time",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8116,7 +8281,7 @@ version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
  "Inflector",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "bs58 0.4.0",
  "bv",
@@ -8381,7 +8546,7 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "array-bytes",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "bitflags 2.4.1",
  "blake3 1.5.0",
@@ -8429,7 +8594,7 @@ name = "solana-program-runtime"
 version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "eager",
  "enum-iterator",
@@ -8534,7 +8699,7 @@ version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
  "async-trait",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "bs58 0.4.0",
  "indicatif",
@@ -8558,7 +8723,7 @@ name = "solana-rpc-client-api"
 version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "bs58 0.4.0",
  "jsonrpc-core",
  "reqwest",
@@ -8592,7 +8757,7 @@ version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
  "assert_matches",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "bitflags 2.4.1",
  "borsh 0.10.3",
@@ -8664,7 +8829,7 @@ dependencies = [
  "libc",
  "log",
  "nix 0.26.4",
- "pem",
+ "pem 1.1.1",
  "percentage",
  "pkcs8 0.8.0",
  "quinn",
@@ -8724,7 +8889,7 @@ version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
  "Inflector",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "borsh 0.9.3",
  "bs58 0.4.0",
@@ -8799,7 +8964,7 @@ version = "1.17.0"
 source = "git+https://github.com/hlgltvnnk/solana.git?branch=update-dependencies#aaf179fdf2acfb08f14c7c81371775949bbf2272"
 dependencies = [
  "aes-gcm-siv",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bincode",
  "bytemuck",
  "byteorder",
@@ -9072,7 +9237,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e37195395df71fd068f6e2082247891bc11e3289624bbc776a0cdfa1ca7f1ea4"
 dependencies = [
  "atoi",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bigdecimal",
  "bitflags 2.4.1",
  "byteorder",
@@ -9119,7 +9284,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6ac0ac3b7ccd10cc96c7ab29791a7dd236bd94021f31eec7ba3d46a74aa1c24"
 dependencies = [
  "atoi",
- "base64 0.21.6",
+ "base64 0.21.7",
  "bigdecimal",
  "bitflags 2.4.1",
  "byteorder",
@@ -9774,8 +9939,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "hyper-timeout",
  "percent-encoding",
@@ -9973,7 +10138,7 @@ dependencies = [
  "base64 0.13.1",
  "byteorder",
  "bytes",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "rand 0.8.5",
@@ -9995,7 +10160,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "data-encoding",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "rand 0.8.5",
@@ -10016,7 +10181,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "data-encoding",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "rand 0.8.5",
