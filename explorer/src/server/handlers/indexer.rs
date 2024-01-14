@@ -23,7 +23,7 @@ pub(crate) async fn indexer_handler(
     pagination: Query<PaginationParams>,
 ) -> Result<impl IntoResponse, AppError> {
     tracing::info!("Received indexer request");
-    let db = &*state.database_conn;
+    let db = &state.database_conn;
 
     let page = pagination.page.unwrap_or_default();
     let page_size = pagination.page_size.unwrap_or(DEFAULT_PAGE_SIZE);
@@ -52,7 +52,7 @@ pub(crate) async fn indexer_heartbeat_handler(
     Path(id): Path<Uuid>,
     cursor: String,
 ) -> Result<impl IntoResponse, AppError> {
-    let db = &*state.database_conn;
+    let db = &state.database_conn;
 
     indexer::ActiveModel {
         id: Set(id),

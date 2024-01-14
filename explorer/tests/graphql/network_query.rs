@@ -61,7 +61,7 @@ async fn get_network_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
 
-    for (backend, model) in test_app.networks {
+    for (backend, model) in &test_app.networks {
         let response = sender
             .send_graphql(
                 GET_NETWORK_QUERY,
@@ -81,7 +81,7 @@ async fn get_network_test() {
 async fn get_many_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks;
+    let networks = test_app.networks.to_owned();
 
     let response = sender
         .send_graphql(
@@ -119,7 +119,7 @@ async fn get_many_networks_test() {
 async fn get_filtered_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks;
+    let networks = test_app.networks.to_owned();
 
     for (backend, model) in networks {
         let response = sender
@@ -157,7 +157,7 @@ async fn get_filtered_networks_test() {
 async fn get_paginated_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks;
+    let networks = test_app.networks.to_owned();
 
     let (backend, model) = networks.last().expect("Invalid index");
 

@@ -1,10 +1,11 @@
 use {
     axum::{
-        extract::{Extension, State},
+        extract::State,
         http::Request,
         http::{header, StatusCode},
         middleware::Next,
         response::IntoResponse,
+        Extension,
     },
     axum_extra::extract::cookie::CookieJar,
     jsonwebtoken::{decode, DecodingKey, Validation},

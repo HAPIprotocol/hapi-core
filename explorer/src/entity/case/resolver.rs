@@ -33,7 +33,7 @@ impl CaseQuery {
         #[graphql(desc = "Case id")] case_id: Uuid,
         #[graphql(desc = "Case network")] network: NetworkBackend,
     ) -> Result<Option<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let address =
             EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network, case_id))
                 .await?;
@@ -48,7 +48,7 @@ impl CaseQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "Case input parameters")] input: EntityInput<CaseFilter, CaseCondition>,
     ) -> Result<EntityPage<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let page = EntityQuery::find_many::<super::model::Entity>(db, input).await?;
 
         Ok(page)

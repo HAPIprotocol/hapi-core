@@ -21,8 +21,8 @@ const JWT_VALIDITY_DAYS: i64 = 365;
 // TODO: what if i remove arcs?
 #[derive(Clone)]
 pub struct AppState {
-    pub database_conn: Arc<DatabaseConnection>,
-    pub jwt_secret: Arc<SecretString>,
+    pub database_conn: DatabaseConnection,
+    pub jwt_secret: SecretString,
 }
 
 pub struct Application {
@@ -37,11 +37,11 @@ impl Application {
             .await?
             .local_addr()?;
 
-        let database_conn = Arc::new(Database::connect(configuration.database_url.as_str()).await?);
+        let database_conn = Database::connect(configuration.database_url.as_str()).await?;
 
         let state = AppState {
             database_conn,
-            jwt_secret: Arc::new(configuration.jwt_secret.to_owned()),
+            jwt_secret: configuration.jwt_secret.to_owned(),
         };
 
         Ok(Self {
@@ -57,7 +57,7 @@ impl Application {
 
     #[instrument(level = "info", skip(self))]
     pub async fn migrate(&self, command: Option<MigrateSubcommands>) -> Result<()> {
-        let db = &*self.state.database_conn;
+        let db = &self.state.database_conn;
 
         match command {
             None => Migrator::up(db, None).await?,

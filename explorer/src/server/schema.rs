@@ -24,7 +24,7 @@ pub struct Query(
 pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
 /// Building the GraphQL application schema, attaching the Database to the context
-pub(crate) fn create_graphql_schema(db: Arc<DatabaseConnection>) -> Result<AppSchema> {
+pub(crate) fn create_graphql_schema(db: DatabaseConnection) -> Result<AppSchema> {
     Ok(
         Schema::build(Query::default(), EmptyMutation, EmptySubscription)
             .data(db)

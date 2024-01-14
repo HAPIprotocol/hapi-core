@@ -52,7 +52,7 @@ impl Application {
         Ok(router)
     }
 
-    pub async fn run_server(&self) -> Result<()> {
+    pub async fn run_server(self) -> Result<()> {
         tracing::info!(address = ?self.socket, "Start server");
 
         // TODO: implement graceful shutdown

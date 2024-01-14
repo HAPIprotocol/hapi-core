@@ -33,7 +33,7 @@ impl AssetQuery {
         #[graphql(desc = "Asset id")] asset_id: String,
         #[graphql(desc = "Asset network")] network: NetworkBackend,
     ) -> Result<Option<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let address = EntityQuery::find_entity_by_id::<super::model::Entity, _>(
             db,
             (network, address, asset_id),
@@ -50,7 +50,7 @@ impl AssetQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "Asset input parameters")] input: EntityInput<AssetFilter, AssetCondition>,
     ) -> Result<EntityPage<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let page = EntityQuery::find_many::<super::model::Entity>(db, input).await?;
 
         Ok(page)

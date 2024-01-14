@@ -33,7 +33,7 @@ impl ReporterQuery {
         #[graphql(desc = "Reporter id")] reporter_id: Uuid,
         #[graphql(desc = "Reporter network")] network: NetworkBackend,
     ) -> Result<Option<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let address =
             EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network, reporter_id))
                 .await?;
@@ -51,7 +51,7 @@ impl ReporterQuery {
             ReporterCondition,
         >,
     ) -> Result<EntityPage<Model>> {
-        let db = ctx.data_unchecked::<Arc<DatabaseConnection>>();
+        let db = ctx.data_unchecked::<DatabaseConnection>();
         let page = EntityQuery::find_many::<super::model::Entity>(db, input).await?;
 
         Ok(page)

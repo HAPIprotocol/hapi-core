@@ -1,8 +1,9 @@
-use std::sync::Arc;
+use sea_orm::{Database, DatabaseConnection};
 
 use super::{create_jwt, get_test_data, RequestSender};
 
 use {
+    anyhow::Result,
     hapi_core::{client::events::EventName, HapiCoreNetwork},
     hapi_explorer::{
         application::Application,
@@ -13,9 +14,10 @@ use {
     hapi_indexer::PushData,
     sea_orm::EntityTrait,
     {
-        std::env,
+        std::{env, sync::Arc},
         tokio::{
             spawn,
+            task::JoinHandle,
             time::{sleep, Duration},
         },
     },
@@ -27,7 +29,7 @@ const MIGRATION_COUNT: u32 = 10;
 
 pub struct TestApp {
     pub server_addr: String,
-    pub app: Arc<Application>,
+    pub db_connection: DatabaseConnection,
     pub networks: Vec<(HapiCoreNetwork, NetworkModel)>,
 }
 
@@ -41,18 +43,55 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        let app = TestApp::get_application(configuration).await;
+        let app = TestApp::get_application(configuration.clone()).await;
+
+        let db_connection = TestApp::prepare_database(&app, &configuration).await;
         let networks = Self::prepare_networks(&app).await;
         let port = app.port();
 
-        // spawn(app.run_server());
+        // let server = app.clone();
+        // let server_thread =
+        //     spawn(async move { server.run_server().await.expect("Failed to run server") });
+
+        // let server = TestApp::get_application(configuration.clone()).await;
+        // spawn(server.run_server());
+        // spawn(async move {
+        //     TestApp::get_application(configuration.clone())
+        //         .await
+        //         .run_server()
+        //         .await
+        //         .expect("Failed to run server")
+        // });
         // sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+        spawn(app.run_server());
+        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
         TestApp {
             server_addr: format!("http://127.0.0.1:{}", port),
-            app,
+            db_connection,
             networks,
         }
+    }
+
+    pub async fn prepare_database(
+        app: &Application,
+        configuration: &Configuration,
+    ) -> DatabaseConnection {
+        // TODO: clone from app
+        let db_connection = Database::connect(configuration.database_url.as_str())
+            .await
+            .expect("Failed to connect to database");
+
+        app.migrate(Some(sea_orm_cli::MigrateSubcommands::Down {
+            num: MIGRATION_COUNT,
+        }))
+        .await
+        .expect("Failed to migrate down");
+
+        app.migrate(None).await.expect("Failed to migrate up");
+
+        db_connection
     }
 
     async fn prepare_networks(app: &Application) -> Vec<(HapiCoreNetwork, NetworkModel)> {
@@ -100,8 +139,9 @@ impl TestApp {
     }
 
     pub async fn create_indexer(&self, network: &HapiCoreNetwork) -> String {
-        let token = self
-            .app
+        let app = TestApp::get_application(generate_configuration()).await;
+
+        let token = app
             .create_indexer(network.to_owned().into())
             .await
             .expect("Failed to create indexer");
@@ -111,31 +151,16 @@ impl TestApp {
         token
     }
 
-    pub async fn get_application(configuration: Configuration) -> Arc<Application> {
-        let app = Arc::new(
-            Application::from_configuration(configuration)
-                .await
-                .expect("Failed to build app"),
-        );
-
-        app.migrate(Some(sea_orm_cli::MigrateSubcommands::Down {
-            num: MIGRATION_COUNT,
-        }))
-        .await
-        .expect("Failed to migrate down");
-
-        app.migrate(None).await.expect("Failed to migrate up");
-
-        let server = app.clone();
-        spawn(async move { server.run_server().await.expect("Failed to run server") });
-        sleep(Duration::from_millis(WAITING_INTERVAL * 3)).await;
-
-        app
+    pub async fn get_application(configuration: Configuration) -> Application {
+        Application::from_configuration(configuration)
+            .await
+            .expect("Failed to build app")
     }
 
     pub async fn check_entity(&self, data: PushData, network: HapiCoreNetwork) {
         let network = network.into();
-        let db = &*self.app.state.database_conn;
+        let db = &self.db_connection;
+
         match data {
             PushData::Address(address) => {
                 let result = address::Entity::find_by_id((network, address.address.clone()))
