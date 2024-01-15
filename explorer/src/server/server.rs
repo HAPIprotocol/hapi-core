@@ -40,14 +40,14 @@ impl Application {
             .with_state(self.state.clone())
             .layer(Extension(schema));
 
-        if self.enable_metrics {
-            let prometheus_recorder = setup_metrics();
+        // if self.enable_metrics {
+        //     let prometheus_recorder = setup_metrics();
 
-            // TODO: allow access only to the admin
-            return Ok(router
-                .route("/metrics", get(move || ready(prometheus_recorder.render())))
-                .route_layer(middleware::from_fn(track_metrics)));
-        }
+        //     // TODO: allow access only to the admin
+        //     return Ok(router
+        //         .route("/metrics", get(move || ready(prometheus_recorder.render())))
+        //         .route_layer(middleware::from_fn(track_metrics)));
+        // }
 
         Ok(router)
     }

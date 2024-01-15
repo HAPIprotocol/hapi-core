@@ -1,5 +1,6 @@
 use {
     anyhow::{bail, Result},
+    hapi_indexer::get_id_from_jwt,
     reqwest::{Client, Response},
     serde::Serialize,
     serde_json::{json, Value},
@@ -59,6 +60,21 @@ impl RequestSender {
         let response = self
             .web_client
             .get(format!("{}/{}", &self.address, url))
+            .send()
+            .await?;
+
+        RequestSender::check_response(response).await
+    }
+
+    pub(crate) async fn send_heartbeat(&self, token: &str) -> Result<Value> {
+        let id = get_id_from_jwt(token)?;
+        let heartbeat_url = format!("{}/indexer/{}/heartbeat", self.address, id);
+
+        let response = self
+            .web_client
+            .put(heartbeat_url)
+            .bearer_auth(token)
+            .json(&json!({"cursor": "Block: 12345"}))
             .send()
             .await?;
 

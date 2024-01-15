@@ -5,7 +5,6 @@ use {
         http::{header, StatusCode},
         middleware::Next,
         response::IntoResponse,
-        Extension,
     },
     axum_extra::extract::cookie::CookieJar,
     jsonwebtoken::{decode, DecodingKey, Validation},
@@ -24,7 +23,7 @@ pub struct TokenClaims {
 
 pub(crate) async fn auth_handler<B>(
     state: State<AppState>,
-    cookie_jar: Extension<CookieJar>,
+    cookie_jar: CookieJar,
     req: Request<B>,
     next: Next<B>,
 ) -> Result<impl IntoResponse, AppError> {
