@@ -16,6 +16,7 @@ is_json_logging                     # Whether to use JSON logging, default: true
 enable_metrics                      # Whether to enable metrics, default: true
 listener                            # Address for the listener server
 database_url                        # The database url
+jwt_secret                          # Secret fro JWT
 ```
 
 ## Usage

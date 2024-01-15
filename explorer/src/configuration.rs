@@ -31,7 +31,7 @@ pub struct Configuration {
     /// The database url
     pub database_url: String,
 
-    /// secret for JWT
+    /// Secret for JWT
     #[serde(deserialize_with = "deserialize_secret_string")]
     pub jwt_secret: SecretString,
 }
