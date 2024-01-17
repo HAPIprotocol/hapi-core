@@ -1,8 +1,4 @@
-use {
-    hapi_indexer::get_id_from_jwt,
-    serde_json::json,
-    tokio::time::{sleep, Duration},
-};
+use tokio::time::{sleep, Duration};
 
 use crate::helpers::{create_jwt, RequestSender, TestApp, WAITING_INTERVAL};
 

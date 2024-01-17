@@ -36,16 +36,16 @@ pub(crate) async fn event_handler(
 
     match payload.data {
         PushData::Address(address) => {
-            process_address_payload(address, event_name, &db, network, timestamp).await
+            process_address_payload(address, event_name, db, network, timestamp).await
         }
         PushData::Asset(asset) => {
-            process_asset_payload(asset, event_name, &db, network, timestamp).await
+            process_asset_payload(asset, event_name, db, network, timestamp).await
         }
         PushData::Case(case) => {
-            process_case_payload(case, event_name, &db, network, timestamp).await
+            process_case_payload(case, event_name, db, network, timestamp).await
         }
         PushData::Reporter(reporter) => {
-            process_reporter_payload(reporter, event_name, &db, network, timestamp).await
+            process_reporter_payload(reporter, event_name, db, network, timestamp).await
         }
     }
 }

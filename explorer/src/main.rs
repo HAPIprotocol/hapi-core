@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
     let configuration = get_configuration()?;
     setup_tracing(&configuration.log_level, configuration.is_json_logging)?;
 
-    let app = Application::from_configuration(configuration).await?;
+    let mut app = Application::from_configuration(configuration).await?;
 
     match ExplorerCli::parse() {
         ExplorerCli::Server => app.run_server().await,

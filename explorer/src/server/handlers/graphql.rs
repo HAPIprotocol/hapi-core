@@ -10,7 +10,6 @@ use crate::server::schema::AppSchema;
 
 // /// Handle GraphiQL Requests
 // pub(crate) async fn graphiql() -> impl IntoResponse {
-//     println!("I am here 12345");
 //     Html(GraphiQLSource::build().endpoint("/graphql").finish())
 // }
 

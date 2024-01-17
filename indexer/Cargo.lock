@@ -3263,7 +3263,7 @@ dependencies = [
  "anchor-lang",
  "anyhow",
  "axum",
- "base64 0.21.5",
+ "base64 0.21.6",
  "config",
  "enum_extract",
  "ethers",
@@ -3786,10 +3786,10 @@ version = "9.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c7ea04a7c5c055c175f189b6dc6ba036fd62306b58c66c9f6389036c503a3f4"
 dependencies = [
- "base64 0.21.5",
+ "base64 0.21.6",
  "js-sys",
  "pem 3.0.2",
- "ring 0.17.6",
+ "ring 0.17.7",
  "serde",
  "serde_json",
  "simple_asn1",
@@ -5480,7 +5480,7 @@ version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3163d2912b7c3b52d651a055f2c7eec9ba5cd22d26ef75b8dd3a59980b185923"
 dependencies = [
- "base64 0.21.5",
+ "base64 0.21.6",
  "serde",
 ]
 
@@ -7713,7 +7713,7 @@ dependencies = [
  "itertools",
  "libc",
  "log",
- "nix",
+ "nix 0.26.4",
  "pem 1.1.1",
  "percentage",
  "pkcs8 0.8.0",

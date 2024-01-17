@@ -1,7 +1,6 @@
 use {
     async_graphql::{Context, Object, Result},
     sea_orm::DatabaseConnection,
-    std::sync::Arc,
     tracing::instrument,
 };
 
@@ -9,6 +8,7 @@ use super::{
     model::Model,
     query_utils::{AssetCondition, AssetFilter},
 };
+
 use crate::{
     entity::{
         pagination::{EntityInput, EntityPage},

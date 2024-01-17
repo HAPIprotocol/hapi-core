@@ -2,7 +2,6 @@ use {
     anyhow::Result,
     async_graphql::{EmptyMutation, EmptySubscription, MergedObject, Schema},
     sea_orm::DatabaseConnection,
-    std::sync::Arc,
 };
 
 use crate::entity::{

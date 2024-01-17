@@ -1,11 +1,13 @@
 use {
-    anyhow::Result,
+    anyhow::{anyhow, Result},
     axum::{
         middleware,
         routing::{get, post, put},
         Extension, Router, Server,
     },
     std::future::ready,
+    tokio::{signal, sync::oneshot},
+    tracing::info,
 };
 
 use super::{
@@ -15,6 +17,7 @@ use super::{
     },
     schema::create_graphql_schema,
 };
+
 use crate::{
     application::Application,
     observability::{setup_metrics, track_metrics},
@@ -40,29 +43,75 @@ impl Application {
             .with_state(self.state.clone())
             .layer(Extension(schema));
 
-        // if self.enable_metrics {
-        //     let prometheus_recorder = setup_metrics();
+        if self.enable_metrics {
+            let prometheus_recorder = setup_metrics();
 
-        //     // TODO: allow access only to the admin
-        //     return Ok(router
-        //         .route("/metrics", get(move || ready(prometheus_recorder.render())))
-        //         .route_layer(middleware::from_fn(track_metrics)));
-        // }
+            // TODO: allow access only to the admin
+            return Ok(router
+                .route("/metrics", get(move || ready(prometheus_recorder.render())))
+                .route_layer(middleware::from_fn(track_metrics)));
+        }
 
         Ok(router)
     }
 
-    pub async fn run_server(self) -> Result<()> {
+    pub async fn run_server(&mut self) -> Result<()> {
         tracing::info!(address = ?self.socket, "Start server");
 
-        // TODO: implement graceful shutdown
-        // let server: serve::Serve<axum::routing::IntoMakeService<Router>, Router> = serve(
-        //     TcpListener::bind(self.socket).await?,
-        //     self.create_router()?.into_make_service(),
-        // );
+        let (tx, rx) = oneshot::channel::<()>();
+        self.shutdown_sender = Some(tx);
 
-        let server = Server::bind(&self.socket).serve(self.create_router()?.into_make_service());
+        let server = Server::bind(&self.socket)
+            .serve(self.create_router()?.into_make_service())
+            .with_graceful_shutdown(async {
+                rx.await.ok();
+                info!("Signal received, starting graceful shutdown");
+            });
 
-        server.await.map_err(anyhow::Error::from)
+        // Store the server task's handle
+        self.server_handle = Some(tokio::spawn(
+            async move { server.await.map_err(|e| anyhow!(e)) },
+        ));
+
+        Ok(())
+    }
+
+    // TODO: implement graceful shutdown!
+    pub async fn handle_shutdown_signal(&mut self) -> Result<()> {
+        let ctrl_c = async {
+            signal::ctrl_c()
+                .await
+                .expect("failed to install Ctrl+C handler");
+        };
+
+        let terminate = async {
+            signal::unix::signal(signal::unix::SignalKind::terminate())
+                .expect("failed to install signal handler")
+                .recv()
+                .await;
+        };
+
+        let interrupt = async {
+            signal::unix::signal(signal::unix::SignalKind::interrupt())
+                .expect("failed to install signal handler")
+                .recv()
+                .await;
+        };
+
+        let quit = async {
+            signal::unix::signal(signal::unix::SignalKind::quit())
+                .expect("failed to install signal handler")
+                .recv()
+                .await;
+        };
+
+        tokio::select! {
+                _ = ctrl_c => info!("Ctrl-c received!"),
+                _ = terminate => info!("Terminate received!"),
+                _ = interrupt => info!("Interrupt received!"),
+                _ = quit => info!("Quit received!"),
+        };
+
+        self.shutdown().await
     }
 }

@@ -5,8 +5,9 @@ use {
     sea_orm_cli::MigrateSubcommands,
     sea_orm_migration::MigratorTrait,
     secrecy::{ExposeSecret, SecretString},
-    std::{net::SocketAddr, sync::Arc},
-    tokio::net::TcpListener,
+    std::net::SocketAddr,
+    tokio::{net::TcpListener, sync::oneshot, task::JoinHandle},
+    tracing::info,
     tracing::instrument,
     uuid::Uuid,
 };
@@ -18,7 +19,6 @@ use crate::{
 
 const JWT_VALIDITY_DAYS: i64 = 365;
 
-// TODO: what if i remove arcs?
 #[derive(Clone)]
 pub struct AppState {
     pub database_conn: DatabaseConnection,
@@ -29,6 +29,8 @@ pub struct Application {
     pub socket: SocketAddr,
     pub enable_metrics: bool,
     pub state: AppState,
+    pub shutdown_sender: Option<oneshot::Sender<()>>,
+    pub server_handle: Option<JoinHandle<Result<()>>>,
 }
 
 impl Application {
@@ -44,10 +46,14 @@ impl Application {
             jwt_secret: configuration.jwt_secret.to_owned(),
         };
 
+        info!("Application initialized");
+
         Ok(Self {
             socket,
             enable_metrics: configuration.enable_metrics,
             state,
+            shutdown_sender: None,
+            server_handle: None,
         })
     }
 
@@ -111,6 +117,7 @@ impl Application {
         Ok(())
     }
 
+    #[instrument(level = "info", skip(self))]
     pub async fn create_indexer(&self, network: NetworkBackend) -> Result<String> {
         tracing::info!("Create indexer for {:?} backend", network);
 
@@ -136,5 +143,23 @@ impl Application {
         tracing::info!("IndexerId: {}. Token: {}", id, token);
 
         Ok(token)
+    }
+
+    pub async fn shutdown(&mut self) -> Result<()> {
+        // Close database connection
+        self.state.database_conn.clone().close().await?;
+
+        // Send shutdown signal
+        if let Some(sender) = self.shutdown_sender.take() {
+            let _ = sender.send(());
+        }
+
+        // Wait for the server task to complete
+        if let Some(handle) = self.server_handle.take() {
+            handle.await??;
+        }
+
+        info!("Application shutdown");
+        Ok(())
     }
 }

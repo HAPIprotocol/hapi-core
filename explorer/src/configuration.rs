@@ -41,7 +41,7 @@ impl Default for Configuration {
         Self {
             log_level: default_loglevel(),
             is_json_logging: default_is_json_logging(),
-            enable_metrics: default_enable_metrics(),
+            enable_metrics: false,
             listener: default_listener(),
             database_url: String::new(),
             jwt_secret: default_jwt_secret(),

@@ -1,7 +1,6 @@
 use {
     async_graphql::{Context, Object, Result},
     sea_orm::DatabaseConnection,
-    std::sync::Arc,
     tracing::instrument,
 };
 

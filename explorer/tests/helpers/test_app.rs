@@ -1,9 +1,6 @@
-use sea_orm::{Database, DatabaseConnection};
-
 use super::{create_jwt, get_test_data, RequestSender};
 
 use {
-    anyhow::Result,
     hapi_core::{client::events::EventName, HapiCoreNetwork},
     hapi_explorer::{
         application::Application,
@@ -12,14 +9,13 @@ use {
         observability::setup_tracing,
     },
     hapi_indexer::PushData,
-    sea_orm::EntityTrait,
-    {
-        std::{env, sync::Arc},
-        tokio::{
-            spawn,
-            task::JoinHandle,
-            time::{sleep, Duration},
-        },
+    sea_orm::{Database, DatabaseConnection, EntityTrait},
+    std::{env, sync::Arc},
+    tokio::{
+        spawn,
+        sync::Notify,
+        task::JoinHandle,
+        time::{sleep, Duration},
     },
 };
 
@@ -31,6 +27,8 @@ pub struct TestApp {
     pub server_addr: String,
     pub db_connection: DatabaseConnection,
     pub networks: Vec<(HapiCoreNetwork, NetworkModel)>,
+    pub server_handle: Option<JoinHandle<()>>,
+    stop_signal: Arc<Notify>,
 }
 
 impl TestApp {
@@ -43,35 +41,39 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        let app = TestApp::get_application(configuration.clone()).await;
+        let mut app = TestApp::get_application(configuration.clone()).await;
 
         let db_connection = TestApp::prepare_database(&app, &configuration).await;
         let networks = Self::prepare_networks(&app).await;
         let port = app.port();
 
-        // let server = app.clone();
-        // let server_thread =
-        //     spawn(async move { server.run_server().await.expect("Failed to run server") });
+        let stop_signal = Arc::new(Notify::new());
+        let receiver = stop_signal.clone();
 
-        // let server = TestApp::get_application(configuration.clone()).await;
-        // spawn(server.run_server());
-        // spawn(async move {
-        //     TestApp::get_application(configuration.clone())
-        //         .await
-        //         .run_server()
-        //         .await
-        //         .expect("Failed to run server")
-        // });
-        // sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+        // Spawn a background task
+        let server_handle = spawn(async move {
+            app.run_server().await.expect("Failed to run server");
+            receiver.notified().await;
+            app.shutdown().await.expect("Failed to shutdown app");
+        });
 
-        spawn(app.run_server());
         sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
         TestApp {
             server_addr: format!("http://127.0.0.1:{}", port),
             db_connection,
+            server_handle: Some(server_handle),
             networks,
+            stop_signal,
         }
+    }
+
+    pub async fn shutdown(&mut self) {
+        self.stop_signal.notify_one();
+
+        if let Some(handle) = self.server_handle.take() {
+            handle.await.expect("Failed to shutdown server");
+        };
     }
 
     pub async fn prepare_database(
@@ -266,6 +268,12 @@ impl TestApp {
         }
 
         data
+    }
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        self.stop_signal.notify_one();
     }
 }
 
