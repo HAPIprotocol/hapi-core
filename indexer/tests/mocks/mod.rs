@@ -1,3 +1,5 @@
+use crate::jwt::get_jwt_id;
+
 use {
     hapi_core::{
         client::{
@@ -155,7 +157,7 @@ pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatc
         (EventName::Unstake, Some(reporter)),
     ];
 
-    let indexer_id = Uuid::new_v4();
+    let indexer_id = Uuid::parse_str(&get_jwt_id()).expect("Failed to parse indexer id");
 
     let batches: TestBatch = hashes
         .iter()

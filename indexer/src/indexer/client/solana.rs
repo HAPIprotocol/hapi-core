@@ -111,7 +111,7 @@ pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,
     network: &HapiCoreNetwork,
-    id: &Uuid,
+    id: Uuid,
 ) -> Result<Option<Vec<PushPayload>>> {
     let instructions = client.get_hapi_instructions(signature).await?;
 
@@ -137,7 +137,7 @@ pub(super) async fn process_solana_job(
             );
 
             payloads.push(PushPayload {
-                id: id.clone(),
+                id,
                 network: network.clone(),
                 event: PushEvent {
                     name: instruction.name,

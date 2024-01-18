@@ -45,8 +45,7 @@ near-jsonrpc-primitives = "0.19.0"
 hapi-core-near = { path = "../near/contract/" }
 
 # TODO: Replace with the latest stable version of near-sdk-rs
-[dependencies.near-sdk]
-git = "https://github.com/near/near-sdk-rs.git"
+near-sdk = "5.0.0-alpha.2"
 
 # Solana dependencies
 

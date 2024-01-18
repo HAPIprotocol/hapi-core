@@ -13,11 +13,8 @@ crate-type = ["cdylib", "lib"]
 borsh = { version = "1.0.0", features = ["derive"] }
 
 # TODO: Replace with the latest stable version of near-sdk-rs
-[dependencies.near-sdk]
-git = "https://github.com/near/near-sdk-rs.git"
-
-[dependencies.near-contract-standards]
-git = "https://github.com/near/near-sdk-rs.git"
+near-sdk = "5.0.0-alpha.2"
+near-contract-standards = "5.0.0-alpha.2"
 
 [dev-dependencies]
 uuid = { version = "1.4.0", features = [

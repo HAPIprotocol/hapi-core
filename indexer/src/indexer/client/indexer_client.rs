@@ -92,13 +92,13 @@ impl IndexerClient {
     ) -> Result<Option<Vec<PushPayload>>> {
         match (&self.client, job) {
             (HapiClient::Evm(client), IndexerJob::Log(log)) => {
-                process_evm_job(client, log, &self.network, &self.id).await
+                process_evm_job(client, log, &self.network, self.id).await
             }
             (HapiClient::Solana(client), IndexerJob::Transaction(hash)) => {
-                process_solana_job(client, hash, &self.network, &self.id).await
+                process_solana_job(client, hash, &self.network, self.id).await
             }
             (HapiClient::Near(client), IndexerJob::TransactionReceipt(receipt)) => {
-                process_near_job(client, receipt, &self.network, &self.id).await
+                process_near_job(client, receipt, &self.network, self.id).await
             }
             _ => unimplemented!(),
         }
