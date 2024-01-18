@@ -24,7 +24,7 @@ pub struct AssetQuery {}
 /// Queries for the `Asset` model
 #[Object]
 impl AssetQuery {
-    /// Get a single address
+    /// Get a single asset
     #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_asset(
         &self,
@@ -43,7 +43,7 @@ impl AssetQuery {
         Ok(address)
     }
 
-    /// Get multiple addresses
+    /// Get multiple assets
     #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
     pub async fn get_many_assets(
         &self,

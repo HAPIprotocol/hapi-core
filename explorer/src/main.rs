@@ -74,7 +74,12 @@ async fn main() -> Result<()> {
     let mut app = Application::from_configuration(configuration).await?;
 
     match ExplorerCli::parse() {
-        ExplorerCli::Server => app.run_server().await,
+        ExplorerCli::Server => {
+            app.run_server().await?;
+            app.handle_shutdown_signal().await?;
+
+            return Ok(());
+        }
         ExplorerCli::Migrate { subcommand } => app.migrate(subcommand).await,
         ExplorerCli::Network { subcommand } => match subcommand {
             NetworkSubcommands::Create {
@@ -100,5 +105,7 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
-    }
+    }?;
+
+    app.shutdown().await
 }

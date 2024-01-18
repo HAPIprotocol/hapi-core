@@ -76,7 +76,6 @@ impl Application {
         Ok(())
     }
 
-    // TODO: implement graceful shutdown!
     pub async fn handle_shutdown_signal(&mut self) -> Result<()> {
         let ctrl_c = async {
             signal::ctrl_c()

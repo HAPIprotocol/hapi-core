@@ -25,7 +25,7 @@ pub struct ReporterQuery {}
 /// Queries for the `Reporter` model
 #[Object]
 impl ReporterQuery {
-    /// Get a single address
+    /// Get a single reporter
     #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_reporter(
         &self,
@@ -41,7 +41,7 @@ impl ReporterQuery {
         Ok(address)
     }
 
-    /// Get multiple addresses
+    /// Get multiple reporters
     #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
     pub async fn get_many_reporters(
         &self,

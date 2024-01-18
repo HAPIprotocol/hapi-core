@@ -25,7 +25,7 @@ pub struct CaseQuery {}
 /// Queries for the `Case` model
 #[Object]
 impl CaseQuery {
-    /// Get a single address
+    /// Get a single case
     #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_case(
         &self,
@@ -41,7 +41,7 @@ impl CaseQuery {
         Ok(address)
     }
 
-    /// Get multiple addresses
+    /// Get multiple cases
     #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
     pub async fn get_many_cases(
         &self,

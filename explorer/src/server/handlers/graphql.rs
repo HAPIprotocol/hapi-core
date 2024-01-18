@@ -8,12 +8,7 @@ use {
 
 use crate::server::schema::AppSchema;
 
-// /// Handle GraphiQL Requests
-// pub(crate) async fn graphiql() -> impl IntoResponse {
-//     Html(GraphiQLSource::build().endpoint("/graphql").finish())
-// }
-
-/// Handle GraphiQL Requests
+/// Handle GraphQL playground
 pub(crate) async fn graphiql() -> impl IntoResponse {
     Html(async_graphql::http::playground_source(
         async_graphql::http::GraphQLPlaygroundConfig::new("/graphql"),

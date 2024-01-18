@@ -21,7 +21,7 @@ pub struct NetworkQuery {}
 /// Queries for the `Network` model
 #[Object]
 impl NetworkQuery {
-    /// Get a single address
+    /// Get a single network
     #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_network(
         &self,
@@ -34,7 +34,7 @@ impl NetworkQuery {
         Ok(address)
     }
 
-    /// Get multiple addresses
+    /// Get multiple networks
     #[instrument(level = "debug", skip(self, ctx), fields(input = ?input))]
     pub async fn get_many_networks(
         &self,

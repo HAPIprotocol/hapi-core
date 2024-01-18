@@ -66,7 +66,7 @@ where
     }
 }
 
-/// A paginated response for an entity
+/// Paginated response for an entity
 #[derive(Clone, Debug, Eq, PartialEq, SimpleObject)]
 #[graphql(concrete(name = "NetworkPage", params(Network)))]
 #[graphql(concrete(name = "ReporterPage", params(Reporter)))]
@@ -82,7 +82,7 @@ pub struct EntityPage<Entity: Send + Sync + OutputType> {
     pub page_count: u64,
 }
 
-/// Reusable input type for all entities
+/// Entity input type
 #[derive(Clone, Default, Eq, PartialEq, InputObject, Debug)]
 #[graphql(concrete(name = "NetworkInput", params(NetworkFilter, NetworkCondition)))]
 #[graphql(concrete(name = "ReporterInput", params(ReporterFilter, ReporterCondition)))]
@@ -96,9 +96,9 @@ pub struct EntityInput<F: InputType, C: InputType> {
     /// Available ordering
     pub ordering: Ordering,
 
-    /// Available ordering values for entities
+    /// Available ordering values for entities (optional)
     pub ordering_condition: C,
 
-    /// Pagination options
+    /// Pagination options (optional)
     pub pagination: Option<Paginator>,
 }
