@@ -1,4 +1,7 @@
-use async_graphql::{Enum, InputObject, InputType, OutputType, SimpleObject};
+use {
+    async_graphql::{Enum, InputObject, InputType, OutputType, SimpleObject},
+    sea_orm::{EntityTrait, QueryOrder, Select},
+};
 
 use super::{
     address::{
@@ -48,6 +51,19 @@ pub enum Ordering {
     #[default]
     Asc,
     Desc,
+}
+
+/// Method for query ordering by column
+pub fn order_by_colmn<M, C>(query: Select<M>, ordering: Ordering, condition: C) -> Select<M>
+where
+    M: EntityTrait,
+    M::Column: From<C>,
+{
+    let column = M::Column::from(condition);
+    match ordering {
+        Ordering::Asc => query.order_by_asc(column),
+        Ordering::Desc => query.order_by_desc(column),
+    }
 }
 
 /// A paginated response for an entity

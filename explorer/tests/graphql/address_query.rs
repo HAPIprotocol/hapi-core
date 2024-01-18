@@ -1,12 +1,9 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp};
+use crate::helpers::{RequestSender, TestApp, TestData};
 
 use {
-    hapi_core::{
-        client::{entities::address::Address, events::EventName},
-        HapiCoreNetwork,
-    },
-    hapi_indexer::PushData,
+    hapi_core::client::{entities::address::Address, events::EventName},
+    hapi_indexer::{PushData, PushPayload},
     serde_json::{json, Value},
 };
 
@@ -49,11 +46,28 @@ const GET_MANY_ADDRESSES: &str = "
     }
 ";
 
-fn check_address(payload: &Address, value: &Value, network: &HapiCoreNetwork) {
+impl From<PushPayload> for TestData<Address> {
+    fn from(payload: PushPayload) -> Self {
+        let entity = match &payload.data {
+            PushData::Address(address) => address,
+            _ => panic!("Invalid type"),
+        };
+
+        Self {
+            data: entity.to_owned(),
+            network: payload.network,
+            indexer_id: payload.id,
+        }
+    }
+}
+
+fn check_address(address: &TestData<Address>, value: &Value) {
     assert_eq!(
         replacer(&value["network"]),
-        network.to_string().to_lowercase()
+        address.network.to_string().to_lowercase()
     );
+
+    let payload = &address.data;
     assert_eq!(value["address"], payload.address);
     assert_eq!(value["caseId"], payload.case_id.to_string());
     assert_eq!(value["reporterId"], payload.reporter_id.to_string());
@@ -70,28 +84,23 @@ async fn get_address_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
         .await;
 
-    for (payload, network) in addresses {
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in addresses {
         let response = sender
             .send_graphql(
                 GET_ADDRESS_QUERY,
                 json!({
-                    "address": addr_payload.address,
-                    "network": network.to_string().to_uppercase()
+                    "address": payload.data.address,
+                    "network": payload.network.to_string().to_uppercase()
                 }),
             )
             .await
             .unwrap();
 
         let address = &response["getAddress"];
-        check_address(&addr_payload, address, &network);
+        check_address(&payload, address);
     }
 }
 
@@ -100,7 +109,7 @@ async fn get_many_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
         .await;
 
     let response = sender
@@ -127,13 +136,9 @@ async fn get_many_addresses_test() {
         .iter()
         .enumerate()
     {
-        let (payload, network) = addresses.get(index).expect("Invalid index");
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
-            _ => panic!("Invalid type"),
-        };
+        let payload = addresses.get(index).expect("Invalid index");
 
-        check_address(addr_payload, address, network)
+        check_address(payload, address)
     }
 }
 
@@ -142,15 +147,10 @@ async fn get_filtered_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
         .await;
 
-    for (payload, network) in addresses {
-        let addr_payload = match payload {
-            PushData::Address(addr) => addr,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in addresses {
         let response = sender
             .send_graphql(
                 GET_MANY_ADDRESSES,
@@ -158,7 +158,7 @@ async fn get_filtered_addresses_test() {
                 "input":
                 {
                     "filtering": {
-                        "reporterId": addr_payload.reporter_id.to_string(),
+                        "reporterId": payload.data.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -178,7 +178,7 @@ async fn get_filtered_addresses_test() {
             .first()
             .unwrap();
 
-        check_address(&addr_payload, address, network)
+        check_address(&payload, address)
     }
 }
 
@@ -187,14 +187,10 @@ async fn get_paginated_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities(&sender, EventName::UpdateAddress)
+        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
         .await;
 
-    let (payload, network) = addresses.last().expect("Invalid index");
-    let addr_payload = match payload {
-        PushData::Address(addr) => addr,
-        _ => panic!("Invalid type"),
-    };
+    let payload = addresses.last().expect("Invalid index");
 
     let page_size = 2;
     let response = sender
@@ -224,5 +220,5 @@ async fn get_paginated_addresses_test() {
         .expect("Empty response");
 
     assert_eq!(addresses.len(), page_size);
-    check_address(&addr_payload, addresses.last().unwrap(), network)
+    check_address(&payload, addresses.last().unwrap())
 }

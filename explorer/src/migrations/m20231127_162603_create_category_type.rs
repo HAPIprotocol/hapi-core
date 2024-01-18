@@ -37,7 +37,7 @@ pub enum Category {
     Exchange,
     DeFi,
     OTCBroker,
-    ATM,
+    Atm,
     Gambling,
     IllicitOrganization,
     Mixer,

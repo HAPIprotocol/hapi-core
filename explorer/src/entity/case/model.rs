@@ -1,12 +1,16 @@
 use {
     async_graphql::SimpleObject,
     hapi_core::client::entities::case::Case as CasePayload,
-    sea_orm::{entity::prelude::*, NotSet, Set},
+    sea_orm::{
+        entity::prelude::*, EntityTrait, JoinType, NotSet, QueryOrder, QuerySelect, Select, Set,
+    },
 };
 
 use super::query_utils::{CaseCondition, CaseFilter};
 use crate::entity::{
-    address, asset, reporter,
+    address, asset,
+    pagination::{order_by_colmn, Ordering},
+    reporter,
     types::{CaseStatus, NetworkBackend},
     EntityFilter, FromPayload,
 };
@@ -56,6 +60,36 @@ impl EntityFilter for Entity {
         }
 
         query
+    }
+
+    // Ordering query
+    fn order(
+        selected: Select<Entity>,
+        ordering: Ordering,
+        condition: CaseCondition,
+    ) -> Select<Entity> {
+        match condition {
+            CaseCondition::AddressCount => sort_by_count(selected, ordering, Relation::Address),
+            CaseCondition::AssetCount => sort_by_count(selected, ordering, Relation::Asset),
+            _ => order_by_colmn(selected, ordering, condition),
+        }
+    }
+}
+
+fn sort_by_count(
+    selected: Select<Entity>,
+    ordering: Ordering,
+    relation: Relation,
+) -> Select<Entity> {
+    let query = selected
+        .column_as(Expr::cust("COUNT(*)"), "related")
+        .join(JoinType::InnerJoin, relation.def())
+        .group_by(Column::CaseId)
+        .group_by(Column::Network);
+
+    match ordering {
+        Ordering::Asc => query.order_by_asc(Expr::cust("related")),
+        Ordering::Desc => query.order_by_desc(Expr::cust("related")),
     }
 }
 

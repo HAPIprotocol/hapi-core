@@ -1,4 +1,4 @@
-use super::{create_jwt, get_test_data, RequestSender};
+use super::{create_jwt, get_test_data, RequestSender, TestData};
 
 use {
     hapi_core::{client::events::EventName, HapiCoreNetwork},
@@ -8,7 +8,7 @@ use {
         entity::{address, asset, case, network::Model as NetworkModel, reporter},
         observability::setup_tracing,
     },
-    hapi_indexer::PushData,
+    hapi_indexer::{PushData, PushPayload},
     sea_orm::{Database, DatabaseConnection, EntityTrait},
     std::{env, sync::Arc},
     tokio::{
@@ -242,28 +242,39 @@ impl TestApp {
         }
     }
 
-    pub async fn setup_entities(
+    // Sends provided data or default events for all networks
+    pub async fn setup_entities<T>(
         &self,
         sender: &RequestSender,
         event: EventName,
-    ) -> Vec<(PushData, &HapiCoreNetwork)> {
+        test_data: Option<Vec<PushPayload>>,
+    ) -> Vec<TestData<T>>
+    where
+        TestData<T>: From<PushPayload>,
+    {
         let mut data = vec![];
 
-        for (network, _) in &self.networks {
-            let token = create_jwt("my_ultra_secure_secret");
+        let test_data = if let Some(data) = test_data {
+            data
+        } else {
+            self.networks
+                .iter()
+                .map(|(network, _)| get_test_data(network.to_owned()))
+                .flatten()
+                .collect()
+        };
 
-            let test_data = get_test_data(network.to_owned());
+        let token = create_jwt("my_ultra_secure_secret");
 
-            for payload in test_data {
-                sender
-                    .send("events", &payload, &token)
-                    .await
-                    .expect("Failed to send event");
-                sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+        for payload in test_data {
+            sender
+                .send("events", &payload, &token)
+                .await
+                .expect("Failed to send event");
+            sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
-                if event == payload.event.name {
-                    data.push((payload.data, network));
-                }
+            if event == payload.event.name {
+                data.push(payload.into());
             }
         }
 

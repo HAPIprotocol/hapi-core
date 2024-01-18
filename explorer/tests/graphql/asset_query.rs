@@ -1,12 +1,9 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp};
+use crate::helpers::{RequestSender, TestApp, TestData};
 
 use {
-    hapi_core::{
-        client::{entities::asset::Asset, events::EventName},
-        HapiCoreNetwork,
-    },
-    hapi_indexer::PushData,
+    hapi_core::client::{entities::asset::Asset, events::EventName},
+    hapi_indexer::{PushData, PushPayload},
     serde_json::{json, Value},
 };
 
@@ -51,11 +48,29 @@ const GET_MANY_ASSETS: &str = "
     }
 ";
 
-fn check_asset(payload: &Asset, value: &Value, network: &HapiCoreNetwork) {
+impl From<PushPayload> for TestData<Asset> {
+    fn from(payload: PushPayload) -> Self {
+        let entity = match &payload.data {
+            PushData::Asset(asset) => asset,
+            _ => panic!("Invalid type"),
+        };
+
+        Self {
+            data: entity.to_owned(),
+            network: payload.network,
+            indexer_id: payload.id,
+        }
+    }
+}
+
+fn check_asset(asset: &TestData<Asset>, value: &Value) {
     assert_eq!(
         replacer(&value["network"]),
-        network.to_string().to_lowercase()
+        asset.network.to_string().to_lowercase()
     );
+
+    let payload = &asset.data;
+
     assert_eq!(value["address"], payload.address);
     assert_eq!(value["assetId"], payload.asset_id.to_string());
     assert_eq!(value["caseId"], payload.case_id.to_string());
@@ -73,29 +88,24 @@ async fn get_asset_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities(&sender, EventName::UpdateAsset)
+        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
         .await;
 
-    for (payload, network) in assets {
-        let asset_payload = match payload {
-            PushData::Asset(asset) => asset,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in assets {
         let response = sender
             .send_graphql(
                 GET_ASSET_QUERY,
                 json!({
-                    "address": asset_payload.address,
-                    "assetId": asset_payload.asset_id,
-                    "network": network.to_string().to_uppercase()
+                    "address": payload.data.address,
+                    "assetId": payload.data.asset_id,
+                    "network": payload.network.to_string().to_uppercase()
                 }),
             )
             .await
             .unwrap();
 
         let asset = &response["getAsset"];
-        check_asset(&asset_payload, asset, &network);
+        check_asset(&payload, asset);
     }
 }
 
@@ -104,7 +114,7 @@ async fn get_many_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities(&sender, EventName::UpdateAsset)
+        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
         .await;
 
     let response = sender
@@ -131,13 +141,8 @@ async fn get_many_assets_test() {
         .iter()
         .enumerate()
     {
-        let (payload, network) = assets.get(index).expect("Invalid index");
-        let asset_payload = match payload {
-            PushData::Asset(asset) => asset,
-            _ => panic!("Invalid type"),
-        };
-
-        check_asset(asset_payload, asset, network)
+        let payload = assets.get(index).expect("Invalid index");
+        check_asset(payload, asset)
     }
 }
 
@@ -146,15 +151,10 @@ async fn get_filtered_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities(&sender, EventName::UpdateAsset)
+        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
         .await;
 
-    for (payload, network) in assets {
-        let asset_payload = match payload {
-            PushData::Asset(asset) => asset,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in assets {
         let response = sender
             .send_graphql(
                 GET_MANY_ASSETS,
@@ -162,7 +162,7 @@ async fn get_filtered_assets_test() {
                 "input":
                 {
                     "filtering": {
-                        "reporterId": asset_payload.reporter_id.to_string(),
+                        "reporterId": payload.data.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -182,7 +182,7 @@ async fn get_filtered_assets_test() {
             .first()
             .unwrap();
 
-        check_asset(&asset_payload, asset, network)
+        check_asset(&payload, asset)
     }
 }
 
@@ -191,14 +191,10 @@ async fn get_paginated_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities(&sender, EventName::UpdateAsset)
+        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
         .await;
 
-    let (payload, network) = assets.last().expect("Invalid index");
-    let asset_payload = match payload {
-        PushData::Asset(asset) => asset,
-        _ => panic!("Invalid type"),
-    };
+    let payload = assets.last().expect("Invalid index");
 
     let page_size = 2;
     let response = sender
@@ -226,5 +222,5 @@ async fn get_paginated_assets_test() {
     let assets = assets_response["data"].as_array().expect("Empty response");
 
     assert_eq!(assets.len(), page_size);
-    check_asset(&asset_payload, assets.last().unwrap(), network)
+    check_asset(&payload, assets.last().unwrap())
 }

@@ -1,10 +1,10 @@
 use {
     async_graphql::{InputType, OutputType},
-    sea_orm::{DbConn, DbErr, EntityTrait, PaginatorTrait, PrimaryKeyTrait, QueryOrder, Select},
+    sea_orm::{DbConn, DbErr, EntityTrait, PaginatorTrait, PrimaryKeyTrait, Select},
 };
 
 use crate::entity::{
-    pagination::{EntityInput, EntityPage, Ordering, Paginator},
+    pagination::{EntityInput, EntityPage, Paginator},
     EntityFilter,
 };
 
@@ -38,7 +38,7 @@ impl EntityQuery {
             query = M::filter(query, &filter);
         }
 
-        query = Self::order_by(query, input.ordering, input.ordering_condition);
+        query = M::order(query, input.ordering, input.ordering_condition);
 
         Self::paginate(db, query, input.pagination).await
     }
@@ -78,18 +78,5 @@ impl EntityQuery {
         };
 
         Ok(page)
-    }
-
-    // Method for paginating query ordering
-    fn order_by<M, C>(query: Select<M>, ordering: Ordering, condition: C) -> Select<M>
-    where
-        M: EntityTrait,
-        M::Column: From<C>,
-    {
-        let column = M::Column::from(condition);
-        match ordering {
-            Ordering::Asc => query.order_by_asc(column),
-            Ordering::Desc => query.order_by_desc(column),
-        }
     }
 }

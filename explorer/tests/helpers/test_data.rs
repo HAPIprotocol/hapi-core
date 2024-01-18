@@ -19,6 +19,12 @@ use {
     uuid::Uuid,
 };
 
+pub struct TestData<T> {
+    pub data: T,
+    pub network: HapiCoreNetwork,
+    pub indexer_id: Uuid,
+}
+
 pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     let mut events = vec![];
 
@@ -170,17 +176,60 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     events
 }
 
+pub fn create_address_data(
+    reporter_id: Uuid,
+    case_id: Uuid,
+    network: HapiCoreNetwork,
+    indexer_id: Uuid,
+) -> PushPayload {
+    let payload = Address {
+        address: generate_randon_string(),
+        case_id,
+        reporter_id,
+        risk: 6,
+        category: Category::DeFi,
+        confirmations: 0,
+    };
+
+    create_payload(
+        network,
+        EventName::CreateAddress,
+        PushData::Address(payload.clone()),
+        indexer_id,
+    )
+}
+
+pub fn create_asset_data(
+    reporter_id: Uuid,
+    case_id: Uuid,
+    network: HapiCoreNetwork,
+    indexer_id: Uuid,
+) -> PushPayload {
+    let payload = Asset {
+        address: generate_randon_string(),
+        asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
+        case_id,
+        reporter_id,
+        risk: 6,
+        category: Category::DeFi,
+        confirmations: 0,
+    };
+
+    create_payload(
+        network,
+        EventName::CreateAsset,
+        PushData::Asset(payload.clone()),
+        indexer_id,
+    )
+}
+
 fn create_payload(
     network: HapiCoreNetwork,
     name: EventName,
     data: PushData,
     indexer_id: Uuid,
 ) -> PushPayload {
-    let tx_hash: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(32)
-        .map(char::from)
-        .collect();
+    let tx_hash = generate_randon_string();
 
     let event = PushEvent {
         name,
@@ -195,4 +244,12 @@ fn create_payload(
         event,
         data,
     }
+}
+
+fn generate_randon_string() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect()
 }

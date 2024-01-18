@@ -1,12 +1,9 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp};
+use crate::helpers::{RequestSender, TestApp, TestData};
 
 use {
-    hapi_core::{
-        client::{entities::reporter::Reporter, events::EventName},
-        HapiCoreNetwork,
-    },
-    hapi_indexer::PushData,
+    hapi_core::client::{entities::reporter::Reporter, events::EventName},
+    hapi_indexer::{PushData, PushPayload},
     serde_json::{json, Value},
 };
 
@@ -53,11 +50,28 @@ const GET_MANY_REPORTERS: &str = "
     }
 ";
 
-fn check_reporter(payload: &Reporter, value: &Value, network: &HapiCoreNetwork) {
+impl From<PushPayload> for TestData<Reporter> {
+    fn from(payload: PushPayload) -> Self {
+        let entity = match &payload.data {
+            PushData::Reporter(reporter) => reporter,
+            _ => panic!("Invalid type"),
+        };
+
+        Self {
+            data: entity.to_owned(),
+            network: payload.network,
+            indexer_id: payload.id,
+        }
+    }
+}
+
+fn check_reporter(reporter: &TestData<Reporter>, value: &Value) {
     assert_eq!(
         replacer(&value["network"]),
-        network.to_string().to_lowercase()
+        reporter.network.to_string().to_lowercase()
     );
+
+    let payload = &reporter.data;
     assert_eq!(value["reporterId"], payload.id.to_string());
     assert_eq!(value["account"], payload.account);
     assert_eq!(
@@ -82,28 +96,23 @@ async fn get_reporter_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities(&sender, EventName::UpdateReporter)
+        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
         .await;
 
-    for (payload, network) in reporters {
-        let reporters_payload = match payload {
-            PushData::Reporter(reporter) => reporter,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in reporters {
         let response = sender
             .send_graphql(
                 GET_REPORTER_QUERY,
                 json!({
-                    "reporterId": reporters_payload.id,
-                    "network": network.to_string().to_uppercase()
+                    "reporterId": payload.data.id,
+                    "network": payload.network.to_string().to_uppercase()
                 }),
             )
             .await
             .unwrap();
 
         let reporter = &response["getReporter"];
-        check_reporter(&reporters_payload, reporter, &network);
+        check_reporter(&payload, reporter);
     }
 }
 
@@ -112,7 +121,7 @@ async fn get_many_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities(&sender, EventName::UpdateReporter)
+        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
         .await;
 
     let response = sender
@@ -138,13 +147,9 @@ async fn get_many_reporters_test() {
         .iter()
         .enumerate()
     {
-        let (payload, network) = reporters.get(index).expect("Invalid index");
-        let reporters_payload = match payload {
-            PushData::Reporter(reporter) => reporter,
-            _ => panic!("Invalid type"),
-        };
+        let payload = reporters.get(index).expect("Invalid index");
 
-        check_reporter(reporters_payload, reporter, network)
+        check_reporter(payload, reporter)
     }
 }
 
@@ -153,15 +158,10 @@ async fn get_filtered_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities(&sender, EventName::UpdateReporter)
+        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
         .await;
 
-    for (payload, network) in reporters {
-        let reporters_payload = match payload {
-            PushData::Reporter(reporter) => reporter,
-            _ => panic!("Invalid type"),
-        };
-
+    for payload in reporters {
         let response = sender
             .send_graphql(
                 GET_MANY_REPORTERS,
@@ -169,7 +169,7 @@ async fn get_filtered_reporters_test() {
                 "input":
                 {
                     "filtering": {
-                        "network": network.to_string().to_uppercase(),
+                        "network": payload.network.to_string().to_uppercase(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -188,7 +188,7 @@ async fn get_filtered_reporters_test() {
             .first()
             .unwrap();
 
-        check_reporter(&reporters_payload, reporter, network)
+        check_reporter(&payload, reporter)
     }
 }
 
@@ -197,14 +197,10 @@ async fn get_paginated_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities(&sender, EventName::UpdateReporter)
+        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
         .await;
 
-    let (payload, network) = reporters.last().expect("Invalid index");
-    let reporters_payload = match payload {
-        PushData::Reporter(reporter) => reporter,
-        _ => panic!("Invalid type"),
-    };
+    let payload = reporters.last().expect("Invalid index");
 
     let page_size = 2;
     let response = sender
@@ -234,5 +230,5 @@ async fn get_paginated_reporters_test() {
         .expect("Empty response");
 
     assert_eq!(reporters.len(), page_size);
-    check_reporter(&reporters_payload, reporters.last().unwrap(), network)
+    check_reporter(&payload, reporters.last().unwrap())
 }

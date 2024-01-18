@@ -36,6 +36,10 @@ pub enum CaseCondition {
     CreatedAt,
     /// Order by the time when entity was updated
     UpdatedAt,
+    /// Order by address count
+    AddressCount,
+    /// Order by asset count
+    AssetCount,
 }
 
 impl From<CaseCondition> for Column {
@@ -49,6 +53,7 @@ impl From<CaseCondition> for Column {
             CaseCondition::ReporterId => Column::ReporterId,
             CaseCondition::CreatedAt => Column::CreatedAt,
             CaseCondition::UpdatedAt => Column::UpdatedAt,
+            _ => unreachable!("Invalid condition: {:?}", condition),
         }
     }
 }
