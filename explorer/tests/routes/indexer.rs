@@ -1,10 +1,7 @@
-use tokio::time::{sleep, Duration};
-
-use crate::helpers::{create_jwt, RequestSender, TestApp, WAITING_INTERVAL};
+use crate::helpers::{create_jwt, RequestSender, TestApp};
 
 /*
 Test cases:
- - create indexer
  - heartbeat indexer
  - heartbeat indexer with wrong token
  - get indexers
@@ -15,14 +12,9 @@ async fn indexer_processing_test() {
     let test_app = TestApp::start().await;
     let indexer_mock = RequestSender::new(test_app.server_addr.to_owned());
 
-    for (network, _) in &test_app.networks {
-        //create indexer
-        let token = test_app.create_indexer(network).await;
-        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
+    for network in &test_app.networks {
         // heartbeat indexer
-
-        indexer_mock.send_heartbeat(&token).await.unwrap();
+        indexer_mock.send_heartbeat(&network.token).await.unwrap();
     }
 
     // heartbeat indexer with wrong token

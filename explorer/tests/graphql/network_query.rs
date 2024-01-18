@@ -1,11 +1,7 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp};
+use crate::helpers::{RequestSender, TestApp, TestNetwork};
 
-use {
-    hapi_core::HapiCoreNetwork,
-    hapi_explorer::entity::network::Model as NetworkModel,
-    serde_json::{json, Value},
-};
+use serde_json::{json, Value};
 
 const GET_NETWORK_QUERY: &str = "
     query GetNetwork($id: String!) {
@@ -44,12 +40,13 @@ const GET_MANY_NETWORKS: &str = "
     }
 ";
 
-fn check_network(model: &NetworkModel, value: &Value, backend: &HapiCoreNetwork) {
+fn check_network(network: &TestNetwork, value: &Value) {
+    let model = &network.model;
     assert_eq!(replacer(&value["id"]), model.id.to_string().to_lowercase());
     assert_eq!(value["name"], model.name);
     assert_eq!(
         replacer(&value["backend"]),
-        backend.to_string().to_lowercase()
+        network.backend.to_string().to_lowercase()
     );
     assert_eq!(value["chainId"], *model.chain_id.as_ref().unwrap());
     assert_eq!(value["authority"], model.authority);
@@ -61,19 +58,19 @@ async fn get_network_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
 
-    for (backend, model) in &test_app.networks {
+    for data in &test_app.networks {
         let response = sender
             .send_graphql(
                 GET_NETWORK_QUERY,
                 json!({
-                    "id": model.id,
+                    "id": data.model.id,
                 }),
             )
             .await
             .unwrap();
 
         let network = &response["getNetwork"];
-        check_network(&model, network, &backend);
+        check_network(&data, network);
     }
 }
 
@@ -81,7 +78,7 @@ async fn get_network_test() {
 async fn get_many_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks.to_owned();
+    let networks = &test_app.networks;
 
     let response = sender
         .send_graphql(
@@ -101,17 +98,15 @@ async fn get_many_networks_test() {
     let networks_response = &response["getManyNetworks"];
     assert_eq!(networks_response["total"], networks.len());
 
-    println!("{:?}", networks_response);
-
     for (index, network) in networks_response["data"]
         .as_array()
         .expect("Empty response")
         .iter()
         .enumerate()
     {
-        let (backend, model) = networks.get(index).expect("Invalid index");
+        let data = networks.get(index).expect("Invalid index");
 
-        check_network(model, network, backend)
+        check_network(data, network)
     }
 }
 
@@ -119,9 +114,9 @@ async fn get_many_networks_test() {
 async fn get_filtered_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks.to_owned();
+    let networks = &test_app.networks;
 
-    for (backend, model) in networks {
+    for data in networks {
         let response = sender
             .send_graphql(
                 GET_MANY_NETWORKS,
@@ -129,7 +124,7 @@ async fn get_filtered_networks_test() {
                 "input":
                 {
                     "filtering": {
-                        "backend": backend.to_string().to_uppercase(),
+                        "backend": data.backend.to_string().to_uppercase(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -149,7 +144,7 @@ async fn get_filtered_networks_test() {
             .first()
             .unwrap();
 
-        check_network(&model, network, &backend)
+        check_network(&data, network)
     }
 }
 
@@ -157,9 +152,9 @@ async fn get_filtered_networks_test() {
 async fn get_paginated_networks_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
-    let networks = test_app.networks.to_owned();
+    let networks = &test_app.networks;
 
-    let (backend, model) = networks.last().expect("Invalid index");
+    let data = networks.last().expect("Invalid index");
 
     let page_size = 2;
     let response = sender
@@ -189,5 +184,5 @@ async fn get_paginated_networks_test() {
         .expect("Empty response");
 
     assert_eq!(networks.len(), page_size);
-    check_network(&model, networks.last().unwrap(), backend)
+    check_network(&data, networks.last().unwrap())
 }

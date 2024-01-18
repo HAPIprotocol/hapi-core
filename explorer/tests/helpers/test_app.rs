@@ -23,10 +23,16 @@ pub const WAITING_INTERVAL: u64 = 100;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 const MIGRATION_COUNT: u32 = 10;
 
+pub struct TestNetwork {
+    pub backend: HapiCoreNetwork,
+    pub model: NetworkModel,
+    pub token: String,
+}
+
 pub struct TestApp {
     pub server_addr: String,
     pub db_connection: DatabaseConnection,
-    pub networks: Vec<(HapiCoreNetwork, NetworkModel)>,
+    pub networks: Vec<TestNetwork>,
     pub server_handle: Option<JoinHandle<()>>,
     stop_signal: Arc<Notify>,
 }
@@ -41,7 +47,9 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        let mut app = TestApp::get_application(configuration.clone()).await;
+        let mut app = Application::from_configuration(configuration.clone())
+            .await
+            .expect("Failed to build app");
 
         let db_connection = TestApp::prepare_database(&app, &configuration).await;
         let networks = Self::prepare_networks(&app).await;
@@ -80,10 +88,7 @@ impl TestApp {
         app: &Application,
         configuration: &Configuration,
     ) -> DatabaseConnection {
-        // TODO: clone from app
-        let db_connection = Database::connect(configuration.database_url.as_str())
-            .await
-            .expect("Failed to connect to database");
+        let db_connection = app.state.database_conn.clone();
 
         app.migrate(Some(sea_orm_cli::MigrateSubcommands::Down {
             num: MIGRATION_COUNT,
@@ -96,20 +101,20 @@ impl TestApp {
         db_connection
     }
 
-    async fn prepare_networks(app: &Application) -> Vec<(HapiCoreNetwork, NetworkModel)> {
-        let backends = vec![
+    async fn prepare_networks(app: &Application) -> Vec<TestNetwork> {
+        let networks = vec![
             HapiCoreNetwork::Ethereum,
             HapiCoreNetwork::Solana,
             HapiCoreNetwork::Near,
             HapiCoreNetwork::Sepolia,
         ];
 
-        let mut models = vec![];
+        let mut res = vec![];
 
-        for backend in &backends {
-            let id = backend.to_string();
+        for network in &networks {
+            let id = network.to_string();
             let name = "test_name".to_string();
-            let backend = backend.clone().into();
+            let backend = network.clone().into();
             let chain_id = Some("test_chain_id".to_string());
             let authority = "test_authority".to_string();
             let stake_token = "test_stake_token".to_string();
@@ -125,38 +130,30 @@ impl TestApp {
             .await
             .expect("Failed to create network");
 
-            models.push(NetworkModel {
-                id,
-                name,
-                backend,
-                chain_id,
-                authority,
-                stake_token,
-                created_at: chrono::Utc::now().naive_utc(),
-                updated_at: chrono::Utc::now().naive_utc(),
-            })
+            let token = app
+                .create_indexer(backend.to_owned().into())
+                .await
+                .expect("Failed to create indexer");
+
+            let data = TestNetwork {
+                backend: network.to_owned(),
+                model: NetworkModel {
+                    id,
+                    name,
+                    backend,
+                    chain_id,
+                    authority,
+                    stake_token,
+                    created_at: chrono::Utc::now().naive_utc(),
+                    updated_at: chrono::Utc::now().naive_utc(),
+                },
+                token,
+            };
+
+            res.push(data);
         }
 
-        backends.into_iter().zip(models).collect()
-    }
-
-    pub async fn create_indexer(&self, network: &HapiCoreNetwork) -> String {
-        let app = TestApp::get_application(generate_configuration()).await;
-
-        let token = app
-            .create_indexer(network.to_owned().into())
-            .await
-            .expect("Failed to create indexer");
-
-        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
-        token
-    }
-
-    pub async fn get_application(configuration: Configuration) -> Application {
-        Application::from_configuration(configuration)
-            .await
-            .expect("Failed to build app")
+        res
     }
 
     pub async fn check_entity(&self, data: PushData, network: HapiCoreNetwork) {
@@ -259,7 +256,7 @@ impl TestApp {
         } else {
             self.networks
                 .iter()
-                .map(|(network, _)| get_test_data(network.to_owned()))
+                .map(|network| get_test_data(network.backend.to_owned()))
                 .flatten()
                 .collect()
         };
