@@ -1,5 +1,5 @@
 use {
-    anyhow::Result,
+    anyhow::{anyhow, Result},
     base64::{
         alphabet,
         engine::{self, general_purpose},
@@ -17,11 +17,10 @@ pub struct TokenClaims {
 }
 
 pub fn get_id_from_jwt(token: &str) -> Result<Uuid> {
-    let token_data = token.split('.').nth(1).unwrap();
+    let token_data = token.split('.').nth(1).ok_or(anyhow!("Invalid token"))?;
 
     let bytes = engine::GeneralPurpose::new(&alphabet::STANDARD, general_purpose::NO_PAD)
-        .decode(token_data)
-        .unwrap();
+        .decode(token_data)?;
 
     let claims: TokenClaims = serde_json::from_slice(&bytes)?;
 

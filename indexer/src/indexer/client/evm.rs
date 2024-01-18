@@ -32,8 +32,7 @@ async fn get_event_list(
         .contract
         .client()
         .get_logs(&filter.clone().from_block(from_block).to_block(to_block))
-        .await
-        .expect("Failed to fetch logs");
+        .await?;
 
     logs.into_iter().for_each(|log| {
         event_list.push(IndexerJob::Log(log));
