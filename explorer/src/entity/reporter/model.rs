@@ -11,7 +11,7 @@ use crate::entity::{
     EntityFilter, FromPayload,
 };
 
-// Unlock_timestamp and stake do not correspond to the types of contracts (due to Postgresql restrictions)
+// Note: unlock_timestamp and stake do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
 #[graphql(name = "Reporter")]
 #[sea_orm(table_name = "reporter")]

@@ -11,7 +11,7 @@ use crate::entity::{
     EntityFilter, FromPayload,
 };
 
-// Risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
+// Note: risk and confirmations do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
 #[graphql(name = "Address")]
 #[sea_orm(table_name = "address")]

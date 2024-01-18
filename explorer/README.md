@@ -1,4 +1,4 @@
-# hapi-explorer migrate
+# hapi-explorer
 
 HAPI explorer multichain backend
 
