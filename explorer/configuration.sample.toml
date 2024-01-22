@@ -1,4 +1,5 @@
 log_level = "info"
 is_json_logging = true
-listener = "0.0.0.0:3000"
+listener = "127.0.0.1:0"
 database_url = "postgres://postgres:postgres@localhost:5432/explorer"
+jwt_secret = "my_secret"

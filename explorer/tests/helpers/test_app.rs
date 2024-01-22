@@ -20,8 +20,8 @@ use {
 };
 
 pub const WAITING_INTERVAL: u64 = 100;
+pub const MIGRATION_COUNT: u32 = 10;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
-const MIGRATION_COUNT: u32 = 10;
 
 pub struct TestNetwork {
     pub backend: HapiCoreNetwork,

@@ -13,7 +13,7 @@ use {
     },
     sea_orm::entity::prelude::*,
     serde::Serialize,
-    std::str::FromStr,
+    std::{fmt, str::FromStr},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum, Serialize)]
@@ -45,6 +45,19 @@ impl FromStr for NetworkBackend {
             "bitcoin" => Ok(NetworkBackend::Bitcoin),
             "near" => Ok(NetworkBackend::Near),
             _ => Err(anyhow!("Unknown network: {}", s)),
+        }
+    }
+}
+
+impl fmt::Display for NetworkBackend {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            NetworkBackend::Sepolia => write!(f, "sepolia"),
+            NetworkBackend::Ethereum => write!(f, "ethereum"),
+            NetworkBackend::Bsc => write!(f, "bsc"),
+            NetworkBackend::Solana => write!(f, "solana"),
+            NetworkBackend::Bitcoin => write!(f, "bitcoin"),
+            NetworkBackend::Near => write!(f, "near"),
         }
     }
 }
