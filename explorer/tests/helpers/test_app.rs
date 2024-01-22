@@ -9,7 +9,7 @@ use {
         observability::setup_tracing,
     },
     hapi_indexer::{PushData, PushPayload},
-    sea_orm::{Database, DatabaseConnection, EntityTrait},
+    sea_orm::{DatabaseConnection, EntityTrait},
     std::{env, sync::Arc},
     tokio::{
         spawn,
@@ -51,7 +51,7 @@ impl TestApp {
             .await
             .expect("Failed to build app");
 
-        let db_connection = TestApp::prepare_database(&app, &configuration).await;
+        let db_connection = TestApp::prepare_database(&app).await;
         let networks = Self::prepare_networks(&app).await;
         let port = app.port();
 
@@ -84,10 +84,7 @@ impl TestApp {
         };
     }
 
-    pub async fn prepare_database(
-        app: &Application,
-        configuration: &Configuration,
-    ) -> DatabaseConnection {
+    pub async fn prepare_database(app: &Application) -> DatabaseConnection {
         let db_connection = app.state.database_conn.clone();
 
         app.migrate(Some(sea_orm_cli::MigrateSubcommands::Down {

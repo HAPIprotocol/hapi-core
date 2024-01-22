@@ -22,7 +22,7 @@ impl EntityFilter for Entity {
     type Filter = NetworkFilter;
     type Condition = NetworkCondition;
 
-    // Fitlering query
+    // Filtering query
     fn filter(selected: Select<Entity>, filter_options: &NetworkFilter) -> Select<Entity> {
         let mut query = selected;
 

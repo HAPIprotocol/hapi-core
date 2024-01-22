@@ -8,7 +8,7 @@ pub mod reporter;
 pub mod types;
 
 use self::{
-    pagination::{order_by_colmn, Ordering},
+    pagination::{order_by_column, Ordering},
     types::NetworkBackend,
 };
 use sea_orm::{prelude::DateTime, EntityTrait, Select};
@@ -22,7 +22,7 @@ pub trait FromPayload<T>: Sized {
     ) -> Self;
 }
 
-// Trait for fitlering query
+// Trait for Filtering query
 pub trait EntityFilter: Sized + EntityTrait {
     type Filter;
     type Condition;
@@ -33,6 +33,6 @@ pub trait EntityFilter: Sized + EntityTrait {
     where
         Self::Column: From<Self::Condition>,
     {
-        order_by_colmn(selected, ordering, condition.into())
+        order_by_column(selected, ordering, condition)
     }
 }

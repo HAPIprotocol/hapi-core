@@ -54,7 +54,7 @@ pub enum Ordering {
 }
 
 /// Method for query ordering by column
-pub fn order_by_colmn<M, C>(query: Select<M>, ordering: Ordering, condition: C) -> Select<M>
+pub fn order_by_column<M, C>(query: Select<M>, ordering: Ordering, condition: C) -> Select<M>
 where
     M: EntityTrait,
     M::Column: From<C>,

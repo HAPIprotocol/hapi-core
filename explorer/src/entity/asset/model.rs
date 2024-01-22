@@ -35,7 +35,7 @@ impl EntityFilter for Entity {
     type Filter = AssetFilter;
     type Condition = AssetCondition;
 
-    // Fitlering query
+    // Filtering query
     fn filter(selected: Select<Entity>, filter_options: &AssetFilter) -> Select<Entity> {
         let mut query = selected;
 

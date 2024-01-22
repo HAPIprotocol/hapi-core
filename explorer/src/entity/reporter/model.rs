@@ -35,7 +35,7 @@ impl EntityFilter for Entity {
     type Filter = ReporterFilter;
     type Condition = ReporterCondition;
 
-    // Fitlering query
+    // Filtering query
     fn filter(selected: Select<Entity>, filter_options: &ReporterFilter) -> Select<Entity> {
         let mut query = selected;
 

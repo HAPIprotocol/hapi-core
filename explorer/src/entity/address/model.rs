@@ -33,7 +33,7 @@ impl EntityFilter for Entity {
     type Filter = AddressFilter;
     type Condition = AddressCondition;
 
-    // Fitlering query
+    // Filtering query
     fn filter(selected: Select<Entity>, filter_options: &AddressFilter) -> Select<Entity> {
         let mut query = selected;
 

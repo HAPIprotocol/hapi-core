@@ -9,7 +9,7 @@ use {
 use super::query_utils::{CaseCondition, CaseFilter};
 use crate::entity::{
     address, asset,
-    pagination::{order_by_colmn, Ordering},
+    pagination::{order_by_column, Ordering},
     reporter,
     types::{CaseStatus, NetworkBackend},
     EntityFilter, FromPayload,
@@ -35,7 +35,7 @@ impl EntityFilter for Entity {
     type Filter = CaseFilter;
     type Condition = CaseCondition;
 
-    // Fitlering query
+    // Filtering query
     fn filter(selected: Select<Entity>, filter_options: &CaseFilter) -> Select<Entity> {
         let mut query = selected;
 
@@ -71,7 +71,7 @@ impl EntityFilter for Entity {
         match condition {
             CaseCondition::AddressCount => sort_by_count(selected, ordering, Relation::Address),
             CaseCondition::AssetCount => sort_by_count(selected, ordering, Relation::Asset),
-            _ => order_by_colmn(selected, ordering, condition),
+            _ => order_by_column(selected, ordering, condition),
         }
     }
 }

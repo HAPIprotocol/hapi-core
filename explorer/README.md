@@ -16,7 +16,12 @@ is_json_logging                     # Whether to use JSON logging, default: true
 enable_metrics                      # Whether to enable metrics, default: true
 listener                            # Address for the listener server
 database_url                        # The database url
-jwt_secret                          # Secret fro JWT
+```
+
+Also add secret from jwt to configuration file, defined in SECRET_PATH env variable:
+
+```toml
+jwt_secret                          # Secret from JWT
 ```
 
 ## Usage
@@ -63,7 +68,7 @@ hapi-explorer migrate
 
 with subcommands:
 
-| Subommand         | Description                                                    |
+| Subcommand        | Description                                                    |
 | ----------------- | -------------------------------------------------------------- |
 | fresh             | Drop all tables from the database, then reapply all migrations |
 | refresh           | Rollback all applied migrations, then reapply all migrations   |
@@ -83,9 +88,11 @@ with subcommands:
   (where chain-id is optional)
 
 - To update existing network
+
   ```sh
   hapi-explorer network update [OPTIONS] --id <ID> --name <NAME> --authority <AUTHORITY> --stake-token <STAKE_TOKEN>
   ```
+
   (where name, authority and stake-token is optional)
 
 ---

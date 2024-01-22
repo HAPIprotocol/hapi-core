@@ -75,8 +75,7 @@ async fn process_address_payload(
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
-                "Received unexpected event with address payload: {:?}",
-                event_name
+                "Received unexpected event with address payload: {event_name}",
             )));
         }
     }
@@ -105,8 +104,7 @@ async fn process_asset_payload(
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
-                "Received unexpected event with asset payload: {:?}",
-                event_name
+                "Received unexpected event with asset payload: {event_name}"
             )));
         }
     }
@@ -135,8 +133,7 @@ async fn process_case_payload(
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
-                "Received unexpected event with case payload: {:?}",
-                event_name
+                "Received unexpected event with case payload: {event_name}",
             )));
         }
     }
@@ -172,8 +169,7 @@ async fn process_reporter_payload(
         }
         _ => {
             return Err(AppError::invalid_request(&format!(
-                "Received unexpected event with reporter payload: {:?}",
-                event_name
+                "Received unexpected event with reporter payload: {event_name}"
             )));
         }
     }

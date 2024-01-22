@@ -183,7 +183,7 @@ pub fn create_address_data(
     indexer_id: Uuid,
 ) -> PushPayload {
     let payload = Address {
-        address: generate_randon_string(),
+        address: generate_random_string(),
         case_id,
         reporter_id,
         risk: 6,
@@ -206,7 +206,7 @@ pub fn create_asset_data(
     indexer_id: Uuid,
 ) -> PushPayload {
     let payload = Asset {
-        address: generate_randon_string(),
+        address: generate_random_string(),
         asset_id: AssetId::from_str("12345678").expect("Failed to parse asset id"),
         case_id,
         reporter_id,
@@ -229,7 +229,7 @@ fn create_payload(
     data: PushData,
     indexer_id: Uuid,
 ) -> PushPayload {
-    let tx_hash = generate_randon_string();
+    let tx_hash = generate_random_string();
 
     let event = PushEvent {
         name,
@@ -246,7 +246,7 @@ fn create_payload(
     }
 }
 
-fn generate_randon_string() -> String {
+fn generate_random_string() -> String {
     thread_rng()
         .sample_iter(&Alphanumeric)
         .take(32)

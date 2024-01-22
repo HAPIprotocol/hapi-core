@@ -12,8 +12,8 @@ use {
 
 use super::{
     handlers::{
-        auth_handler, event_handler, graphiql, graphql_handler, health_handler, indexer_handler,
-        indexer_heartbeat_handler, stats_handler,
+        auth_handler, event_handler, graphiql_playground, graphql_handler, health_handler,
+        indexer_handler, indexer_heartbeat_handler, stats_handler,
     },
     schema::create_graphql_schema,
 };
@@ -37,7 +37,7 @@ impl Application {
                 )),
             )
             .route("/stats", get(stats_handler))
-            .route("/graphql", get(graphiql).post(graphql_handler))
+            .route("/graphql", get(graphiql_playground).post(graphql_handler))
             .route("/indexer", get(indexer_handler))
             .route("/indexer/:id/heartbeat", put(indexer_heartbeat_handler))
             .with_state(self.state.clone())
