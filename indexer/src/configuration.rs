@@ -32,6 +32,9 @@ pub struct IndexerConfiguration {
     /// The network to use
     pub network: HapiCoreNetwork,
 
+    /// Optionsl network chain ID
+    pub chain_id: Option<String>,
+
     /// The RPC node URL
     pub rpc_node_url: String,
 

@@ -4,12 +4,12 @@ use {
 };
 
 use super::model::Column;
-use crate::entity::types::{Category, NetworkBackend};
+use crate::entity::types::Category;
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct AssetFilter {
-    pub network: Option<NetworkBackend>,
+    pub network_id: Option<String>,
     pub address: Option<String>,
     pub case_id: Option<Uuid>,
     pub reporter_id: Option<Uuid>,
@@ -23,7 +23,7 @@ pub struct AssetFilter {
 pub enum AssetCondition {
     #[default]
     /// Order by network
-    Network,
+    NetworkId,
     /// Order by address
     Address,
     /// Order by case id
@@ -45,7 +45,7 @@ pub enum AssetCondition {
 impl From<AssetCondition> for Column {
     fn from(condition: AssetCondition) -> Self {
         match condition {
-            AssetCondition::Network => Column::Network,
+            AssetCondition::NetworkId => Column::NetworkId,
             AssetCondition::Address => Column::Address,
             AssetCondition::CaseId => Column::CaseId,
             AssetCondition::ReporterId => Column::ReporterId,

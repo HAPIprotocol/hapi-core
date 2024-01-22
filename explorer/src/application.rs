@@ -118,13 +118,22 @@ impl Application {
     }
 
     #[instrument(level = "info", skip(self))]
-    pub async fn create_indexer(&self, network: NetworkBackend) -> Result<String> {
-        tracing::info!("Create indexer for {:?} backend", network);
+    pub async fn create_indexer(
+        &self,
+        backend: NetworkBackend,
+        chain_id: Option<String>,
+    ) -> Result<String> {
+        tracing::info!(
+            "Create indexer for {:?} backend with chain id {:?}",
+            backend,
+            chain_id
+        );
 
         let now = chrono::Utc::now();
         let id = Uuid::new_v4();
 
-        EntityMutation::create_indexer(&self.state.database_conn, network, id, now).await?;
+        EntityMutation::create_indexer(&self.state.database_conn, backend, chain_id, id, now)
+            .await?;
 
         let iat = now.timestamp() as usize;
         let exp = (now + chrono::Duration::days(JWT_VALIDITY_DAYS)).timestamp() as usize;

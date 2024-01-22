@@ -5,6 +5,7 @@ use crate::entity::{
 
 use {
     chrono::{DateTime, NaiveDateTime, Utc},
+    hapi_indexer::NetworkData,
     sea_orm::*,
     uuid::Uuid,
 };
@@ -16,19 +17,20 @@ impl EntityMutation {
     pub async fn create_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkBackend,
+        network: NetworkData,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
+        let network_id = get_network_id(&db, network.network.into(), network.chain_id).await?;
         let created_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
         );
 
-        M::from(network, created_at, created_at, payload)
+        M::from(network_id, created_at, created_at, payload)
             .insert(db)
             .await
     }
@@ -37,19 +39,22 @@ impl EntityMutation {
     pub async fn update_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkBackend,
+        network: NetworkData,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
+        let network_id = get_network_id(&db, network.network.into(), network.chain_id).await?;
         let updated_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
         );
 
-        M::from(network, None, updated_at, payload).update(db).await
+        M::from(network_id, None, updated_at, payload)
+            .update(db)
+            .await
     }
 
     /// Method for creating network in database
@@ -62,7 +67,7 @@ impl EntityMutation {
         authority: String,
         stake_token: String,
     ) -> Result<network::Model, DbErr> {
-        let model = network::ActiveModel {
+        let model: network::ActiveModel = network::ActiveModel {
             id: Set(id),
             name: Set(name),
             backend: Set(backend),
@@ -104,13 +109,16 @@ impl EntityMutation {
 
     pub async fn create_indexer(
         db: &DbConn,
-        network: NetworkBackend,
+        backend: NetworkBackend,
+        chain_id: Option<String>,
         id: Uuid,
         timestamp: DateTime<Utc>,
     ) -> Result<indexer::Model, DbErr> {
+        let network_id = get_network_id(&db, backend, chain_id).await?;
+
         indexer::ActiveModel {
             id: Set(id),
-            network: Set(network),
+            network_id: Set(network_id),
             created_at: Set(timestamp.naive_utc()),
             last_heartbeat: Set(NaiveDateTime::default()),
             cursor: Set("".to_string()),
@@ -118,4 +126,20 @@ impl EntityMutation {
         .insert(db)
         .await
     }
+}
+
+async fn get_network_id(
+    db: &DbConn,
+    backend: NetworkBackend,
+    chain_id: Option<String>,
+) -> Result<String, DbErr> {
+    Ok(network::Entity::find()
+        .filter(network::Column::Backend.eq(backend))
+        .filter(network::Column::ChainId.eq(chain_id))
+        .one(db)
+        .await?
+        .ok_or(DbErr::RecordNotFound(
+            "This network does not exist".to_string(),
+        ))?
+        .id)
 }

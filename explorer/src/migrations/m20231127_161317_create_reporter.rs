@@ -1,4 +1,4 @@
-use super::{NetworkBackend, ReporterRole, ReporterStatus};
+use super::{Network, ReporterRole, ReporterStatus};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,11 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Reporter::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Reporter::Network)
-                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Reporter::NetworkId).string().not_null())
                     .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Reporter::Account).string().not_null())
                     .col(ColumnDef::new(Reporter::Name).string().not_null())
@@ -42,8 +38,16 @@ impl MigrationTrait for Migration {
                     .primary_key(
                         Index::create()
                             .name("reporter_id")
-                            .col(Reporter::Network)
+                            .col(Reporter::NetworkId)
                             .col(Reporter::ReporterId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-reporter_network_id")
+                            .from(Reporter::Table, Reporter::NetworkId)
+                            .to(Network::Table, Network::Id)
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -59,9 +63,9 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden)]
 pub(crate) enum Reporter {
-    // Composite key: network + reporter_id
+    // Composite key: network_id + reporter_id
     Table,
-    Network,
+    NetworkId,
     ReporterId,
     Account,
     Role,

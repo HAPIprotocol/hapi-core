@@ -2,7 +2,7 @@ use {
     anyhow::{bail, Result},
     hapi_core::{
         client::{entities::asset::AssetId, events::EventName},
-        HapiCore, HapiCoreNear, HapiCoreNetwork,
+        HapiCore, HapiCoreNear,
     },
     near_jsonrpc_client::methods::{
         EXPERIMENTAL_changes::RpcStateChangesInBlockByTypeRequest,
@@ -23,7 +23,7 @@ use {
 use crate::{
     indexer::{
         client::indexer_client::PAGE_SIZE,
-        push::{PushEvent, PushPayload},
+        push::{NetworkData, PushEvent, PushPayload},
         IndexerJob,
     },
     IndexingCursor,
@@ -139,12 +139,11 @@ pub(super) async fn fetch_near_jobs(
     })
 }
 
-#[tracing::instrument(skip(client, network), fields(receipt_hash = %receipt.hash))]
+#[tracing::instrument(skip(client, network_data), fields(receipt_hash = %receipt.hash))]
 pub(super) async fn process_near_job(
     client: &HapiCoreNear,
     receipt: &NearReceipt,
-    network: &HapiCoreNetwork,
-    id: Uuid,
+    network_data: NetworkData,
 ) -> Result<Option<Vec<PushPayload>>> {
     let receipt_view = client
         .client
@@ -226,8 +225,7 @@ pub(super) async fn process_near_job(
         };
 
         return Ok(Some(vec![PushPayload {
-            id,
-            network: network.clone(),
+            network_data,
             event: PushEvent {
                 name: event_name,
                 tx_hash: receipt.hash.to_string(),

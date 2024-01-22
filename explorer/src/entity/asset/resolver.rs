@@ -10,10 +10,7 @@ use super::{
 };
 
 use crate::{
-    entity::{
-        pagination::{EntityInput, EntityPage},
-        types::NetworkBackend,
-    },
+    entity::pagination::{EntityInput, EntityPage},
     service::EntityQuery,
 };
 
@@ -31,12 +28,12 @@ impl AssetQuery {
         ctx: &Context<'_>,
         #[graphql(desc = "Asset address")] address: String,
         #[graphql(desc = "Asset id")] asset_id: String,
-        #[graphql(desc = "Asset network")] network: NetworkBackend,
+        #[graphql(desc = "Asset network")] network_id: String,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
         let address = EntityQuery::find_entity_by_id::<super::model::Entity, _>(
             db,
-            (network, address, asset_id),
+            (network_id, address, asset_id),
         )
         .await?;
 

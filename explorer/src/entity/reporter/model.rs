@@ -7,7 +7,7 @@ use {
 use super::query_utils::{ReporterCondition, ReporterFilter};
 use crate::entity::{
     address, asset, case,
-    types::{NetworkBackend, ReporterRole, ReporterStatus},
+    types::{ReporterRole, ReporterStatus},
     EntityFilter, FromPayload,
 };
 
@@ -17,7 +17,7 @@ use crate::entity::{
 #[sea_orm(table_name = "reporter")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: NetworkBackend,
+    pub network_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
     pub reporter_id: Uuid,
     pub account: String,
@@ -39,8 +39,8 @@ impl EntityFilter for Entity {
     fn filter(selected: Select<Entity>, filter_options: &ReporterFilter) -> Select<Entity> {
         let mut query = selected;
 
-        if let Some(network) = filter_options.network {
-            query = query.filter(Column::Network.eq(network));
+        if let Some(network) = &filter_options.network_id {
+            query = query.filter(Column::NetworkId.eq(network));
         }
 
         if let Some(account) = &filter_options.account {
@@ -99,7 +99,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<ReporterPayload> for ActiveModel {
     fn from(
-        network: NetworkBackend,
+        network_id: String,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: ReporterPayload,
@@ -108,7 +108,7 @@ impl FromPayload<ReporterPayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network),
+            network_id: Set(network_id),
             reporter_id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),

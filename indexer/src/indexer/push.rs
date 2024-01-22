@@ -16,10 +16,20 @@ use super::Indexer;
 /// Webhook payload
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PushPayload {
-    pub id: Uuid,
-    pub network: HapiCoreNetwork,
+    pub network_data: NetworkData,
     pub event: PushEvent,
     pub data: PushData,
+}
+
+/// Network data
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct NetworkData {
+    /// Indexer ID
+    pub indexer_id: Uuid,
+    /// Network name
+    pub network: HapiCoreNetwork,
+    /// Chain ID
+    pub chain_id: Option<String>,
 }
 
 /// Event data
@@ -97,8 +107,11 @@ mod tests {
     fn test_push_payload_serialization() {
         // Create a sample PushPayload
         let payload = PushPayload {
-            id: uuid::uuid!("f6b9e9a0-9b7a-4e1a-8b0a-9e2a5e8e4b5e"),
-            network: HapiCoreNetwork::Ethereum,
+            network_data: NetworkData {
+                indexer_id: uuid::uuid!("f6b9e9a0-9b7a-4e1a-8b0a-9e2a5e8e4b5e"),
+                network: HapiCoreNetwork::Ethereum,
+                chain_id: None,
+            },
             event: PushEvent {
                 name: EventName::CreateAddress,
                 tx_hash: "acf0734ab380f3964e1f23b1fd4f5a5125250208ec17ff11c9999451c138949f"

@@ -4,12 +4,12 @@ use {
 };
 
 use super::model::Column;
-use crate::entity::types::{CaseStatus, NetworkBackend};
+use crate::entity::types::CaseStatus;
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct CaseFilter {
-    pub network: Option<NetworkBackend>,
+    pub network_id: Option<String>,
     pub name: Option<String>,
     pub url: Option<String>,
     pub status: Option<CaseStatus>,
@@ -21,7 +21,7 @@ pub struct CaseFilter {
 pub enum CaseCondition {
     #[default]
     /// Order by network
-    Network,
+    NetworkId,
     /// Order by case id
     CaseId,
     /// Order by name
@@ -45,7 +45,7 @@ pub enum CaseCondition {
 impl From<CaseCondition> for Column {
     fn from(condition: CaseCondition) -> Self {
         match condition {
-            CaseCondition::Network => Column::Network,
+            CaseCondition::NetworkId => Column::NetworkId,
             CaseCondition::CaseId => Column::CaseId,
             CaseCondition::Name => Column::Name,
             CaseCondition::Url => Column::Url,

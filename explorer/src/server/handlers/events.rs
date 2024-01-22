@@ -10,14 +10,14 @@ use {
         },
         events::EventName,
     },
-    hapi_indexer::{PushData, PushPayload},
+    hapi_indexer::{NetworkData, PushData, PushPayload},
     sea_orm::DatabaseConnection,
     tracing::instrument,
 };
 
 use crate::{
     application::AppState,
-    entity::{address, asset, case, reporter, types::NetworkBackend},
+    entity::{address, asset, case, reporter},
     error::AppError,
     service::EntityMutation,
 };
@@ -31,7 +31,7 @@ pub(crate) async fn event_handler(
     tracing::info!(event = ?payload.event, "Received event");
     let event_name = payload.event.name;
     let timestamp = payload.event.timestamp;
-    let network = payload.network.into();
+    let network = payload.network_data;
     let db = &state.database_conn;
 
     match payload.data {
@@ -55,7 +55,7 @@ async fn process_address_payload(
     address: AddressPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkBackend,
+    network: NetworkData,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(address = ?address, "Received address");
@@ -88,7 +88,7 @@ async fn process_asset_payload(
     asset: AssetPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkBackend,
+    network: NetworkData,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(asset = ?asset, "Received asset");
@@ -117,7 +117,7 @@ async fn process_case_payload(
     case: CasePayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkBackend,
+    network: NetworkData,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(case = ?case, "Received case");
@@ -146,7 +146,7 @@ async fn process_reporter_payload(
     reporter: ReporterPayload,
     event_name: EventName,
     db: &DatabaseConnection,
-    network: NetworkBackend,
+    network: NetworkData,
     timestamp: u64,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(reporter = ?reporter, "Received reporter");

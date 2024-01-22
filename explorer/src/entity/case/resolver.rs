@@ -11,10 +11,7 @@ use super::{
 };
 
 use crate::{
-    entity::{
-        pagination::{EntityInput, EntityPage},
-        types::NetworkBackend,
-    },
+    entity::pagination::{EntityInput, EntityPage},
     service::EntityQuery,
 };
 
@@ -31,11 +28,11 @@ impl CaseQuery {
         &self,
         ctx: &Context<'_>,
         #[graphql(desc = "Case id")] case_id: Uuid,
-        #[graphql(desc = "Case network")] network: NetworkBackend,
+        #[graphql(desc = "Case network")] network_id: String,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
         let address =
-            EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network, case_id))
+            EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network_id, case_id))
                 .await?;
 
         Ok(address)

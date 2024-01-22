@@ -1,4 +1,4 @@
-use super::{Case, Category, NetworkBackend, Reporter};
+use super::{Case, Category, Network, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,11 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Address::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Address::Network)
-                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Address::NetworkId).string().not_null())
                     .col(ColumnDef::new(Address::Address).string().not_null())
                     .col(ColumnDef::new(Address::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Address::ReporterId).uuid().not_null())
@@ -32,22 +28,30 @@ impl MigrationTrait for Migration {
                     .primary_key(
                         Index::create()
                             .name("address_id")
-                            .col(Address::Network)
+                            .col(Address::NetworkId)
                             .col(Address::Address),
                     )
                     .foreign_key(
                         ForeignKey::create()
+                            .name("fk-address_network_id")
+                            .from(Address::Table, Address::NetworkId)
+                            .to(Network::Table, Network::Id)
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
                             .name("fk-address_reporter_id")
-                            .from(Address::Table, (Address::Network, Address::ReporterId))
-                            .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
+                            .from(Address::Table, (Address::NetworkId, Address::ReporterId))
+                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::ReporterId))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-address_case_id")
-                            .from(Address::Table, (Address::Network, Address::CaseId))
-                            .to(Case::Table, (Case::Network, Case::CaseId))
+                            .from(Address::Table, (Address::NetworkId, Address::CaseId))
+                            .to(Case::Table, (Case::NetworkId, Case::CaseId))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -65,9 +69,9 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden)]
 pub(crate) enum Address {
-    // Composite key: network + address
+    // Composite key: network_id + address
     Table,
-    Network,
+    NetworkId,
     Address,
     CaseId,
     ReporterId,

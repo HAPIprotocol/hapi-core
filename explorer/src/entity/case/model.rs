@@ -11,7 +11,7 @@ use crate::entity::{
     address, asset,
     pagination::{order_by_column, Ordering},
     reporter,
-    types::{CaseStatus, NetworkBackend},
+    types::CaseStatus,
     EntityFilter, FromPayload,
 };
 
@@ -20,7 +20,7 @@ use crate::entity::{
 #[sea_orm(table_name = "case")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: NetworkBackend,
+    pub network_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
     pub case_id: Uuid,
     pub name: String,
@@ -39,8 +39,8 @@ impl EntityFilter for Entity {
     fn filter(selected: Select<Entity>, filter_options: &CaseFilter) -> Select<Entity> {
         let mut query = selected;
 
-        if let Some(network) = filter_options.network {
-            query = query.filter(Column::Network.eq(network));
+        if let Some(network) = &filter_options.network_id {
+            query = query.filter(Column::NetworkId.eq(network));
         }
 
         if let Some(name) = &filter_options.name {
@@ -85,7 +85,7 @@ fn sort_by_count(
         .column_as(Expr::cust("COUNT(*)"), "related")
         .join(JoinType::InnerJoin, relation.def())
         .group_by(Column::CaseId)
-        .group_by(Column::Network);
+        .group_by(Column::NetworkId);
 
     match ordering {
         Ordering::Asc => query.order_by_asc(Expr::cust("related")),
@@ -129,7 +129,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<CasePayload> for ActiveModel {
     fn from(
-        network: NetworkBackend,
+        network_id: String,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: CasePayload,
@@ -138,7 +138,7 @@ impl FromPayload<CasePayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network),
+            network_id: Set(network_id),
             case_id: Set(payload.id.to_owned()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),

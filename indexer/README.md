@@ -26,6 +26,7 @@ listener                            # Address for the listener server
 
 [indexer]
     network                         # Indexed network [Sepolia, Ethereum, Bsc, Solana, Bitcoin, Near]
+    chain_id                        # Network chain ID (optional)
     rpc_node_url                    # HTTP URL of the rpc node for the network
     webhook_url                     # HTTP URL of the webhook server
     contract_address                # The HAPI Core contract address

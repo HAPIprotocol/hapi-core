@@ -63,6 +63,8 @@ enum ExplorerCli {
     CreateIndexer {
         #[arg(long, help = "Network backend type")]
         backend: NetworkBackend,
+        #[arg(long, default_value = None, help = "Network chain id (optional)")]
+        chain_id: Option<String>,
     },
 }
 
@@ -100,8 +102,8 @@ async fn main() -> Result<()> {
                 authority,
             } => app.update_network(id, name, authority, stake_token).await,
         },
-        ExplorerCli::CreateIndexer { backend } => {
-            app.create_indexer(backend).await?;
+        ExplorerCli::CreateIndexer { backend, chain_id } => {
+            app.create_indexer(backend, chain_id).await?;
 
             Ok(())
         }

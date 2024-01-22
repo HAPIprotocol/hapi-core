@@ -1,4 +1,4 @@
-use super::{CaseStatus, NetworkBackend, Reporter};
+use super::{CaseStatus, Network, Reporter};
 use {sea_orm::Iterable, sea_orm_migration::prelude::*};
 
 #[derive(DeriveMigrationName)]
@@ -12,11 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Case::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Case::Network)
-                            .enumeration(NetworkBackend::Type, NetworkBackend::iter().skip(1))
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Case::NetworkId).string().not_null())
                     .col(ColumnDef::new(Case::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Case::Name).string().not_null())
                     .col(ColumnDef::new(Case::Url).string().not_null())
@@ -31,14 +27,22 @@ impl MigrationTrait for Migration {
                     .primary_key(
                         Index::create()
                             .name("case_id")
-                            .col(Case::Network)
+                            .col(Case::NetworkId)
                             .col(Case::CaseId),
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-asset_reporter_id")
-                            .from(Case::Table, (Case::Network, Case::ReporterId))
-                            .to(Reporter::Table, (Reporter::Network, Reporter::ReporterId))
+                            .name("fk-case_reporter_id")
+                            .from(Case::Table, (Case::NetworkId, Case::ReporterId))
+                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::ReporterId))
+                            .on_delete(ForeignKeyAction::NoAction)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-case_network_id")
+                            .from(Case::Table, Case::NetworkId)
+                            .to(Network::Table, Network::Id)
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -58,7 +62,7 @@ impl MigrationTrait for Migration {
 pub(crate) enum Case {
     // Composite key: network + case_id
     Table,
-    Network,
+    NetworkId,
     CaseId,
     Name,
     Url,

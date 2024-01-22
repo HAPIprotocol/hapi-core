@@ -5,11 +5,7 @@ use {
 };
 
 use super::query_utils::{AssetCondition, AssetFilter};
-use crate::entity::{
-    case, reporter,
-    types::{Category, NetworkBackend},
-    EntityFilter, FromPayload,
-};
+use crate::entity::{case, reporter, types::Category, EntityFilter, FromPayload};
 
 // Note: risk and confirmations types do not correspond to the types of contracts (due to Postgresql restrictions)
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, SimpleObject)]
@@ -17,7 +13,7 @@ use crate::entity::{
 #[sea_orm(table_name = "asset")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub network: NetworkBackend,
+    pub network_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     #[sea_orm(primary_key, auto_increment = false)]
@@ -39,8 +35,8 @@ impl EntityFilter for Entity {
     fn filter(selected: Select<Entity>, filter_options: &AssetFilter) -> Select<Entity> {
         let mut query = selected;
 
-        if let Some(network) = filter_options.network {
-            query = query.filter(Column::Network.eq(network));
+        if let Some(network) = &filter_options.network_id {
+            query = query.filter(Column::NetworkId.eq(network));
         }
 
         if let Some(address) = &filter_options.address {
@@ -103,7 +99,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 impl FromPayload<AssetPayload> for ActiveModel {
     fn from(
-        network: NetworkBackend,
+        network_id: String,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         payload: AssetPayload,
@@ -112,7 +108,7 @@ impl FromPayload<AssetPayload> for ActiveModel {
         let updated_at = updated_at.map_or(NotSet, Set);
 
         Self {
-            network: Set(network),
+            network_id: Set(network_id),
             address: Set(payload.address.to_owned()),
             asset_id: Set(payload.asset_id.to_string()),
             case_id: Set(payload.case_id.to_owned()),

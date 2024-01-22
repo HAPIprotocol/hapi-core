@@ -1,12 +1,12 @@
 use async_graphql::{Enum, InputObject};
 
 use super::model::Column;
-use crate::entity::types::{NetworkBackend, ReporterRole, ReporterStatus};
+use crate::entity::types::{ReporterRole, ReporterStatus};
 
 /// Conditions to filter address listings by
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]
 pub struct ReporterFilter {
-    pub network: Option<NetworkBackend>,
+    pub network_id: Option<String>,
     pub account: Option<String>,
     pub role: Option<ReporterRole>,
     pub status: Option<ReporterStatus>,
@@ -19,7 +19,7 @@ pub struct ReporterFilter {
 pub enum ReporterCondition {
     #[default]
     /// Order by network
-    Network,
+    NetworkId,
     /// Order by reporter id
     ReporterId,
     /// Order by reporter account
@@ -45,7 +45,7 @@ pub enum ReporterCondition {
 impl From<ReporterCondition> for Column {
     fn from(condition: ReporterCondition) -> Self {
         match condition {
-            ReporterCondition::Network => Column::Network,
+            ReporterCondition::NetworkId => Column::NetworkId,
             ReporterCondition::ReporterId => Column::ReporterId,
             ReporterCondition::Account => Column::Account,
             ReporterCondition::Role => Column::Role,

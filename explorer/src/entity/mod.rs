@@ -7,15 +7,12 @@ pub mod pagination;
 pub mod reporter;
 pub mod types;
 
-use self::{
-    pagination::{order_by_column, Ordering},
-    types::NetworkBackend,
-};
+use self::pagination::{order_by_column, Ordering};
 use sea_orm::{prelude::DateTime, EntityTrait, Select};
 
 pub trait FromPayload<T>: Sized {
     fn from(
-        network: NetworkBackend,
+        network_id: String,
         created_at: Option<DateTime>,
         updated_at: Option<DateTime>,
         value: T,
