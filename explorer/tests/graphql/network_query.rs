@@ -46,7 +46,7 @@ fn check_network(network: &TestNetwork, value: &Value) {
     assert_eq!(value["name"], model.name);
     assert_eq!(
         replacer(&value["backend"]),
-        network.backend.to_string().to_lowercase()
+        network.model.backend.to_string().to_lowercase()
     );
     assert_eq!(value["chainId"], *model.chain_id.as_ref().unwrap());
     assert_eq!(value["authority"], model.authority);
@@ -124,7 +124,7 @@ async fn get_filtered_networks_test() {
                 "input":
                 {
                     "filtering": {
-                        "backend": data.backend.to_string().to_uppercase(),
+                        "name" : data.model.name.clone(),
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",

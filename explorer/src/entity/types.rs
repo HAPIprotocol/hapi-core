@@ -19,16 +19,10 @@ use {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum, Serialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_backend")]
 pub enum NetworkBackend {
-    #[sea_orm(string_value = "sepolia")]
-    Sepolia,
-    #[sea_orm(string_value = "ethereum")]
-    Ethereum,
-    #[sea_orm(string_value = "bsc")]
-    Bsc,
+    #[sea_orm(string_value = "evm")]
+    Evm,
     #[sea_orm(string_value = "solana")]
     Solana,
-    #[sea_orm(string_value = "bitcoin")]
-    Bitcoin,
     #[sea_orm(string_value = "near")]
     Near,
 }
@@ -38,11 +32,8 @@ impl FromStr for NetworkBackend {
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "sepolia" => Ok(NetworkBackend::Sepolia),
-            "ethereum" => Ok(NetworkBackend::Ethereum),
-            "bsc" => Ok(NetworkBackend::Bsc),
+            "evm" => Ok(NetworkBackend::Evm),
             "solana" => Ok(NetworkBackend::Solana),
-            "bitcoin" => Ok(NetworkBackend::Bitcoin),
             "near" => Ok(NetworkBackend::Near),
             _ => Err(anyhow!("Unknown network: {}", s)),
         }
@@ -52,11 +43,8 @@ impl FromStr for NetworkBackend {
 impl fmt::Display for NetworkBackend {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            NetworkBackend::Sepolia => write!(f, "sepolia"),
-            NetworkBackend::Ethereum => write!(f, "ethereum"),
-            NetworkBackend::Bsc => write!(f, "bsc"),
+            NetworkBackend::Evm => write!(f, "evm"),
             NetworkBackend::Solana => write!(f, "solana"),
-            NetworkBackend::Bitcoin => write!(f, "bitcoin"),
             NetworkBackend::Near => write!(f, "near"),
         }
     }
@@ -65,11 +53,11 @@ impl fmt::Display for NetworkBackend {
 impl From<HapiCoreNetwork> for NetworkBackend {
     fn from(payload: HapiCoreNetwork) -> Self {
         match payload {
-            HapiCoreNetwork::Sepolia => NetworkBackend::Sepolia,
-            HapiCoreNetwork::Ethereum => NetworkBackend::Ethereum,
-            HapiCoreNetwork::Bsc => NetworkBackend::Bsc,
+            HapiCoreNetwork::Sepolia => NetworkBackend::Evm,
+            HapiCoreNetwork::Ethereum => NetworkBackend::Evm,
+            HapiCoreNetwork::Bsc => NetworkBackend::Evm,
             HapiCoreNetwork::Solana => NetworkBackend::Solana,
-            HapiCoreNetwork::Bitcoin => NetworkBackend::Bitcoin,
+            HapiCoreNetwork::Bitcoin => NetworkBackend::Solana,
             HapiCoreNetwork::Near => NetworkBackend::Near,
         }
     }

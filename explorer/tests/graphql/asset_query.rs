@@ -1,5 +1,5 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp, TestData};
+use crate::helpers::{FromTestPayload, RequestSender, TestApp, TestData};
 
 use {
     hapi_core::client::{entities::asset::Asset, events::EventName},
@@ -8,9 +8,9 @@ use {
 };
 
 const GET_ASSET_QUERY: &str = "
-    query GetAsset($address: String!, $assetId: String!, $network: UUID!) {
-        getAsset(address: $address, assetId: $assetId, network: $network) {
-            network
+    query GetAsset($address: String!, $assetId: String!, $networkId: String!) {
+        getAsset(address: $address, assetId: $assetId, networkId: $networkId) {
+            networkId
             address
             assetId
             caseId
@@ -31,7 +31,7 @@ const GET_MANY_ASSETS: &str = "
             input: $input
         ) {
             data {
-                network
+                networkId
                 address
                 assetId
                 caseId
@@ -48,8 +48,8 @@ const GET_MANY_ASSETS: &str = "
     }
 ";
 
-impl From<PushPayload> for TestData<Asset> {
-    fn from(payload: PushPayload) -> Self {
+impl FromTestPayload for TestData<Asset> {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> TestData<Asset> {
         let entity = match &payload.data {
             PushData::Asset(asset) => asset,
             _ => panic!("Invalid type"),
@@ -57,20 +57,15 @@ impl From<PushPayload> for TestData<Asset> {
 
         Self {
             data: entity.to_owned(),
-            network: payload.network,
-            indexer_id: payload.id,
+            network_id: network_id.to_string(),
         }
     }
 }
 
 fn check_asset(asset: &TestData<Asset>, value: &Value) {
-    assert_eq!(
-        replacer(&value["network"]),
-        asset.network.to_string().to_lowercase()
-    );
+    assert_eq!(value["networkId"], asset.network_id);
 
     let payload = &asset.data;
-
     assert_eq!(value["address"], payload.address);
     assert_eq!(value["assetId"], payload.asset_id.to_string());
     assert_eq!(value["caseId"], payload.case_id.to_string());
@@ -88,7 +83,7 @@ async fn get_asset_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
+        .global_setup::<Asset>(&sender, EventName::UpdateAsset)
         .await;
 
     for payload in assets {
@@ -98,7 +93,7 @@ async fn get_asset_test() {
                 json!({
                     "address": payload.data.address,
                     "assetId": payload.data.asset_id,
-                    "network": payload.network.to_string().to_uppercase()
+                    "networkId": payload.network_id
                 }),
             )
             .await
@@ -114,7 +109,7 @@ async fn get_many_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
+        .global_setup::<Asset>(&sender, EventName::UpdateAsset)
         .await;
 
     let response = sender
@@ -151,7 +146,7 @@ async fn get_filtered_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
+        .global_setup::<Asset>(&sender, EventName::UpdateAsset)
         .await;
 
     for payload in assets {
@@ -191,7 +186,7 @@ async fn get_paginated_assets_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
-        .setup_entities::<Asset>(&sender, EventName::UpdateAsset, None)
+        .global_setup::<Asset>(&sender, EventName::UpdateAsset)
         .await;
 
     let payload = assets.last().expect("Invalid index");

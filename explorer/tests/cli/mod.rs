@@ -166,7 +166,35 @@ async fn network_command_test() {
 #[tokio::test]
 async fn indexer_command_test() {
     let db = setup().await;
+
+    let id = String::from("test_network");
+    let name = String::from("Test Network");
     let backend = NetworkBackend::Solana;
+    let authority = String::from("Test Authority");
+    let stake_token = String::from("Test Stake Token");
+
+    let output = Command::new("./target/debug/hapi-explorer")
+        .args([
+            "network",
+            "create",
+            "--id",
+            &id,
+            "--name",
+            &name,
+            "--backend",
+            &backend.to_string(),
+            "--authority",
+            &authority,
+            "--stake-token",
+            &stake_token,
+        ])
+        .output()
+        .expect("Failed to create network");
+
+    sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
 
     let output = Command::new("./target/debug/hapi-explorer")
         .args(["create-indexer", "--backend", &backend.to_string()])
@@ -186,5 +214,5 @@ async fn indexer_command_test() {
     assert_eq!(indexers.len(), 1);
 
     let indexer = indexers.first().unwrap();
-    assert_eq!(indexer.network, backend);
+    assert_eq!(indexer.network_id, id);
 }

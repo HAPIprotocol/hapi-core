@@ -8,7 +8,7 @@ async fn webhook_processing_test() {
     let token = create_jwt("my_ultra_secure_secret");
 
     for network in &test_app.networks {
-        let test_data = get_test_data(network.backend.to_owned());
+        let test_data = get_test_data(&network.network, network.model.chain_id.clone());
 
         for payload in test_data {
             indexer_mock
@@ -18,7 +18,7 @@ async fn webhook_processing_test() {
             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
             test_app
-                .check_entity(payload.data, network.backend.to_owned())
+                .check_entity(payload.data, network.model.id.clone())
                 .await;
         }
     }

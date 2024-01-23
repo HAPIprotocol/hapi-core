@@ -24,7 +24,7 @@ impl EntityMutation {
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
-        let network_id = get_network_id(&db, network.network.into(), network.chain_id).await?;
+        let network_id = get_network_id(db, network.network.into(), network.chain_id).await?;
         let created_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
@@ -46,7 +46,7 @@ impl EntityMutation {
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
-        let network_id = get_network_id(&db, network.network.into(), network.chain_id).await?;
+        let network_id = get_network_id(db, network.network.into(), network.chain_id).await?;
         let updated_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
@@ -114,7 +114,7 @@ impl EntityMutation {
         id: Uuid,
         timestamp: DateTime<Utc>,
     ) -> Result<indexer::Model, DbErr> {
-        let network_id = get_network_id(&db, backend, chain_id).await?;
+        let network_id = get_network_id(db, backend, chain_id).await?;
 
         indexer::ActiveModel {
             id: Set(id),
@@ -133,9 +133,15 @@ async fn get_network_id(
     backend: NetworkBackend,
     chain_id: Option<String>,
 ) -> Result<String, DbErr> {
-    Ok(network::Entity::find()
-        .filter(network::Column::Backend.eq(backend))
-        .filter(network::Column::ChainId.eq(chain_id))
+    let mut filtered = network::Entity::find().filter(network::Column::Backend.eq(backend));
+
+    filtered = if let Some(chain_id) = chain_id {
+        filtered.filter(network::Column::ChainId.eq(chain_id))
+    } else {
+        filtered.filter(network::Column::ChainId.is_null())
+    };
+
+    Ok(filtered
         .one(db)
         .await?
         .ok_or(DbErr::RecordNotFound(

@@ -24,8 +24,7 @@ impl WebhookServiceMock {
                 if event.name != EventName::ConfirmAddress && event.name != EventName::ConfirmAsset
                 {
                     let payload = PushPayload {
-                        id: event.indexer_id,
-                        network: event.network.clone(),
+                        network_data: event.network_data.clone(),
                         event: PushEvent {
                             name: event.name.clone(),
                             tx_hash: event.hash.clone(),

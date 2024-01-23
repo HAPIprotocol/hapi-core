@@ -1,5 +1,5 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp, TestData};
+use crate::helpers::{FromTestPayload, RequestSender, TestApp, TestData};
 
 use {
     hapi_core::client::{entities::reporter::Reporter, events::EventName},
@@ -8,9 +8,9 @@ use {
 };
 
 const GET_REPORTER_QUERY: &str = "
-    query GetReporter($reporterId: UUID!, $network: UUID!) {
-        getReporter(reporterId: $reporterId, network: $network) {
-            network
+    query GetReporter($reporterId: UUID!, $networkId: String!) {
+        getReporter(reporterId: $reporterId, networkId: $networkId) {
+            networkId
             reporterId
             account
             role
@@ -32,7 +32,7 @@ const GET_MANY_REPORTERS: &str = "
             input: $input
         ) {
             data {
-                network
+                networkId
                 reporterId
                 account
                 role
@@ -50,8 +50,8 @@ const GET_MANY_REPORTERS: &str = "
     }
 ";
 
-impl From<PushPayload> for TestData<Reporter> {
-    fn from(payload: PushPayload) -> Self {
+impl FromTestPayload for TestData<Reporter> {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> TestData<Reporter> {
         let entity = match &payload.data {
             PushData::Reporter(reporter) => reporter,
             _ => panic!("Invalid type"),
@@ -59,17 +59,13 @@ impl From<PushPayload> for TestData<Reporter> {
 
         Self {
             data: entity.to_owned(),
-            network: payload.network,
-            indexer_id: payload.id,
+            network_id: network_id.to_string(),
         }
     }
 }
 
 fn check_reporter(reporter: &TestData<Reporter>, value: &Value) {
-    assert_eq!(
-        replacer(&value["network"]),
-        reporter.network.to_string().to_lowercase()
-    );
+    assert_eq!(value["networkId"], reporter.network_id);
 
     let payload = &reporter.data;
     assert_eq!(value["reporterId"], payload.id.to_string());
@@ -96,7 +92,7 @@ async fn get_reporter_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
+        .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
         .await;
 
     for payload in reporters {
@@ -105,7 +101,7 @@ async fn get_reporter_test() {
                 GET_REPORTER_QUERY,
                 json!({
                     "reporterId": payload.data.id,
-                    "network": payload.network.to_string().to_uppercase()
+                    "networkId": payload.network_id
                 }),
             )
             .await
@@ -121,7 +117,7 @@ async fn get_many_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
+        .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
         .await;
 
     let response = sender
@@ -158,7 +154,7 @@ async fn get_filtered_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
+        .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
         .await;
 
     for payload in reporters {
@@ -169,7 +165,7 @@ async fn get_filtered_reporters_test() {
                 "input":
                 {
                     "filtering": {
-                        "network": payload.network.to_string().to_uppercase(),
+                        "networkId": payload.network_id,
                     },
                     "ordering": "ASC",
                     "orderingCondition": "UPDATED_AT",
@@ -197,7 +193,7 @@ async fn get_paginated_reporters_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
-        .setup_entities::<Reporter>(&sender, EventName::UpdateReporter, None)
+        .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
         .await;
 
     let payload = reporters.last().expect("Invalid index");

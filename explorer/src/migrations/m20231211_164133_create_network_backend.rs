@@ -30,10 +30,7 @@ impl MigrationTrait for Migration {
 pub enum NetworkBackend {
     #[iden = "network_backend"]
     Type,
-    Sepolia,
-    Ethereum,
-    Bsc,
+    Evm,
     Solana,
-    Bitcoin,
     Near,
 }

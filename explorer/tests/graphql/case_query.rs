@@ -1,7 +1,7 @@
-use hapi_core::client::entities::{address::Address, asset::Asset};
-
 use super::replacer;
-use crate::helpers::{create_address_data, create_asset_data, RequestSender, TestApp, TestData};
+use crate::helpers::{
+    create_address_data, create_asset_data, FromTestPayload, RequestSender, TestApp, TestData,
+};
 
 use {
     hapi_core::client::{entities::case::Case, events::EventName},
@@ -10,9 +10,9 @@ use {
 };
 
 const GET_CASE_QUERY: &str = "
-    query GetCase($caseId: UUID!, $network: UUID!) {
-        getCase(caseId: $caseId, network: $network) {
-            network
+    query GetCase($caseId: UUID!, $networkId: String!) {
+        getCase(caseId: $caseId, networkId: $networkId) {
+            networkId
             caseId
             name
             url
@@ -31,7 +31,7 @@ const GET_MANY_CASES: &str = "
             input: $input
         ) {
             data {
-                network
+                networkId
                 caseId
                 name
                 url
@@ -46,8 +46,8 @@ const GET_MANY_CASES: &str = "
     }
 ";
 
-impl From<PushPayload> for TestData<Case> {
-    fn from(payload: PushPayload) -> Self {
+impl FromTestPayload for TestData<Case> {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> TestData<Case> {
         let entity = match &payload.data {
             PushData::Case(case) => case,
             _ => panic!("Invalid type"),
@@ -55,19 +55,15 @@ impl From<PushPayload> for TestData<Case> {
 
         Self {
             data: entity.to_owned(),
-            network: payload.network,
-            indexer_id: payload.id,
+            network_id: network_id.to_string(),
         }
     }
 }
 
 fn check_case(case: &TestData<Case>, value: &Value) {
-    assert_eq!(
-        replacer(&value["network"]),
-        case.network.to_string().to_lowercase()
-    );
-    let payload = &case.data;
+    assert_eq!(value["networkId"], case.network_id);
 
+    let payload = &case.data;
     assert_eq!(value["caseId"], payload.id.to_string());
     assert_eq!(value["name"], payload.name);
     assert_eq!(value["url"], payload.url);
@@ -83,7 +79,7 @@ async fn get_case_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     for payload in cases {
@@ -92,7 +88,7 @@ async fn get_case_test() {
                 GET_CASE_QUERY,
                 json!({
                     "caseId": payload.data.id,
-                    "network": payload.network.to_string().to_uppercase()
+                    "networkId": payload.network_id
                 }),
             )
             .await
@@ -108,7 +104,7 @@ async fn get_many_cases_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     let response = sender
@@ -143,24 +139,24 @@ async fn get_ordered_desc_cases_by_address_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     for (count, case) in cases.iter().enumerate() {
+        let network = test_app.get_network(&case.network_id);
+
         let test_data = (0..count + 1)
             .map(|_| {
                 create_address_data(
                     case.data.reporter_id,
                     case.data.id,
-                    case.network.clone(),
-                    case.indexer_id,
+                    &network.network,
+                    network.model.chain_id.clone(),
                 )
             })
             .collect::<Vec<PushPayload>>();
 
-        let _ = test_app
-            .setup_entities::<Address>(&sender, EventName::CreateAddress, Some(test_data))
-            .await;
+        test_app.send_events(&sender, &test_data).await;
     }
 
     let response = sender
@@ -196,24 +192,24 @@ async fn get_ordered_asc_cases_by_asset_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     for (count, case) in cases.iter().enumerate() {
+        let network = test_app.get_network(&case.network_id);
+
         let test_data = (0..count + 1)
             .map(|_| {
                 create_asset_data(
                     case.data.reporter_id,
                     case.data.id,
-                    case.network.clone(),
-                    case.indexer_id,
+                    &network.network,
+                    network.model.chain_id.clone(),
                 )
             })
             .collect::<Vec<PushPayload>>();
 
-        let _ = test_app
-            .setup_entities::<Asset>(&sender, EventName::CreateAsset, Some(test_data))
-            .await;
+        test_app.send_events(&sender, &test_data).await;
     }
 
     let response = sender
@@ -248,7 +244,7 @@ async fn get_filtered_cases_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     for case in cases {
@@ -287,7 +283,7 @@ async fn get_paginated_cases_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
-        .setup_entities::<Case>(&sender, EventName::UpdateCase, None)
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
         .await;
 
     let payload = cases.last().expect("Invalid index");

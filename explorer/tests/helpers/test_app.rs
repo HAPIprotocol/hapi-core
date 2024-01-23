@@ -24,7 +24,7 @@ pub const MIGRATION_COUNT: u32 = 10;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 
 pub struct TestNetwork {
-    pub backend: HapiCoreNetwork,
+    pub network: HapiCoreNetwork,
     pub model: NetworkModel,
     pub token: String,
 }
@@ -35,6 +35,10 @@ pub struct TestApp {
     pub networks: Vec<TestNetwork>,
     pub server_handle: Option<JoinHandle<()>>,
     stop_signal: Arc<Notify>,
+}
+
+pub trait FromTestPayload {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> Self;
 }
 
 impl TestApp {
@@ -110,9 +114,9 @@ impl TestApp {
 
         for network in &networks {
             let id = network.to_string();
-            let name = "test_name".to_string();
+            let name = network.to_string();
             let backend = network.clone().into();
-            let chain_id = Some("test_chain_id".to_string());
+            let chain_id = Some(format!("{id}_chain_id"));
             let authority = "test_authority".to_string();
             let stake_token = "test_stake_token".to_string();
 
@@ -128,12 +132,12 @@ impl TestApp {
             .expect("Failed to create network");
 
             let token = app
-                .create_indexer(backend.to_owned().into())
+                .create_indexer(backend.to_owned().into(), chain_id.clone())
                 .await
                 .expect("Failed to create indexer");
 
             let data = TestNetwork {
-                backend: network.to_owned(),
+                network: network.clone(),
                 model: NetworkModel {
                     id,
                     name,
@@ -153,22 +157,29 @@ impl TestApp {
         res
     }
 
-    pub async fn check_entity(&self, data: PushData, network: HapiCoreNetwork) {
-        let network = network.into();
-        let db = &self.db_connection;
+    pub fn get_network(&self, network_id: &str) -> &TestNetwork {
+        self.networks
+            .iter()
+            .find(|network| network.model.id == network_id)
+            .expect("Failed to find network")
+    }
+
+    pub async fn check_entity(&self, data: PushData, network_id: String) {
+        let db: &DatabaseConnection = &self.db_connection;
 
         match data {
             PushData::Address(address) => {
-                let result = address::Entity::find_by_id((network, address.address.clone()))
-                    .all(db)
-                    .await
-                    .expect("Failed to find address by id");
+                let result =
+                    address::Entity::find_by_id((network_id.clone(), address.address.clone()))
+                        .all(db)
+                        .await
+                        .expect("Failed to find address by id");
 
                 assert_eq!(result.len(), 1);
 
                 let address_model = result.first().unwrap();
                 assert_eq!(address_model.address, address.address);
-                assert_eq!(address_model.network, network);
+                assert_eq!(address_model.network_id, network_id);
                 assert_eq!(address_model.case_id, address.case_id);
                 assert_eq!(address_model.reporter_id, address.reporter_id);
                 assert_eq!(address_model.risk, address.risk as i16);
@@ -180,7 +191,7 @@ impl TestApp {
             }
             PushData::Asset(asset) => {
                 let result = asset::Entity::find_by_id((
-                    network,
+                    network_id,
                     asset.address.clone(),
                     asset.asset_id.to_string(),
                 ))
@@ -200,7 +211,7 @@ impl TestApp {
                 assert_eq!(asset_model.confirmations, asset.confirmations.to_string());
             }
             PushData::Case(case) => {
-                let result = case::Entity::find_by_id((network, case.id.clone()))
+                let result = case::Entity::find_by_id((network_id, case.id.clone()))
                     .all(db)
                     .await
                     .expect("Failed to find case by id");
@@ -214,7 +225,7 @@ impl TestApp {
                 assert_eq!(case_model.reporter_id, case.reporter_id);
             }
             PushData::Reporter(reporter) => {
-                let result = reporter::Entity::find_by_id((network, reporter.id.clone()))
+                let result = reporter::Entity::find_by_id((network_id, reporter.id.clone()))
                     .all(db)
                     .await
                     .expect("Failed to find reporter by id");
@@ -236,28 +247,34 @@ impl TestApp {
         }
     }
 
-    // Sends provided data or default events for all networks
-    pub async fn setup_entities<T>(
+    pub async fn global_setup<T>(
         &self,
         sender: &RequestSender,
         event: EventName,
-        test_data: Option<Vec<PushPayload>>,
     ) -> Vec<TestData<T>>
     where
-        TestData<T>: From<PushPayload>,
+        TestData<T>: FromTestPayload,
     {
-        let mut data = vec![];
+        let mut res = vec![];
 
-        let test_data = if let Some(data) = test_data {
-            data
-        } else {
-            self.networks
+        for network in &self.networks {
+            let data = get_test_data(&network.network, network.model.chain_id.clone());
+
+            self.send_events(sender, &data).await;
+
+            let mut entities: Vec<TestData<T>> = data
                 .iter()
-                .map(|network| get_test_data(network.backend.to_owned()))
-                .flatten()
-                .collect()
-        };
+                .filter(|p| event == p.event.name)
+                .map(|p| TestData::<T>::from_payload(p, &network.model.id))
+                .collect();
 
+            res.append(&mut entities);
+        }
+
+        res
+    }
+
+    pub async fn send_events(&self, sender: &RequestSender, test_data: &Vec<PushPayload>) {
         let token = create_jwt("my_ultra_secure_secret");
 
         for payload in test_data {
@@ -265,15 +282,49 @@ impl TestApp {
                 .send("events", &payload, &token)
                 .await
                 .expect("Failed to send event");
+
             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
-            if event == payload.event.name {
-                data.push(payload.into());
-            }
         }
-
-        data
     }
+
+    //     // Sends provided data or default events for all networks
+    //     pub async fn setup_entities<T>(
+    //         &self,
+    //         sender: &RequestSender,
+    //         event: EventName,
+    //         test_data: Option<Vec<PushPayload>>,
+    //     ) -> Vec<TestData<T>>
+    //     where
+    //         TestData<T>: FromTestPayload,
+    //     {
+    //         let mut data = vec![];
+
+    //         let test_data = if let Some(data) = test_data {
+    //             data
+    //         } else {
+    //             self.networks
+    //                 .iter()
+    //                 .map(|network| get_test_data(&network.data))
+    //                 .flatten()
+    //                 .collect()
+    //         };
+
+    //         let token = create_jwt("my_ultra_secure_secret");
+
+    //         for payload in test_data {
+    //             sender
+    //                 .send("events", &payload, &token)
+    //                 .await
+    //                 .expect("Failed to send event");
+    //             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+    //             if event == payload.event.name {
+    //                 data.push(payload.into());
+    //             }
+    //         }
+
+    //         data
+    //     }
 }
 
 impl Drop for TestApp {

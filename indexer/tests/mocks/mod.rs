@@ -14,7 +14,7 @@ use {
         },
         HapiCoreNetwork,
     },
-    hapi_indexer::{IndexingCursor, PushData},
+    hapi_indexer::{IndexingCursor, NetworkData, PushData},
     std::str::FromStr,
     uuid::Uuid,
 };
@@ -67,8 +67,7 @@ pub type TestBatch = Vec<TestData>;
 
 #[derive(Debug, Clone)]
 pub struct TestData {
-    pub indexer_id: Uuid,
-    pub network: HapiCoreNetwork,
+    pub network_data: NetworkData,
     pub hash: String,
     pub name: EventName,
     pub data: Option<PushData>,
@@ -164,8 +163,11 @@ pub fn create_test_batches<T: RpcMock>(pushdata: &Vec<PushData>) -> Vec<TestBatc
         .enumerate()
         .zip(data.iter())
         .map(|((index, hash), (name, data))| TestData {
-            indexer_id,
-            network: T::get_network(),
+            network_data: NetworkData {
+                indexer_id,
+                network: T::get_network(),
+                chain_id: None,
+            },
             hash: hash.clone(),
             name: name.clone(),
             data: data.clone(),

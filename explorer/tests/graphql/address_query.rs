@@ -1,5 +1,5 @@
 use super::replacer;
-use crate::helpers::{RequestSender, TestApp, TestData};
+use crate::helpers::{FromTestPayload, RequestSender, TestApp, TestData};
 
 use {
     hapi_core::client::{entities::address::Address, events::EventName},
@@ -8,9 +8,9 @@ use {
 };
 
 const GET_ADDRESS_QUERY: &str = "
-    query GetAddress($address: String!, $network: UUID!) {
-        getAddress(address: $address, network: $network) {
-            network
+    query GetAddress($address: String!, $networkId: String!) {
+        getAddress(address: $address, networkId: $networkId) {
+            networkId
             address
             caseId
             reporterId
@@ -30,7 +30,7 @@ const GET_MANY_ADDRESSES: &str = "
             input: $input
         ) {
             data {
-                network
+                networkId
                 address
                 caseId
                 reporterId
@@ -46,8 +46,8 @@ const GET_MANY_ADDRESSES: &str = "
     }
 ";
 
-impl From<PushPayload> for TestData<Address> {
-    fn from(payload: PushPayload) -> Self {
+impl FromTestPayload for TestData<Address> {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> TestData<Address> {
         let entity = match &payload.data {
             PushData::Address(address) => address,
             _ => panic!("Invalid type"),
@@ -55,17 +55,13 @@ impl From<PushPayload> for TestData<Address> {
 
         Self {
             data: entity.to_owned(),
-            network: payload.network,
-            indexer_id: payload.id,
+            network_id: network_id.to_string(),
         }
     }
 }
 
 fn check_address(address: &TestData<Address>, value: &Value) {
-    assert_eq!(
-        replacer(&value["network"]),
-        address.network.to_string().to_lowercase()
-    );
+    assert_eq!(value["networkId"], address.network_id);
 
     let payload = &address.data;
     assert_eq!(value["address"], payload.address);
@@ -84,7 +80,7 @@ async fn get_address_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
+        .global_setup::<Address>(&sender, EventName::UpdateAddress)
         .await;
 
     for payload in addresses {
@@ -93,7 +89,7 @@ async fn get_address_test() {
                 GET_ADDRESS_QUERY,
                 json!({
                     "address": payload.data.address,
-                    "network": payload.network.to_string().to_uppercase()
+                    "networkId": payload.network_id
                 }),
             )
             .await
@@ -109,7 +105,7 @@ async fn get_many_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
+        .global_setup::<Address>(&sender, EventName::UpdateAddress)
         .await;
 
     let response = sender
@@ -147,7 +143,7 @@ async fn get_filtered_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
+        .global_setup::<Address>(&sender, EventName::UpdateAddress)
         .await;
 
     for payload in addresses {
@@ -187,7 +183,7 @@ async fn get_paginated_addresses_test() {
     let test_app = TestApp::start().await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
-        .setup_entities::<Address>(&sender, EventName::UpdateAddress, None)
+        .global_setup::<Address>(&sender, EventName::UpdateAddress)
         .await;
 
     let payload = addresses.last().expect("Invalid index");

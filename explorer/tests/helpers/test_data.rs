@@ -13,19 +13,23 @@ use {
         },
         HapiCoreNetwork,
     },
-    hapi_indexer::{PushData, PushEvent, PushPayload},
+    hapi_indexer::{NetworkData, PushData, PushEvent, PushPayload},
     rand::{distributions::Alphanumeric, thread_rng, Rng},
     std::str::FromStr,
     uuid::Uuid,
 };
 
+use super::jwt::get_jwt_id;
+
 pub struct TestData<T> {
     pub data: T,
-    pub network: HapiCoreNetwork,
-    pub indexer_id: Uuid,
+    pub network_id: String,
 }
 
-pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
+pub(crate) fn get_test_data(
+    network: &HapiCoreNetwork,
+    chain_id: Option<String>,
+) -> Vec<PushPayload> {
     let mut events = vec![];
 
     let mut reporter_payload = Reporter {
@@ -66,35 +70,35 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
         confirmations: 0,
     };
 
-    let indexer_id = Uuid::new_v4();
+    let network_data = NetworkData {
+        network: network.to_owned(),
+        chain_id,
+        indexer_id: Uuid::parse_str(&get_jwt_id()).expect("Failed to parse jwt id"),
+    };
 
     // Create events
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::CreateReporter,
         PushData::Reporter(reporter_payload.clone()),
-        indexer_id,
     ));
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::CreateCase,
         PushData::Case(case_payload.clone()),
-        indexer_id,
     ));
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::CreateAddress,
         PushData::Address(address_payload.clone()),
-        indexer_id,
     ));
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::CreateAsset,
         PushData::Asset(asset_payload.clone()),
-        indexer_id,
     ));
 
     // Update events
@@ -103,19 +107,17 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.url = String::from("https://authority.com");
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::UpdateReporter,
         PushData::Reporter(reporter_payload.clone()),
-        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Active;
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::ActivateReporter,
         PushData::Reporter(reporter_payload.clone()),
-        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Unstaking;
@@ -123,10 +125,9 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 12345;
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::DeactivateReporter,
         PushData::Reporter(reporter_payload.clone()),
-        indexer_id,
     ));
 
     reporter_payload.status = ReporterStatus::Inactive;
@@ -134,10 +135,9 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     reporter_payload.unlock_timestamp = 0;
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::Unstake,
         PushData::Reporter(reporter_payload.clone()),
-        indexer_id,
     ));
 
     case_payload.name = String::from("Closed case 1");
@@ -145,10 +145,9 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     case_payload.status = CaseStatus::Closed;
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::UpdateCase,
         PushData::Case(case_payload.clone()),
-        indexer_id,
     ));
 
     address_payload.risk = 10;
@@ -156,10 +155,9 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     address_payload.confirmations = 20;
 
     events.push(create_payload(
-        network.clone(),
+        network_data.clone(),
         EventName::UpdateAddress,
         PushData::Address(address_payload.clone()),
-        indexer_id,
     ));
 
     asset_payload.risk = 9;
@@ -167,10 +165,9 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
     asset_payload.confirmations = 25;
 
     events.push(create_payload(
-        network,
+        network_data.clone(),
         EventName::UpdateAsset,
         PushData::Asset(asset_payload.clone()),
-        indexer_id,
     ));
 
     events
@@ -179,8 +176,8 @@ pub(crate) fn get_test_data(network: HapiCoreNetwork) -> Vec<PushPayload> {
 pub fn create_address_data(
     reporter_id: Uuid,
     case_id: Uuid,
-    network: HapiCoreNetwork,
-    indexer_id: Uuid,
+    network: &HapiCoreNetwork,
+    chain_id: Option<String>,
 ) -> PushPayload {
     let payload = Address {
         address: generate_random_string(),
@@ -191,19 +188,24 @@ pub fn create_address_data(
         confirmations: 0,
     };
 
+    let network_data = NetworkData {
+        network: network.to_owned(),
+        chain_id,
+        indexer_id: Uuid::parse_str(&get_jwt_id()).expect("Failed to parse jwt id"),
+    };
+
     create_payload(
-        network,
+        network_data,
         EventName::CreateAddress,
         PushData::Address(payload.clone()),
-        indexer_id,
     )
 }
 
 pub fn create_asset_data(
     reporter_id: Uuid,
     case_id: Uuid,
-    network: HapiCoreNetwork,
-    indexer_id: Uuid,
+    network: &HapiCoreNetwork,
+    chain_id: Option<String>,
 ) -> PushPayload {
     let payload = Asset {
         address: generate_random_string(),
@@ -215,20 +217,20 @@ pub fn create_asset_data(
         confirmations: 0,
     };
 
+    let network_data = NetworkData {
+        network: network.to_owned(),
+        chain_id,
+        indexer_id: Uuid::parse_str(&get_jwt_id()).expect("Failed to parse jwt id"),
+    };
+
     create_payload(
-        network,
+        network_data,
         EventName::CreateAsset,
         PushData::Asset(payload.clone()),
-        indexer_id,
     )
 }
 
-fn create_payload(
-    network: HapiCoreNetwork,
-    name: EventName,
-    data: PushData,
-    indexer_id: Uuid,
-) -> PushPayload {
+fn create_payload(network_data: NetworkData, name: EventName, data: PushData) -> PushPayload {
     let tx_hash = generate_random_string();
 
     let event = PushEvent {
@@ -239,8 +241,7 @@ fn create_payload(
     };
 
     PushPayload {
-        id: indexer_id,
-        network,
+        network_data,
         event,
         data,
     }
