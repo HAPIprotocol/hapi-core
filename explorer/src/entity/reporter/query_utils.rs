@@ -20,7 +20,7 @@ pub enum ReporterCondition {
     /// Order by network
     NetworkId,
     /// Order by reporter id
-    ReporterId,
+    Id,
     /// Order by reporter account
     Account,
     /// Order by reporter role
@@ -46,7 +46,7 @@ impl From<ReporterCondition> for Column {
     fn from(condition: ReporterCondition) -> Self {
         match condition {
             ReporterCondition::NetworkId => Column::NetworkId,
-            ReporterCondition::ReporterId => Column::ReporterId,
+            ReporterCondition::Id => Column::Id,
             ReporterCondition::Account => Column::Account,
             ReporterCondition::Role => Column::Role,
             ReporterCondition::Status => Column::Status,

@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(Asset::NetworkId).string().not_null())
                     .col(ColumnDef::new(Asset::Address).string().not_null())
-                    .col(ColumnDef::new(Asset::AssetId).string().not_null())
+                    .col(ColumnDef::new(Asset::Id).string().not_null())
                     .col(ColumnDef::new(Asset::CaseId).uuid().not_null())
                     .col(ColumnDef::new(Asset::ReporterId).uuid().not_null())
                     .col(ColumnDef::new(Asset::Risk).small_integer().not_null())
@@ -31,7 +31,7 @@ impl MigrationTrait for Migration {
                             .name("asset_id")
                             .col(Asset::NetworkId)
                             .col(Asset::Address)
-                            .col(Asset::AssetId),
+                            .col(Asset::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -45,7 +45,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-asset_reporter_id")
                             .from(Asset::Table, (Asset::NetworkId, Asset::ReporterId))
-                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::ReporterId))
+                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::Id))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -53,7 +53,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-asset_case_id")
                             .from(Asset::Table, (Asset::NetworkId, Asset::CaseId))
-                            .to(Case::Table, (Case::NetworkId, Case::CaseId))
+                            .to(Case::Table, (Case::NetworkId, Case::Id))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -75,7 +75,7 @@ pub(crate) enum Asset {
     Table,
     NetworkId,
     Address,
-    AssetId,
+    Id,
     CaseId,
     ReporterId,
     Risk,

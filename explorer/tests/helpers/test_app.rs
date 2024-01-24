@@ -203,7 +203,7 @@ impl TestApp {
 
                 let asset_model = result.first().unwrap();
                 assert_eq!(asset_model.address, asset.address);
-                assert_eq!(asset_model.asset_id, asset.asset_id.to_string());
+                assert_eq!(asset_model.id, asset.asset_id.to_string());
                 assert_eq!(asset_model.case_id, asset.case_id);
                 assert_eq!(asset_model.reporter_id, asset.reporter_id);
                 assert_eq!(asset_model.risk, asset.risk as i16);
@@ -219,6 +219,7 @@ impl TestApp {
                 assert_eq!(result.len(), 1);
 
                 let case_model = result.first().unwrap();
+                assert_eq!(case_model.id, case.id);
                 assert_eq!(case_model.name, case.name);
                 assert_eq!(case_model.url, case.url);
                 assert_eq!(case_model.status, case.status.into());

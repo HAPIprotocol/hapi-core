@@ -22,7 +22,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub network_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub case_id: Uuid,
+    pub id: Uuid,
     pub name: String,
     pub url: String,
     pub status: CaseStatus,
@@ -87,7 +87,7 @@ fn sort_by_count(
     let query = selected
         .column_as(Expr::cust("COUNT(*)"), "related")
         .join(JoinType::InnerJoin, relation.def())
-        .group_by(Column::CaseId)
+        .group_by(Column::Id)
         .group_by(Column::NetworkId);
 
     match ordering {
@@ -101,7 +101,7 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "reporter::Entity",
         from = "Column::ReporterId",
-        to = "reporter::model::Column::ReporterId"
+        to = "reporter::model::Column::Id"
     )]
     Reporter,
     #[sea_orm(has_many = "address::Entity")]
@@ -142,7 +142,7 @@ impl FromPayload<CasePayload> for ActiveModel {
 
         Self {
             network_id: Set(network_id),
-            case_id: Set(payload.id.to_owned()),
+            id: Set(payload.id.to_owned()),
             name: Set(payload.name.to_owned()),
             url: Set(payload.url.to_owned()),
             status: Set(payload.status.into()),

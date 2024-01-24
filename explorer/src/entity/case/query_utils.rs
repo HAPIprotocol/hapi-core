@@ -22,7 +22,7 @@ pub enum CaseCondition {
     /// Order by network
     NetworkId,
     /// Order by case id
-    CaseId,
+    Id,
     /// Order by name
     Name,
     /// Order by url
@@ -46,7 +46,7 @@ impl From<CaseCondition> for Column {
     fn from(condition: CaseCondition) -> Self {
         match condition {
             CaseCondition::NetworkId => Column::NetworkId,
-            CaseCondition::CaseId => Column::CaseId,
+            CaseCondition::Id => Column::Id,
             CaseCondition::Name => Column::Name,
             CaseCondition::Url => Column::Url,
             CaseCondition::Status => Column::Status,

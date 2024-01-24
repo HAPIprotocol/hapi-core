@@ -13,7 +13,7 @@ impl MigrationTrait for Migration {
                     .table(Reporter::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Reporter::NetworkId).string().not_null())
-                    .col(ColumnDef::new(Reporter::ReporterId).uuid().not_null())
+                    .col(ColumnDef::new(Reporter::Id).uuid().not_null())
                     .col(ColumnDef::new(Reporter::Account).string().not_null())
                     .col(ColumnDef::new(Reporter::Name).string().not_null())
                     .col(ColumnDef::new(Reporter::Url).string().not_null())
@@ -39,7 +39,7 @@ impl MigrationTrait for Migration {
                         Index::create()
                             .name("reporter_id")
                             .col(Reporter::NetworkId)
-                            .col(Reporter::ReporterId),
+                            .col(Reporter::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -66,7 +66,7 @@ pub(crate) enum Reporter {
     // Composite key: network_id + reporter_id
     Table,
     NetworkId,
-    ReporterId,
+    Id,
     Account,
     Role,
     Status,

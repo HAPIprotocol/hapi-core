@@ -8,11 +8,11 @@ use {
 };
 
 const GET_ASSET_QUERY: &str = "
-    query GetAsset($address: String!, $assetId: String!, $networkId: String!) {
-        getAsset(address: $address, assetId: $assetId, networkId: $networkId) {
+    query GetAsset($address: String!, $id: String!, $networkId: String!) {
+        getAsset(address: $address, id: $id, networkId: $networkId) {
             networkId
             address
-            assetId
+            id
             caseId
             reporterId
             risk
@@ -33,7 +33,7 @@ const GET_MANY_ASSETS: &str = "
             data {
                 networkId
                 address
-                assetId
+                id
                 caseId
                 reporterId
                 risk
@@ -67,7 +67,7 @@ fn check_asset(asset: &TestData<Asset>, value: &Value) {
 
     let payload = &asset.data;
     assert_eq!(value["address"], payload.address);
-    assert_eq!(value["assetId"], payload.asset_id.to_string());
+    assert_eq!(value["id"], payload.asset_id.to_string());
     assert_eq!(value["caseId"], payload.case_id.to_string());
     assert_eq!(value["reporterId"], payload.reporter_id.to_string());
     assert_eq!(value["risk"], payload.risk);
@@ -92,7 +92,7 @@ async fn get_asset_test() {
                 GET_ASSET_QUERY,
                 json!({
                     "address": payload.data.address,
-                    "assetId": payload.data.asset_id,
+                    "id": payload.data.asset_id,
                     "networkId": payload.network_id
                 }),
             )

@@ -17,7 +17,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub address: String,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub asset_id: String,
+    pub id: String,
     pub case_id: Uuid,
     pub reporter_id: Uuid,
     pub risk: i16,
@@ -72,13 +72,13 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "reporter::Entity",
         from = "Column::ReporterId",
-        to = "reporter::model::Column::ReporterId"
+        to = "reporter::model::Column::Id"
     )]
     Reporter,
     #[sea_orm(
         belongs_to = "case::Entity",
         from = "Column::CaseId",
-        to = "case::model::Column::CaseId"
+        to = "case::model::Column::Id"
     )]
     Case,
 }
@@ -110,7 +110,7 @@ impl FromPayload<AssetPayload> for ActiveModel {
         Self {
             network_id: Set(network_id),
             address: Set(payload.address.to_owned()),
-            asset_id: Set(payload.asset_id.to_string()),
+            id: Set(payload.asset_id.to_string()),
             case_id: Set(payload.case_id.to_owned()),
             reporter_id: Set(payload.reporter_id.to_owned()),
             risk: Set(payload.risk.into()),

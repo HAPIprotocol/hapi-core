@@ -66,13 +66,13 @@ pub enum Relation {
     #[sea_orm(
         belongs_to = "reporter::Entity",
         from = "Column::ReporterId",
-        to = "reporter::model::Column::ReporterId"
+        to = "reporter::model::Column::Id"
     )]
     Reporter,
     #[sea_orm(
         belongs_to = "case::Entity",
         from = "Column::CaseId",
-        to = "case::model::Column::CaseId"
+        to = "case::model::Column::Id"
     )]
     Case,
 }

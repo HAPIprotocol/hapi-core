@@ -10,10 +10,10 @@ use {
 };
 
 const GET_CASE_QUERY: &str = "
-    query GetCase($caseId: UUID!, $networkId: String!) {
-        getCase(caseId: $caseId, networkId: $networkId) {
+    query GetCase($id: UUID!, $networkId: String!) {
+        getCase(id: $id, networkId: $networkId) {
             networkId
-            caseId
+            id
             name
             url
             status
@@ -32,7 +32,7 @@ const GET_MANY_CASES: &str = "
         ) {
             data {
                 networkId
-                caseId
+                id
                 name
                 url
                 status
@@ -64,7 +64,7 @@ fn check_case(case: &TestData<Case>, value: &Value) {
     assert_eq!(value["networkId"], case.network_id);
 
     let payload = &case.data;
-    assert_eq!(value["caseId"], payload.id.to_string());
+    assert_eq!(value["id"], payload.id.to_string());
     assert_eq!(value["name"], payload.name);
     assert_eq!(value["url"], payload.url);
     assert_eq!(
@@ -87,7 +87,7 @@ async fn get_case_test() {
             .send_graphql(
                 GET_CASE_QUERY,
                 json!({
-                    "caseId": payload.data.id,
+                    "id": payload.data.id,
                     "networkId": payload.network_id
                 }),
             )

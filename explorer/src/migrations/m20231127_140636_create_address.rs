@@ -43,7 +43,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_reporter_id")
                             .from(Address::Table, (Address::NetworkId, Address::ReporterId))
-                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::ReporterId))
+                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::Id))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -51,7 +51,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .name("fk-address_case_id")
                             .from(Address::Table, (Address::NetworkId, Address::CaseId))
-                            .to(Case::Table, (Case::NetworkId, Case::CaseId))
+                            .to(Case::Table, (Case::NetworkId, Case::Id))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )

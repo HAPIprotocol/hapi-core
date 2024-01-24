@@ -27,13 +27,12 @@ impl CaseQuery {
     pub async fn get_case(
         &self,
         ctx: &Context<'_>,
-        #[graphql(desc = "Case id")] case_id: Uuid,
+        #[graphql(desc = "Case id")] id: Uuid,
         #[graphql(desc = "Case network")] network_id: String,
     ) -> Result<Option<Model>> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
         let address =
-            EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network_id, case_id))
-                .await?;
+            EntityQuery::find_entity_by_id::<super::model::Entity, _>(db, (network_id, id)).await?;
 
         Ok(address)
     }

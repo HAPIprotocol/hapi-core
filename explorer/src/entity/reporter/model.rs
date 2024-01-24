@@ -19,7 +19,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub network_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub reporter_id: Uuid,
+    pub id: Uuid,
     pub account: String,
     pub role: ReporterRole,
     pub status: ReporterStatus,
@@ -109,7 +109,7 @@ impl FromPayload<ReporterPayload> for ActiveModel {
 
         Self {
             network_id: Set(network_id),
-            reporter_id: Set(payload.id.to_owned()),
+            id: Set(payload.id.to_owned()),
             account: Set(payload.account.to_owned()),
             role: Set(payload.role.into()),
             status: Set(payload.status.into()),

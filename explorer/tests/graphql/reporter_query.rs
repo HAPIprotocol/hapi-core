@@ -8,10 +8,10 @@ use {
 };
 
 const GET_REPORTER_QUERY: &str = "
-    query GetReporter($reporterId: UUID!, $networkId: String!) {
-        getReporter(reporterId: $reporterId, networkId: $networkId) {
+    query GetReporter($id: UUID!, $networkId: String!) {
+        getReporter(id: $id, networkId: $networkId) {
             networkId
-            reporterId
+            id
             account
             role
             status
@@ -33,7 +33,7 @@ const GET_MANY_REPORTERS: &str = "
         ) {
             data {
                 networkId
-                reporterId
+                id
                 account
                 role
                 status
@@ -68,7 +68,7 @@ fn check_reporter(reporter: &TestData<Reporter>, value: &Value) {
     assert_eq!(value["networkId"], reporter.network_id);
 
     let payload = &reporter.data;
-    assert_eq!(value["reporterId"], payload.id.to_string());
+    assert_eq!(value["id"], payload.id.to_string());
     assert_eq!(value["account"], payload.account);
     assert_eq!(
         replacer(&value["role"]),
@@ -100,7 +100,7 @@ async fn get_reporter_test() {
             .send_graphql(
                 GET_REPORTER_QUERY,
                 json!({
-                    "reporterId": payload.data.id,
+                    "id": payload.data.id,
                     "networkId": payload.network_id
                 }),
             )

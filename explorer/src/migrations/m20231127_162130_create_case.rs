@@ -13,7 +13,7 @@ impl MigrationTrait for Migration {
                     .table(Case::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Case::NetworkId).string().not_null())
-                    .col(ColumnDef::new(Case::CaseId).uuid().not_null())
+                    .col(ColumnDef::new(Case::Id).uuid().not_null())
                     .col(ColumnDef::new(Case::Name).string().not_null())
                     .col(ColumnDef::new(Case::Url).string().not_null())
                     .col(ColumnDef::new(Case::ReporterId).uuid().not_null())
@@ -28,13 +28,13 @@ impl MigrationTrait for Migration {
                         Index::create()
                             .name("case_id")
                             .col(Case::NetworkId)
-                            .col(Case::CaseId),
+                            .col(Case::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-case_reporter_id")
                             .from(Case::Table, (Case::NetworkId, Case::ReporterId))
-                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::ReporterId))
+                            .to(Reporter::Table, (Reporter::NetworkId, Reporter::Id))
                             .on_delete(ForeignKeyAction::NoAction)
                             .on_update(ForeignKeyAction::Cascade),
                     )
@@ -63,7 +63,7 @@ pub(crate) enum Case {
     // Composite key: network + case_id
     Table,
     NetworkId,
-    CaseId,
+    Id,
     Name,
     Url,
     Status,
