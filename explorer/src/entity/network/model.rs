@@ -44,6 +44,20 @@ impl EntityFilter for Entity {
 
         query
     }
+
+    /// Columns for search
+    fn columns_for_search() -> Vec<String> {
+        vec![
+            String::from("id"),
+            String::from("name"),
+            String::from("backend::text"),
+            String::from("chain_id"),
+            String::from("authority"),
+            String::from("stake_token"),
+            String::from("created_at::text"),
+            String::from("updated_at::text"),
+        ]
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

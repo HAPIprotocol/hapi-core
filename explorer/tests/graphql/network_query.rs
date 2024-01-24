@@ -87,7 +87,7 @@ async fn get_many_networks_test() {
             "input":
             {
               "ordering": "ASC",
-              "orderingCondition": "UPDATED_AT",
+
             }
 
             }),
@@ -127,7 +127,6 @@ async fn get_filtered_networks_test() {
                         "name" : data.model.name.clone(),
                     },
                     "ordering": "ASC",
-                    "orderingCondition": "UPDATED_AT",
                 }
 
                 }),
@@ -164,7 +163,6 @@ async fn get_paginated_networks_test() {
             "input":
             {
                 "ordering": "ASC",
-                "orderingCondition": "UPDATED_AT",
                 "pagination": {
                     "pageNum": networks.len() / page_size,
                     "pageSize": page_size
@@ -185,4 +183,41 @@ async fn get_paginated_networks_test() {
 
     assert_eq!(networks.len(), page_size);
     check_network(&data, networks.last().unwrap())
+}
+
+#[tokio::test]
+async fn get_searched_networks_test() {
+    let test_app = TestApp::start().await;
+    let sender = RequestSender::new(test_app.server_addr.clone());
+    let networks = &test_app.networks;
+
+    for data in networks {
+        let chain_id = data.model.chain_id.clone().unwrap();
+
+        let response = sender
+            .send_graphql(
+                GET_MANY_NETWORKS,
+                json!({
+                "input":
+                {
+                    "search" : &chain_id[1..chain_id.len() - 1],
+                    "ordering": "ASC",
+                }
+
+                }),
+            )
+            .await
+            .unwrap();
+
+        let networks_response = &response["getManyNetworks"];
+        assert_eq!(networks_response["total"], 1);
+
+        let network = networks_response["data"]
+            .as_array()
+            .expect("Empty response")
+            .first()
+            .unwrap();
+
+        check_network(&data, network)
+    }
 }

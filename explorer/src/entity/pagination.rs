@@ -109,4 +109,7 @@ pub struct EntityInput<F: InputType, C: InputType> {
 
     /// Pagination options
     pub pagination: Option<Paginator>,
+
+    /// String value to search entities
+    pub search: Option<String>,
 }

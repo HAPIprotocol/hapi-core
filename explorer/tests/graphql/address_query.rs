@@ -115,7 +115,6 @@ async fn get_many_addresses_test() {
             "input":
             {
               "ordering": "ASC",
-              "orderingCondition": "UPDATED_AT",
             }
 
             }),
@@ -157,7 +156,6 @@ async fn get_filtered_addresses_test() {
                         "reporterId": payload.data.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
-                    "orderingCondition": "UPDATED_AT",
                 }
 
                 }),
@@ -196,7 +194,6 @@ async fn get_paginated_addresses_test() {
             "input":
             {
                 "ordering": "ASC",
-                "orderingCondition": "UPDATED_AT",
                 "pagination": {
                     "pageNum": addresses.len() / page_size,
                     "pageSize": page_size
@@ -217,4 +214,41 @@ async fn get_paginated_addresses_test() {
 
     assert_eq!(addresses.len(), page_size);
     check_address(&payload, addresses.last().unwrap())
+}
+
+#[tokio::test]
+async fn get_searched_addresses_test() {
+    let test_app = TestApp::start().await;
+    let sender = RequestSender::new(test_app.server_addr.clone());
+    let addresses = test_app
+        .global_setup::<Address>(&sender, EventName::UpdateAddress)
+        .await;
+
+    for payload in addresses {
+        let response = sender
+            .send_graphql(
+                GET_MANY_ADDRESSES,
+                json!({
+                "input":
+                {
+                    "search" : &payload.network_id[0..payload.network_id.len() - 1],
+                    "ordering": "ASC",
+                }
+
+                }),
+            )
+            .await
+            .unwrap();
+
+        let addresses_response = &response["getManyAddresses"];
+        assert_eq!(addresses_response["total"], 1);
+
+        let address = addresses_response["data"]
+            .as_array()
+            .expect("Empty response")
+            .first()
+            .unwrap();
+
+        check_address(&payload, address)
+    }
 }

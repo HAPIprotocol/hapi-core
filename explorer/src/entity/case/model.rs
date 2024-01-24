@@ -76,6 +76,20 @@ impl EntityFilter for Entity {
             _ => order_by_column(selected, ordering, condition),
         }
     }
+
+    /// Columns for search
+    fn columns_for_search() -> Vec<String> {
+        vec![
+            String::from("network_id"),
+            String::from("id::text"),
+            String::from("name"),
+            String::from("url"),
+            String::from("status::text"),
+            String::from("reporter_id::text"),
+            String::from("created_at::text"),
+            String::from("updated_at::text"),
+        ]
+    }
 }
 
 fn sort_by_count(

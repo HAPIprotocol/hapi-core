@@ -21,7 +21,6 @@ pub struct AssetFilter {
 /// Available ordering values for asset
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum AssetCondition {
-    #[default]
     /// Order by network
     NetworkId,
     /// Order by address
@@ -39,6 +38,7 @@ pub enum AssetCondition {
     /// Order by the time when entity was created
     CreatedAt,
     /// Order by the time when entity was updated
+    #[default]
     UpdatedAt,
 }
 

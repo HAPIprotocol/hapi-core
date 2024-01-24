@@ -26,6 +26,8 @@ pub trait EntityFilter: Sized + EntityTrait {
 
     fn filter(selected: Select<Self>, filter_options: &Self::Filter) -> Select<Self>;
 
+    fn columns_for_search() -> Vec<String>;
+
     fn order(
         selected: Select<Self>,
         ordering: Option<Ordering>,

@@ -114,7 +114,6 @@ async fn get_many_cases_test() {
             "input":
             {
               "ordering": "ASC",
-              "orderingCondition": "UPDATED_AT",
             }
             }),
         )
@@ -165,7 +164,6 @@ async fn get_ordered_desc_cases_by_address_test() {
             json!({
             "input":
             {
-              "ordering": "DESC",
               "orderingCondition": "ADDRESS_COUNT",
             }
             }),
@@ -258,7 +256,6 @@ async fn get_filtered_cases_test() {
                         "reporterId": case.data.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
-                    "orderingCondition": "UPDATED_AT",
                 }
                 }),
             )
@@ -296,7 +293,6 @@ async fn get_paginated_cases_test() {
             "input":
             {
                 "ordering": "ASC",
-                "orderingCondition": "UPDATED_AT",
                 "pagination": {
                     "pageNum": cases.len() / page_size,
                     "pageSize": page_size
@@ -315,4 +311,41 @@ async fn get_paginated_cases_test() {
 
     assert_eq!(cases.len(), page_size);
     check_case(&payload, cases.last().unwrap())
+}
+
+#[tokio::test]
+async fn get_searched_cases_test() {
+    let test_app = TestApp::start().await;
+    let sender = RequestSender::new(test_app.server_addr.clone());
+    let cases = test_app
+        .global_setup::<Case>(&sender, EventName::UpdateCase)
+        .await;
+
+    for payload in cases {
+        let response = sender
+            .send_graphql(
+                GET_MANY_CASES,
+                json!({
+                "input":
+                {
+                    "search" : &payload.network_id[0..payload.network_id.len() - 1],
+                    "ordering": "ASC",
+                }
+
+                }),
+            )
+            .await
+            .unwrap();
+
+        let cases_response = &response["getManyCases"];
+        assert_eq!(cases_response["total"], 1);
+
+        let case = cases_response["data"]
+            .as_array()
+            .expect("Empty response")
+            .first()
+            .unwrap();
+
+        check_case(&payload, case)
+    }
 }

@@ -1,6 +1,9 @@
 use {
     async_graphql::{InputType, OutputType},
-    sea_orm::{DbConn, DbErr, EntityTrait, PaginatorTrait, PrimaryKeyTrait, Select},
+    sea_orm::{
+        entity::prelude::*, sea_query::Cond, DbConn, DbErr, EntityTrait, PaginatorTrait,
+        PrimaryKeyTrait, Select,
+    },
 };
 
 use crate::entity::{
@@ -38,9 +41,28 @@ impl EntityQuery {
             query = M::filter(query, &filter);
         }
 
+        if let Some(search) = input.search {
+            query = Self::search(query, &search);
+        }
+
         query = M::order(query, input.ordering, input.ordering_condition);
 
         Self::paginate(db, query, input.pagination).await
+    }
+
+    fn search<M>(query: Select<M>, value: &str) -> Select<M>
+    where
+        M: EntityTrait + EntityFilter,
+    {
+        let value = &format!("%{}%", value);
+        let columns = M::columns_for_search();
+        let mut cond = Cond::any();
+
+        for column in columns {
+            cond = cond.add(Expr::cust(column).like(value));
+        }
+
+        query.filter(cond)
     }
 
     /// Method for query pagination

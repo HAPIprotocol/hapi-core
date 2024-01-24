@@ -119,7 +119,6 @@ async fn get_many_assets_test() {
             "input":
             {
               "ordering": "ASC",
-              "orderingCondition": "UPDATED_AT",
             }
 
             }),
@@ -160,7 +159,6 @@ async fn get_filtered_assets_test() {
                         "reporterId": payload.data.reporter_id.to_string(),
                     },
                     "ordering": "ASC",
-                    "orderingCondition": "UPDATED_AT",
                 }
 
                 }),
@@ -199,7 +197,6 @@ async fn get_paginated_assets_test() {
             "input":
             {
                 "ordering": "ASC",
-                "orderingCondition": "UPDATED_AT",
                 "pagination": {
                     "pageNum": assets.len() / page_size,
                     "pageSize": page_size
@@ -218,4 +215,42 @@ async fn get_paginated_assets_test() {
 
     assert_eq!(assets.len(), page_size);
     check_asset(&payload, assets.last().unwrap())
+}
+
+#[tokio::test]
+async fn get_searched_assets_test() {
+    let test_app = TestApp::start().await;
+    let sender = RequestSender::new(test_app.server_addr.clone());
+    let assets = test_app
+        .global_setup::<Asset>(&sender, EventName::UpdateAsset)
+        .await;
+
+    for payload in assets {
+        let response = sender
+            .send_graphql(
+                GET_MANY_ASSETS,
+                json!({
+                "input":
+                {
+                    "search" : &payload.network_id[0..payload.network_id.len() - 1],
+                    "ordering": "ASC",
+                }
+
+                }),
+            )
+            .await
+            .unwrap();
+
+        let assets_response = &response["getManyAssets"];
+
+        assert_eq!(assets_response["total"], 1);
+
+        let asset = assets_response["data"]
+            .as_array()
+            .expect("Empty response")
+            .first()
+            .unwrap();
+
+        check_asset(&payload, asset)
+    }
 }
