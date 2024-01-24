@@ -28,7 +28,7 @@ impl EntityQuery {
     where
         M: EntityTrait + EntityFilter,
         <M as EntityFilter>::Filter: InputType,
-        <M as EntityFilter>::Condition: InputType,
+        <M as EntityFilter>::Condition: InputType + Default,
         M::Model: OutputType,
         M::Column: From<<M as EntityFilter>::Condition>,
     {

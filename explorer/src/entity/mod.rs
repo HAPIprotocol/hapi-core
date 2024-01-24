@@ -26,9 +26,14 @@ pub trait EntityFilter: Sized + EntityTrait {
 
     fn filter(selected: Select<Self>, filter_options: &Self::Filter) -> Select<Self>;
 
-    fn order(selected: Select<Self>, ordering: Ordering, condition: Self::Condition) -> Select<Self>
+    fn order(
+        selected: Select<Self>,
+        ordering: Option<Ordering>,
+        condition: Option<Self::Condition>,
+    ) -> Select<Self>
     where
         Self::Column: From<Self::Condition>,
+        Self::Condition: Default,
     {
         order_by_column(selected, ordering, condition)
     }

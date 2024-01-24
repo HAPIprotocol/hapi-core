@@ -48,17 +48,25 @@ impl Default for Paginator {
 /// A convenience wrapper for ordering
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum Ordering {
-    #[default]
     Asc,
+    #[default]
     Desc,
 }
 
 /// Method for query ordering by column
-pub fn order_by_column<M, C>(query: Select<M>, ordering: Ordering, condition: C) -> Select<M>
+pub fn order_by_column<M, C>(
+    query: Select<M>,
+    ordering: Option<Ordering>,
+    condition: Option<C>,
+) -> Select<M>
 where
     M: EntityTrait,
     M::Column: From<C>,
+    C: Default,
 {
+    let ordering = ordering.unwrap_or_default();
+    let condition = condition.unwrap_or_default();
+
     let column = M::Column::from(condition);
     match ordering {
         Ordering::Asc => query.order_by_asc(column),
@@ -94,11 +102,11 @@ pub struct EntityInput<F: InputType, C: InputType> {
     pub filtering: Option<F>,
 
     /// Available ordering
-    pub ordering: Ordering,
+    pub ordering: Option<Ordering>,
 
-    /// Available ordering values for entities (optional)
-    pub ordering_condition: C,
+    /// Available ordering values for entities
+    pub ordering_condition: Option<C>,
 
-    /// Pagination options (optional)
+    /// Pagination options
     pub pagination: Option<Paginator>,
 }

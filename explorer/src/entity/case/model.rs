@@ -65,12 +65,14 @@ impl EntityFilter for Entity {
     // Ordering query
     fn order(
         selected: Select<Entity>,
-        ordering: Ordering,
-        condition: CaseCondition,
+        ordering: Option<Ordering>,
+        condition: Option<CaseCondition>,
     ) -> Select<Entity> {
         match condition {
-            CaseCondition::AddressCount => sort_by_count(selected, ordering, Relation::Address),
-            CaseCondition::AssetCount => sort_by_count(selected, ordering, Relation::Asset),
+            Some(CaseCondition::AddressCount) => {
+                sort_by_count(selected, ordering, Relation::Address)
+            }
+            Some(CaseCondition::AssetCount) => sort_by_count(selected, ordering, Relation::Asset),
             _ => order_by_column(selected, ordering, condition),
         }
     }
@@ -78,9 +80,10 @@ impl EntityFilter for Entity {
 
 fn sort_by_count(
     selected: Select<Entity>,
-    ordering: Ordering,
+    ordering: Option<Ordering>,
     relation: Relation,
 ) -> Select<Entity> {
+    let ordering = ordering.unwrap_or_default();
     let query = selected
         .column_as(Expr::cust("COUNT(*)"), "related")
         .join(JoinType::InnerJoin, relation.def())

@@ -19,7 +19,6 @@ pub struct CaseFilter {
 /// Available ordering values for asset
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum CaseCondition {
-    #[default]
     /// Order by network
     NetworkId,
     /// Order by case id
@@ -35,6 +34,7 @@ pub enum CaseCondition {
     /// Order by the time when entity was created
     CreatedAt,
     /// Order by the time when entity was updated
+    #[default]
     UpdatedAt,
     /// Order by address count
     AddressCount,

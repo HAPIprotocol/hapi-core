@@ -17,7 +17,6 @@ pub struct ReporterFilter {
 /// Available ordering values for asset
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum ReporterCondition {
-    #[default]
     /// Order by network
     NetworkId,
     /// Order by reporter id
@@ -39,6 +38,7 @@ pub enum ReporterCondition {
     /// Order by the time when entity was created
     CreatedAt,
     /// Order by the time when entity was updated
+    #[default]
     UpdatedAt,
 }
 

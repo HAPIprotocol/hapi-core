@@ -20,7 +20,6 @@ pub struct AddressFilter {
 /// Available ordering values for address
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub enum AddressCondition {
-    #[default]
     /// Order by network
     NetworkId,
     /// Order by address
@@ -38,6 +37,7 @@ pub enum AddressCondition {
     /// Order by the time when entity was created
     CreatedAt,
     /// Order by the time when entity was updated
+    #[default]
     UpdatedAt,
 }
 
