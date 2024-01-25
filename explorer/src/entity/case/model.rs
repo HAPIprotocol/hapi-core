@@ -44,7 +44,7 @@ impl EntityFilter for Entity {
         }
 
         if let Some(name) = &filter_options.name {
-            query = query.filter(Column::Name.eq(name));
+            query = query.filter(Column::Name.like(name));
         }
 
         if let Some(url) = &filter_options.url {
