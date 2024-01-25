@@ -96,8 +96,7 @@ impl HapiCoreSolana {
         let hash = self
             .rpc_client
             .send_and_confirm_transaction(&tx)
-            .await
-            .unwrap()
+            .await?
             .to_string();
 
         Ok(Tx { hash })

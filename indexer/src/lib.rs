@@ -3,8 +3,9 @@ mod indexer;
 pub mod observability;
 
 pub use indexer::{
+    jwt::get_id_from_jwt,
     persistence::PersistedState,
-    push::{PushData, PushEvent, PushPayload},
+    push::{NetworkData, PushData, PushEvent, PushPayload},
     state::IndexingCursor,
-    Indexer, jwt::get_id_from_jwt,
+    Indexer,
 };

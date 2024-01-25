@@ -7,20 +7,18 @@ use {
             events::EventName,
             solana::DecodedInstruction,
         },
-        get_solana_account, HapiCoreNetwork,
+        get_solana_account,
     },
     solana_client::rpc_client::GetConfirmedSignaturesForAddress2Config,
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Signature},
     std::time::Duration,
     std::{collections::VecDeque, str::FromStr},
     tokio::time::sleep,
-    uuid::Uuid,
 };
 
 use crate::indexer::{
-    client::indexer_client::FetchingArtifacts,
-    client::indexer_client::PAGE_SIZE,
-    push::{PushData, PushEvent, PushPayload},
+    client::indexer_client::{FetchingArtifacts, PAGE_SIZE},
+    push::{NetworkData, PushData, PushEvent, PushPayload},
     IndexerJob, IndexingCursor,
 };
 
@@ -106,12 +104,11 @@ pub(super) async fn fetch_solana_jobs(
     })
 }
 
-#[tracing::instrument(skip(client, network))]
+#[tracing::instrument(skip(client, network_data))]
 pub(super) async fn process_solana_job(
     client: &HapiCoreSolana,
     signature: &str,
-    network: &HapiCoreNetwork,
-    id: &Uuid,
+    network_data: NetworkData,
 ) -> Result<Option<Vec<PushPayload>>> {
     let instructions = client.get_hapi_instructions(signature).await?;
 
@@ -137,8 +134,7 @@ pub(super) async fn process_solana_job(
             );
 
             payloads.push(PushPayload {
-                id: id.clone(),
-                network: network.clone(),
+                network_data: network_data.clone(),
                 event: PushEvent {
                     name: instruction.name,
                     tx_hash: signature.to_string(),

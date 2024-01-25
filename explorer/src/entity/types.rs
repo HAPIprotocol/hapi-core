@@ -1,4 +1,5 @@
 use {
+    anyhow::{anyhow, Error, Result},
     async_graphql::Enum,
     hapi_core::{
         client::entities::{
@@ -12,39 +13,57 @@ use {
     },
     sea_orm::entity::prelude::*,
     serde::Serialize,
+    std::{fmt, str::FromStr},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum, Serialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_name")]
-pub enum NetworkName {
-    #[sea_orm(string_value = "sepolia")]
-    Sepolia,
-    #[sea_orm(string_value = "ethereum")]
-    Ethereum,
-    #[sea_orm(string_value = "bsc")]
-    Bsc,
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "network_backend")]
+pub enum NetworkBackend {
+    #[sea_orm(string_value = "evm")]
+    Evm,
     #[sea_orm(string_value = "solana")]
     Solana,
-    #[sea_orm(string_value = "bitcoin")]
-    Bitcoin,
     #[sea_orm(string_value = "near")]
     Near,
 }
 
-impl From<HapiCoreNetwork> for NetworkName {
-    fn from(payload: HapiCoreNetwork) -> Self {
-        match payload {
-            HapiCoreNetwork::Sepolia => NetworkName::Sepolia,
-            HapiCoreNetwork::Ethereum => NetworkName::Ethereum,
-            HapiCoreNetwork::Bsc => NetworkName::Bsc,
-            HapiCoreNetwork::Solana => NetworkName::Solana,
-            HapiCoreNetwork::Bitcoin => NetworkName::Bitcoin,
-            HapiCoreNetwork::Near => NetworkName::Near,
+impl FromStr for NetworkBackend {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "evm" => Ok(NetworkBackend::Evm),
+            "solana" => Ok(NetworkBackend::Solana),
+            "near" => Ok(NetworkBackend::Near),
+            _ => Err(anyhow!("Unknown network: {}", s)),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+impl fmt::Display for NetworkBackend {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            NetworkBackend::Evm => write!(f, "evm"),
+            NetworkBackend::Solana => write!(f, "solana"),
+            NetworkBackend::Near => write!(f, "near"),
+        }
+    }
+}
+
+impl From<HapiCoreNetwork> for NetworkBackend {
+    fn from(payload: HapiCoreNetwork) -> Self {
+        match payload {
+            HapiCoreNetwork::Sepolia => NetworkBackend::Evm,
+            HapiCoreNetwork::Ethereum => NetworkBackend::Evm,
+            HapiCoreNetwork::Bsc => NetworkBackend::Evm,
+            HapiCoreNetwork::Solana => NetworkBackend::Solana,
+            HapiCoreNetwork::Bitcoin => NetworkBackend::Solana,
+            HapiCoreNetwork::Near => NetworkBackend::Near,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "category")]
 pub enum Category {
     #[sea_orm(string_value = "none")]
@@ -119,7 +138,7 @@ impl From<CategoryPayload> for Category {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "reporter_role")]
 pub enum ReporterRole {
     #[sea_orm(string_value = "authority")]
@@ -143,7 +162,7 @@ impl From<ReporterRolePayload> for ReporterRole {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "reporter_status")]
 pub enum ReporterStatus {
     #[sea_orm(string_value = "active")]
@@ -164,7 +183,7 @@ impl From<ReporterStatusPayload> for ReporterStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "case_status")]
 pub enum CaseStatus {
     #[sea_orm(string_value = "closed")]

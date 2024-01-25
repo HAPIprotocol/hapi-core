@@ -39,11 +39,11 @@ base64 = "0.21.5"
 ethers = "=2.0.8"
 
 # NEAR dependencies
-near-jsonrpc-primitives = "0.17.0"
-near-jsonrpc-client = "0.6.0"
-near-primitives = "0.17.0"
+near-jsonrpc-primitives = "0.19.0"
+near-jsonrpc-client = "0.7.0"
+near-primitives = "0.19.0"
 hapi-core-near = { path = "../near/contract/" }
-near-crypto = "0.17.0"
+near-crypto = "0.19.0"
 
 # Solana dependencies
 [dependencies.solana-client]

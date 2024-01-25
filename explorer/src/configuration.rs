@@ -31,7 +31,7 @@ pub struct Configuration {
     /// The database url
     pub database_url: String,
 
-    /// secret for JWT
+    /// Secret for JWT
     #[serde(deserialize_with = "deserialize_secret_string")]
     pub jwt_secret: SecretString,
 }
@@ -41,7 +41,7 @@ impl Default for Configuration {
         Self {
             log_level: default_loglevel(),
             is_json_logging: default_is_json_logging(),
-            enable_metrics: default_enable_metrics(),
+            enable_metrics: false,
             listener: default_listener(),
             database_url: String::new(),
             jwt_secret: default_jwt_secret(),

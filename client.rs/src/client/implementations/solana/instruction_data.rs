@@ -140,7 +140,7 @@ pub(crate) fn get_instruction_sighash(name: &str) -> [u8; 8] {
     use sha2::Digest;
 
     let mut hasher = sha2::Sha256::new();
-    hasher.update(format!("global:{}", name).as_bytes());
+    hasher.update(format!("global:{name}").as_bytes());
 
     let mut sighash = [0u8; DISCRIMINATOR_SIZE];
     sighash.copy_from_slice(&hasher.finalize()[..DISCRIMINATOR_SIZE]);

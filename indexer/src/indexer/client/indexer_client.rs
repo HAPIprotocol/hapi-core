@@ -12,7 +12,10 @@ use super::{
     solana::{fetch_solana_jobs, process_solana_job},
 };
 
-use crate::indexer::{push::PushPayload, IndexerJob, IndexingCursor};
+use crate::indexer::{
+    push::{NetworkData, PushPayload},
+    IndexerJob, IndexingCursor,
+};
 
 pub const DEFAULT_PAGE_SIZE: u64 = 500;
 lazy_static::lazy_static! {
@@ -31,16 +34,14 @@ pub(crate) struct FetchingArtifacts {
 }
 
 pub(crate) struct IndexerClient {
-    id: Uuid,
     client: HapiClient,
-    network: HapiCoreNetwork,
     fetching_delay: Duration,
+    network_data: NetworkData,
 }
 
 impl IndexerClient {
     pub fn new(
-        id: Uuid,
-        network: HapiCoreNetwork,
+        network_data: NetworkData,
         rpc_node_url: &str,
         contract_address: &str,
         fetching_delay: Duration,
@@ -51,10 +52,10 @@ impl IndexerClient {
             private_key: None,
             chain_id: None,
             account_id: None,
-            network: network.clone(),
+            network: network_data.network.clone(),
         };
 
-        let client = match network {
+        let client = match network_data.network {
             HapiCoreNetwork::Ethereum | HapiCoreNetwork::Bsc | HapiCoreNetwork::Sepolia => {
                 HapiClient::Evm(HapiCoreEvm::new(options)?)
             }
@@ -65,9 +66,8 @@ impl IndexerClient {
         };
 
         Ok(Self {
-            id,
             client,
-            network,
+            network_data,
             fetching_delay,
         })
     }
@@ -92,19 +92,19 @@ impl IndexerClient {
     ) -> Result<Option<Vec<PushPayload>>> {
         match (&self.client, job) {
             (HapiClient::Evm(client), IndexerJob::Log(log)) => {
-                process_evm_job(client, log, &self.network, &self.id).await
+                process_evm_job(client, log, self.network_data.clone()).await
             }
             (HapiClient::Solana(client), IndexerJob::Transaction(hash)) => {
-                process_solana_job(client, hash, &self.network, &self.id).await
+                process_solana_job(client, hash, self.network_data.clone()).await
             }
             (HapiClient::Near(client), IndexerJob::TransactionReceipt(receipt)) => {
-                process_near_job(client, receipt, &self.network, &self.id).await
+                process_near_job(client, receipt, self.network_data.clone()).await
             }
             _ => unimplemented!(),
         }
     }
 
     pub(crate) fn get_id(&self) -> Uuid {
-        self.id
+        self.network_data.indexer_id
     }
 }

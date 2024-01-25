@@ -1,29 +1,44 @@
+use super::{create_jwt, get_test_data, RequestSender, TestData};
+
 use {
-    hapi_core::HapiCoreNetwork,
+    hapi_core::{client::events::EventName, HapiCoreNetwork},
     hapi_explorer::{
         application::Application,
         configuration::Configuration,
-        entity::{address, asset, case, reporter},
+        entity::{address, asset, case, network::Model as NetworkModel, reporter},
         observability::setup_tracing,
     },
-    hapi_indexer::PushData,
-    migration::{Migrator, MigratorTrait},
-    sea_orm::{Database, DatabaseConnection, EntityTrait},
-    {
-        std::env,
-        tokio::{
-            spawn,
-            time::{sleep, Duration},
-        },
+    hapi_indexer::{PushData, PushPayload},
+    sea_orm::{DatabaseConnection, EntityTrait},
+    std::{env, sync::Arc},
+    tokio::{
+        spawn,
+        sync::Notify,
+        task::JoinHandle,
+        time::{sleep, Duration},
     },
 };
 
 pub const WAITING_INTERVAL: u64 = 100;
+pub const MIGRATION_COUNT: u32 = 10;
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
+
+pub struct TestNetwork {
+    pub network: HapiCoreNetwork,
+    pub model: NetworkModel,
+    pub token: String,
+}
 
 pub struct TestApp {
     pub server_addr: String,
     pub db_connection: DatabaseConnection,
+    pub networks: Vec<TestNetwork>,
+    pub server_handle: Option<JoinHandle<()>>,
+    stop_signal: Arc<Notify>,
+}
+
+pub trait FromTestPayload {
+    fn from_payload(payload: &PushPayload, network_id: &str) -> Self;
 }
 
 impl TestApp {
@@ -36,65 +51,135 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        let db_connection = TestApp::prepare_database(configuration.clone()).await;
-        let app = TestApp::get_application(configuration).await;
+        let mut app = Application::from_configuration(configuration.clone())
+            .await
+            .expect("Failed to build app");
+
+        let db_connection = TestApp::prepare_database(&app).await;
+        let networks = Self::prepare_networks(&app).await;
         let port = app.port();
 
-        spawn(app.run_server());
+        let stop_signal = Arc::new(Notify::new());
+        let receiver = stop_signal.clone();
+
+        // Spawn a background task
+        let server_handle = spawn(async move {
+            app.run_server().await.expect("Failed to run server");
+            receiver.notified().await;
+            app.shutdown().await.expect("Failed to shutdown app");
+        });
+
         sleep(Duration::from_millis(WAITING_INTERVAL)).await;
 
         TestApp {
             server_addr: format!("http://127.0.0.1:{}", port),
             db_connection,
+            server_handle: Some(server_handle),
+            networks,
+            stop_signal,
         }
     }
 
-    pub async fn create_indexer(network: HapiCoreNetwork) -> String {
-        let app = TestApp::get_application(generate_configuration()).await;
+    pub async fn shutdown(&mut self) {
+        self.stop_signal.notify_one();
 
-        let token = app
-            .create_indexer(network)
-            .await
-            .expect("Failed to create indexer");
-
-        sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
-        token
+        if let Some(handle) = self.server_handle.take() {
+            handle.await.expect("Failed to shutdown server");
+        };
     }
 
-    pub async fn prepare_database(configuration: Configuration) -> DatabaseConnection {
-        let db_connection = Database::connect(configuration.database_url.as_str())
-            .await
-            .expect("Failed to connect to database");
+    pub async fn prepare_database(app: &Application) -> DatabaseConnection {
+        let db_connection = app.state.database_conn.clone();
 
-        Migrator::down(&db_connection, None)
-            .await
-            .expect("Failed to migrate down");
+        app.migrate(Some(sea_orm_cli::MigrateSubcommands::Down {
+            num: MIGRATION_COUNT,
+        }))
+        .await
+        .expect("Failed to migrate down");
+
+        app.migrate(None).await.expect("Failed to migrate up");
 
         db_connection
     }
 
-    pub async fn get_application(configuration: Configuration) -> Application {
-        Application::from_configuration(configuration)
+    async fn prepare_networks(app: &Application) -> Vec<TestNetwork> {
+        let networks = vec![
+            HapiCoreNetwork::Ethereum,
+            HapiCoreNetwork::Solana,
+            HapiCoreNetwork::Near,
+            HapiCoreNetwork::Sepolia,
+        ];
+
+        let mut res = vec![];
+
+        for network in &networks {
+            let id = network.to_string();
+            let name = network.to_string();
+            let backend = network.clone().into();
+            let chain_id = Some(format!("{id}_chain_id"));
+            let authority = "test_authority".to_string();
+            let stake_token = "test_stake_token".to_string();
+
+            app.create_network(
+                id.clone(),
+                name.clone(),
+                backend,
+                chain_id.clone(),
+                authority.clone(),
+                stake_token.clone(),
+            )
             .await
-            .expect("Failed to build application")
+            .expect("Failed to create network");
+
+            let token = app
+                .create_indexer(backend.to_owned().into(), chain_id.clone())
+                .await
+                .expect("Failed to create indexer");
+
+            let data = TestNetwork {
+                network: network.clone(),
+                model: NetworkModel {
+                    id,
+                    name,
+                    backend,
+                    chain_id,
+                    authority,
+                    stake_token,
+                    created_at: chrono::Utc::now().naive_utc(),
+                    updated_at: chrono::Utc::now().naive_utc(),
+                },
+                token,
+            };
+
+            res.push(data);
+        }
+
+        res
     }
 
-    pub async fn check_entity(&self, data: PushData, network: &HapiCoreNetwork) {
+    pub fn get_network(&self, network_id: &str) -> &TestNetwork {
+        self.networks
+            .iter()
+            .find(|network| network.model.id == network_id)
+            .expect("Failed to find network")
+    }
+
+    pub async fn check_entity(&self, data: PushData, network_id: String) {
+        let db: &DatabaseConnection = &self.db_connection;
+
         match data {
             PushData::Address(address) => {
-                let id = format!("{}.{}", network, address.address);
-
-                let result = address::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
-                    .await
-                    .expect("Failed to find address by id");
+                let result =
+                    address::Entity::find_by_id((network_id.clone(), address.address.clone()))
+                        .all(db)
+                        .await
+                        .expect("Failed to find address by id");
 
                 assert_eq!(result.len(), 1);
 
                 let address_model = result.first().unwrap();
-                assert_eq!(address_model.id, id);
                 assert_eq!(address_model.address, address.address);
+                assert_eq!(address_model.network_id, network_id);
                 assert_eq!(address_model.case_id, address.case_id);
                 assert_eq!(address_model.reporter_id, address.reporter_id);
                 assert_eq!(address_model.risk, address.risk as i16);
@@ -105,19 +190,20 @@ impl TestApp {
                 );
             }
             PushData::Asset(asset) => {
-                let id = format!("{}.{}.{}", network, asset.address, asset.asset_id);
-
-                let result = asset::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
-                    .await
-                    .expect("Failed to find asset by id");
+                let result = asset::Entity::find_by_id((
+                    network_id,
+                    asset.address.clone(),
+                    asset.asset_id.to_string(),
+                ))
+                .all(db)
+                .await
+                .expect("Failed to find asset by id");
 
                 assert_eq!(result.len(), 1);
 
                 let asset_model = result.first().unwrap();
-                assert_eq!(asset_model.id, id);
                 assert_eq!(asset_model.address, asset.address);
-                assert_eq!(asset_model.asset_id, asset.asset_id.to_string());
+                assert_eq!(asset_model.id, asset.asset_id.to_string());
                 assert_eq!(asset_model.case_id, asset.case_id);
                 assert_eq!(asset_model.reporter_id, asset.reporter_id);
                 assert_eq!(asset_model.risk, asset.risk as i16);
@@ -125,34 +211,29 @@ impl TestApp {
                 assert_eq!(asset_model.confirmations, asset.confirmations.to_string());
             }
             PushData::Case(case) => {
-                let id = format!("{}.{}", network, case.id);
-
-                let result = case::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
+                let result = case::Entity::find_by_id((network_id, case.id.clone()))
+                    .all(db)
                     .await
                     .expect("Failed to find case by id");
 
                 assert_eq!(result.len(), 1);
 
                 let case_model = result.first().unwrap();
-                assert_eq!(case_model.id, id);
+                assert_eq!(case_model.id, case.id);
                 assert_eq!(case_model.name, case.name);
                 assert_eq!(case_model.url, case.url);
                 assert_eq!(case_model.status, case.status.into());
                 assert_eq!(case_model.reporter_id, case.reporter_id);
             }
             PushData::Reporter(reporter) => {
-                let id = format!("{}.{}", network, reporter.id);
-
-                let result = reporter::Entity::find_by_id(&id)
-                    .all(&self.db_connection)
+                let result = reporter::Entity::find_by_id((network_id, reporter.id.clone()))
+                    .all(db)
                     .await
                     .expect("Failed to find reporter by id");
 
                 assert_eq!(result.len(), 1);
 
                 let reporter_model = result.first().unwrap();
-                assert_eq!(reporter_model.id, id);
                 assert_eq!(reporter_model.account, reporter.account);
                 assert_eq!(reporter_model.role, reporter.role.into());
                 assert_eq!(reporter_model.status, reporter.status.into());
@@ -165,6 +246,91 @@ impl TestApp {
                 );
             }
         }
+    }
+
+    pub async fn global_setup<T>(
+        &self,
+        sender: &RequestSender,
+        event: EventName,
+    ) -> Vec<TestData<T>>
+    where
+        TestData<T>: FromTestPayload,
+    {
+        let mut res = vec![];
+
+        for network in &self.networks {
+            let data = get_test_data(&network.network, network.model.chain_id.clone());
+
+            self.send_events(sender, &data).await;
+
+            let mut entities: Vec<TestData<T>> = data
+                .iter()
+                .filter(|p| event == p.event.name)
+                .map(|p| TestData::<T>::from_payload(p, &network.model.id))
+                .collect();
+
+            res.append(&mut entities);
+        }
+
+        res
+    }
+
+    pub async fn send_events(&self, sender: &RequestSender, test_data: &Vec<PushPayload>) {
+        let token = create_jwt("my_ultra_secure_secret");
+
+        for payload in test_data {
+            sender
+                .send("events", &payload, &token)
+                .await
+                .expect("Failed to send event");
+
+            sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+        }
+    }
+
+    //     // Sends provided data or default events for all networks
+    //     pub async fn setup_entities<T>(
+    //         &self,
+    //         sender: &RequestSender,
+    //         event: EventName,
+    //         test_data: Option<Vec<PushPayload>>,
+    //     ) -> Vec<TestData<T>>
+    //     where
+    //         TestData<T>: FromTestPayload,
+    //     {
+    //         let mut data = vec![];
+
+    //         let test_data = if let Some(data) = test_data {
+    //             data
+    //         } else {
+    //             self.networks
+    //                 .iter()
+    //                 .map(|network| get_test_data(&network.data))
+    //                 .flatten()
+    //                 .collect()
+    //         };
+
+    //         let token = create_jwt("my_ultra_secure_secret");
+
+    //         for payload in test_data {
+    //             sender
+    //                 .send("events", &payload, &token)
+    //                 .await
+    //                 .expect("Failed to send event");
+    //             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
+
+    //             if event == payload.event.name {
+    //                 data.push(payload.into());
+    //             }
+    //         }
+
+    //         data
+    //     }
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        self.stop_signal.notify_one();
     }
 }
 

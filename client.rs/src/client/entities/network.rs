@@ -46,6 +46,7 @@ impl fmt::Display for HapiCoreNetwork {
         }
     }
 }
+
 struct HapiCoreNetworkVisitor;
 
 impl<'de> Visitor<'de> for HapiCoreNetworkVisitor {

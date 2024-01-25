@@ -1,7 +1,10 @@
-use jsonwebtoken::{encode, EncodingKey, Header};
+use {
+    hapi_explorer::server::TokenClaims,
+    jsonwebtoken::{encode, EncodingKey, Header},
+};
 
 pub(crate) fn create_jwt(secret: &str) -> String {
-    let claims = hapi_explorer::routes::jwt_auth::TokenClaims {
+    let claims = TokenClaims {
         id: get_jwt_id(),
         iat: 1,
         exp: 10000000000,

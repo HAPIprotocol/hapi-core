@@ -4,7 +4,10 @@ use {
     tokio::{sync::Mutex, time::sleep},
 };
 
-use crate::{configuration::IndexerConfiguration, indexer::jwt::get_id_from_jwt};
+use crate::{
+    configuration::IndexerConfiguration,
+    indexer::{jwt::get_id_from_jwt, push::NetworkData},
+};
 
 use super::{
     now, Indexer, IndexerClient, IndexerJob, IndexerState, IndexingCursor, PersistedState,
@@ -13,17 +16,23 @@ use super::{
 impl Indexer {
     pub fn new(cfg: IndexerConfiguration) -> Result<Self> {
         tracing::info!(network = ?cfg.network, "Initializing indexer");
+        let network_data = NetworkData {
+            indexer_id: get_id_from_jwt(&cfg.jwt_token)?,
+            network: cfg.network,
+            chain_id: cfg.chain_id,
+        };
+        let client = IndexerClient::new(
+            network_data,
+            &cfg.rpc_node_url,
+            &cfg.contract_address,
+            cfg.fetching_delay,
+        )?;
+
         Ok(Self {
             wait_interval_ms: cfg.wait_interval_ms,
             state: Arc::new(Mutex::new(IndexerState::Init)),
             jobs: VecDeque::new(),
-            client: IndexerClient::new(
-                get_id_from_jwt(&cfg.jwt_token)?,
-                cfg.network,
-                &cfg.rpc_node_url,
-                &cfg.contract_address,
-                cfg.fetching_delay,
-            )?,
+            client,
             state_file: PathBuf::from(cfg.state_file),
             web_client: reqwest::Client::new(),
             webhook_url: cfg.webhook_url,

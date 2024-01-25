@@ -426,6 +426,7 @@ fn get_default_rpc_block_response(block: u64) -> RpcBlockResponse {
                 approvals: vec![],
                 signature: near_crypto::Signature::default(),
                 latest_protocol_version: 0,
+                block_body_hash: None,
             },
             chunks: vec![],
         },

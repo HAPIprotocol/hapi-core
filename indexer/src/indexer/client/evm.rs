@@ -1,7 +1,7 @@
 use {
     anyhow::{bail, Result},
     ethers::{abi::Token, providers::Middleware, types::Filter},
-    hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm, HapiCoreNetwork},
+    hapi_core::{client::events::EventName, HapiCore, HapiCoreEvm},
     std::{cmp::min, str::FromStr},
     uuid::Uuid,
 };
@@ -9,7 +9,7 @@ use {
 use crate::{
     indexer::{
         client::indexer_client::PAGE_SIZE,
-        push::{PushData, PushEvent, PushPayload},
+        push::{NetworkData, PushData, PushEvent, PushPayload},
         IndexerJob,
     },
     IndexingCursor,
@@ -32,8 +32,7 @@ async fn get_event_list(
         .contract
         .client()
         .get_logs(&filter.clone().from_block(from_block).to_block(to_block))
-        .await
-        .expect("Failed to fetch logs");
+        .await?;
 
     logs.into_iter().for_each(|log| {
         event_list.push(IndexerJob::Log(log));
@@ -75,13 +74,12 @@ pub(super) async fn fetch_evm_jobs(
     })
 }
 
-#[tracing::instrument(skip(client, network),
+#[tracing::instrument(skip(client, network_data),
     fields(hash = log.transaction_hash.map_or("None".to_string(), |s| s.to_string())))]
 pub(super) async fn process_evm_job(
     client: &HapiCoreEvm,
     log: &ethers::types::Log,
-    network: &HapiCoreNetwork,
-    id: &Uuid,
+    network_data: NetworkData,
 ) -> Result<Option<Vec<PushPayload>>> {
     let log_header = if let Some(header) = client.decode_event(log)? {
         header
@@ -144,8 +142,7 @@ pub(super) async fn process_evm_job(
 
     if let Some(data) = data {
         Ok(Some(vec![PushPayload {
-            id: id.clone(),
-            network: network.clone(),
+            network_data,
             event: PushEvent {
                 name: EventName::from_str(&log_header.name)?,
                 tx_hash,

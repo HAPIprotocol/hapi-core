@@ -1,11 +1,11 @@
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{
-    env, ext_contract, is_promise_success, json_types::U128, near_bindgen, AccountId, Gas, Promise,
-    PromiseOrValue, ONE_YOCTO,
+    env, ext_contract, is_promise_success, json_types::U128, near_bindgen, AccountId, Gas,
+    NearToken, Promise, PromiseOrValue,
 };
 
-const GAS_FOR_FT_TRANSFER: Gas = Gas(10_000_000_000_000);
-const GAS_FOR_AFTER_FT_TRANSFER: Gas = Gas(10_000_000_000_000);
+const GAS_FOR_FT_TRANSFER: Gas = Gas::from_tgas(10);
+const GAS_FOR_AFTER_FT_TRANSFER: Gas = Gas::from_tgas(10);
 
 use crate::{reporter, Contract, ContractExt};
 
@@ -53,7 +53,7 @@ impl Contract {
     ) -> Promise {
         ext_ft_core::ext(token_account_id.clone())
             .with_static_gas(GAS_FOR_FT_TRANSFER)
-            .with_attached_deposit(ONE_YOCTO)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
             .ft_transfer(
                 receiver_id.clone(),
                 amount,

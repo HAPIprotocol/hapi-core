@@ -190,12 +190,11 @@ impl TryFrom<SolanaAsset> for Asset {
     type Error = ClientError;
 
     fn try_from(asset: SolanaAsset) -> Result<Self> {
-        let asset_id = AssetId::from_str(&bytes_to_string(&asset.id).map_err(|e| {
-            ClientError::AssetIdParseError(format!("invalid-bytes {}", e.to_string()))
-        })?)
-        .map_err(|e| {
-            ClientError::AssetIdParseError(format!("invalid-asset-id {}", e.to_string()))
-        })?;
+        let asset_id = AssetId::from_str(
+            &bytes_to_string(&asset.id)
+                .map_err(|e| ClientError::AssetIdParseError(format!("invalid-bytes {e}")))?,
+        )
+        .map_err(|e| ClientError::AssetIdParseError(format!("invalid-asset-id {e}")))?;
 
         Ok(Asset {
             address: remove_zeroes(&asset.address)?,

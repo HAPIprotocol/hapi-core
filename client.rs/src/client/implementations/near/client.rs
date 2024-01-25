@@ -78,12 +78,12 @@ macro_rules! build_tx {
             nonce: $self.get_nonce(&$access_key)? + 1,
             receiver_id: $self.contract_address.clone(),
             block_hash: $access_key.block_hash,
-            actions: vec![Action::FunctionCall(FunctionCallAction {
+            actions: vec![Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: $method.to_string(),
                 args: $args.to_string().into_bytes(),
                 gas: GAS_FOR_TX,
                 deposit: 0,
-            })],
+            }))],
         }
     };
 }
@@ -97,7 +97,7 @@ pub(crate) async fn execute_transaction(
         signed_transaction: transaction.sign(&signer),
     };
     let sent_at = time::Instant::now();
-    let hash = client.call(request).await?;
+    let tx_hash = client.call(request).await?;
 
     loop {
         if time::Instant::now() > sent_at + TRANSACTION_TIMEOUT {
@@ -107,8 +107,8 @@ pub(crate) async fn execute_transaction(
         let response = client
             .call(methods::tx::RpcTransactionStatusRequest {
                 transaction_info: TransactionInfo::TransactionId {
-                    hash,
-                    account_id: signer.account_id.clone(),
+                    tx_hash,
+                    sender_account_id: signer.account_id.clone(),
                 },
             })
             .await;
@@ -137,7 +137,7 @@ pub(crate) async fn execute_transaction(
     }
 
     Ok(Tx {
-        hash: hash.to_string(),
+        hash: tx_hash.to_string(),
     })
 }
 
@@ -324,12 +324,12 @@ impl HapiCore for HapiCoreNear {
             nonce: self.get_nonce(&access_key_query_response)? + 1,
             receiver_id: stake_token.clone(),
             block_hash: access_key_query_response.block_hash,
-            actions: vec![Action::FunctionCall(FunctionCallAction {
+            actions: vec![Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: "ft_transfer_call".to_string(),
                 args: json!({"receiver_id": self.contract_address, "amount": stake_amount, "msg": "", "memo": ""}).to_string().into_bytes(),
                 gas: 50_000_000_000_000, // 50 TeraGas
                 deposit: 1,
-            })],
+            }))],
         };
 
         Ok(execute_transaction(transaction, signer, &self.client).await?)

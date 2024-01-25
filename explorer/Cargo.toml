@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = [".", "migration"]
+members = ["."]
 
 [dependencies]
-axum = "0.7.1"
+axum = "0.6.13"
 
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
@@ -21,26 +21,33 @@ config = "0.13.4"
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "3", features = ["chrono"] }
 serde_json = "1"
+clap = { version = "4.4.13", features = ["cargo"] }
+
 anyhow = "1"
-clap = { version = "4.4.11", features = ["cargo"] }
 uuid = "1"
+chrono = { version = "0.4", features = ["serde"] }
 
 metrics-exporter-prometheus = "0.12.1"
 metrics = "0.21.1"
 
-sea-orm = "0.12.7"
+sea-orm-migration = { version = "0.12.0", features = [
+    "runtime-tokio-rustls",
+    "sqlx-postgres",
+] }
+sea-orm = "0.12.0"
+sea-orm-cli = "0.12.0"
 
 async-graphql = { version = "6.0.11", features = ["uuid", "chrono"] }
+async-graphql-axum = "6.0.11"
 
-migration = { path = "./migration" }
 hapi_indexer = { path = "../indexer" }
 hapi-core-cli = { path = "../client.rs" }
 
 #jwt dependencies
 jsonwebtoken = "9.1.0"
-axum-extra = { version = "0.9.0", features = ["cookie"] }
+axum-extra = { version = "0.8.0", features = ["cookie"] }
 secrecy = "0.8.0"
-chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
 reqwest = "0.11.12"
+rand = "0.8.5"

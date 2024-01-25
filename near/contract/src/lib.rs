@@ -28,6 +28,7 @@ pub use utils::TimestampExtension;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(use_discriminant = true)]
 pub enum Category {
     // Tier 0
     /// None

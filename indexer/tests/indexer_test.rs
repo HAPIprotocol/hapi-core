@@ -76,6 +76,7 @@ impl<T: RpcMock> IndexerTest<T> {
     async fn indexing_iteration(&self) -> anyhow::Result<()> {
         let cfg = IndexerConfiguration {
             network: T::get_network(),
+            chain_id: None,
             rpc_node_url: self.rpc_mock.get_mock_url(),
             webhook_url: self.webhook_mock.server.url(),
             contract_address: T::get_contract_address(),
