@@ -99,14 +99,14 @@ with subcommands:
 
 Network options:
 
-| Option        | Description                                                         |
-| ------------- | ------------------------------------------------------------------- |
-| --id          | Network string identifier                                           |
-| --name        | Network display name                                                |
-| --backend     | Network backend type: sepolia, ethereum, bsc, solana, bitcoin, near |
-| --authority   | Network authority address                                           |
-| --stake-token | Stake token contract address                                        |
-| --chain-id    | Optional chain id                                                   |
+| Option        | Description                            |
+| ------------- | -------------------------------------- |
+| --id          | Network string identifier              |
+| --name        | Network display name                   |
+| --backend     | Network backend type: evm solana, near |
+| --authority   | Network authority address              |
+| --stake-token | Stake token contract address           |
+| --chain-id    | Optional chain id                      |
 
 ### Creating a new indexer
 
