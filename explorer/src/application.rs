@@ -14,7 +14,8 @@ use {
 
 use crate::{
     configuration::Configuration, entity::types::NetworkBackend, migrations::Migrator,
-    server::handlers::TokenClaims, service::EntityMutation,
+    observability::increament_network_metrics, server::handlers::TokenClaims,
+    service::EntityMutation,
 };
 
 const JWT_VALIDITY_DAYS: i64 = 365;
@@ -89,7 +90,7 @@ impl Application {
         authority: String,
         stake_token: String,
     ) -> Result<()> {
-        EntityMutation::create_network(
+        let network = EntityMutation::create_network(
             &self.state.database_conn,
             id,
             name,
@@ -99,6 +100,8 @@ impl Application {
             stake_token,
         )
         .await?;
+
+        increament_network_metrics(network);
 
         Ok(())
     }

@@ -138,6 +138,38 @@ impl From<CategoryPayload> for Category {
     }
 }
 
+impl fmt::Display for Category {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::None => "None",
+                Self::WalletService => "WalletService",
+                Self::MerchantService => "MerchantService",
+                Self::MiningPool => "MiningPool",
+                Self::Exchange => "Exchange",
+                Self::DeFi => "DeFi",
+                Self::OTCBroker => "OtcBroker",
+                Self::ATM => "Atm",
+                Self::Gambling => "Gambling",
+                Self::IllicitOrganization => "IllicitOrganization",
+                Self::Mixer => "Mixer",
+                Self::DarknetService => "DarknetService",
+                Self::Scam => "Scam",
+                Self::Ransomware => "Ransomware",
+                Self::Theft => "Theft",
+                Self::Counterfeit => "Counterfeit",
+                Self::TerroristFinancing => "TerroristFinancing",
+                Self::Sanctions => "Sanctions",
+                Self::ChildAbuse => "ChildAbuse",
+                Self::Hacker => "Hacker",
+                Self::HighRiskJurisdiction => "HighRiskJurisdiction",
+            }
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "reporter_role")]
 pub enum ReporterRole {
@@ -158,6 +190,17 @@ impl From<ReporterRolePayload> for ReporterRole {
             ReporterRolePayload::Tracer => ReporterRole::Tracer,
             ReporterRolePayload::Publisher => ReporterRole::Publisher,
             ReporterRolePayload::Authority => ReporterRole::Authority,
+        }
+    }
+}
+
+impl fmt::Display for ReporterRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ReporterRole::Authority => write!(f, "authority"),
+            ReporterRole::Publisher => write!(f, "publisher"),
+            ReporterRole::Tracer => write!(f, "tracer"),
+            ReporterRole::Validator => write!(f, "validator"),
         }
     }
 }
@@ -183,6 +226,16 @@ impl From<ReporterStatusPayload> for ReporterStatus {
     }
 }
 
+impl fmt::Display for ReporterStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ReporterStatus::Active => write!(f, "active"),
+            ReporterStatus::Inactive => write!(f, "inactive"),
+            ReporterStatus::Unstaking => write!(f, "unstaking"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Enum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "case_status")]
 pub enum CaseStatus {
@@ -197,6 +250,15 @@ impl From<CaseStatusPayload> for CaseStatus {
         match payload {
             CaseStatusPayload::Closed => CaseStatus::Closed,
             CaseStatusPayload::Open => CaseStatus::Open,
+        }
+    }
+}
+
+impl fmt::Display for CaseStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CaseStatus::Open => write!(f, "open"),
+            CaseStatus::Closed => write!(f, "closed"),
         }
     }
 }

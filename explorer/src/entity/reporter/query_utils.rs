@@ -4,7 +4,7 @@ use super::model::Column;
 use crate::entity::types::{ReporterRole, ReporterStatus};
 
 /// Conditions to filter address listings by
-#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug, Default)]
 pub struct ReporterFilter {
     pub network_id: Option<String>,
     pub account: Option<String>,

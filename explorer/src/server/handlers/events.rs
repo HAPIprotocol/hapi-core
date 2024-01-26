@@ -19,6 +19,10 @@ use crate::{
     application::AppState,
     entity::{address, asset, case, reporter},
     error::AppError,
+    observability::{
+        increament_address_metrics, increament_asset_metrics, increament_case_metrics,
+        increament_reporter_metrics,
+    },
     service::EntityMutation,
 };
 
@@ -62,10 +66,12 @@ async fn process_address_payload(
 
     match event_name {
         EventName::CreateAddress => {
-            EntityMutation::create_entity::<address::ActiveModel, _>(
+            let address = EntityMutation::create_entity::<address::ActiveModel, _>(
                 db, address, network, timestamp,
             )
             .await?;
+
+            increament_address_metrics(address);
         }
         EventName::UpdateAddress => {
             EntityMutation::update_entity::<address::ActiveModel, _>(
@@ -95,8 +101,12 @@ async fn process_asset_payload(
 
     match event_name {
         EventName::CreateAsset => {
-            EntityMutation::create_entity::<asset::ActiveModel, _>(db, asset, network, timestamp)
-                .await?;
+            let asset = EntityMutation::create_entity::<asset::ActiveModel, _>(
+                db, asset, network, timestamp,
+            )
+            .await?;
+
+            increament_asset_metrics(asset);
         }
         EventName::UpdateAsset => {
             EntityMutation::update_entity::<asset::ActiveModel, _>(db, asset, network, timestamp)
@@ -124,8 +134,11 @@ async fn process_case_payload(
 
     match event_name {
         EventName::CreateCase => {
-            EntityMutation::create_entity::<case::ActiveModel, _>(db, case, network, timestamp)
-                .await?;
+            let case =
+                EntityMutation::create_entity::<case::ActiveModel, _>(db, case, network, timestamp)
+                    .await?;
+
+            increament_case_metrics(case);
         }
         EventName::UpdateCase => {
             EntityMutation::update_entity::<case::ActiveModel, _>(db, case, network, timestamp)
@@ -153,10 +166,12 @@ async fn process_reporter_payload(
 
     match event_name {
         EventName::CreateReporter => {
-            EntityMutation::create_entity::<reporter::ActiveModel, _>(
+            let reporter = EntityMutation::create_entity::<reporter::ActiveModel, _>(
                 db, reporter, network, timestamp,
             )
             .await?;
+
+            increament_reporter_metrics(reporter);
         }
         EventName::UpdateReporter
         | EventName::ActivateReporter

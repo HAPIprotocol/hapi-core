@@ -7,7 +7,7 @@ use super::model::Column;
 use crate::entity::types::Category;
 
 /// Conditions to filter address listings by
-#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug, Default)]
 pub struct AddressFilter {
     pub network_id: Option<String>,
     pub case_id: Option<Uuid>,
