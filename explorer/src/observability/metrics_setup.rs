@@ -68,17 +68,23 @@ pub(crate) async fn track_metrics<B>(req: Request<B>, next: Next<B>) -> impl Int
     response
 }
 
+/// Gauge metric operation
+pub enum MetricOp {
+    Increment,
+    Decrement,
+}
+
 impl Application {
     pub(crate) async fn setup_entity_metrics(&self) -> Result<()> {
-        self.fetch_metrics::<reporter::Entity, _>(increament_reporter_metrics)
+        self.fetch_metrics::<reporter::Entity, _>(update_reporter_metrics)
             .await?;
-        self.fetch_metrics::<case::Entity, _>(increament_case_metrics)
+        self.fetch_metrics::<case::Entity, _>(update_case_metrics)
             .await?;
-        self.fetch_metrics::<address::Entity, _>(increament_address_metrics)
+        self.fetch_metrics::<address::Entity, _>(update_address_metrics)
             .await?;
-        self.fetch_metrics::<asset::Entity, _>(increament_asset_metrics)
+        self.fetch_metrics::<asset::Entity, _>(update_asset_metrics)
             .await?;
-        self.fetch_metrics::<network::Entity, _>(increament_network_metrics)
+        self.fetch_metrics::<network::Entity, _>(update_network_metrics)
             .await?;
 
         Ok(())
@@ -91,62 +97,68 @@ impl Application {
         <M as EntityFilter>::Condition: InputType + Default,
         M::Model: OutputType,
         M::Column: From<<M as EntityFilter>::Condition>,
-        F: Fn(M::Model),
+        F: Fn(M::Model, MetricOp),
     {
         let page =
             EntityQuery::find_many::<M>(&self.state.database_conn, EntityInput::default()).await?;
 
         for entity in page.data {
-            metric_fn(entity);
+            metric_fn(entity, MetricOp::Increment);
         }
 
         Ok(())
     }
 }
 
-pub fn increament_reporter_metrics(model: reporter::Model) {
-    let labels = [
+pub fn update_reporter_metrics(model: reporter::Model, op: MetricOp) {
+    let labels = vec![
         ("status", model.status.to_string()),
         ("role", model.role.to_string()),
     ];
 
-    metrics::increment_counter!(REPORTER_METRIC, &labels);
+    process_metric_op(REPORTER_METRIC, op, labels);
 }
 
-pub fn increament_case_metrics(model: case::Model) {
-    let labels = [
-        ("reporter", model.reporter_id.to_string()),
-        ("status", model.status.to_string()),
-    ];
+pub fn update_case_metrics(model: case::Model, op: MetricOp) {
+    let labels = vec![("status", model.status.to_string())];
 
-    metrics::increment_counter!(CASE_METRIC, &labels);
+    process_metric_op(CASE_METRIC, op, labels);
 }
 
-pub fn increament_address_metrics(model: address::Model) {
-    let labels = [
-        ("reporter", model.reporter_id.to_string()),
+pub fn update_address_metrics(model: address::Model, op: MetricOp) {
+    let labels = vec![
         ("category", model.category.to_string()),
         ("risk", model.risk.to_string()),
     ];
 
-    metrics::increment_counter!(ADDRESS_METRIC, &labels);
+    process_metric_op(ADDRESS_METRIC, op, labels);
 }
 
-pub fn increament_asset_metrics(model: asset::Model) {
-    let labels = [
-        ("reporter", model.reporter_id.to_string()),
+pub fn update_asset_metrics(model: asset::Model, op: MetricOp) {
+    let labels = vec![
         ("category", model.category.to_string()),
         ("risk", model.risk.to_string()),
     ];
 
-    metrics::increment_counter!(ASSET_METRIC, &labels);
+    process_metric_op(ASSET_METRIC, op, labels);
 }
 
-pub fn increament_network_metrics(model: network::Model) {
-    let labels = [
+pub fn update_network_metrics(model: network::Model, op: MetricOp) {
+    let labels = vec![
         ("backend", model.backend.to_string()),
         ("authority", model.authority),
     ];
 
-    metrics::increment_counter!(NETWORK_METRIC, &labels);
+    process_metric_op(NETWORK_METRIC, op, labels);
+}
+
+fn process_metric_op(metric_name: &'static str, op: MetricOp, labels: Vec<(&'static str, String)>) {
+    match op {
+        MetricOp::Increment => {
+            metrics::increment_gauge!(metric_name, 1.0, &labels);
+        }
+        MetricOp::Decrement => {
+            metrics::decrement_gauge!(metric_name, 1.0, &labels);
+        }
+    }
 }

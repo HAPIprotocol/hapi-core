@@ -2,7 +2,7 @@ mod metrics_setup;
 mod tracing_setup;
 
 pub(crate) use metrics_setup::{
-    increament_address_metrics, increament_asset_metrics, increament_case_metrics,
-    increament_network_metrics, increament_reporter_metrics, setup_metrics, track_metrics,
+    setup_metrics, track_metrics, update_address_metrics, update_asset_metrics,
+    update_case_metrics, update_network_metrics, update_reporter_metrics, MetricOp,
 };
 pub use tracing_setup::setup_tracing;

@@ -7,7 +7,9 @@ use {
 };
 
 use crate::entity::{
+    network,
     pagination::{EntityInput, EntityPage, Paginator},
+    types::NetworkBackend,
     EntityFilter,
 };
 
@@ -101,4 +103,26 @@ impl EntityQuery {
 
         Ok(page)
     }
+}
+
+pub async fn get_network_id(
+    db: &DbConn,
+    backend: NetworkBackend,
+    chain_id: Option<String>,
+) -> Result<String, DbErr> {
+    let mut filtered = network::Entity::find().filter(network::Column::Backend.eq(backend));
+
+    filtered = if let Some(chain_id) = chain_id {
+        filtered.filter(network::Column::ChainId.eq(chain_id))
+    } else {
+        filtered.filter(network::Column::ChainId.is_null())
+    };
+
+    Ok(filtered
+        .one(db)
+        .await?
+        .ok_or(DbErr::RecordNotFound(
+            "This network does not exist".to_string(),
+        ))?
+        .id)
 }
