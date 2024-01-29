@@ -1,5 +1,5 @@
 use {
-    anyhow::{bail, Result},
+    anyhow::{anyhow, bail, Result},
     jsonwebtoken::{encode, EncodingKey, Header},
     sea_orm::{Database, DatabaseConnection},
     sea_orm_cli::MigrateSubcommands,
@@ -13,8 +13,12 @@ use {
 };
 
 use crate::{
-    configuration::Configuration, entity::types::NetworkBackend, migrations::Migrator,
-    server::handlers::TokenClaims, service::EntityMutation,
+    configuration::Configuration,
+    entity::{network, types::NetworkBackend},
+    migrations::Migrator,
+    observability::{update_network_metrics, MetricOp},
+    server::handlers::TokenClaims,
+    service::{EntityMutation, EntityQuery},
 };
 
 const JWT_VALIDITY_DAYS: i64 = 365;
@@ -89,7 +93,7 @@ impl Application {
         authority: String,
         stake_token: String,
     ) -> Result<()> {
-        EntityMutation::create_network(
+        let network = EntityMutation::create_network(
             &self.state.database_conn,
             id,
             name,
@@ -99,6 +103,8 @@ impl Application {
             stake_token,
         )
         .await?;
+
+        update_network_metrics(network, MetricOp::Increment);
 
         Ok(())
     }
@@ -111,8 +117,24 @@ impl Application {
         authority: Option<String>,
         stake_token: Option<String>,
     ) -> Result<()> {
-        EntityMutation::update_network(&self.state.database_conn, id, name, authority, stake_token)
-            .await?;
+        let old = EntityQuery::find_entity_by_id::<network::Entity, _>(
+            &self.state.database_conn,
+            id.clone(),
+        )
+        .await?
+        .ok_or(anyhow!("This network does not exist"))?;
+
+        let new = EntityMutation::update_network(
+            &self.state.database_conn,
+            id,
+            name,
+            authority,
+            stake_token,
+        )
+        .await?;
+
+        update_network_metrics(old, MetricOp::Decrement);
+        update_network_metrics(new, MetricOp::Increment);
 
         Ok(())
     }

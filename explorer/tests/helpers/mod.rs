@@ -6,6 +6,6 @@ mod test_data;
 pub(crate) use jwt::create_jwt;
 pub(crate) use request_sender::RequestSender;
 pub(crate) use test_app::{
-    FromTestPayload, TestApp, TestNetwork, MIGRATION_COUNT, WAITING_INTERVAL,
+    FromTestPayload, TestApp, TestNetwork, METRICS_ENV_VAR, MIGRATION_COUNT, WAITING_INTERVAL,
 };
 pub(crate) use test_data::{create_address_data, create_asset_data, get_test_data, TestData};

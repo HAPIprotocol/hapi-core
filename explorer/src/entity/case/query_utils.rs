@@ -7,7 +7,7 @@ use super::model::Column;
 use crate::entity::types::CaseStatus;
 
 /// Conditions to filter address listings by
-#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug, Default)]
 pub struct CaseFilter {
     pub network_id: Option<String>,
     pub name: Option<String>,

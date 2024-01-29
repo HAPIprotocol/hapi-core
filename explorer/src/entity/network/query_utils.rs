@@ -4,7 +4,7 @@ use super::model::Column;
 use crate::entity::types::NetworkBackend;
 
 /// Conditions to filter address listings by
-#[derive(Clone, Eq, PartialEq, InputObject, Debug)]
+#[derive(Clone, Eq, PartialEq, InputObject, Debug, Default)]
 pub struct NetworkFilter {
     pub name: Option<String>,
     pub backend: Option<NetworkBackend>,

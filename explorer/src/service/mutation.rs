@@ -3,9 +3,10 @@ use crate::entity::{
     {types::NetworkBackend, FromPayload},
 };
 
+use super::get_network_id;
+
 use {
     chrono::{DateTime, NaiveDateTime, Utc},
-    hapi_indexer::NetworkData,
     sea_orm::*,
     uuid::Uuid,
 };
@@ -17,14 +18,13 @@ impl EntityMutation {
     pub async fn create_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkData,
+        network_id: String,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
-        let network_id = get_network_id(db, network.network.into(), network.chain_id).await?;
         let created_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
@@ -39,14 +39,13 @@ impl EntityMutation {
     pub async fn update_entity<M, T>(
         db: &DbConn,
         payload: T,
-        network: NetworkData,
+        network_id: String,
         timestamp: u64,
     ) -> Result<<M::Entity as EntityTrait>::Model, DbErr>
     where
         <M::Entity as EntityTrait>::Model: IntoActiveModel<M>,
         M: ActiveModelBehavior + FromPayload<T> + Send,
     {
-        let network_id = get_network_id(db, network.network.into(), network.chain_id).await?;
         let updated_at = Some(
             NaiveDateTime::from_timestamp_opt(timestamp as i64, 0)
                 .ok_or(DbErr::Custom("Invalid block timestamp".to_string()))?,
@@ -126,26 +125,4 @@ impl EntityMutation {
         .insert(db)
         .await
     }
-}
-
-async fn get_network_id(
-    db: &DbConn,
-    backend: NetworkBackend,
-    chain_id: Option<String>,
-) -> Result<String, DbErr> {
-    let mut filtered = network::Entity::find().filter(network::Column::Backend.eq(backend));
-
-    filtered = if let Some(chain_id) = chain_id {
-        filtered.filter(network::Column::ChainId.eq(chain_id))
-    } else {
-        filtered.filter(network::Column::ChainId.is_null())
-    };
-
-    Ok(filtered
-        .one(db)
-        .await?
-        .ok_or(DbErr::RecordNotFound(
-            "This network does not exist".to_string(),
-        ))?
-        .id)
 }

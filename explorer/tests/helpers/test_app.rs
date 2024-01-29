@@ -21,6 +21,7 @@ use {
 
 pub const WAITING_INTERVAL: u64 = 100;
 pub const MIGRATION_COUNT: u32 = 10;
+pub const METRICS_ENV_VAR: &str = "ENABLE_METRICS";
 const TRACING_ENV_VAR: &str = "ENABLE_TRACING";
 
 pub struct TestNetwork {
@@ -287,45 +288,6 @@ impl TestApp {
             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
         }
     }
-
-    //     // Sends provided data or default events for all networks
-    //     pub async fn setup_entities<T>(
-    //         &self,
-    //         sender: &RequestSender,
-    //         event: EventName,
-    //         test_data: Option<Vec<PushPayload>>,
-    //     ) -> Vec<TestData<T>>
-    //     where
-    //         TestData<T>: FromTestPayload,
-    //     {
-    //         let mut data = vec![];
-
-    //         let test_data = if let Some(data) = test_data {
-    //             data
-    //         } else {
-    //             self.networks
-    //                 .iter()
-    //                 .map(|network| get_test_data(&network.data))
-    //                 .flatten()
-    //                 .collect()
-    //         };
-
-    //         let token = create_jwt("my_ultra_secure_secret");
-
-    //         for payload in test_data {
-    //             sender
-    //                 .send("events", &payload, &token)
-    //                 .await
-    //                 .expect("Failed to send event");
-    //             sleep(Duration::from_millis(WAITING_INTERVAL)).await;
-
-    //             if event == payload.event.name {
-    //                 data.push(payload.into());
-    //             }
-    //         }
-
-    //         data
-    //     }
 }
 
 impl Drop for TestApp {
@@ -337,6 +299,10 @@ impl Drop for TestApp {
 pub fn generate_configuration() -> Configuration {
     let mut configuration = Configuration::default();
     configuration.listener = "127.0.0.1:0".parse().expect("Failed to parse address");
+
+    if env::var(METRICS_ENV_VAR).unwrap_or_default().eq("1") {
+        configuration.enable_metrics = true;
+    }
 
     // TODO: implement db docker setup script
     configuration.database_url = env::var("DATABASE_URL")

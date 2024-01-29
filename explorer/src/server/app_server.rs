@@ -24,7 +24,7 @@ use crate::{
 };
 
 impl Application {
-    fn create_router(&self) -> Result<Router> {
+    async fn create_router(&self) -> Result<Router> {
         let schema = create_graphql_schema(self.state.database_conn.clone())?;
 
         let router = Router::new()
@@ -46,6 +46,8 @@ impl Application {
         if self.enable_metrics {
             let prometheus_recorder = setup_metrics();
 
+            self.setup_entity_metrics().await?;
+
             return Ok(router
                 .route("/metrics", get(move || ready(prometheus_recorder.render())))
                 .route_layer(middleware::from_fn(track_metrics)));
@@ -61,7 +63,7 @@ impl Application {
         self.shutdown_sender = Some(tx);
 
         let server = Server::bind(&self.socket)
-            .serve(self.create_router()?.into_make_service())
+            .serve(self.create_router().await?.into_make_service())
             .with_graceful_shutdown(async {
                 rx.await.ok();
                 info!("Signal received, starting graceful shutdown");
