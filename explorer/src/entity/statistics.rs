@@ -16,7 +16,7 @@ use crate::{
     service::count_rows_per_week,
 };
 
-const CHART_LENGTH: usize = 10;
+pub const CHART_LENGTH: usize = 10;
 
 #[derive(Clone, Debug, PartialEq, Eq, SimpleObject)]
 #[graphql(name = "Dashboard")]
@@ -27,7 +27,7 @@ pub struct Dashboard {
     pub total_asset_count: u64,
     pub total_case_count: u64,
     pub new_weekly_case_count: u64,
-    pub new_weekly_addresses_count: u64,
+    pub new_weekly_address_count: u64,
     pub new_weekly_asset_count: u64,
     pub last_added_addresses: Vec<address::Model>,
     pub last_added_assets: Vec<asset::Model>,
@@ -54,11 +54,11 @@ impl StatisticsQuery {
     #[instrument(level = "debug", skip(self, ctx))]
     pub async fn get_dashboard(&self, ctx: &Context<'_>) -> Result<Dashboard> {
         let db = ctx.data_unchecked::<DatabaseConnection>();
-        let (year, week) = get_previous_week();
+        let (year, week) = get_current_week();
 
         let (staked_by_reporters, total_reporters_count) = get_reporter_dashboard(db).await?;
 
-        let (total_addresses_count, new_weekly_addresses_count, last_added_addresses) =
+        let (total_addresses_count, new_weekly_address_count, last_added_addresses) =
             get_address_dashboard(db, year, week).await?;
 
         let (total_asset_count, new_weekly_asset_count, last_added_assets) =
@@ -77,7 +77,7 @@ impl StatisticsQuery {
             top_cases_by_asset,
 
             total_addresses_count,
-            new_weekly_addresses_count,
+            new_weekly_address_count,
             last_added_addresses,
 
             total_asset_count,
@@ -124,10 +124,10 @@ impl StatisticsQuery {
     }
 }
 
-fn get_previous_week() -> (i32, u32) {
+fn get_current_week() -> (i32, u32) {
     let now = Utc::now();
     let iso_week = now.iso_week();
-    (iso_week.year(), iso_week.week() - 1)
+    (iso_week.year(), iso_week.week())
 }
 
 fn get_past_weeks() -> Vec<(i32, u32)> {
@@ -209,7 +209,7 @@ async fn get_address_dashboard(
 ) -> Result<(u64, u64, Vec<address::Model>)> {
     let total_addresses_count = address::Entity::find().count(db).await?;
 
-    let new_weekly_addresses_count = count_rows_per_week::<address::Entity>(db, year, week).await?;
+    let new_weekly_address_count = count_rows_per_week::<address::Entity>(db, year, week).await?;
 
     let last_added_addresses = address::Entity::order(
         address::Entity::find(),
@@ -222,7 +222,7 @@ async fn get_address_dashboard(
 
     Ok((
         total_addresses_count,
-        new_weekly_addresses_count,
+        new_weekly_address_count,
         last_added_addresses,
     ))
 }

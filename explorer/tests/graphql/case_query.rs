@@ -60,7 +60,7 @@ impl FromTestPayload for TestData<Case> {
     }
 }
 
-fn check_case(case: &TestData<Case>, value: &Value) {
+pub fn check_case(case: &TestData<Case>, value: &Value) {
     assert_eq!(value["networkId"], case.network_id);
 
     let payload = &case.data;

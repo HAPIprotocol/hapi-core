@@ -139,10 +139,9 @@ where
 
     // TODO: replace it with count from Paginator Trait
     let count = M::find()
-        .filter(Expr::cust_with_values(
-            "DATE(created_at) >= ? AND DATE(created_at) < ?",
-            vec![start_of_week, end_of_week],
-        ))
+        .filter(Expr::cust(format!(
+            "DATE(created_at) BETWEEN '{start_of_week}' AND '{end_of_week}'"
+        )))
         .all(db)
         .await?
         .len() as u64;
