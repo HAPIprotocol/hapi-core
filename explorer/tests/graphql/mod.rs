@@ -3,7 +3,7 @@ mod asset_query;
 mod case_query;
 mod network_query;
 mod reporter_query;
-mod statistics;
+mod statistics_query;
 
 pub use case_query::check_case;
 

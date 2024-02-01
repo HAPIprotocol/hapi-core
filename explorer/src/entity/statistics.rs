@@ -103,13 +103,14 @@ impl StatisticsQuery {
             let label = format!("{}:{}", year, week);
             labels.push(label);
 
-            let addresses_count = count_rows_per_week::<address::Entity>(db, year, week).await?;
+            let addresses_count =
+                count_rows_per_week(db, address::Entity::find(), year, week).await?;
             addresses.push(addresses_count);
 
-            let assets_count = count_rows_per_week::<asset::Entity>(db, year, week).await?;
+            let assets_count = count_rows_per_week(db, asset::Entity::find(), year, week).await?;
             assets.push(assets_count);
 
-            let cases_count = count_rows_per_week::<case::Entity>(db, year, week).await?;
+            let cases_count = count_rows_per_week(db, case::Entity::find(), year, week).await?;
             cases.push(cases_count);
         }
 
@@ -177,22 +178,21 @@ async fn get_case_dashboard(
     year: i32,
     week: u32,
 ) -> Result<(u64, u64, Vec<case::Model>, Vec<case::Model>)> {
-    let total_case_count = case::Entity::find().count(db).await?;
-    let new_weekly_case_count = count_rows_per_week::<case::Entity>(db, year, week).await?;
-    let top_cases_by_address = case::Entity::order(
-        case::Entity::find(),
-        None,
-        Some(CaseCondition::AddressCount),
-    )
-    .paginate(db, DEFAULT_PAGE_SIZE)
-    .fetch()
-    .await?;
+    let query = case::Entity::find();
 
-    let top_cases_by_asset =
-        case::Entity::order(case::Entity::find(), None, Some(CaseCondition::AssetCount))
+    let total_case_count = query.clone().count(db).await?;
+    let new_weekly_case_count = count_rows_per_week(db, query.clone(), year, week).await?;
+
+    let top_cases_by_address =
+        case::Entity::order(query.clone(), None, Some(CaseCondition::AddressCount))
             .paginate(db, DEFAULT_PAGE_SIZE)
             .fetch()
             .await?;
+
+    let top_cases_by_asset = case::Entity::order(query, None, Some(CaseCondition::AssetCount))
+        .paginate(db, DEFAULT_PAGE_SIZE)
+        .fetch()
+        .await?;
 
     Ok((
         total_case_count,
@@ -207,18 +207,15 @@ async fn get_address_dashboard(
     year: i32,
     week: u32,
 ) -> Result<(u64, u64, Vec<address::Model>)> {
-    let total_addresses_count = address::Entity::find().count(db).await?;
+    let query = address::Entity::find();
 
-    let new_weekly_address_count = count_rows_per_week::<address::Entity>(db, year, week).await?;
-
-    let last_added_addresses = address::Entity::order(
-        address::Entity::find(),
-        None,
-        Some(AddressCondition::CreatedAt),
-    )
-    .paginate(db, DEFAULT_PAGE_SIZE)
-    .fetch()
-    .await?;
+    let total_addresses_count = query.clone().count(db).await?;
+    let new_weekly_address_count = count_rows_per_week(db, query.clone(), year, week).await?;
+    let last_added_addresses =
+        address::Entity::order(query, None, Some(AddressCondition::CreatedAt))
+            .paginate(db, DEFAULT_PAGE_SIZE)
+            .fetch()
+            .await?;
 
     Ok((
         total_addresses_count,
@@ -232,15 +229,14 @@ async fn get_asset_dashboard(
     year: i32,
     week: u32,
 ) -> Result<(u64, u64, Vec<asset::Model>)> {
-    let total_asset_count = asset::Entity::find().count(db).await?;
+    let query = asset::Entity::find();
 
-    let new_weekly_asset_count = count_rows_per_week::<asset::Entity>(db, year, week).await?;
-
-    let last_added_assets =
-        asset::Entity::order(asset::Entity::find(), None, Some(AssetCondition::CreatedAt))
-            .paginate(db, DEFAULT_PAGE_SIZE)
-            .fetch()
-            .await?;
+    let total_asset_count = query.clone().count(db).await?;
+    let new_weekly_asset_count = count_rows_per_week(db, query.clone(), year, week).await?;
+    let last_added_assets = asset::Entity::order(query, None, Some(AssetCondition::CreatedAt))
+        .paginate(db, DEFAULT_PAGE_SIZE)
+        .fetch()
+        .await?;
 
     Ok((total_asset_count, new_weekly_asset_count, last_added_assets))
 }

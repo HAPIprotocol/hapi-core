@@ -25,16 +25,16 @@ const GET_DASHBOARD_QUERY: &str = "
                 address
             }
 
-              totalAssetCount
-              newWeeklyAssetCount
-              lastAddedAssets {
+            totalAssetCount
+            newWeeklyAssetCount
+            lastAddedAssets {
                 networkId
                 id
             }
 
-              totalCaseCount
-              newWeeklyCaseCount
-              topCasesByAddress {
+            totalCaseCount
+            newWeeklyCaseCount
+            topCasesByAddress {
                 networkId
                 id
                 name
@@ -44,7 +44,7 @@ const GET_DASHBOARD_QUERY: &str = "
                 createdAt
                 updatedAt
             }
-              topCasesByAsset {
+            topCasesByAsset {
                 networkId
                 id
                 name
@@ -60,10 +60,10 @@ const GET_DASHBOARD_QUERY: &str = "
 const GET_CHARTS_QUERY: &str = "
     query GetCharts {
         getCharts {
-        labels
-        addresses
-        assets
-        cases
+            labels
+            addresses
+            assets
+            cases
         }
     }
 ";

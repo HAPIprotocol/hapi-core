@@ -125,25 +125,27 @@ pub async fn get_network_id(
         .id)
 }
 
-pub async fn count_rows_per_week<M: EntityTrait>(
+pub async fn count_rows_per_week<M>(
     db: &DbConn,
+    query: Select<M>,
     year: i32,
     week: u32,
 ) -> Result<u64, DbErr>
 where
+    M: EntityTrait,
+    M::Model: OutputType,
 {
     let start_of_week = NaiveDate::from_isoywd_opt(year, week, chrono::Weekday::Mon).ok_or(
         DbErr::Custom(format!("Invalid week: {} for year: {}", week, year)),
     )?;
     let end_of_week = start_of_week + Duration::days(7);
 
-    let count = M::find()
+    let count = query
         .filter(Expr::cust(format!(
             "DATE(created_at) BETWEEN '{start_of_week}' AND '{end_of_week}'"
         )))
-        .all(db)
-        .await?
-        .len() as u64;
+        .count(db)
+        .await?;
 
     Ok(count)
 }
