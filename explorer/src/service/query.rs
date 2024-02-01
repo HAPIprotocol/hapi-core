@@ -137,7 +137,6 @@ where
     )?;
     let end_of_week = start_of_week + Duration::days(7);
 
-    // TODO: replace it with count from Paginator Trait
     let count = M::find()
         .filter(Expr::cust(format!(
             "DATE(created_at) BETWEEN '{start_of_week}' AND '{end_of_week}'"
