@@ -5,6 +5,7 @@ pub mod indexer;
 pub mod network;
 pub mod pagination;
 pub mod reporter;
+pub mod statistics;
 pub mod types;
 
 use self::pagination::{order_by_column, Ordering};

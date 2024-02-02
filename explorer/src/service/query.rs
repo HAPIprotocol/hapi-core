@@ -1,9 +1,7 @@
 use {
     async_graphql::{InputType, OutputType},
-    sea_orm::{
-        entity::prelude::*, sea_query::Cond, DbConn, DbErr, EntityTrait, PaginatorTrait,
-        PrimaryKeyTrait, Select,
-    },
+    chrono::{Duration, NaiveDate},
+    sea_orm::{prelude::*, sea_query::Cond, PaginatorTrait},
 };
 
 use crate::entity::{
@@ -125,4 +123,29 @@ pub async fn get_network_id(
             "This network does not exist".to_string(),
         ))?
         .id)
+}
+
+pub async fn count_rows_per_week<M>(
+    db: &DbConn,
+    query: Select<M>,
+    year: i32,
+    week: u32,
+) -> Result<u64, DbErr>
+where
+    M: EntityTrait,
+    M::Model: OutputType,
+{
+    let start_of_week = NaiveDate::from_isoywd_opt(year, week, chrono::Weekday::Mon).ok_or(
+        DbErr::Custom(format!("Invalid week: {} for year: {}", week, year)),
+    )?;
+    let end_of_week = start_of_week + Duration::days(7);
+
+    let count = query
+        .filter(Expr::cust(format!(
+            "DATE(created_at) BETWEEN '{start_of_week}' AND '{end_of_week}'"
+        )))
+        .count(db)
+        .await?;
+
+    Ok(count)
 }

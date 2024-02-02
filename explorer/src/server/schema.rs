@@ -6,7 +6,7 @@ use {
 
 use crate::entity::{
     address::AddressQuery, asset::AssetQuery, case::CaseQuery, network::NetworkQuery,
-    reporter::ReporterQuery,
+    reporter::ReporterQuery, statistics::StatisticsQuery,
 };
 
 /// Top-level application Query type
@@ -17,6 +17,7 @@ pub struct Query(
     CaseQuery,
     ReporterQuery,
     NetworkQuery,
+    StatisticsQuery,
 );
 
 /// Top-level merged application schema

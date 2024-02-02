@@ -27,7 +27,7 @@ use super::{
 };
 
 const DEFAULT_PAGE_NUM: u64 = 1;
-const DEFAULT_PAGE_SIZE: u64 = 25;
+pub const DEFAULT_PAGE_SIZE: u64 = 10;
 
 /// A convenience wrapper for pagination
 #[derive(Clone, Eq, PartialEq, InputObject, Debug)]

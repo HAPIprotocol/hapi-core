@@ -173,6 +173,31 @@ pub(crate) fn get_test_data(
     events
 }
 
+pub fn create_reporter_data(network: &HapiCoreNetwork, chain_id: Option<String>) -> PushPayload {
+    let payload = Reporter {
+        id: Uuid::new_v4(),
+        account: generate_random_string(),
+        role: ReporterRole::Publisher,
+        status: ReporterStatus::Inactive,
+        name: String::from("Publisher reporter"),
+        url: String::from("https://publisher.com"),
+        stake: 123.into(),
+        unlock_timestamp: 0,
+    };
+
+    let network_data = NetworkData {
+        network: network.to_owned(),
+        chain_id,
+        indexer_id: Uuid::parse_str(&get_jwt_id()).expect("Failed to parse jwt id"),
+    };
+
+    create_payload(
+        network_data,
+        EventName::CreateReporter,
+        PushData::Reporter(payload.clone()),
+    )
+}
+
 pub fn create_address_data(
     reporter_id: Uuid,
     case_id: Uuid,
