@@ -26,6 +26,7 @@ clap = { version = "4.4.13", features = ["cargo"] }
 anyhow = "1"
 uuid = "1"
 chrono = { version = "0.4", features = ["serde"] }
+web3 = "0.19.0"
 
 metrics-exporter-prometheus = "0.12.1"
 metrics = "0.21.1"
