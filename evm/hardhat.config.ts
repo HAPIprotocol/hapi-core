@@ -356,4 +356,82 @@ task("update-stake-configuration", "Updates the stake configuration")
     }
   });
 
+task("update-reward-configuration", "Updates the reward configuration")
+  .addParam("addressConfirmationReward", "Address confirmation reward")
+  .addParam("addressTracerReward", "Address tracer reward")
+  .addParam("assetConfirmationReward", "Asset confirmation reward")
+  .addParam("assetTracerReward", "Asset tracer reward")
+  .setAction(async (args, hre) => {
+    try {
+      const { hapiCore, token } = await setup(hre);
+
+      console.log("==> Updating reward configuration");
+
+      const [name, symbol, decimals] = await Promise.all([
+        token.name(),
+        token.symbol(),
+        token.decimals(),
+      ]);
+
+      console.log(`Token: ${name} (${symbol})`);
+
+      const addressConfirmationReward = hre.ethers.parseUnits(
+        args.addressConfirmationReward,
+        decimals
+      );
+      console.log(
+        `Address confirmation reward: ${hre.ethers.formatUnits(
+          addressConfirmationReward,
+          decimals
+        )} ${symbol}`
+      );
+
+      const addressTracerReward = hre.ethers.parseUnits(
+        args.addressTracerReward,
+        decimals
+      );
+      console.log(
+        `Address tracer reward: ${hre.ethers.formatUnits(
+          addressTracerReward,
+          decimals
+        )} ${symbol}`
+      );
+
+      const assetConfirmationReward = hre.ethers.parseUnits(
+        args.assetConfirmationReward,
+        decimals
+      );
+      console.log(
+        `Asset confirmation reward: ${hre.ethers.formatUnits(
+          assetConfirmationReward,
+          decimals
+        )} ${symbol}`
+      );
+
+      const assetTracerReward = hre.ethers.parseUnits(
+        args.assetTracerReward,
+        decimals
+      );
+      console.log(
+        `Asset tracer reward: ${hre.ethers.formatUnits(
+          assetTracerReward,
+          decimals
+        )} ${symbol}`
+      );
+
+      const response = await hapiCore.updateRewardConfiguration(
+        await token.getAddress(),
+        addressConfirmationReward,
+        addressTracerReward,
+        assetConfirmationReward,
+        assetTracerReward
+      );
+
+      await trackTransaction(response);
+    } catch (error) {
+      console.error(`${error}`);
+      process.exit(1);
+    }
+  });
+
 export default config;
