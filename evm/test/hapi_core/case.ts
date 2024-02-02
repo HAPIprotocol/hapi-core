@@ -79,19 +79,25 @@ describe("HapiCore: Case", function () {
       hapiCore
         .connect(wallets.validator)
         .createCase(case1.id, case1.name, case1.url)
-    ).to.be.revertedWith("Caller is not a reporter with the required role");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.validator.address);
 
     await expect(
       hapiCore
         .connect(wallets.tracer)
         .createCase(case1.id, case1.name, case1.url)
-    ).to.be.revertedWith("Caller is not a reporter with the required role");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.tracer.address);
 
     await expect(
       hapiCore
         .connect(wallets.nobody)
         .createCase(case1.id, case1.name, case1.url)
-    ).to.be.revertedWith("Caller is not a reporter");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.nobody.address);
   });
 
   it("Reporter should be able to update own case", async function () {
@@ -153,7 +159,9 @@ describe("HapiCore: Case", function () {
           "https://big.hack/2",
           CaseStatus.Closed
         )
-    ).to.be.revertedWith("Must be the case reporter or authority");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "MustBeCaseReporterOrAuthority")
+      .withArgs();
   });
 
   it("Should be able to update other's case if authority", async function () {
@@ -196,8 +204,34 @@ describe("HapiCore: Case", function () {
   it("Should panic if case not found", async function () {
     const { hapiCore } = await loadFixture(fixtureWithReporters);
 
-    await expect(hapiCore.getCase(randomId())).to.be.revertedWith(
-      "Case does not exist"
-    );
+    const id = randomId();
+
+    await expect(hapiCore.getCase(id))
+      .to.be.revertedWithCustomError(hapiCore, "CaseNotFound")
+      .withArgs(id);
+  });
+
+  it("Should not allow to create a case with a duplicate ID", async function () {
+    const { hapiCore, wallets } = await loadFixture(fixtureWithReporters);
+
+    const id = randomId();
+
+    const case1 = {
+      id,
+      name: "big hack 2024",
+      url: "https://big.hack",
+    };
+
+    await hapiCore
+      .connect(wallets.publisher)
+      .createCase(case1.id, case1.name, case1.url);
+
+    await expect(
+      hapiCore
+        .connect(wallets.publisher)
+        .createCase(case1.id, case1.name, case1.url)
+    )
+      .to.be.revertedWithCustomError(hapiCore, "DuplicateId")
+      .withArgs(id);
   });
 });

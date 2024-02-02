@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.22;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -10,59 +11,45 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *
  * Core contract for the HAPI protocol
  */
-contract HapiCore is OwnableUpgradeable {
-    /// A modifier that allows only the owner or authority to perform a restricted action
-    modifier onlyOwnerOrAuthority() {
-        require(
-            owner() == _msgSender() || _authority == _msgSender(),
-            "Caller is not the owner or authority"
-        );
-        _;
-    }
+contract HapiCore is OwnableUpgradeable, AccessControlUpgradeable {
+    error AddressAlreadyConfirmed(address addr, uint128 reporter_id);
+    error AddressNotFound(address addr);
+    error AssetAlreadyConfirmed(
+        address addr,
+        uint256 asset_id,
+        uint128 reporter_id
+    );
+    error AssetNotFound(address addr, uint256 asset_id);
+    error CannotConfirmOwnAddress(address addr, uint128 reporter_id);
+    error CannotConfirmOwnAsset(
+        address addr,
+        uint256 asset_id,
+        uint128 reporter_id
+    );
+    error CaseNotFound(uint128 id);
+    error ContractNotConfigured();
+    error DuplicateAddress(address addr);
+    error DuplicateAsset(address addr, uint256 asset_id);
+    error DuplicateId(uint128 id);
+    error InsufficientTokensOrAllowance();
+    error InvalidCaseStatus(uint128 id, CaseStatus status);
+    error InvalidReporter(address caller);
+    error InvalidReporterStatus(uint128 id, ReporterStatus status);
+    error InvalidRoleStakeConfiguration();
+    error MustBeCaseReporterOrAuthority();
+    error ReporterLocked(uint128 id, uint unlock_timestamp);
+    error ReporterNotFound(uint128 id);
+    error RiskOutOfRange(uint8 risk);
 
-    modifier onlyAuthority() {
-        require(_authority == _msgSender(), "Caller is not the authority");
-        _;
-    }
-
-    modifier onlyPublisherOrAuthorityReporter() {
-        ReporterRole role = getMyRole();
-        require(
-            role == ReporterRole.Publisher || role == ReporterRole.Authority,
-            "Caller is not a reporter with the required role"
-        );
-        _;
-    }
+    bytes32 public constant AUTHORITY_ROLE = keccak256("AUTHORITY_ROLE");
 
     /// Initializes the contract
     function initialize() public initializer {
-        __Ownable_init();
-
-        _authority = _msgSender();
-    }
-
-    /// Address of the authority that can perform restricted actions (not to be confused with the owner, which should only be used for deployment and upgrades)
-    address private _authority;
-
-    /// @param authority New authority address
-    event AuthorityChanged(address authority);
-
-    /**
-     * Sets the authority address
-     * @param newAuthority New authority address
-     */
-    function setAuthority(address newAuthority) public onlyOwnerOrAuthority {
-        _authority = newAuthority;
-
-        emit AuthorityChanged(newAuthority);
-    }
-
-    /**
-     * Returns the authority address
-     * @return Authority address
-     */
-    function authority() public view virtual returns (address) {
-        return _authority;
+        __Ownable_init(_msgSender());
+        __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(AUTHORITY_ROLE, _msgSender());
+        _setRoleAdmin(DEFAULT_ADMIN_ROLE, AUTHORITY_ROLE);
     }
 
     /// Stake configuration
@@ -116,7 +103,7 @@ contract HapiCore is OwnableUpgradeable {
         uint256 tracer_stake,
         uint256 publisher_stake,
         uint256 authority_stake
-    ) public onlyAuthority {
+    ) public onlyRole(AUTHORITY_ROLE) {
         _stake_configuration.token = token;
         _stake_configuration.unlock_duration = unlock_duration;
         _stake_configuration.validator_stake = validator_stake;
@@ -145,10 +132,9 @@ contract HapiCore is OwnableUpgradeable {
         virtual
         returns (StakeConfiguration memory)
     {
-        require(
-            _stake_configuration.token != address(0),
-            "Stake configuration is not set"
-        );
+        if (_stake_configuration.token == address(0)) {
+            revert ContractNotConfigured();
+        }
 
         return _stake_configuration;
     }
@@ -196,7 +182,7 @@ contract HapiCore is OwnableUpgradeable {
         uint256 address_tracer_reward,
         uint256 asset_confirmation_reward,
         uint256 asset_tracer_reward
-    ) public onlyAuthority {
+    ) public onlyRole(AUTHORITY_ROLE) {
         _reward_configuration.token = token;
         _reward_configuration
             .address_confirmation_reward = address_confirmation_reward;
@@ -225,10 +211,9 @@ contract HapiCore is OwnableUpgradeable {
         virtual
         returns (RewardConfiguration memory)
     {
-        require(
-            _reward_configuration.token != address(0),
-            "Reward configuration is not set"
-        );
+        if (_reward_configuration.token == address(0)) {
+            revert ContractNotConfigured();
+        }
 
         return _reward_configuration;
     }
@@ -314,11 +299,10 @@ contract HapiCore is OwnableUpgradeable {
         ReporterRole role,
         string memory name,
         string memory url
-    ) public onlyAuthority {
-        require(
-            _reporters[id].id == 0,
-            "Reporter with the same ID already exists"
-        );
+    ) public onlyRole(AUTHORITY_ROLE) {
+        if (_reporters[id].id > 0) {
+            revert DuplicateId(id);
+        }
 
         _reporters[id] = Reporter({
             id: id,
@@ -366,11 +350,10 @@ contract HapiCore is OwnableUpgradeable {
         ReporterRole role,
         string memory name,
         string memory url
-    ) public onlyAuthority {
-        require(
-            _reporters[id].id > 0,
-            "Reporter with the same ID does not exist"
-        );
+    ) public onlyRole(AUTHORITY_ROLE) {
+        if (_reporters[id].id == 0) {
+            revert ReporterNotFound(id);
+        }
 
         Reporter storage reporter = _reporters[id];
 
@@ -401,11 +384,13 @@ contract HapiCore is OwnableUpgradeable {
     function getMyRole() public view returns (ReporterRole) {
         uint128 id = getMyReporterId();
 
-        require(id > 0, "Caller is not a reporter");
-        require(
-            _reporters[id].status == ReporterStatus.Active,
-            "Reporter is not active"
-        );
+        if (id == 0) {
+            revert InvalidReporter(_msgSender());
+        }
+
+        if (_reporters[id].status != ReporterStatus.Active) {
+            revert InvalidReporterStatus(id, _reporters[id].status);
+        }
 
         return _reporters[id].role;
     }
@@ -418,7 +403,9 @@ contract HapiCore is OwnableUpgradeable {
      * @dev Panics if the reporter does not exist
      */
     function getReporter(uint128 id) public view returns (Reporter memory) {
-        require(_reporters[id].id > 0, "Reporter does not exist");
+        if (_reporters[id].id == 0) {
+            revert ReporterNotFound(id);
+        }
 
         return _reporters[id];
     }
@@ -477,14 +464,15 @@ contract HapiCore is OwnableUpgradeable {
     function activateReporter() external {
         uint128 id = getMyReporterId();
 
-        require(id > 0, "Caller is not a reporter");
+        if (id == 0) {
+            revert InvalidReporter(_msgSender());
+        }
 
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.status == ReporterStatus.Inactive,
-            "Reporter is not inactive"
-        );
+        if (reporter.status != ReporterStatus.Inactive) {
+            revert InvalidReporterStatus(id, reporter.status);
+        }
 
         uint256 amount = 0;
 
@@ -498,16 +486,18 @@ contract HapiCore is OwnableUpgradeable {
             amount = _stake_configuration.authority_stake;
         }
 
-        require(amount > 0, "Reporter role stake is not configured");
+        if (amount == 0) {
+            revert InvalidRoleStakeConfiguration();
+        }
 
-        require(
-            IERC20(_stake_configuration.token).transferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
-            "Insufficient tokens or allowance to stake"
+        bool is_transferred = IERC20(_stake_configuration.token).transferFrom(
+            _msgSender(),
+            address(this),
+            amount
         );
+        if (!is_transferred) {
+            revert InsufficientTokensOrAllowance();
+        }
 
         reporter.status = ReporterStatus.Active;
         reporter.stake = amount;
@@ -526,14 +516,15 @@ contract HapiCore is OwnableUpgradeable {
     function deactivateReporter() external {
         uint128 id = getMyReporterId();
 
-        require(id > 0, "Caller is not a reporter");
+        if (id == 0) {
+            revert InvalidReporter(_msgSender());
+        }
 
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.status == ReporterStatus.Active,
-            "Reporter is not active"
-        );
+        if (reporter.status != ReporterStatus.Active) {
+            revert InvalidReporterStatus(id, reporter.status);
+        }
 
         reporter.status = ReporterStatus.Unstaking;
         reporter.unlock_timestamp =
@@ -558,27 +549,29 @@ contract HapiCore is OwnableUpgradeable {
     function unstake() external {
         uint128 id = getMyReporterId();
 
-        require(id > 0, "Caller is not a reporter");
+        if (id == 0) {
+            revert InvalidReporter(_msgSender());
+        }
 
         Reporter storage reporter = _reporters[id];
 
-        require(
-            reporter.status == ReporterStatus.Unstaking,
-            "Reporter is not unstaking"
-        );
-        require(
-            reporter.unlock_timestamp <= block.timestamp,
-            "Reporter is not unlocked yet"
-        );
+        if (reporter.status != ReporterStatus.Unstaking) {
+            revert InvalidReporterStatus(id, reporter.status);
+        }
+
+        if (reporter.unlock_timestamp > block.timestamp) {
+            revert ReporterLocked(id, reporter.unlock_timestamp);
+        }
 
         // NOTE: Situation where there's not enough tokens to withdraw should be impossible,
         // as the pool is only formed from the tokens staked by the reporters
-        require(
-            IERC20(_stake_configuration.token).transfer(
-                msg.sender,
-                reporter.stake
-            )
+        bool is_transferred = IERC20(_stake_configuration.token).transfer(
+            _msgSender(),
+            reporter.stake
         );
+        if (!is_transferred) {
+            revert InsufficientTokensOrAllowance();
+        }
 
         reporter.status = ReporterStatus.Inactive;
         reporter.stake = 0;
@@ -630,11 +623,20 @@ contract HapiCore is OwnableUpgradeable {
         uint128 id,
         string memory name,
         string memory url
-    ) public onlyPublisherOrAuthorityReporter {
-        uint128 reporter_id = getMyReporterId();
+    ) public {
+        ReporterRole role = getMyRole();
+        if (role != ReporterRole.Publisher && role != ReporterRole.Authority) {
+            revert InvalidReporter(_msgSender());
+        }
 
-        require(reporter_id > 0, "Caller is not a reporter");
-        require(_cases[id].id == 0, "Case with the same ID already exists");
+        uint128 reporter_id = getMyReporterId();
+        if (id == 0) {
+            revert InvalidReporter(_msgSender());
+        }
+
+        if (_cases[id].id > 0) {
+            revert DuplicateId(id);
+        }
 
         _cases[id] = Case({
             id: id,
@@ -671,16 +673,23 @@ contract HapiCore is OwnableUpgradeable {
         string memory name,
         string memory url,
         CaseStatus status
-    ) public onlyPublisherOrAuthorityReporter {
+    ) public {
+        ReporterRole role = getMyRole();
+        if (role != ReporterRole.Publisher && role != ReporterRole.Authority) {
+            revert InvalidReporter(_msgSender());
+        }
+
         Case storage case_record = _cases[id];
+        if (case_record.id == 0) {
+            revert CaseNotFound(id);
+        }
 
-        require(case_record.id > 0, "Case does not exist");
-
-        require(
-            case_record.reporter_id == getMyReporterId() ||
-                getMyRole() == ReporterRole.Authority,
-            "Must be the case reporter or authority"
-        );
+        if (
+            case_record.reporter_id != getMyReporterId() &&
+            role != ReporterRole.Authority
+        ) {
+            revert MustBeCaseReporterOrAuthority();
+        }
 
         case_record.name = name;
         case_record.url = url;
@@ -697,7 +706,9 @@ contract HapiCore is OwnableUpgradeable {
      * @dev Panics if the case does not exist
      */
     function getCase(uint128 id) public view virtual returns (Case memory) {
-        require(_cases[id].id > 0, "Case does not exist");
+        if (_cases[id].id == 0) {
+            revert CaseNotFound(id);
+        }
 
         return _cases[id];
     }
@@ -814,20 +825,32 @@ contract HapiCore is OwnableUpgradeable {
         uint8 risk,
         Category category
     ) public {
-        require(_cases[case_id].id > 0, "Case does not exist");
-        require(_cases[case_id].status == CaseStatus.Open, "Case is closed");
-        require(_addresses[addr].addr == address(0), "Address already exists");
-        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+        if (_cases[case_id].id == 0) {
+            revert CaseNotFound(case_id);
+        }
+
+        if (_cases[case_id].status != CaseStatus.Open) {
+            revert InvalidCaseStatus(case_id, _cases[case_id].status);
+        }
+
+        if (_addresses[addr].addr != address(0)) {
+            revert DuplicateAddress(addr);
+        }
+
+        if (risk < 0 || risk > 10) {
+            revert RiskOutOfRange(risk);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            role == ReporterRole.Publisher ||
-                role == ReporterRole.Authority ||
-                role == ReporterRole.Tracer,
-            "Caller is not a reporter with the required role"
-        );
+        if (
+            role != ReporterRole.Publisher &&
+            role != ReporterRole.Authority &&
+            role != ReporterRole.Tracer
+        ) {
+            revert InvalidReporter(_msgSender());
+        }
 
         _addresses[addr] = Address({
             addr: addr,
@@ -870,21 +893,32 @@ contract HapiCore is OwnableUpgradeable {
         Category category,
         uint128 case_id
     ) public {
-        require(_addresses[addr].addr != address(0), "Address does not exist");
-        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
-        require(_cases[case_id].id > 0, "Case does not exist");
+        if (_addresses[addr].addr == address(0)) {
+            revert AddressNotFound(addr);
+        }
+
+        if (risk < 0 || risk > 10) {
+            revert RiskOutOfRange(risk);
+        }
+
+        if (_cases[case_id].id == 0) {
+            revert CaseNotFound(case_id);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            _addresses[addr].reporter_id == reporter_id ||
-                role == ReporterRole.Authority,
-            "Caller is not the address reporter or authority"
-        );
+        if (
+            _addresses[addr].reporter_id != reporter_id &&
+            role != ReporterRole.Authority
+        ) {
+            revert InvalidReporter(_msgSender());
+        }
 
         if (_addresses[addr].case_id != case_id) {
-            require(role != ReporterRole.Tracer, "Tracer can't change case");
+            if (role == ReporterRole.Tracer) {
+                revert InvalidReporter(_msgSender());
+            }
             _addresses[addr].case_id = case_id;
         }
 
@@ -909,25 +943,24 @@ contract HapiCore is OwnableUpgradeable {
      * @dev Panics if the caller already confirmed the address
      */
     function confirmAddress(address addr) public {
-        require(_addresses[addr].addr != address(0), "Address does not exist");
+        if (_addresses[addr].addr == address(0)) {
+            revert AddressNotFound(addr);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            role == ReporterRole.Publisher || role == ReporterRole.Validator,
-            "Reporter is not publisher or validator"
-        );
+        if (role != ReporterRole.Publisher && role != ReporterRole.Validator) {
+            revert InvalidReporter(_msgSender());
+        }
 
-        require(
-            reporter_id != _addresses[addr].reporter_id,
-            "Cannot confirm the address reported by himself"
-        );
+        if (reporter_id == _addresses[addr].reporter_id) {
+            revert CannotConfirmOwnAddress(addr, reporter_id);
+        }
 
-        require(
-            !_address_confirmations[addr][reporter_id],
-            "The reporter has already confirmed the address"
-        );
+        if (_address_confirmations[addr][reporter_id]) {
+            revert AddressAlreadyConfirmed(addr, reporter_id);
+        }
 
         _address_confirmations[addr][reporter_id] = true;
         _addresses[addr].confirmations++;
@@ -1052,23 +1085,32 @@ contract HapiCore is OwnableUpgradeable {
         uint8 risk,
         Category category
     ) public {
-        require(_cases[case_id].id > 0, "Case does not exist");
-        require(_cases[case_id].status == CaseStatus.Open, "Case is closed");
-        require(
-            _assets[addr][asset_id].addr == address(0),
-            "Asset already exists"
-        );
-        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
+        if (_cases[case_id].id == 0) {
+            revert CaseNotFound(case_id);
+        }
+
+        if (_cases[case_id].status != CaseStatus.Open) {
+            revert InvalidCaseStatus(case_id, _cases[case_id].status);
+        }
+
+        if (_assets[addr][asset_id].addr != address(0)) {
+            revert DuplicateAsset(addr, asset_id);
+        }
+
+        if (risk < 0 || risk > 10) {
+            revert RiskOutOfRange(risk);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            role == ReporterRole.Publisher ||
-                role == ReporterRole.Authority ||
-                role == ReporterRole.Tracer,
-            "Caller is not a reporter with the required role"
-        );
+        if (
+            role != ReporterRole.Publisher &&
+            role != ReporterRole.Authority &&
+            role != ReporterRole.Tracer
+        ) {
+            revert InvalidReporter(_msgSender());
+        }
 
         _assets[addr][asset_id] = Asset({
             addr: addr,
@@ -1120,24 +1162,32 @@ contract HapiCore is OwnableUpgradeable {
         Category category,
         uint128 case_id
     ) public {
-        require(
-            _assets[addr][asset_id].addr != address(0),
-            "Address does not exist"
-        );
-        require(risk >= 0 && risk <= 10, "Risk must be between 0 and 10");
-        require(_cases[case_id].id > 0, "Case does not exist");
+        if (_assets[addr][asset_id].addr == address(0)) {
+            revert AssetNotFound(addr, asset_id);
+        }
+
+        if (risk < 0 || risk > 10) {
+            revert RiskOutOfRange(risk);
+        }
+
+        if (_cases[case_id].id == 0) {
+            revert CaseNotFound(case_id);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            _assets[addr][asset_id].reporter_id == reporter_id ||
-                role == ReporterRole.Authority,
-            "Caller is not the address reporter or authority"
-        );
+        if (
+            _assets[addr][asset_id].reporter_id != reporter_id &&
+            role != ReporterRole.Authority
+        ) {
+            revert InvalidReporter(_msgSender());
+        }
 
         if (_assets[addr][asset_id].case_id != case_id) {
-            require(role != ReporterRole.Tracer, "Tracer can't change case");
+            if (role == ReporterRole.Tracer) {
+                revert InvalidReporter(_msgSender());
+            }
             _assets[addr][asset_id].case_id = case_id;
         }
 
@@ -1164,28 +1214,24 @@ contract HapiCore is OwnableUpgradeable {
      * @dev Panics if the caller already confirmed the asset
      */
     function confirmAsset(address addr, uint256 asset_id) public {
-        require(
-            _assets[addr][asset_id].addr != address(0),
-            "Address does not exist"
-        );
+        if (_assets[addr][asset_id].addr == address(0)) {
+            revert AssetNotFound(addr, asset_id);
+        }
 
         uint128 reporter_id = getMyReporterId();
         ReporterRole role = getMyRole();
 
-        require(
-            role == ReporterRole.Publisher || role == ReporterRole.Validator,
-            "Reporter is not publisher or validator"
-        );
+        if (role != ReporterRole.Publisher && role != ReporterRole.Validator) {
+            revert InvalidReporter(_msgSender());
+        }
 
-        require(
-            reporter_id != _assets[addr][asset_id].reporter_id,
-            "Cannot confirm the asset reported by himself"
-        );
+        if (reporter_id == _assets[addr][asset_id].reporter_id) {
+            revert CannotConfirmOwnAsset(addr, asset_id, reporter_id);
+        }
 
-        require(
-            !_asset_confirmations[addr][asset_id][reporter_id],
-            "The reporter has already confirmed the asset"
-        );
+        if (_asset_confirmations[addr][asset_id][reporter_id]) {
+            revert AssetAlreadyConfirmed(addr, asset_id, reporter_id);
+        }
 
         _asset_confirmations[addr][asset_id][reporter_id] = true;
         _assets[addr][asset_id].confirmations++;

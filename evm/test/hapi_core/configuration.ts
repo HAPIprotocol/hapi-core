@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
 
 import { basicFixture } from "../setup";
 
@@ -18,9 +17,9 @@ describe("HapiCore: Configuration", function () {
   it("Should update stake configuration", async function () {
     const { hapiCore } = await loadFixture(basicFixture);
 
-    await expect(hapiCore.stakeConfiguration()).to.be.revertedWith(
-      "Stake configuration is not set"
-    );
+    await expect(hapiCore.stakeConfiguration())
+      .to.be.revertedWithCustomError(hapiCore, "ContractNotConfigured")
+      .withArgs();
 
     const stakeTokenAddress = "0xdEADBEeF00000000000000000000000000000000";
 
@@ -57,9 +56,9 @@ describe("HapiCore: Configuration", function () {
   it("Should update reward configuration", async function () {
     const { hapiCore } = await loadFixture(basicFixture);
 
-    await expect(hapiCore.rewardConfiguration()).to.be.revertedWith(
-      "Reward configuration is not set"
-    );
+    await expect(hapiCore.rewardConfiguration())
+      .to.be.revertedWithCustomError(hapiCore, "ContractNotConfigured")
+      .withArgs();
 
     const rewardTokenAddress = "0xdEADBEeF00000000000000000000000000000000";
 

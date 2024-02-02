@@ -16,42 +16,34 @@ describe("HapiCore: Deployment", function () {
   it("Should set the right owner and authority", async function () {
     const { hapiCore, owner } = await loadFixture(basicFixture);
 
+    const authorityRole = await hapiCore.AUTHORITY_ROLE();
+
     expect(await hapiCore.owner()).to.equal(owner.address);
 
-    expect(await hapiCore.authority()).to.equal(owner.address);
+    expect(await hapiCore.hasRole(authorityRole, owner.address)).to.equal(true);
   });
 
   it("Should correctly set authority from owner", async function () {
-    const { hapiCore, authority } = await loadFixture(basicFixture);
+    const { hapiCore, owner, authority } = await loadFixture(basicFixture);
 
-    await expect(await hapiCore.setAuthority(authority.address))
-      .to.emit(hapiCore, "AuthorityChanged")
-      .withArgs(authority.address);
+    const authorityRole = await hapiCore.AUTHORITY_ROLE();
 
-    expect(await hapiCore.authority()).to.equal(authority.address);
-  });
+    await expect(await hapiCore.grantRole(authorityRole, authority.address))
+      .to.emit(hapiCore, "RoleGranted")
+      .withArgs(authorityRole, authority.address, owner.address);
 
-  it("Should correctly set authority from previous authority", async function () {
-    const { hapiCore, authority, nobody } = await loadFixture(basicFixture);
-
-    await expect(await hapiCore.setAuthority(authority.address))
-      .to.emit(hapiCore, "AuthorityChanged")
-      .withArgs(authority.address);
-
-    expect(await hapiCore.authority()).to.equal(authority.address);
-
-    await expect(await hapiCore.connect(authority).setAuthority(nobody.address))
-      .to.emit(hapiCore, "AuthorityChanged")
-      .withArgs(nobody.address);
-
-    expect(await hapiCore.authority()).to.equal(nobody.address);
+    expect(await hapiCore.hasRole(authorityRole, authority.address)).to.equal(
+      true
+    );
   });
 
   it("Should not allow setting authority from non-owner/non-authority", async function () {
     const { hapiCore, authority, nobody } = await loadFixture(basicFixture);
 
+    const authorityRole = await hapiCore.AUTHORITY_ROLE();
+
     await expect(
-      hapiCore.connect(nobody).setAuthority(authority.address)
-    ).to.be.revertedWith("Caller is not the owner or authority");
+      hapiCore.connect(nobody).grantRole(authorityRole, authority.address)
+    ).to.be.revertedWithCustomError(hapiCore, "AccessControlUnauthorizedAccount");
   });
 });

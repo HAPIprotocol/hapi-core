@@ -61,7 +61,12 @@ describe("HapiCore: Reporter management", function () {
           reporter.name,
           reporter.url
         )
-    ).to.be.revertedWith("Caller is not the authority");
+    )
+      .to.be.revertedWithCustomError(
+        hapiCore,
+        "AccessControlUnauthorizedAccount"
+      )
+      .withArgs(nobody.address, await hapiCore.AUTHORITY_ROLE());
   });
 
   it("Should update a reporter", async function () {
@@ -144,7 +149,12 @@ describe("HapiCore: Reporter management", function () {
           reporter.name,
           reporter.url
         )
-    ).to.be.revertedWith("Caller is not the authority");
+    )
+      .to.be.revertedWithCustomError(
+        hapiCore,
+        "AccessControlUnauthorizedAccount"
+      )
+      .withArgs(nobody.address, await hapiCore.AUTHORITY_ROLE());
   });
 
   it("Should list reporters", async function () {
@@ -268,5 +278,39 @@ describe("HapiCore: Reporter management", function () {
     );
 
     expect(await hapiCore.getReporterCount()).to.equal(2);
+  });
+
+  it("Should not allow to create a reporter with a duplicate ID", async function () {
+    const { hapiCore, nobody } = await loadFixture(basicFixture);
+
+    const id = randomId();
+
+    const reporter = {
+      id,
+      account: nobody.address,
+      role: ReporterRole.Publisher,
+      name: "publisher",
+      url: "https://publisher.blockchain",
+    };
+
+    await hapiCore.createReporter(
+      reporter.id,
+      reporter.account,
+      reporter.role,
+      reporter.name,
+      reporter.url
+    );
+
+    await expect(
+      hapiCore.createReporter(
+        reporter.id,
+        reporter.account,
+        reporter.role,
+        reporter.name,
+        reporter.url
+      )
+    )
+      .to.be.revertedWithCustomError(hapiCore, "DuplicateId")
+      .withArgs(id);
   });
 });
