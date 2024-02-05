@@ -189,7 +189,9 @@ describe("HapiCore: Address", function () {
       hapiCore
         .connect(wallets.tracer)
         .updateAddress(address.addr, 10, Category.ChildAbuse, case2.id)
-    ).to.be.revertedWith("Tracer can't change case");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.tracer.address);
   });
 
   it("Should be able to confirm an address", async function () {
@@ -284,7 +286,9 @@ describe("HapiCore: Address", function () {
 
     await expect(
       hapiCore.connect(wallets.publisher).confirmAddress(address.addr)
-    ).to.be.revertedWith("The reporter has already confirmed the address");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "AddressAlreadyConfirmed")
+      .withArgs(address.addr, reporters.publisher.id);
   });
 
   it("Only publisher or validator should be able to confirm an address", async function () {
@@ -320,9 +324,9 @@ describe("HapiCore: Address", function () {
         ),
     ]);
 
-    await expect(
-      hapiCore.connect(wallets.tracer).confirmAddress(address.addr)
-    ).to.be.revertedWith("Reporter is not publisher or validator");
+    await expect(hapiCore.connect(wallets.tracer).confirmAddress(address.addr))
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.tracer.address);
   });
 
   it("Cannot confirm the address reported by himself", async function () {
@@ -360,6 +364,8 @@ describe("HapiCore: Address", function () {
 
     await expect(
       hapiCore.connect(wallets.publisher).confirmAddress(address.addr)
-    ).to.be.revertedWith("Cannot confirm the address reported by himself");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "CannotConfirmOwnAddress")
+      .withArgs(address.addr, reporters.publisher.id);
   });
 });

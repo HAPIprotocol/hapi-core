@@ -222,7 +222,9 @@ describe("HapiCore: Asset", function () {
           Category.ChildAbuse,
           case2.id
         )
-    ).to.be.revertedWith("Tracer can't change case");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.tracer.address);
   });
 
   it("Should be able to confirm an asset", async function () {
@@ -326,7 +328,9 @@ describe("HapiCore: Asset", function () {
       hapiCore
         .connect(wallets.publisher)
         .confirmAsset(asset.addr, asset.assetId)
-    ).to.be.revertedWith("The reporter has already confirmed the asset");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "AssetAlreadyConfirmed")
+      .withArgs(asset.addr, asset.assetId, reporters.publisher.id);
   });
 
   it("Only publisher or validator should be able to confirm an asset", async function () {
@@ -366,7 +370,9 @@ describe("HapiCore: Asset", function () {
 
     await expect(
       hapiCore.connect(wallets.tracer).confirmAsset(asset.addr, asset.assetId)
-    ).to.be.revertedWith("Reporter is not publisher or validator");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.tracer.address);
   });
 
   it("Cannot confirm the asset reported by himself", async function () {
@@ -408,6 +414,8 @@ describe("HapiCore: Asset", function () {
       hapiCore
         .connect(wallets.publisher)
         .confirmAsset(asset.addr, asset.assetId)
-    ).to.be.revertedWith("Cannot confirm the asset reported by himself");
+    )
+      .to.be.revertedWithCustomError(hapiCore, "CannotConfirmOwnAsset")
+      .withArgs(asset.addr, asset.assetId, reporters.publisher.id);
   });
 });

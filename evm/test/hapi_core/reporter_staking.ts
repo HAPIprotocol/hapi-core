@@ -6,9 +6,8 @@ import { ReporterRole, ReporterStatus, randomId } from "../util";
 
 describe("HapiCore: Reporter staking", function () {
   it("Should stake for a reporter", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -29,9 +28,9 @@ describe("HapiCore: Reporter staking", function () {
     const balanceBefore = await token.balanceOf(wallets.publisher.address);
 
     // Shouldn't be able to stake if not approved
-    await expect(
-      hapiCore.connect(wallets.publisher).activateReporter()
-    ).to.be.revertedWith("ERC20: insufficient allowance");
+    await expect(hapiCore.connect(wallets.publisher).activateReporter())
+      .to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance")
+      .withArgs(contractAddress, 0, cfg.PUBLISHER_STAKE);
 
     await token
       .connect(wallets.publisher)
@@ -58,9 +57,8 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not stake for a reporter if not enough balance", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -86,23 +84,22 @@ describe("HapiCore: Reporter staking", function () {
         await token.balanceOf(wallets.publisher.address)
       );
 
-    await expect(
-      hapiCore.connect(wallets.publisher).activateReporter()
-    ).to.be.revertedWith("ERC20: insufficient allowance");
+    await expect(hapiCore.connect(wallets.publisher).activateReporter())
+      .to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance")
+      .withArgs(contractAddress, 0, cfg.PUBLISHER_STAKE);
 
     await token
       .connect(wallets.publisher)
       .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
-    await expect(
-      hapiCore.connect(wallets.publisher).activateReporter()
-    ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    await expect(hapiCore.connect(wallets.publisher).activateReporter())
+      .to.be.revertedWithCustomError(token, "ERC20InsufficientBalance")
+      .withArgs(wallets.publisher.address, 0, cfg.PUBLISHER_STAKE);
   });
 
   it("Should not be able to activate someone else's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -124,15 +121,14 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.nobody)
       .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
-    await expect(
-      hapiCore.connect(wallets.nobody).activateReporter()
-    ).to.be.revertedWith('Caller is not a reporter');
+    await expect(hapiCore.connect(wallets.nobody).activateReporter())
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.nobody.address);
   });
 
   it("Should deactivate a reporter", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -184,9 +180,8 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not be able to deactivate someone else's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -214,15 +209,14 @@ describe("HapiCore: Reporter staking", function () {
       .connect(wallets.nobody)
       .approve(contractAddress, cfg.PUBLISHER_STAKE);
 
-    await expect(
-      hapiCore.connect(wallets.nobody).deactivateReporter()
-    ).to.be.revertedWith('Caller is not a reporter');
+    await expect(hapiCore.connect(wallets.nobody).deactivateReporter())
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.nobody.address);
   });
 
   it("Should be able to unstake tokens after unlock duration", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -273,9 +267,8 @@ describe("HapiCore: Reporter staking", function () {
   });
 
   it("Should not be able to unstake other's reporter account", async function () {
-    const { hapiCore, wallets, token, cfg, contractAddress } = await loadFixture(
-      fixtureWithToken
-    );
+    const { hapiCore, wallets, token, cfg, contractAddress } =
+      await loadFixture(fixtureWithToken);
 
     const reporterAccount = {
       account: wallets.publisher.address,
@@ -305,9 +298,9 @@ describe("HapiCore: Reporter staking", function () {
 
     await time.increase(cfg.UNLOCK_DURATION + 1);
 
-    await expect(hapiCore.connect(wallets.nobody).unstake()).to.be.revertedWith(
-      "Caller is not a reporter"
-    );
+    await expect(hapiCore.connect(wallets.nobody).unstake())
+      .to.be.revertedWithCustomError(hapiCore, "InvalidReporter")
+      .withArgs(wallets.nobody.address);
 
     const balanceAfter = await token.balanceOf(wallets.publisher.address);
 

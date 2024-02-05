@@ -1,7 +1,7 @@
 import { ethers, upgrades } from "hardhat";
 import { BaseContract } from "ethers";
 
-import { HapiCore, IERC20 } from "../typechain-types";
+import { HapiCore, Token } from "../typechain-types";
 import { ReporterRole, randomId } from "./util";
 
 export async function setupContract(): Promise<{ hapiCore: HapiCore, contractAddress: string }> {
@@ -42,7 +42,7 @@ export async function fixtureWithToken() {
     AUTHORITY_STAKE: 104,
   };
 
-  const token = (await ethers.deployContract("Token")) as IERC20;
+  const token = (await ethers.deployContract("Token")) as Token;
   await token.waitForDeployment();
 
   await Promise.all([
