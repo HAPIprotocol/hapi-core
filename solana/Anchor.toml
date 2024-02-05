@@ -9,7 +9,7 @@ url = "https://api.apr.dev"
 hapi_core_solana = "FgE5ySSi6fbnfYGGRyaeW8y6p8A5KybXPyQ2DdxPCNRk"
 
 [programs.devnet]
-hapi_core_solana = "hapiAwBQLYRXrjGn6FLCgC8FpQd2yWbKMqS6AYZ48g6"
+hapi_core_solana = "hapinwqwa5qRQ3Lqzy1zELDjXV9SkeNjiyBe9dwhk5W"
 
 [provider]
 cluster = "localnet"
