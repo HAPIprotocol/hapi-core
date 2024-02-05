@@ -150,9 +150,8 @@ task("deploy-test-token", "Deploys the HAPI Test Token contract").setAction(
   }
 );
 
-task("upgrade", "Upgrades the HAPI Core contract")
-  .addParam("address", "Contract address")
-  .setAction(async (args, hre) => {
+task("upgrade", "Upgrades the HAPI Core contract").setAction(
+  async (args, hre) => {
     try {
       let [signer] = await hre.ethers.getSigners();
 
@@ -162,7 +161,14 @@ task("upgrade", "Upgrades the HAPI Core contract")
         console.log(`Using wallet: ${signer.address}`);
       }
 
-      let network = await hre.ethers.provider.getNetwork();
+      const contractAddress = process.env.CONTRACT_ADDRESS;
+      if (!contractAddress) {
+        throw new Error(
+          "No contract address found (use CONTRACT_ADDRESS env var)"
+        );
+      }
+
+      const network = await hre.ethers.provider.getNetwork();
 
       console.log(`Deploying to '${network.name}' (${network.chainId})`);
 
@@ -175,15 +181,13 @@ task("upgrade", "Upgrades the HAPI Core contract")
       }
 
       if (!!process.env.FORCE_IMPORT) {
-        await hre.upgrades.forceImport(args.address, HapiCore as any);
+        await hre.upgrades.forceImport(contractAddress, HapiCore as any);
       }
 
       const contract = await hre.upgrades.upgradeProxy(
-        args.address,
+        contractAddress,
         HapiCore as any
       );
-
-      let contractAddress = await contract.getAddress();
 
       const adminAddress = await hre.upgrades.erc1967.getAdminAddress(
         contractAddress
@@ -192,7 +196,7 @@ task("upgrade", "Upgrades the HAPI Core contract")
         await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
 
       console.log(`HAPI Core upgraded`, {
-        contract: contract.address,
+        contract: contractAddress,
         admin: adminAddress,
         implementation: implementationAddress,
       });
@@ -200,7 +204,8 @@ task("upgrade", "Upgrades the HAPI Core contract")
       console.error(`${error}`);
       process.exit(1);
     }
-  });
+  }
+);
 
 async function setup(
   hre: HardhatRuntimeEnvironment
@@ -274,7 +279,9 @@ async function trackTransaction(response: ContractTransactionResponse) {
   console.log(`Transaction: ${response.hash}`);
   console.log("Waiting for transaction confirmation...");
   await response.wait();
-  console.log(`Finished with ${await response.confirmations()} confirmation(s)`);
+  console.log(
+    `Finished with ${await response.confirmations()} confirmation(s)`
+  );
 }
 
 task("update-stake-configuration", "Updates the stake configuration")

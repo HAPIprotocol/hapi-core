@@ -48,8 +48,8 @@ contract HapiCore is OwnableUpgradeable, AccessControlUpgradeable {
         __Ownable_init(_msgSender());
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _grantRole(AUTHORITY_ROLE, _msgSender());
         _setRoleAdmin(DEFAULT_ADMIN_ROLE, AUTHORITY_ROLE);
+        setAuthority(_msgSender());
     }
 
     /// Stake configuration
@@ -1291,5 +1291,22 @@ contract HapiCore is OwnableUpgradeable, AccessControlUpgradeable {
         }
 
         return assets;
+    }
+
+    address public authority;
+
+    /**
+     * Set authority address
+     *
+     * @param _authority Address of the authority
+     */
+    function setAuthority(
+        address _authority
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_authority != address(0)) {
+            _revokeRole(AUTHORITY_ROLE, authority);
+        }
+        authority = _authority;
+        _grantRole(AUTHORITY_ROLE, _authority);
     }
 }
