@@ -3070,8 +3070,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "hapi-core-cli"
-version = "0.1.0"
+name = "hapi-core"
+version = "0.3.0"
 dependencies = [
  "anchor-client",
  "anyhow",
