@@ -42,7 +42,7 @@ near-primitives = "0.19.0"
 near-chain-configs = "0.19.0"
 near-jsonrpc-client = "0.7.0"
 near-jsonrpc-primitives = "0.19.0"
-hapi-core-near = { path = "../near/contract/", version = "*" }
+hapi-core-near = { path = "../near/contract/", version = "0.1.0" }
 
 # TODO: Replace with the latest stable version of near-sdk-rs
 near-sdk = "5.0.0-alpha.2"
