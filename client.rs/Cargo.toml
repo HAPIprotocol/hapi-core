@@ -1,9 +1,12 @@
 [package]
 name = "hapi-core"
-authors = ["HAPI"]
+authors = ["HAPI <devs@hapi.one>"]
 version = "0.3.0"
 edition = "2021"
 description = "Rust Client for HAPI Protocol contracts"
+license-file = "LICENSE"
+repository = "https://github.com/HAPIprotocol/hapi-core"
+homepage = "https://hapi.one"
 
 [lib]
 crate-type = ["lib"]
@@ -42,45 +45,42 @@ near-primitives = "0.19.0"
 near-chain-configs = "0.19.0"
 near-jsonrpc-client = "0.7.0"
 near-jsonrpc-primitives = "0.19.0"
-hapi-core-near = { path = "../near/contract/", version = "0.1.0" }
+hapi-core-near = "0.3.0"
 
 # TODO: Replace with the latest stable version of near-sdk-rs
 near-sdk = "5.0.0-alpha.2"
 
 # Solana dependencies
+hapi-core-solana = "0.3.0"
 
 [dependencies.anchor-client]
 git = "https://github.com/hlgltvnnk/anchor.git"
 branch = "update-dependencies"
 features = ["async"]
-version = "*"
+version = "0.28.0"
 
 [dependencies.solana-cli-config]
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
-version = "*"
+version = "1.17.0"
 
 [dependencies.solana-account-decoder]
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
-version = "*"
+version = "1.17.0"
 
 [dependencies.solana-transaction-status]
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
-version = "*"
-
-[dependencies.hapi_core_solana]
-path = "../solana/programs/hapi_core_solana"
-version = "0.1.0"
+version = "1.17.0"
 
 [dependencies.spl-associated-token-account]
 git = "https://github.com/hlgltvnnk/solana-program-library.git"
-version = "*"
+version = "1.1.3"
 
 [dependencies.spl-token]
 git = "https://github.com/hlgltvnnk/solana-program-library.git"
-version = "*"
+version = "3.5.0"
 
 [dev-dependencies]
 bs58 = "0.5.0"
