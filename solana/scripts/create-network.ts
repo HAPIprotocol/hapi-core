@@ -9,23 +9,28 @@ import chalk from "chalk";
 
 dotenv.config();
 
-const provider = anchor.AnchorProvider.local();
+let provider;
+if (process.env.ANCHOR_PROVIDER_URL) {
+  provider = anchor.AnchorProvider.env();
+} else {
+  provider = anchor.AnchorProvider.local();
+}
 const hapiCore = new HapiCoreProgram(process.env.CONTRACT_ADDRESS, provider);
 
 const stakeConfiguration = {
-  unlockDuration: new BN(0),
-  validatorStake: new BN(0),
-  tracerStake: new BN(0),
-  publisherStake: new BN(0),
-  authorityStake: new BN(0),
-  appraiserStake: new BN(0),
+  unlockDuration: new BN(600),
+  validatorStake: new BN(10),
+  tracerStake: new BN(25),
+  publisherStake: new BN(50),
+  authorityStake: new BN(100),
+  appraiserStake: new BN(10),
 };
 
 const rewardConfiguration = {
-  addressTracerReward: new BN(0),
-  addressConfirmationReward: new BN(0),
-  assetTracerReward: new BN(0),
-  assetConfirmationReward: new BN(0),
+  addressTracerReward: new BN(1),
+  addressConfirmationReward: new BN(1),
+  assetTracerReward: new BN(1),
+  assetConfirmationReward: new BN(1),
 };
 
 let stakeMint = PublicKey.default;
