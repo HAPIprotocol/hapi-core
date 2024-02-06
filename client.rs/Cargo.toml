@@ -1,9 +1,13 @@
 [package]
 name = "hapi-core"
-authors = ["HAPI"]
+authors = ["HAPI <devs@hapi.one>"]
 version = "0.3.0"
 edition = "2021"
 description = "Rust Client for HAPI Protocol contracts"
+license = "MIT"
+license-file = "LICENSE"
+repository = "https://github.com/HAPIprotocol/hapi-core"
+homepage = "https://hapi.one"
 
 [lib]
 crate-type = ["lib"]
