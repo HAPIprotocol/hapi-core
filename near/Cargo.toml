@@ -1,16 +1,6 @@
-[package]
-name = "hapi-core-near"
-authors = ["HAPI <devs@hapi.one>"]
-version = "0.3.0"
-edition = "2021"
-description = "NEAR implementation of HAPI Protocol contract"
-license = "MIT"
-license-file = "LICENSE"
-repository = "https://github.com/HAPIprotocol/hapi-core"
-homepage = "https://hapi.one"
-
 [workspace]
 members = ["contract"]
+resolver = "2"
 
 [profile.release]
 codegen-units = 1

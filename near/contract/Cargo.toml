@@ -1,10 +1,11 @@
 [package]
 name = "hapi-core-near"
-authors = ["HAPI"]
-version = "0.1.0"
+authors = ["HAPI <devs@hapi.one>"]
+version = "0.3.0"
 edition = "2021"
-
-readme = "README.md"
+description = "NEAR implementation of HAPI Protocol contract"
+repository = "https://github.com/HAPIprotocol/hapi-core"
+homepage = "https://hapi.one"
 
 [lib]
 crate-type = ["cdylib", "lib"]
