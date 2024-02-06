@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 use super::category::Category;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct CreateAddressInput {
     pub address: String,
     pub case_id: Uuid,
@@ -10,12 +12,16 @@ pub struct CreateAddressInput {
     pub category: Category,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct UpdateAddressInput {
     pub address: String,
     pub case_id: Uuid,
     pub risk: u8,
     pub category: Category,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 
 pub struct ConfirmAddressInput {
     pub address: String,

@@ -63,11 +63,15 @@ impl TryFrom<u8> for CaseStatus {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct CreateCaseInput {
     pub id: Uuid,
     pub name: String,
     pub url: String,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 
 pub struct UpdateCaseInput {
     pub id: Uuid,
