@@ -138,7 +138,6 @@ impl TryFrom<u8> for ReporterStatus {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-
 pub struct CreateReporterInput {
     pub id: Uuid,
     pub account: String,
@@ -148,7 +147,6 @@ pub struct CreateReporterInput {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-
 pub struct UpdateReporterInput {
     pub id: Uuid,
     pub account: String,
