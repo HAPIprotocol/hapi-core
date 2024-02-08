@@ -61,6 +61,7 @@ impl FromStr for AssetId {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateAssetInput {
     pub address: String,
     pub asset_id: AssetId,
@@ -69,6 +70,7 @@ pub struct CreateAssetInput {
     pub category: Category,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UpdateAssetInput {
     pub address: String,
     pub asset_id: AssetId,
@@ -77,6 +79,7 @@ pub struct UpdateAssetInput {
     pub category: Category,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConfirmAssetInput {
     pub address: String,
     pub asset_id: AssetId,

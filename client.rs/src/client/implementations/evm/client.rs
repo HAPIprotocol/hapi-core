@@ -29,7 +29,7 @@ use super::error::map_ethers_error;
 
 abigen!(
     HAPI_CORE_CONTRACT,
-    "../evm/artifacts/contracts/HapiCore.sol/HapiCore.json"
+    "./src/client/implementations/evm/abi/HapiCore.json"
 );
 
 pub(super) type Provider = EthersProvider<Http>;
