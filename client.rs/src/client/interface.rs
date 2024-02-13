@@ -15,6 +15,7 @@ use super::{
 #[async_trait]
 pub trait HapiCore {
     fn is_valid_address(&self, address: &str) -> Result<()>;
+    async fn get_token_balance(&self, address: &str, token_address: &str) -> Result<f64>;
 
     async fn set_authority(&self, address: &str) -> Result<Tx>;
     async fn get_authority(&self) -> Result<String>;

@@ -155,6 +155,10 @@ impl HapiCore for HapiCoreEvm {
         Ok(())
     }
 
+    async fn get_token_balance(&self, address: &str, token_address: &str) -> Result<f64> {
+        Ok(123.456)
+    }
+
     async fn set_authority(&self, address: &str) -> Result<Tx> {
         let authority: EthAddress = address
             .parse()

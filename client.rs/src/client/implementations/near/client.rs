@@ -148,6 +148,27 @@ impl HapiCore for HapiCoreNear {
         Ok(())
     }
 
+    async fn get_token_balance(&self, address: &str, token_address: &str) -> Result<f64> {
+        let contract_address = AccountId::try_from(token_address.to_string())?;
+
+        let request = RpcQueryRequest {
+            block_reference: BlockReference::Finality(Finality::Final),
+            request: QueryRequest::CallFunction {
+                account_id: contract_address,
+                method_name: "ft_balance_of".to_string(),
+                args: FunctionArgs::from(
+                    json!({
+                        "account_id": address,
+                    })
+                    .to_string()
+                    .into_bytes(),
+                ),
+            },
+        };
+
+        Ok(self.get_response::<f64>(request).await?)
+    }
+
     async fn set_authority(&self, address: &str) -> Result<Tx> {
         let signer = self.get_signer()?;
         let access_key_query_response: RpcQueryResponse = self.get_access_key(&signer).await?;

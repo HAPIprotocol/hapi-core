@@ -206,6 +206,25 @@ impl HapiCore for HapiCoreSolana {
         Ok(())
     }
 
+    async fn get_token_balance(&self, address: &str, token_address: &str) -> Result<f64> {
+        let account = address
+            .parse::<Pubkey>()
+            .map_err(|e| ClientError::SolanaAddressParseError(e.to_string()))?;
+
+        let mint = token_address
+            .parse::<Pubkey>()
+            .map_err(|e| ClientError::SolanaAddressParseError(e.to_string()))?;
+
+        let token_account = get_associated_token_address(&account, &mint);
+
+        Ok(self
+            .rpc_client
+            .get_token_account_balance(&token_account)
+            .await?
+            .ui_amount
+            .unwrap_or_default())
+    }
+
     async fn set_authority(&self, address: &str) -> Result<Tx> {
         let new_authority = Pubkey::from_str(address)
             .map_err(|e| ClientError::SolanaAddressParseError(format!("`new-authority`: {e}")))?;
