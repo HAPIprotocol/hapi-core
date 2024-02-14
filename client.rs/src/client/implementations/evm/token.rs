@@ -24,7 +24,7 @@ use super::client::LOCAL_CHAIN_ID;
 
 abigen!(
     TOKEN_CONTRACT,
-    "../evm/artifacts/contracts/Token.sol/Token.json"
+    "./src/client/implementations/evm/abi/Token.json"
 );
 
 pub struct TokenContractEvm {
