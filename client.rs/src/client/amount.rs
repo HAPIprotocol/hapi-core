@@ -7,7 +7,7 @@ use std::str::FromStr;
 pub struct Amount(U256);
 
 impl Amount {
-    pub fn to_bigger_units(&self, decimals: usize) -> u64 {
+    pub fn normalize_to_u64(&self, decimals: usize) -> u64 {
         let unit: U256 = U256::exp10(decimals);
 
         (self.0 / unit).as_u64()
