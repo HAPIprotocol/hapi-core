@@ -6,6 +6,14 @@ use std::str::FromStr;
 #[derive(Default, Clone, Debug, PartialEq, PartialOrd, Eq)]
 pub struct Amount(U256);
 
+impl Amount {
+    pub fn normalize_to_u64(&self, decimals: usize) -> u64 {
+        let unit: U256 = U256::exp10(decimals);
+
+        (self.0 / unit).as_u64()
+    }
+}
+
 impl Serialize for Amount {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)

@@ -56,6 +56,7 @@ pub trait HapiCore {
     async fn get_assets(&self, skip: u64, take: u64) -> Result<Vec<Asset>>;
 }
 
+#[derive(Clone)]
 pub struct HapiCoreOptions {
     pub provider_url: String,
     pub contract_address: String,
