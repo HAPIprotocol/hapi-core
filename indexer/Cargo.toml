@@ -64,7 +64,7 @@ branch = "update-dependencies"
 
 [dependencies.hapi-core-solana]
 path = "../solana/programs/hapi_core_solana"
-eatures = ["no-entrypoint"]
+features = ["no-entrypoint"]
 
 [dev-dependencies]
 mockito = "1.2"
