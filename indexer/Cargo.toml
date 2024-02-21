@@ -13,7 +13,7 @@ name = "hapi_indexer"
 manual-helper = []
 
 [dependencies]
-hapi-core-cli = { path = "../client.rs" }
+hapi-core = { path = "../client.rs" }
 anyhow = "1"
 axum = "0.6"
 config = "0.13"
@@ -62,9 +62,9 @@ branch = "update-dependencies"
 git = "https://github.com/hlgltvnnk/solana.git"
 branch = "update-dependencies"
 
-[dependencies.hapi_core_solana]
+[dependencies.hapi-core-solana]
 path = "../solana/programs/hapi_core_solana"
-eatures = ["no-entrypoint"]
+features = ["no-entrypoint"]
 
 [dev-dependencies]
 mockito = "1.2"
