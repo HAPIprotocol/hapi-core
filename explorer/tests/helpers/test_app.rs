@@ -12,6 +12,7 @@ use {
     sea_orm::{DatabaseConnection, EntityTrait},
     std::{env, sync::Arc},
     tokio::{
+        net::TcpListener,
         spawn,
         sync::Notify,
         task::JoinHandle,
@@ -58,6 +59,13 @@ impl TestApp {
 
         let db_connection = TestApp::prepare_database(&app).await;
         let networks = Self::prepare_networks(&app).await;
+        app.socket = Some(
+            TcpListener::bind(configuration.listener.clone())
+                .await
+                .expect("Failed to bind to address")
+                .local_addr()
+                .expect("Failed to get local address"),
+        );
         let port = app.port();
 
         let stop_signal = Arc::new(Notify::new());

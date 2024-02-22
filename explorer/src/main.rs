@@ -6,6 +6,7 @@ use {
         observability::setup_tracing,
     },
     sea_orm_cli::MigrateSubcommands,
+    tokio::net::TcpListener,
 };
 
 #[derive(Subcommand, PartialEq, Eq, Debug, Clone)]
@@ -73,10 +74,15 @@ async fn main() -> Result<()> {
     let configuration = get_configuration()?;
     setup_tracing(&configuration.log_level, configuration.is_json_logging)?;
 
-    let mut app = Application::from_configuration(configuration).await?;
+    let mut app = Application::from_configuration(configuration.clone()).await?;
 
     match ExplorerCli::parse() {
         ExplorerCli::Server => {
+            app.socket = Some(
+                TcpListener::bind(configuration.listener)
+                    .await?
+                    .local_addr()?,
+            );
             app.run_server().await?;
             app.handle_shutdown_signal().await?;
 
