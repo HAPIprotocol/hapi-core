@@ -6,7 +6,7 @@ use {
     sea_orm_migration::MigratorTrait,
     secrecy::{ExposeSecret, SecretString},
     std::net::SocketAddr,
-    tokio::{net::TcpListener, sync::oneshot, task::JoinHandle},
+    tokio::{sync::oneshot, task::JoinHandle},
     tracing::info,
     tracing::instrument,
     uuid::Uuid,
@@ -30,7 +30,7 @@ pub struct AppState {
 }
 
 pub struct Application {
-    pub socket: SocketAddr,
+    pub socket: Option<SocketAddr>,
     pub enable_metrics: bool,
     pub state: AppState,
     pub shutdown_sender: Option<oneshot::Sender<()>>,
@@ -39,10 +39,6 @@ pub struct Application {
 
 impl Application {
     pub async fn from_configuration(configuration: Configuration) -> Result<Self> {
-        let socket = TcpListener::bind(configuration.listener)
-            .await?
-            .local_addr()?;
-
         let database_conn = Database::connect(configuration.database_url.as_str()).await?;
 
         let state = AppState {
@@ -53,7 +49,7 @@ impl Application {
         info!("Application initialized");
 
         Ok(Self {
-            socket,
+            socket: None,
             enable_metrics: configuration.enable_metrics,
             state,
             shutdown_sender: None,
@@ -61,8 +57,8 @@ impl Application {
         })
     }
 
-    pub fn port(&self) -> u16 {
-        self.socket.port()
+    pub fn port(&self) -> Result<u16> {
+        Ok(self.socket.ok_or_else(|| anyhow!("Socket not set"))?.port())
     }
 
     #[instrument(level = "info", skip(self))]

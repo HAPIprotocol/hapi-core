@@ -45,8 +45,8 @@ HAPI explorer cli includes the following commands:
 | Command        | Description                                              |
 | -------------- | -------------------------------------------------------- |
 | server         | Runs HAPI Explorer multichain backend                    |
-| migrations     | Contains a set of subcommands for managing migrations    |
-| network        | Contains a set of subcommands for for network management |
+| migrate        | Contains a set of subcommands for managing migrations    |
+| network        | Contains a set of subcommands for network management     |
 | create-indexer | Creates indexer for the given network                    |
 | help           | Display available commands                               |
 
