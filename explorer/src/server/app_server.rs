@@ -62,7 +62,7 @@ impl Application {
         let (tx, rx) = oneshot::channel::<()>();
         self.shutdown_sender = Some(tx);
 
-        let server = Server::bind(&self.socket)
+        let server = Server::bind(&self.socket.ok_or_else(|| anyhow!("Socket not set"))?)
             .serve(self.create_router().await?.into_make_service())
             .with_graceful_shutdown(async {
                 rx.await.ok();
