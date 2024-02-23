@@ -57,8 +57,8 @@ impl Application {
         })
     }
 
-    pub fn port(&self) -> u16 {
-        self.socket.expect("Socket is not initialized").port()
+    pub fn port(&self) -> Result<u16> {
+        Ok(self.socket.ok_or_else(|| anyhow!("Socket not set"))?.port())
     }
 
     #[instrument(level = "info", skip(self))]

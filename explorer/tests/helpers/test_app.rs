@@ -66,7 +66,7 @@ impl TestApp {
                 .local_addr()
                 .expect("Failed to get local address"),
         );
-        let port = app.port();
+        let port = app.port().expect("Failed to get port");
 
         let stop_signal = Arc::new(Notify::new());
         let receiver = stop_signal.clone();

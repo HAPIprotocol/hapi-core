@@ -74,12 +74,13 @@ async fn main() -> Result<()> {
     let configuration = get_configuration()?;
     setup_tracing(&configuration.log_level, configuration.is_json_logging)?;
 
-    let mut app = Application::from_configuration(configuration.clone()).await?;
+    let listener = configuration.listener.clone();
+    let mut app = Application::from_configuration(configuration).await?;
 
     match ExplorerCli::parse() {
         ExplorerCli::Server => {
             app.socket = Some(
-                TcpListener::bind(configuration.listener)
+                TcpListener::bind(listener)
                     .await?
                     .local_addr()?,
             );
