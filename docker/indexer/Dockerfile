@@ -26,6 +26,7 @@ FROM busybox AS runtime
 COPY --from=builder /usr/src/hapi-core/indexer/target/release/hapi-indexer /bin/hapi-indexer
 
 # Copy libssl from the builder stage
+COPY --from=builder /etc/ssl /etc/ssl
 COPY --from=builder /usr/lib/ssl /usr/lib/ssl
 COPY --from=builder \
     /lib/x86_64-linux-gnu/libssl.so \
