@@ -5,6 +5,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Indexer for HAPI Protocol contracts"
 
+[[bin]]
+name = "hapi-indexer"
+path = "src/main.rs"
+
 [lib]
 crate-type = ["lib"]
 name = "hapi_indexer"
