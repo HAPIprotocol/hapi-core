@@ -55,7 +55,7 @@ fn check_network(network: &TestNetwork, value: &Value) {
 
 #[tokio::test]
 async fn get_network_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
 
     for data in &test_app.networks {
@@ -76,7 +76,7 @@ async fn get_network_test() {
 
 #[tokio::test]
 async fn get_many_networks_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let networks = &test_app.networks;
 
@@ -112,7 +112,7 @@ async fn get_many_networks_test() {
 
 #[tokio::test]
 async fn get_filtered_networks_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let networks = &test_app.networks;
 
@@ -149,7 +149,7 @@ async fn get_filtered_networks_test() {
 
 #[tokio::test]
 async fn get_paginated_networks_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let networks = &test_app.networks;
 
@@ -187,7 +187,7 @@ async fn get_paginated_networks_test() {
 
 #[tokio::test]
 async fn get_searched_networks_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let networks = &test_app.networks;
 

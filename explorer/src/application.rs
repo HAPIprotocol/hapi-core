@@ -38,7 +38,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn from_configuration(configuration: Configuration) -> Result<Self> {
+    pub async fn from_configuration(configuration: &Configuration) -> Result<Self> {
         let database_conn = Database::connect(configuration.database_url.as_str()).await?;
 
         let state = AppState {

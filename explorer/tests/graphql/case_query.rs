@@ -76,7 +76,7 @@ pub fn check_case(case: &TestData<Case>, value: &Value) {
 
 #[tokio::test]
 async fn get_case_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -101,7 +101,7 @@ async fn get_case_test() {
 
 #[tokio::test]
 async fn get_many_cases_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -135,7 +135,7 @@ async fn get_many_cases_test() {
 
 #[tokio::test]
 async fn get_ordered_desc_cases_by_address_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -187,7 +187,7 @@ async fn get_ordered_desc_cases_by_address_test() {
 
 #[tokio::test]
 async fn get_ordered_asc_cases_by_asset_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -239,7 +239,7 @@ async fn get_ordered_asc_cases_by_asset_test() {
 
 #[tokio::test]
 async fn get_filtered_cases_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -277,7 +277,7 @@ async fn get_filtered_cases_test() {
 
 #[tokio::test]
 async fn get_paginated_cases_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -315,7 +315,7 @@ async fn get_paginated_cases_test() {
 
 #[tokio::test]
 async fn get_searched_cases_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)

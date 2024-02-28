@@ -3,7 +3,7 @@ use tokio::time::{sleep, Duration};
 
 #[tokio::test]
 async fn webhook_processing_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let indexer_mock = RequestSender::new(test_app.server_addr.clone());
     let token = create_jwt("my_ultra_secure_secret");
 

@@ -9,7 +9,7 @@ Test cases:
  */
 #[tokio::test]
 async fn indexer_processing_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let indexer_mock = RequestSender::new(test_app.server_addr.to_owned());
 
     for network in &test_app.networks {

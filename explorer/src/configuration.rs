@@ -34,6 +34,9 @@ pub struct Configuration {
     /// Secret for JWT
     #[serde(deserialize_with = "deserialize_secret_string")]
     pub jwt_secret: SecretString,
+
+    /// Origins to allow for CORS
+    pub cors_origins: Option<Vec<String>>,
 }
 
 impl Default for Configuration {
@@ -45,6 +48,7 @@ impl Default for Configuration {
             listener: default_listener(),
             database_url: String::new(),
             jwt_secret: default_jwt_secret(),
+            cors_origins: None,
         }
     }
 }

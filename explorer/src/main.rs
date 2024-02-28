@@ -74,18 +74,16 @@ async fn main() -> Result<()> {
     let configuration = get_configuration()?;
     setup_tracing(&configuration.log_level, configuration.is_json_logging)?;
 
-    let listener = configuration.listener.clone();
-    let mut app = Application::from_configuration(configuration).await?;
+    let mut app = Application::from_configuration(&configuration).await?;
 
     match ExplorerCli::parse() {
         ExplorerCli::Server => {
-            app.socket = Some(
-                TcpListener::bind(listener)
-                    .await?
-                    .local_addr()?,
-            );
-            app.run_server().await?;
-            app.handle_shutdown_signal().await?;
+            let listener = TcpListener::bind(&configuration.listener)
+                .await?
+                .local_addr()?;
+
+            app.run_server(listener, &configuration.cors_origins)
+                .await?;
 
             return Ok(());
         }

@@ -70,7 +70,7 @@ const GET_CHARTS_QUERY: &str = "
 
 #[tokio::test]
 async fn dashboard_statistics_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)
@@ -179,7 +179,7 @@ async fn dashboard_statistics_test() {
 
 #[tokio::test]
 async fn charts_statistics_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let cases = test_app
         .global_setup::<Case>(&sender, EventName::UpdateCase)

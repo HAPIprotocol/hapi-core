@@ -89,7 +89,7 @@ fn check_reporter(reporter: &TestData<Reporter>, value: &Value) {
 
 #[tokio::test]
 async fn get_reporter_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
         .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
@@ -114,7 +114,7 @@ async fn get_reporter_test() {
 
 #[tokio::test]
 async fn get_many_reporters_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
         .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
@@ -150,7 +150,7 @@ async fn get_many_reporters_test() {
 
 #[tokio::test]
 async fn get_filtered_reporters_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
         .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
@@ -188,7 +188,7 @@ async fn get_filtered_reporters_test() {
 
 #[tokio::test]
 async fn get_paginated_reporters_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
         .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
@@ -228,7 +228,7 @@ async fn get_paginated_reporters_test() {
 
 #[tokio::test]
 async fn get_searched_reporters_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let reporters = test_app
         .global_setup::<Reporter>(&sender, EventName::UpdateReporter)
