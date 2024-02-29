@@ -77,7 +77,7 @@ fn check_address(address: &TestData<Address>, value: &Value) {
 
 #[tokio::test]
 async fn get_address_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
         .global_setup::<Address>(&sender, EventName::UpdateAddress)
@@ -102,7 +102,7 @@ async fn get_address_test() {
 
 #[tokio::test]
 async fn get_many_addresses_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
         .global_setup::<Address>(&sender, EventName::UpdateAddress)
@@ -139,7 +139,7 @@ async fn get_many_addresses_test() {
 
 #[tokio::test]
 async fn get_filtered_addresses_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
         .global_setup::<Address>(&sender, EventName::UpdateAddress)
@@ -178,7 +178,7 @@ async fn get_filtered_addresses_test() {
 
 #[tokio::test]
 async fn get_paginated_addresses_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
         .global_setup::<Address>(&sender, EventName::UpdateAddress)
@@ -218,7 +218,7 @@ async fn get_paginated_addresses_test() {
 
 #[tokio::test]
 async fn get_searched_addresses_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let addresses = test_app
         .global_setup::<Address>(&sender, EventName::UpdateAddress)

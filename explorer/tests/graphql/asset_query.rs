@@ -80,7 +80,7 @@ fn check_asset(asset: &TestData<Asset>, value: &Value) {
 
 #[tokio::test]
 async fn get_asset_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
         .global_setup::<Asset>(&sender, EventName::UpdateAsset)
@@ -106,7 +106,7 @@ async fn get_asset_test() {
 
 #[tokio::test]
 async fn get_many_assets_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
         .global_setup::<Asset>(&sender, EventName::UpdateAsset)
@@ -142,7 +142,7 @@ async fn get_many_assets_test() {
 
 #[tokio::test]
 async fn get_filtered_assets_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
         .global_setup::<Asset>(&sender, EventName::UpdateAsset)
@@ -181,7 +181,7 @@ async fn get_filtered_assets_test() {
 
 #[tokio::test]
 async fn get_paginated_assets_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
         .global_setup::<Asset>(&sender, EventName::UpdateAsset)
@@ -219,7 +219,7 @@ async fn get_paginated_assets_test() {
 
 #[tokio::test]
 async fn get_searched_assets_test() {
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
     let sender = RequestSender::new(test_app.server_addr.clone());
     let assets = test_app
         .global_setup::<Asset>(&sender, EventName::UpdateAsset)

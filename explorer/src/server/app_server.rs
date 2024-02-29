@@ -1,12 +1,14 @@
 use {
     anyhow::{anyhow, Result},
     axum::{
+        http::HeaderValue,
         middleware,
         routing::{get, post, put},
         Extension, Router, Server,
     },
-    std::future::ready,
+    std::{future::ready, net::SocketAddr},
     tokio::{signal, sync::oneshot},
+    tower_http::cors::{AllowOrigin, Any, CorsLayer},
     tracing::info,
 };
 
@@ -24,8 +26,24 @@ use crate::{
 };
 
 impl Application {
-    async fn create_router(&self) -> Result<Router> {
+    fn create_cors_layer(&self, origins: &Option<Vec<String>>) -> Result<CorsLayer> {
+        let mut cors = CorsLayer::new();
+
+        if let Some(origins) = origins {
+            let parsed_origins: Result<Vec<HeaderValue>, _> =
+                origins.iter().map(|origin| origin.parse()).collect();
+
+            cors = cors.allow_origin(AllowOrigin::list(parsed_origins?));
+        } else {
+            cors = cors.allow_origin(Any);
+        }
+
+        Ok(cors)
+    }
+
+    async fn create_router(&self, origins: &Option<Vec<String>>) -> Result<Router> {
         let schema = create_graphql_schema(self.state.database_conn.clone())?;
+        let cors = self.create_cors_layer(origins)?;
 
         let router = Router::new()
             .route("/health", get(health_handler))
@@ -41,7 +59,8 @@ impl Application {
             .route("/indexer", get(indexer_handler))
             .route("/indexer/:id/heartbeat", put(indexer_heartbeat_handler))
             .with_state(self.state.clone())
-            .layer(Extension(schema));
+            .layer(Extension(schema))
+            .layer(cors);
 
         if self.enable_metrics {
             let prometheus_recorder = setup_metrics();
@@ -56,14 +75,26 @@ impl Application {
         Ok(router)
     }
 
-    pub async fn run_server(&mut self) -> Result<()> {
+    pub async fn run_server(
+        &mut self,
+        listener: SocketAddr,
+        origins: &Option<Vec<String>>,
+    ) -> Result<()> {
+        self.socket = Some(listener);
+
+        self.start_server(origins).await?;
+        self.handle_shutdown_signal().await
+    }
+
+    pub async fn start_server(&mut self, origins: &Option<Vec<String>>) -> Result<()> {
         tracing::info!(address = ?self.socket, "Start server");
 
         let (tx, rx) = oneshot::channel::<()>();
         self.shutdown_sender = Some(tx);
 
+        let router = self.create_router(origins).await?.into_make_service();
         let server = Server::bind(&self.socket.ok_or_else(|| anyhow!("Socket not set"))?)
-            .serve(self.create_router().await?.into_make_service())
+            .serve(router)
             .with_graceful_shutdown(async {
                 rx.await.ok();
                 info!("Signal received, starting graceful shutdown");

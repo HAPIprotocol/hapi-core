@@ -44,7 +44,7 @@ pub trait FromTestPayload {
 }
 
 impl TestApp {
-    pub async fn start() -> Self {
+    pub async fn start(cors: Option<Vec<String>>) -> Self {
         if env::var(TRACING_ENV_VAR).unwrap_or_default().eq("1") {
             if let Err(e) = setup_tracing("debug", false) {
                 println!("Failed to setup tracing: {}", e);
@@ -53,27 +53,27 @@ impl TestApp {
 
         let configuration = generate_configuration();
 
-        let mut app = Application::from_configuration(configuration.clone())
+        let mut app = Application::from_configuration(&configuration)
             .await
             .expect("Failed to build app");
 
         let db_connection = TestApp::prepare_database(&app).await;
         let networks = Self::prepare_networks(&app).await;
-        app.socket = Some(
-            TcpListener::bind(configuration.listener.clone())
-                .await
-                .expect("Failed to bind to address")
-                .local_addr()
-                .expect("Failed to get local address"),
-        );
-        let port = app.port().expect("Failed to get port");
+        let listener = TcpListener::bind(configuration.listener.clone())
+            .await
+            .expect("Failed to bind to address")
+            .local_addr()
+            .expect("Failed to get local address");
+        let port = listener.port();
 
         let stop_signal = Arc::new(Notify::new());
         let receiver = stop_signal.clone();
 
         // Spawn a background task
         let server_handle = spawn(async move {
-            app.run_server().await.expect("Failed to run server");
+            app.run_server(listener, &cors)
+                .await
+                .expect("Failed to run server");
             receiver.notified().await;
             app.shutdown().await.expect("Failed to shutdown app");
         });

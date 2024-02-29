@@ -7,7 +7,7 @@ use {
 #[tokio::test]
 async fn metrics_test() {
     std::env::set_var(METRICS_ENV_VAR, "1");
-    let test_app = TestApp::start().await;
+    let test_app = TestApp::start(None).await;
 
     let sender = RequestSender::new(test_app.server_addr.clone());
     test_app

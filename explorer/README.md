@@ -16,6 +16,7 @@ is_json_logging                     # Whether to use JSON logging, default: true
 enable_metrics                      # Whether to enable metrics, default: true
 listener                            # Address for the listener server
 database_url                        # The database url
+cors_origins                        # The origin hosts for cors
 ```
 
 Also add secret from jwt to configuration file, defined in SECRET_PATH env variable:
@@ -42,13 +43,13 @@ cd ./target/debug && hapi-explorer
 
 HAPI explorer cli includes the following commands:
 
-| Command        | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| server         | Runs HAPI Explorer multichain backend                    |
-| migrate        | Contains a set of subcommands for managing migrations    |
-| network        | Contains a set of subcommands for network management     |
-| create-indexer | Creates indexer for the given network                    |
-| help           | Display available commands                               |
+| Command        | Description                                           |
+| -------------- | ----------------------------------------------------- |
+| server         | Runs HAPI Explorer multichain backend                 |
+| migrate        | Contains a set of subcommands for managing migrations |
+| network        | Contains a set of subcommands for network management  |
+| create-indexer | Creates indexer for the given network                 |
+| help           | Display available commands                            |
 
 ### Running explorer server
 
